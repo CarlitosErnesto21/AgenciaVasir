@@ -23,7 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 // ═══════════════════════════════════════════════════════════
-// 🌐 RUTAS PÚBLICAS (sin autenticación)
+// RUTAS PÚBLICAS (sin autenticación)
 // ═══════════════════════════════════════════════════════════
 
 // Rutas de autenticación
@@ -41,12 +41,12 @@ Route::get('/hoteles', [HotelController::class, 'index']);
 Route::get('/paquetes', [PaqueteController::class, 'index']);
 
 // ═══════════════════════════════════════════════════════════
-// 🔐 RUTAS PROTEGIDAS (requieren autenticación)
+// RUTAS PROTEGIDAS (requieren autenticación)
 // ═══════════════════════════════════════════════════════════
 Route::middleware('auth:sanctum')->group(function () {
 
     // ───────────────────────────────────────────────────────
-    // 👤 RUTAS BÁSICAS DE USUARIO
+    // RUTAS BÁSICAS DE USUARIO
     // ───────────────────────────────────────────────────────
     Route::post('/logout', [ApiAuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {
@@ -54,7 +54,7 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     // ───────────────────────────────────────────────────────
-    // 🛡️ RUTAS ADMINISTRATIVAS (requieren rol admin/empleado)
+    // RUTAS ADMINISTRATIVAS (requieren rol admin/empleado)
     // ───────────────────────────────────────────────────────
     Route::middleware('rutas.admin')->group(function () {
 
@@ -117,13 +117,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{inventario}', [InventarioController::class, 'show'])->name('show');
         });
 
-        // 🔧 Rutas adicionales específicas para productos (sin conflicto)
+        // Rutas adicionales específicas para productos (sin conflicto)
         Route::prefix('admin/productos')->group(function () {
             Route::get('/stock-bajo', [ProductoController::class, 'stockBajo']);
             Route::get('/agotados', [ProductoController::class, 'agotados']);
         });
 
-        // // 🔧 Rutas adicionales específicas para ventas (sin conflicto)
+        // Rutas adicionales específicas para ventas (sin conflicto)
         // Route::prefix('ventas')->group(function () {
         //     Route::get('/estado/{estado}', [VentaController::class, 'porEstado']);
         //     Route::post('/{venta}/procesar', [VentaController::class, 'procesar']);
