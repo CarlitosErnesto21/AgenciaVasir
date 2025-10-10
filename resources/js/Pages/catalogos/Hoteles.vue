@@ -38,7 +38,7 @@ const filters = ref({
 });
 const btnTitle = ref("Guardar");
 const url = "/api/hoteles";
-const IMAGE_PATH = "/images/hoteles/";
+const IMAGE_PATH = "/storage/";
 const paises = ref([]);
 const provincias = ref([]);
 const categoriasHoteles = ref([]);
@@ -335,12 +335,12 @@ const viewImages = (imagenesHotel) => {
             <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
                 <h3 class="text-xl font-bold">Catálogo hoteles</h3>
                 <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto lg:justify-end">
-                    <Link :href="route('controlPaisesProvincias')" 
+                    <Link :href="route('controlPaisesProvincias')"
                         class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
                         <FontAwesomeIcon :icon="faGlobe" class="h-4"/>
                         <span class="ml-2 whitespace-nowrap">Control paises</span>
                     </Link>
-                    <Link :href="route('catHoteles')" 
+                    <Link :href="route('catHoteles')"
                         class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
                         <FontAwesomeIcon :icon="faTags" class="h-4"/>
                         <span class="ml-2 whitespace-nowrap">Gestionar categorías</span>
@@ -348,7 +348,7 @@ const viewImages = (imagenesHotel) => {
                     <button
                         class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
                         <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" /><span>&nbsp;Agregar hotel</span>
-                    </button>  
+                    </button>
                 </div>
             </div>
 
@@ -403,7 +403,7 @@ const viewImages = (imagenesHotel) => {
                 <Column header="Acciones" :exportable="false">
                     <template #body="slotProps">
                         <div class="flex gap-2">
-                        
+
 
                              <button
                                 class="text-orange-600 hover:text-orange-900 transition-colors"
@@ -627,7 +627,7 @@ const viewImages = (imagenesHotel) => {
                 </div>
 
 
-                
+
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
                         <button
@@ -716,7 +716,7 @@ const viewImages = (imagenesHotel) => {
     <div v-else class="text-center text-gray-500 py-8">
         No hay imágenes para este hotel.
     </div>
-    
+
     <template #footer>
         <!-- Contenedor centrado -->
         <div class="flex justify-center w-full">

@@ -1,4 +1,6 @@
 <script setup>
+import ImageWithFallback from '@/Components/ImageWithFallback.vue'
+
 // Props del componente
 const props = defineProps({
   loading: {
@@ -44,7 +46,7 @@ const handleImageError = (event, producto) => {
       </div>
     </div>
   </div>
-  
+
   <!-- Grid de productos -->
   <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
     <Card
@@ -54,11 +56,12 @@ const handleImageError = (event, producto) => {
     >
       <template #header>
         <div class="w-full flex justify-center items-center h-32 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 rounded-t-lg overflow-hidden group relative">
-          <img
+          <ImageWithFallback
             :src="producto.imagen"
             :alt="producto.nombre"
-            class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-            @error="handleImageError($event, producto)"
+            :fallback-text="producto.nombre"
+            image-classes="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+            placeholder-classes="w-full h-full"
           />
           <div class="absolute top-1 right-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:right-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg">
             {{ producto.categoria }}
@@ -69,13 +72,13 @@ const handleImageError = (event, producto) => {
           <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
         </div>
       </template>
-      
+
       <template #title>
         <span class="text-sm sm:text-base md:text-lg font-bold text-gray-800 leading-tight line-clamp-2 group-hover:text-red-700 transition-colors duration-300">
           {{ producto.nombre }}
         </span>
       </template>
-      
+
       <template #content>
         <div class="flex-grow">
           <div class="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-4 line-clamp-2 leading-relaxed">
@@ -86,7 +89,7 @@ const handleImageError = (event, producto) => {
           </div>
         </div>
       </template>
-      
+
       <template #footer>
         <div class="flex gap-1 sm:gap-2 mt-auto">
           <button

@@ -29,7 +29,7 @@ const filters = ref({
 const btnTitle = ref("Guardar");
 const showImageDialog = ref(false);
 const selectedImages = ref([]);
-const IMAGE_PATH = "/images/aerolinea/";
+const IMAGE_PATH = "/storage/";
 
 onMounted(() => {
     fetchAerolineas();

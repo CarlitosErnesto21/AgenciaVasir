@@ -46,10 +46,10 @@ onMounted(async () => {
     cargarProductos(),
     cargarCategorias()
   ])
-  
+
   // Verificar estado de autenticación para el carrito
   carrito.verificarEstadoAutenticacion()
-  
+
   // Verificar si hay un producto pendiente de compra después del login
   verificarProductoPendiente()
 })
@@ -58,22 +58,22 @@ onMounted(async () => {
 const verificarProductoPendiente = () => {
   const user = page.props.auth?.user
   if (!user) return
-  
+
   const productoData = sessionStorage.getItem('producto_compra_pendiente')
   const sessionActiva = sessionStorage.getItem('compra_session_activa')
-  
+
   if (productoData && sessionActiva) {
     try {
       const datosProducto = JSON.parse(productoData)
-      
+
       // Buscar el producto en la lista actual
       const producto = products.value.find(p => p.id === datosProducto.productoId)
-      
+
       if (producto) {
         // Limpiar el storage
         sessionStorage.removeItem('producto_compra_pendiente')
         sessionStorage.removeItem('compra_session_activa')
-        
+
         // Proceder con la compra automáticamente
         setTimeout(() => {
           comprarProducto(producto)
@@ -93,7 +93,7 @@ const cargarProductos = async () => {
   try {
     loading.value = true
     const response = await axios.get('/api/productos')
-    
+
     // Mapear los datos para que coincidan con la estructura esperada
     products.value = (response.data.data || response.data || []).map(producto => ({
       id: producto.id,
@@ -104,12 +104,12 @@ const cargarProductos = async () => {
       categoria: producto.categoria?.nombre || 'Sin categoría',
       categoria_id: producto.categoria_id,
       // Manejar imágenes
-      imagen: producto.imagenes && producto.imagenes.length > 0 
-        ? `/images/productos/${producto.imagenes[0].nombre}`
-        : '/images/productos/default.jpg',
+      imagen: producto.imagenes && producto.imagenes.length > 0
+        ? `/storage/${producto.imagenes[0].nombre}`
+        : null,
       imagenes: producto.imagenes || []
     })).filter(producto => producto.stock_actual > 0) // Solo productos en stock
-    
+
   } catch (error) {
     console.error('Error al cargar productos:', error)
     toast.add({
@@ -128,14 +128,14 @@ const cargarCategorias = async () => {
   try {
     loadingCategories.value = true
     const response = await axios.get('/api/categorias-productos')
-    
+
     categories.value = (response.data.data || response.data || []).map(categoria => ({
       id: categoria.id,
       nombre: categoria.nombre,
       // Contar productos por categoría
       cantidad: 0 // Se calculará en el computed
     }))
-    
+
   } catch (error) {
     console.error('Error al cargar categorías:', error)
     toast.add({
@@ -153,7 +153,7 @@ const cargarCategorias = async () => {
 const categoriasConConteo = computed(() => {
   return categories.value.map(categoria => ({
     ...categoria,
-    cantidad: products.value.filter(producto => 
+    cantidad: products.value.filter(producto =>
       producto.categoria === categoria.nombre
     ).length
   })).filter(categoria => categoria.cantidad > 0) // Solo mostrar categorías con productos
@@ -162,38 +162,38 @@ const categoriasConConteo = computed(() => {
 // 🔍 Productos filtrados (sin paginación)
 const allFilteredProducts = computed(() => {
   let filtered = [...products.value]
-  
+
   // Filtrar por término de búsqueda
   if (searchTerm.value) {
     const search = searchTerm.value.toLowerCase()
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter(product =>
       product.nombre.toLowerCase().includes(search) ||
       product.descripcion.toLowerCase().includes(search) ||
       product.categoria.toLowerCase().includes(search)
     )
   }
-  
+
   // Filtrar por categorías seleccionadas
   if (selectedCategories.value.length > 0) {
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter(product =>
       selectedCategories.value.includes(product.categoria)
     )
   }
-  
+
   // Filtrar por precio mínimo
   if (minPrice.value && !isNaN(minPrice.value)) {
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter(product =>
       product.precio >= parseFloat(minPrice.value)
     )
   }
-  
+
   // Filtrar por precio máximo
   if (maxPrice.value && !isNaN(maxPrice.value)) {
-    filtered = filtered.filter(product => 
+    filtered = filtered.filter(product =>
       product.precio <= parseFloat(maxPrice.value)
     )
   }
-  
+
   return filtered
 })
 
@@ -212,7 +212,7 @@ const filteredProducts = computed(() => {
 // 📊 Estadísticas de precios para ayudar al usuario
 const preciosStats = computed(() => {
   if (products.value.length === 0) return { min: 0, max: 0, promedio: 0 }
-  
+
   const precios = products.value.map(p => p.precio)
   return {
     min: Math.min(...precios),
@@ -238,7 +238,7 @@ const clearFilters = () => {
   maxPrice.value = ''
   searchTerm.value = ''
   currentPage.value = 1 // Resetear a la primera página
-  
+
   toast.add({
     severity: 'info',
     summary: 'Filtros limpiados',
@@ -309,7 +309,7 @@ const comprarProducto = (producto) => {
 
   // Agregar al carrito usando Pinia
   carrito.agregarProducto(producto)
-  
+
   // Opcional: Mostrar el carrito brevemente
   setTimeout(() => {
     carrito.mostrarCarrito()
@@ -332,7 +332,7 @@ const recargarDatos = async () => {
     cargarProductos(),
     cargarCategorias()
   ])
-  
+
   toast.add({
     severity: 'success',
     summary: 'Datos actualizados',
@@ -346,7 +346,7 @@ const recargarDatos = async () => {
   <Catalogo>
     <!-- Toast para notificaciones -->
     <Toast class="z-[9999]" />
-    
+
     <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen pt-20 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-32">
       <div class="w-full px-1 sm:px-2 lg:px-2 pb-4 sm:pb-4 lg:pb-4">
         <!-- Header Professional -->
@@ -357,13 +357,13 @@ const recargarDatos = async () => {
               <div class="absolute top-4 right-4">
                 <CarritoButton />
               </div>
-              
+
               <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🛍️ Productos</h1>
               <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
             </div>
           </div>
         </div>
-        
+
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8">
           <!-- Panel de Filtros -->
           <FiltrosPanel
@@ -382,7 +382,7 @@ const recargarDatos = async () => {
             @clear-filters="clearFilters"
             @apply-price-filter="applyPriceFilter"
           />
-          
+
           <!-- Grid de Productos -->
           <div class="flex-1">
             <!-- Barra de búsqueda e información -->
@@ -394,7 +394,7 @@ const recargarDatos = async () => {
               :maxPrice="maxPrice"
               @update:searchTerm="searchTerm = $event"
             />
-            
+
             <!-- Grid de productos -->
             <ProductGrid
               :loading="loading"
@@ -402,7 +402,7 @@ const recargarDatos = async () => {
               @comprar-producto="comprarProducto"
               @ver-detalles="verDetalles"
             />
-            
+
             <!-- Controles de paginación -->
             <PaginationControls
               :currentPage="currentPage"
@@ -415,7 +415,7 @@ const recargarDatos = async () => {
               @go-to-previous-page="goToPreviousPage"
               @go-to-next-page="goToNextPage"
             />
-            
+
             <!-- Estado vacío -->
             <EmptyState
               :loading="loading"

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hotel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class HotelController extends Controller
 {
@@ -46,12 +47,7 @@ class HotelController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = uniqid() . '_' . $imagen->getClientOriginalName();
-                    $destino = public_path('images/hoteles');
-                    if (!file_exists($destino)) {
-                        mkdir($destino, 0755, true);
-                    }
-                    $imagen->move($destino, $nombreArchivo);
+                    $nombreArchivo = $imagen->store('hoteles', 'public');
                     $hotel->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -85,12 +81,7 @@ class HotelController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = uniqid() . '_' . $imagen->getClientOriginalName();
-                    $destino = public_path('images/hoteles');
-                    if (!file_exists($destino)) {
-                        mkdir($destino, 0755, true);
-                    }
-                    $imagen->move($destino, $nombreArchivo);
+                    $nombreArchivo = $imagen->store('hoteles', 'public');
                     $hotele->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -103,10 +94,7 @@ class HotelController extends Controller
             foreach ($request->input('removed_images') as $imageName) {
                 $imagen = $hotele->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
-                    $rutaImagen = public_path('images/hoteles/' . $imagen->nombre);
-                    if (file_exists($rutaImagen)) {
-                        unlink($rutaImagen);
-                    }
+                    Storage::disk('public')->delete($imagen->nombre);
                     $imagen->forceDelete(); // Cambiado de delete() a forceDelete()
                 }
             }
@@ -145,10 +133,7 @@ class HotelController extends Controller
         $hotel->loadMissing(['imagenes', 'provincia', 'categoriaHotel']);
 
         foreach ($hotel->imagenes as $imagen) {
-            $rutaImagen = public_path('images/hoteles/' . $imagen->nombre);
-            if (file_exists($rutaImagen)) {
-                unlink($rutaImagen);
-            }
+            Storage::disk('public')->delete($imagen->nombre);
             $imagen->forceDelete();
         }
 

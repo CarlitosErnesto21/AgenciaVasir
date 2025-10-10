@@ -2,11 +2,12 @@
 import { computed } from 'vue'
 import { useCarritoStore } from '@/stores/carrito'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { 
-  faShoppingCart, 
-  faTrash, 
-  faPlus, 
-  faMinus, 
+import ImageWithFallback from '@/Components/ImageWithFallback.vue'
+import {
+  faShoppingCart,
+  faTrash,
+  faPlus,
+  faMinus,
   faXmark,
   faCreditCard,
   faShoppingBag
@@ -35,17 +36,17 @@ const procederAlCheckout = () => {
 
 <template>
   <!-- Overlay del carrito -->
-  <div 
-    v-if="carritoStore.isVisible" 
+  <div
+    v-if="carritoStore.isVisible"
     class="fixed inset-0 z-[10000] overflow-hidden carrito-overlay"
     @click.self="carritoStore.ocultarCarrito()"
   >
     <!-- Fondo oscuro clickeable -->
-    <div 
+    <div
       class="absolute inset-0 bg-black bg-opacity-50 transition-opacity cursor-pointer fondo-clickeable"
       @click="carritoStore.ocultarCarrito()"
     ></div>
-    
+
     <!-- Panel del carrito -->
     <div class="absolute right-0 top-0 h-full w-full max-w-md transform transition-transform carrito-panel">
       <div class="flex h-full flex-col bg-white shadow-xl">
@@ -55,14 +56,14 @@ const procederAlCheckout = () => {
             <FontAwesomeIcon :icon="faShoppingCart" class="text-blue-600" />
             Carrito de Compras
           </h2>
-          <button 
+          <button
             @click="carritoStore.ocultarCarrito()"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <FontAwesomeIcon :icon="faXmark" class="w-6 h-6" />
           </button>
         </div>
-        
+
         <!-- Contador de items -->
         <div class="px-6 py-2 bg-blue-50 border-b border-blue-100">
           <p class="text-sm text-blue-800">
@@ -77,7 +78,7 @@ const procederAlCheckout = () => {
             <FontAwesomeIcon :icon="faShoppingBag" class="w-16 h-16 text-gray-300 mb-4" />
             <h3 class="text-lg font-medium text-gray-900 mb-2">Tu carrito está vacío</h3>
             <p class="text-gray-500 mb-6">Agrega algunos productos para comenzar</p>
-            <button 
+            <button
               @click="carritoStore.ocultarCarrito()"
               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
             >
@@ -87,19 +88,20 @@ const procederAlCheckout = () => {
 
           <!-- Lista de productos -->
           <div v-else class="space-y-4">
-            <div 
-              v-for="item in carritoStore.items" 
+            <div
+              v-for="item in carritoStore.items"
               :key="item.id"
               class="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors producto-item"
             >
               <!-- Imagen del producto -->
               <div class="flex-shrink-0 w-16 h-16 producto-imagen">
-                <img 
-                  :src="item.imagen" 
+                <ImageWithFallback
+                  :src="item.imagen"
                   :alt="item.nombre"
-                  class="w-full h-full object-cover rounded-md border border-gray-200"
-                  @error="$event.target.src = '/images/productos/default.jpg'"
-                >
+                  :fallback-text="item.nombre"
+                  image-classes="w-full h-full object-cover rounded-md border border-gray-200"
+                  placeholder-classes="w-full h-full rounded-md border border-gray-200"
+                />
               </div>
 
               <!-- Información del producto -->
@@ -117,19 +119,19 @@ const procederAlCheckout = () => {
 
               <!-- Controles de cantidad -->
               <div class="flex items-center gap-2">
-                <button 
+                <button
                   @click="carritoStore.decrementarCantidad(item.id)"
                   class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cantidad-btn"
                   :disabled="item.cantidad <= 1"
                 >
                   <FontAwesomeIcon :icon="faMinus" class="w-3 h-3" />
                 </button>
-                
+
                 <span class="w-8 text-center text-sm font-medium">
                   {{ item.cantidad }}
                 </span>
-                
-                <button 
+
+                <button
                   @click="carritoStore.incrementarCantidad(item.id)"
                   class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cantidad-btn"
                   :disabled="item.cantidad >= item.stock_actual"
@@ -139,7 +141,7 @@ const procederAlCheckout = () => {
               </div>
 
               <!-- Botón eliminar -->
-              <button 
+              <button
                 @click="carritoStore.eliminarProducto(item.id)"
                 class="p-2 text-red-400 hover:text-red-600 transition-colors btn-eliminar"
                 title="Eliminar producto"
@@ -152,7 +154,7 @@ const procederAlCheckout = () => {
 
         <!-- Botón vaciar carrito (solo si hay items) -->
         <div v-if="!carritoStore.isEmpty" class="px-6 py-3 border-t border-gray-100">
-          <button 
+          <button
             @click="carritoStore.limpiarCarrito()"
             class="w-full text-red-500 hover:text-red-700 hover:bg-red-50 py-2 px-4 text-sm transition-colors flex items-center justify-center gap-2 rounded-md border border-red-200 hover:border-red-300"
           >
@@ -173,15 +175,15 @@ const procederAlCheckout = () => {
 
           <!-- Botones de acción -->
           <div class="space-y-2">
-            <button 
+            <button
               @click="procederAlCheckout"
               class="w-full text-white py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2 font-medium btn-checkout"
             >
               <FontAwesomeIcon :icon="faCreditCard" />
               Proceder al Checkout
             </button>
-            
-            <button 
+
+            <button
               @click="carritoStore.ocultarCarrito()"
               class="w-full text-white py-2 px-4 rounded-md transition-colors btn-continuar"
             >
@@ -417,11 +419,11 @@ const procederAlCheckout = () => {
     max-height: 100vh;
     border-radius: 0;
   }
-  
+
   .producto-item {
     padding: 10px;
   }
-  
+
   .btn-checkout,
   .btn-continuar {
     font-size: 0.875rem;
@@ -440,33 +442,33 @@ const procederAlCheckout = () => {
     max-height: 100vh;
     border-radius: 0;
   }
-  
+
   .carrito-header h3 {
     font-size: 1.1rem;
   }
-  
+
   .producto-item {
     padding: 8px;
     gap: 8px;
   }
-  
+
   .producto-imagen {
     width: 50px;
     height: 50px;
   }
-  
+
   .producto-info h4 {
     font-size: 0.9rem;
   }
-  
+
   .producto-info p {
     font-size: 0.65rem;
   }
-  
+
   .cantidad-controls {
     gap: 4px;
   }
-  
+
   .cantidad-btn {
     width: 28px;
     height: 28px;

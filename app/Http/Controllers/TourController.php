@@ -6,6 +6,7 @@ use App\Models\Tour;
 use App\Models\Transporte;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class TourController extends Controller
 {
@@ -17,18 +18,18 @@ class TourController extends Controller
     {
         $query = Tour::with(['transporte', 'imagenes'])
             ->orderBy('fecha_salida', 'asc');
-        
+
         // Filtrar por categoría si se especifica
         if ($request->has('categoria')) {
             $categoria = strtoupper($request->input('categoria'));
-            
+
             if (in_array($categoria, ['NACIONAL', 'INTERNACIONAL'])) {
                 $query->where('categoria', $categoria);
             }
         }
-        
+
         $tours = $query->get();
-        
+
         // Agregar cupos_disponibles a cada tour
         $tours->each(function ($tour) {
             $cuposReservados = $tour->detalleReservas()
@@ -36,15 +37,15 @@ class TourController extends Controller
                     $query->where('estado', '!=', 'cancelada');
                 })
                 ->sum('cupos_reservados');
-            
+
             $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
-            
+
             // Debug log
             Log::info("Tour {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservados}, disponibles={$cuposDisponibles}");
-            
+
             $tour->cupos_disponibles = $cuposDisponibles;
         });
-        
+
         // Siempre devolver JSON para API
         return response()->json($tours);
     }
@@ -81,10 +82,7 @@ class TourController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = uniqid() . '_' . $imagen->getClientOriginalName();
-                    $destino = public_path('images/tours');
-                    if (!file_exists($destino)) mkdir($destino, 0755, true);
-                    $imagen->move($destino, $nombreArchivo);
+                    $nombreArchivo = $imagen->store('tours', 'public');
                     $tour->imagenes()->create(['nombre' => $nombreArchivo]);
                 }
             }
@@ -103,21 +101,21 @@ class TourController extends Controller
     {
         $tour = Tour::with(['transporte', 'imagenes'])
             ->findOrFail($id);
-        
+
         // Agregar cupos_disponibles
         $cuposReservados = $tour->detalleReservas()
             ->whereHas('reserva', function($query) {
                 $query->where('estado', '!=', 'cancelada');
             })
             ->sum('cupos_reservados');
-        
+
         $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
-        
+
         // Debug log
         Log::info("Tour show {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservados}, disponibles={$cuposDisponibles}");
-        
+
         $tour->cupos_disponibles = $cuposDisponibles;
-        
+
         return response()->json($tour);
     }
 
@@ -155,10 +153,7 @@ class TourController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = uniqid() . '_' . $imagen->getClientOriginalName();
-                    $destino = public_path('images/tours');
-                    if (!file_exists($destino)) mkdir($destino, 0755, true);
-                    $imagen->move($destino, $nombreArchivo);
+                    $nombreArchivo = $imagen->store('tours', 'public');
                     $tour->imagenes()->create(['nombre' => $nombreArchivo]);
                 }
             }
@@ -169,8 +164,7 @@ class TourController extends Controller
             foreach ($request->input('removed_images') as $imageName) {
                 $imagen = $tour->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
-                    $rutaImagen = public_path('images/tours/' . $imagen->nombre);
-                    if (file_exists($rutaImagen)) unlink($rutaImagen);
+                    Storage::disk('public')->delete($imagen->nombre);
                     $imagen->forceDelete();
                 }
             }
@@ -192,8 +186,7 @@ class TourController extends Controller
 
         // Eliminar imágenes físicas y registros
         foreach ($tour->imagenes as $imagen) {
-            $rutaImagen = public_path('images/tours/' . $imagen->nombre);
-            if (file_exists($rutaImagen)) unlink($rutaImagen);
+            Storage::disk('public')->delete($imagen->nombre);
             $imagen->forceDelete();
         }
 

@@ -47,7 +47,7 @@ const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
 const horaRegresoCalendar = ref(null);
 const url = "/api/tours";
-const IMAGE_PATH = "/images/tours/";
+const IMAGE_PATH = "/storage/";
 const tipoTransportes = ref([]);
 const categoriasOptions = ref([
     { label: 'Nacional', value: 'NACIONAL' },
@@ -73,7 +73,7 @@ const filteredTours = computed(() => {
     // Filtro por búsqueda global
     if (filters.value.global.value) {
         const searchTerm = filters.value.global.value.toLowerCase();
-        filtered = filtered.filter(tour => 
+        filtered = filtered.filter(tour =>
             tour.nombre.toLowerCase().includes(searchTerm) ||
             (tour.incluye && tour.incluye.toLowerCase().includes(searchTerm)) ||
             (tour.no_incluye && tour.no_incluye.toLowerCase().includes(searchTerm)) ||
@@ -82,19 +82,19 @@ const filteredTours = computed(() => {
     }
     // Filtro por categoría
     if (filters.value.categoria.value) {
-        filtered = filtered.filter(tour => 
+        filtered = filtered.filter(tour =>
             tour.categoria === filters.value.categoria.value
         );
     }
     // Filtro por tipo de transporte
     if (filters.value['transporte.nombre'].value) {
-        filtered = filtered.filter(tour => 
+        filtered = filtered.filter(tour =>
             tour['transporte.nombre'] === filters.value['transporte.nombre'].value
         );
     }
     // Filtro por estado
     if (filters.value.estado.value) {
-        filtered = filtered.filter(tour => 
+        filtered = filtered.filter(tour =>
             tour.estado === filters.value.estado.value
         );
     }
@@ -138,17 +138,17 @@ watch([tour, horaRegresoCalendar, incluyeLista, noIncluyeLista, imagenPreviewLis
             }) || removedImages.value.length > 0;
             // Para tours nuevos, también verificar si hay algún dato ingresado
             const isCreatingNew = !originalTourData.value.id;
-            const hasAnyData = tour.value.nombre || 
-                              tour.value.punto_salida || 
-                              tour.value.fecha_salida || 
-                              horaRegresoCalendar.value || 
+            const hasAnyData = tour.value.nombre ||
+                              tour.value.punto_salida ||
+                              tour.value.fecha_salida ||
+                              horaRegresoCalendar.value ||
                               tour.value.precio ||
                               tour.value.categoria ||
                               tour.value.transporte_id ||
                               incluyeLista.value.length > 0 ||
                               noIncluyeLista.value.length > 0 ||
                               imagenPreviewList.value.length > 0;
-            
+
             hasUnsavedChanges.value = hasChanges || (isCreatingNew && hasAnyData);
         });
     }
@@ -280,11 +280,11 @@ const onFechaInicioFilterChange = () => {
         const fechaFin = new Date(selectedFechaFin.value);
         if (fechaInicio > fechaFin) {
             selectedFechaFin.value = null;
-            toast.add({ 
-                severity: "warn", 
-                summary: "Fecha ajustada", 
-                detail: "La fecha 'hasta' se limpió porque era anterior a la fecha 'desde'.", 
-                life: 3000 
+            toast.add({
+                severity: "warn",
+                summary: "Fecha ajustada",
+                detail: "La fecha 'hasta' se limpió porque era anterior a la fecha 'desde'.",
+                life: 3000
             });
         }
     }
@@ -297,11 +297,11 @@ const onFechaFinFilterChange = () => {
         const fechaFin = new Date(selectedFechaFin.value);
         if (fechaFin < fechaInicio) {
             selectedFechaInicio.value = null;
-            toast.add({ 
-                severity: "warn", 
-                summary: "Fecha ajustada", 
-                detail: "La fecha 'desde' se limpió porque era posterior a la fecha 'hasta'.", 
-                life: 3000 
+            toast.add({
+                severity: "warn",
+                summary: "Fecha ajustada",
+                detail: "La fecha 'desde' se limpió porque era posterior a la fecha 'hasta'.",
+                life: 3000
             });
         }
     }
@@ -318,11 +318,11 @@ const clearFilters = () => {
     filters.value['transporte.nombre'].value = null;
     filters.value.estado.value = null;
     filters.value.fecha_salida.value = null;
-    toast.add({ 
-        severity: "info", 
-        summary: "Filtros limpiados", 
-        detail: "Se han removido todos los filtros aplicados.", 
-        life: 3000 
+    toast.add({
+        severity: "info",
+        summary: "Filtros limpiados",
+        detail: "Se han removido todos los filtros aplicados.",
+        life: 3000
     });
 };
 
@@ -425,11 +425,11 @@ const saveOrUpdate = async () => {
     const maxSize = 2 * 1024 * 1024; // 2MB
     const oversizedFiles = imagenFiles.value.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
-        toast.add({ 
-            severity: "warn", 
-            summary: "Verificar archivos", 
-            detail: "Por favor revisa el tamaño de las imágenes seleccionadas.", 
-            life: 4000 
+        toast.add({
+            severity: "warn",
+            summary: "Verificar archivos",
+            detail: "Por favor revisa el tamaño de las imágenes seleccionadas.",
+            life: 4000
         });
         return;
     }
@@ -482,20 +482,20 @@ const saveOrUpdate = async () => {
         let response;
         if (!tour.value.id) {
             response = await axios.post(url, formData, { headers: {"Content-Type":"multipart/form-data"} });
-            toast.add({ 
-                severity: "success", 
-                summary: "¡Éxito!", 
-                detail: "El tour ha sido creado correctamente.", 
-                life: 5000 
+            toast.add({
+                severity: "success",
+                summary: "¡Éxito!",
+                detail: "El tour ha sido creado correctamente.",
+                life: 5000
             });
         } else {
             formData.append("_method","PUT");
             response = await axios.post(`${url}/${tour.value.id}`, formData, { headers: {"Content-Type":"multipart/form-data"} });
-            toast.add({ 
-                severity: "success", 
-                summary: "¡Éxito!", 
-                detail: "El tour ha sido actualizado correctamente.", 
-                life: 5000 
+            toast.add({
+                severity: "success",
+                summary: "¡Éxito!",
+                detail: "El tour ha sido actualizado correctamente.",
+                life: 5000
             });
         }
         await fetchTours();
@@ -504,11 +504,11 @@ const saveOrUpdate = async () => {
         originalTourData.value = null;
         resetForm();
     } catch (err) {
-        toast.add({ 
-            severity: "warn", 
-            summary: "Error de validación", 
-            detail: "Por favor revisa los campos e intenta nuevamente.", 
-            life: 6000 
+        toast.add({
+            severity: "warn",
+            summary: "Error de validación",
+            detail: "Por favor revisa los campos e intenta nuevamente.",
+            life: 6000
         });
     }
 };
@@ -520,18 +520,18 @@ const deleteTour = async () => {
         await axios.delete(`${url}/${tour.value.id}`);
         await fetchTours();
         deleteDialog.value = false;
-        toast.add({ 
-            severity: "success", 
-            summary: "¡Eliminado!", 
-            detail: "El tour ha sido eliminado correctamente.", 
-            life: 5000 
+        toast.add({
+            severity: "success",
+            summary: "¡Eliminado!",
+            detail: "El tour ha sido eliminado correctamente.",
+            life: 5000
         });
     } catch (err) {
-        toast.add({ 
-            severity: "error", 
-            summary: "Error", 
-            detail: "No se pudo eliminar el tour. Inténtalo de nuevo.", 
-            life: 5000 
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "No se pudo eliminar el tour. Inténtalo de nuevo.",
+            life: 5000
         });
     }
 };
@@ -545,7 +545,7 @@ const hideDialog = () => {
 };
 
 const closeDialogWithoutSaving = () => {
-    dialog.value = false; 
+    dialog.value = false;
     unsavedChangesDialog.value = false;
     hasUnsavedChanges.value = false;
     originalTourData.value = null;
@@ -563,21 +563,21 @@ const onImageSelect = (event) => {
         if (file instanceof File) {
             // Validar tamaño del archivo
             if (file.size > maxSize) {
-                toast.add({ 
-                    severity: "warn", 
-                    summary: "Archivo no válido", 
-                    detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).", 
-                    life: 5000 
+                toast.add({
+                    severity: "warn",
+                    summary: "Archivo no válido",
+                    detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).",
+                    life: 5000
                 });
                 continue; // Saltar este archivo
             }
             // Validar tipo de archivo
             if (!file.type.startsWith('image/')) {
-                toast.add({ 
-                    severity: "warn", 
-                    summary: "Formato no válido", 
-                    detail: "Por favor selecciona únicamente archivos de imagen válidos.", 
-                    life: 4000 
+                toast.add({
+                    severity: "warn",
+                    summary: "Formato no válido",
+                    detail: "Por favor selecciona únicamente archivos de imagen válidos.",
+                    life: 4000
                 });
                 continue; // Saltar este archivo
             }
@@ -646,7 +646,7 @@ const validateFechaSalida = () => {
     if (fechaSalida < minTime) {
         return false;
     }
-    
+
     // Si hay fecha de regreso, validar que salida sea anterior al regreso con mínimo 1 hora de diferencia
     if (horaRegresoCalendar.value) {
         const fechaRegreso = new Date(horaRegresoCalendar.value);
@@ -700,12 +700,12 @@ const getMaxDateSalida = () => {
 <template>
     <Head title="Tours" />
     <AuthenticatedLayout>
-        <Toast class="z-[9999]" />        
+        <Toast class="z-[9999]" />
         <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-md rounded-lg h-screen-full">
             <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
                 <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Catálogo de Tours</h3>
                 <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto lg:justify-end">
-                    <Link :href="route('transportes')" 
+                    <Link :href="route('transportes')"
                          class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
                         <FontAwesomeIcon :icon="faBusSimple" class="h-4"/>
                         <span>&nbsp;Control Transportes</span>
@@ -713,7 +713,7 @@ const getMaxDateSalida = () => {
                     <button
                         class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
                         <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" /><span>&nbsp;Agregar tour</span>
-                    </button>   
+                    </button>
                 </div>
             </div>
             <DataTable
@@ -764,7 +764,7 @@ const getMaxDateSalida = () => {
                             </div>
                             <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 <div>
-                                    <Select v-model="selectedCategoria" :options="categoriasOptions" optionLabel="label" optionValue="value" placeholder="Categoría" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;" 
+                                    <Select v-model="selectedCategoria" :options="categoriasOptions" optionLabel="label" optionValue="value" placeholder="Categoría" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
                                         @change="onCategoriaFilterChange" :clearable="true"
                                     />
                                 </div>
@@ -782,7 +782,7 @@ const getMaxDateSalida = () => {
                                     <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="w-full h-9 text-sm" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
                                 </div>
                                 <div class="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-1">
-                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="w-full h-9 text-sm" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/> 
+                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="w-full h-9 text-sm" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
                                 </div>
                             </div>
                         </div>
@@ -965,8 +965,8 @@ const getMaxDateSalida = () => {
                         </div>
                         <div class="flex-1">
                             <label for="horaRegresoCalendar" class="flex items-center gap-1 mb-2">Fecha y hora regreso:<span class="text-red-500 font-bold">*</span></label>
-                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false" 
-                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }" class="w-full" @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/> 
+                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
+                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }" class="w-full" @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !horaRegresoCalendar">Fecha y hora de regreso requerida.</small>
                         </div>
                     </div>
@@ -995,7 +995,7 @@ const getMaxDateSalida = () => {
                         <div class="flex items-center gap-4">
                             <label for="imagenes" class="w-24 flex items-center gap-1">Imágenes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
-                                <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/> 
+                                <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
                                 <button type="button" class="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-red-500 hover:border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none"
                                     @click="$refs.fileInput.click()">
                                     <FontAwesomeIcon :icon="faPlus" class="h-4" /><span>Subir imágenes</span>

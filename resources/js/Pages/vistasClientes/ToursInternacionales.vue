@@ -54,7 +54,7 @@ const estadisticas = computed(() => {
   const precios = toursDisponibles.map(tour => parseFloat(tour.precio)).filter(precio => !isNaN(precio))
   // Como no tenemos campo pais aún, usaremos punto_salida como ubicación
   const ubicacionesUnicas = [...new Set(toursDisponibles.map(tour => tour.punto_salida).filter(ubicacion => ubicacion))]
-  
+
   return {
     totalDestinos: toursDisponibles.length,
     totalPaises: ubicacionesUnicas.length,
@@ -83,7 +83,7 @@ const obtenerTours = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -92,13 +92,13 @@ const obtenerTours = async () => {
         'X-Requested-With': 'XMLHttpRequest'
       }
     })
-    
+
     if (!response.ok) {
       throw new Error(`Error ${response.status}: ${response.statusText}`)
     }
-    
+
     const data = await response.json()
-    
+
     // Asegurar que cada tour tenga cupos_disponibles
     const toursConCupos = (data.data || data || []).map(tour => {
       // Si no tiene cupos_disponibles, usar cupo_max como fallback temporal
@@ -108,9 +108,9 @@ const obtenerTours = async () => {
       }
       return tour
     })
-    
+
     tours.value = toursConCupos
-    
+
   } catch (err) {
     console.error('Error al obtener tours:', err)
     error.value = err.message
@@ -135,17 +135,17 @@ const formatearFecha = (fecha) => {
 // Función para formatear la duración
 const calcularDuracion = (fechaSalida, fechaRegreso) => {
   if (!fechaSalida || !fechaRegreso) return '1 día'
-  
+
   const salida = new Date(fechaSalida)
   const regreso = new Date(fechaRegreso)
-  
+
   // Normalizar las fechas para que solo considere el día (sin hora)
   salida.setHours(0, 0, 0, 0)
   regreso.setHours(0, 0, 0, 0)
-  
+
   const diffTime = regreso.getTime() - salida.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 porque incluimos el día de salida
-  
+
   return diffDays === 1 ? '1 día' : `${diffDays} días`
 }
 
@@ -165,30 +165,30 @@ const obtenerImagenActual = (tour) => {
   if (!tour.imagenes || tour.imagenes.length === 0) {
     return 'https://via.placeholder.com/400x300/2563eb/ffffff?text=Sin+Imagen'
   }
-  
+
   // Si solo tiene una imagen, mostrar esa
   if (tour.imagenes.length === 1) {
     const nombreImagen = typeof tour.imagenes[0] === 'string' ? tour.imagenes[0] : tour.imagenes[0].nombre
-    return `/images/tours/${nombreImagen}`
+    return `/storage/${nombreImagen}`
   }
-  
+
   // Si tiene múltiples imágenes, usar el índice del carrusel
   const currentIndex = cardImageIndices.value[tour.id] || 0
   const imagen = tour.imagenes[currentIndex]
   const nombreImagen = typeof imagen === 'string' ? imagen : imagen.nombre
-  
-  return `/images/tours/${nombreImagen}`
+
+  return `/storage/${nombreImagen}`
 }
 
 // Función para inicializar carrusel automático
 const inicializarCarrusel = (tour) => {
   if (!tour.imagenes || tour.imagenes.length <= 1 || !tour.id) return
-  
+
   // Inicializar índice si no existe
   if (!(tour.id in cardImageIndices.value)) {
     cardImageIndices.value[tour.id] = 0
   }
-  
+
   // Crear intervalo para cambiar imágenes automáticamente
   if (!(tour.id in intervalIds.value)) {
     intervalIds.value[tour.id] = setInterval(() => {
@@ -213,15 +213,15 @@ const detenerTodosLosCarruseles = () => {
 onMounted(async () => {
   // Obtener tours desde la API
   await obtenerTours()
-  
+
   // Verificar reserva pendiente después del login
   await verificarReservaPendiente()
-  
+
   // Verificación adicional con delay para problemas de timing
   setTimeout(async () => {
     await verificarReservaPendiente()
   }, 500)
-  
+
   // Inicializar carruseles para todos los tours con múltiples imágenes
   tours.value.forEach(tour => {
     if (tour.imagenes && tour.imagenes.length > 1) {
@@ -239,10 +239,10 @@ const obtenerTodasLasImagenes = (imagenes) => {
   if (!imagenes || imagenes.length === 0) {
     return ['https://via.placeholder.com/400x300/2563eb/ffffff?text=Sin+Imagen']
   }
-  
+
   return imagenes.map(imagen => {
     const nombreImagen = typeof imagen === 'string' ? imagen : imagen.nombre
-    return `/images/tours/${nombreImagen}`
+    return `/storage/${nombreImagen}`
   })
 }
 
@@ -252,7 +252,7 @@ const mostrarGaleria = (tour) => {
   currentImageIndex.value = 0
   showImageDialog.value = true
   isGalleryAutoPlaying.value = true
-  
+
   // Iniciar carrusel automático en la galería si hay múltiples imágenes
   if (selectedTourImages.value.length > 1) {
     iniciarCarruselGaleria()
@@ -296,8 +296,8 @@ const siguienteImagen = () => {
 }
 
 const imagenAnterior = () => {
-  currentImageIndex.value = currentImageIndex.value === 0 
-    ? selectedTourImages.value.length - 1 
+  currentImageIndex.value = currentImageIndex.value === 0
+    ? selectedTourImages.value.length - 1
     : currentImageIndex.value - 1
   // Reiniciar el timer automático solo si está activado
   if (showImageDialog.value && selectedTourImages.value.length > 1 && isGalleryAutoPlaying.value) {
@@ -316,7 +316,7 @@ const irAImagen = (index) => {
 // Funciones para los botones
 const reservarTour = (tour) => {
   tourSeleccionado.value = tour
-  
+
   // Verificar si el usuario está logueado
   if (!user.value) {
     showAuthDialog.value = true
@@ -330,23 +330,23 @@ const verificarReservaPendiente = async () => {
   try {
     const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente')
     const sessionActiva = sessionStorage.getItem('reserva_session_activa')
-    
+
     // Solo procesar si hay reserva pendiente Y la sesión está activa
     if (reservaPendiente && sessionActiva === 'true' && user.value && tours.value && Array.isArray(tours.value)) {
       const data = JSON.parse(reservaPendiente)
       // Buscar el tour en la lista actual
       const tour = tours.value.find(t => t && t.id === data.tourId)
-      
+
       if (tour) {
         // Usar nextTick para asegurar que el componente esté completamente montado
         await nextTick()
-        
+
         // Pequeño delay adicional para asegurar el rendering
         setTimeout(() => {
           // Abrir modal de reserva automáticamente
           tourSeleccionado.value = tour
           showReservaDialog.value = true
-          
+
           // Mostrar mensaje informativo DESPUÉS de abrir el modal
           setTimeout(() => {
             toast.add({
@@ -357,7 +357,7 @@ const verificarReservaPendiente = async () => {
             })
           }, 500) // Delay para que aparezca después del modal
         }, 100)
-        
+
         // Limpiar sessionStorage
         sessionStorage.removeItem('tour_reserva_pendiente')
         sessionStorage.removeItem('reserva_session_activa')
@@ -382,11 +382,11 @@ const verificarReservaPendiente = async () => {
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Reserva Confirmada', 
-    detail: 'Tu reserva ha sido registrada. Te contactaremos pronto.', 
-    life: 5000 
+  toast.add({
+    severity: 'success',
+    summary: 'Reserva Confirmada',
+    detail: 'Tu reserva ha sido registrada. Te contactaremos pronto.',
+    life: 5000
   })
 
   // Cerrar modal
@@ -396,12 +396,12 @@ const manejarConfirmacionReserva = (reserva) => {
 // Función para actualizar cupos dinámicamente
 const actualizarCupos = (datosActualizacion) => {
   const { tourId, cuposDisponibles } = datosActualizacion
-  
+
   // Buscar y actualizar el tour en la lista
   const tourIndex = tours.value.findIndex(tour => tour.id === tourId)
   if (tourIndex !== -1) {
     tours.value[tourIndex].cupos_disponibles = cuposDisponibles
-    
+
     // Forzar reactividad
     tours.value = [...tours.value]
   }
@@ -417,10 +417,10 @@ const refrescarTour = async (tourId) => {
         'Accept': 'application/json',
       }
     })
-    
+
     if (response.ok) {
       const tourActualizado = await response.json()
-      
+
       // Actualizar el tour en la lista
       const tourIndex = tours.value.findIndex(tour => tour.id === tourId)
       if (tourIndex !== -1) {
@@ -449,7 +449,7 @@ const obtenerClaseCupos = (tour) => {
   const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
   const cupoMax = tour.cupo_max || 1
   const porcentajeDisponible = (cuposDisponibles / cupoMax) * 100
-  
+
   if (cuposDisponibles === 0) {
     return 'text-red-600 font-bold' // Sin cupos
   } else if (porcentajeDisponible <= 20) {
@@ -480,7 +480,7 @@ const verMasInfo = (tour) => {
               <div class="flex items-center justify-center gap-3 mb-1">
                 <img src="/images/world.png" alt="Tours Internacionales" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
                 <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-                  Tours Internacionales 
+                  Tours Internacionales
                 </h1>
               </div>
               <p class="hidden md:block text-base sm:text-lg text-red-100 px-4">Explora destinos increíbles alrededor del mundo.</p>
@@ -582,16 +582,16 @@ const verMasInfo = (tour) => {
                     {{ calcularDuracion(tour.fecha_salida, tour.fecha_regreso) }}
                   </div>
                   <!-- Indicador de múltiples imágenes -->
-                  <div v-if="tour.imagenes && tour.imagenes.length > 1" 
+                  <div v-if="tour.imagenes && tour.imagenes.length > 1"
                        class="absolute top-2 left-2 bg-gradient-to-r from-black/80 to-gray-800/80 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs flex items-center border border-white/20">
                       <FontAwesomeIcon :icon="faImage" class="w-3 h-3 mr-1" />
                     {{ tour.imagenes.length }}
                   </div>
                   <!-- Indicador de carrusel activo -->
-                  <div v-if="tour.imagenes && tour.imagenes.length > 1" 
+                  <div v-if="tour.imagenes && tour.imagenes.length > 1"
                        class="absolute bottom-2 right-2 flex space-x-1">
-                    <div 
-                      v-for="(_, index) in tour.imagenes" 
+                    <div
+                      v-for="(_, index) in tour.imagenes"
                       :key="index"
                       class="w-2 h-2 rounded-full transition-all duration-300 shadow-sm"
                       :class="(cardImageIndices[tour.id] || 0) === index ? 'bg-white border border-blue-400' : 'bg-white/60 border border-white/30'"
@@ -599,14 +599,14 @@ const verMasInfo = (tour) => {
                   </div>
                 </div>
               </template>
-            
+
               <template #title>
                 <div class="h-10 sm:h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg mx-2"
                      @click="verMasInfo(tour)">
                   <span class="text-sm sm:text-base font-bold bg-gradient-to-r from-gray-800 to-blue-700 bg-clip-text text-transparent leading-tight line-clamp-2">{{ tour.nombre }}</span>
                 </div>
               </template>
-              
+
               <template #content>
                 <div class="flex-1 flex flex-col px-4 pb-4 min-h-0">
                   <div class="flex-1 space-y-2 sm:space-y-3 cursor-pointer hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg p-2 -m-2"
@@ -634,7 +634,7 @@ const verMasInfo = (tour) => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <!-- Botones profesionales - SIEMPRE VISIBLES -->
                   <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-shrink-0">
                     <button
@@ -684,7 +684,7 @@ const verMasInfo = (tour) => {
                     SIN CUPOS
                   </div>
                   <!-- Indicador de múltiples imágenes -->
-                  <div v-if="tour.imagenes && tour.imagenes.length > 1" 
+                  <div v-if="tour.imagenes && tour.imagenes.length > 1"
                        class="absolute top-2 left-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs flex items-center">
                     <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
                       <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
@@ -693,14 +693,14 @@ const verMasInfo = (tour) => {
                   </div>
                 </div>
               </template>
-            
+
               <template #title>
                 <div class="h-10 sm:h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gray-100 transition-all duration-300 rounded-lg mx-2"
                      @click="verMasInfo(tour)">
                   <span class="text-sm sm:text-base font-bold text-gray-600 leading-tight line-clamp-2">{{ tour.nombre }}</span>
                 </div>
               </template>
-              
+
               <template #content>
                 <div class="flex-1 flex flex-col px-4 pb-4 min-h-0">
                   <div class="flex-1 space-y-2 sm:space-y-3 cursor-pointer hover:bg-gray-100 transition-all duration-300 rounded-lg p-2 -m-2"
@@ -732,7 +732,7 @@ const verMasInfo = (tour) => {
                       </p>
                     </div>
                   </div>
-                  
+
                   <!-- Botones profesionales - SIEMPRE VISIBLES -->
                   <div class="flex gap-2 mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
                     <button
@@ -764,7 +764,7 @@ const verMasInfo = (tour) => {
               </h2>
               <p class="text-purple-100 text-lg">Experiencias únicas más allá de nuestras fronteras</p>
             </div>
-          
+
             <!-- Contenido -->
             <div class="p-8">
               <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
@@ -796,9 +796,9 @@ const verMasInfo = (tour) => {
     </div>
 
     <!-- Diálogo profesional para mostrar galería de imágenes -->
-      <Dialog 
-        v-model:visible="showImageDialog" 
-        modal 
+      <Dialog
+        v-model:visible="showImageDialog"
+        modal
         :closable="false"
         class="max-w-3xl w-full md:w-full mx-4 z-[99999] mt-16 sm:mt-24 md:mt-24 lg:mt-24 xl:mt-24 2xl:mt-24"
         :draggable="false"
@@ -813,7 +813,7 @@ const verMasInfo = (tour) => {
           <div class="w-full bg-gradient-to-r from-blue-600 to-red-600 text-white p-4 rounded-lg flex items-center justify-between">
             <h3 class="text-md md:text-xl font-bold bg-gradient-to-r from-white to-blue-100 bg-clip-text text-transparent">Imágenes del tour</h3>
             <div class="flex items-center gap-3">
-              <button 
+              <button
                 v-if="selectedTourImages.length > 1"
                 @click="toggleGalleryAutoPlay"
                 class="flex items-center gap-2 px-2 py-2 bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-sm hover:from-white/30 hover:to-white/20 text-white rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg"
@@ -824,7 +824,7 @@ const verMasInfo = (tour) => {
                 <span>{{ isGalleryAutoPlaying ? 'Pausar' : 'Reproducir' }}</span>
               </button>
               <!-- Botón de cerrar personalizado y visible -->
-              <button 
+              <button
                 @click="showImageDialog = false"
                 class="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-red-500/80 to-red-600/80 backdrop-blur-sm hover:from-red-600/90 hover:to-red-700/90 text-white rounded-full transition-all border border-red-300/30 shadow-lg transform hover:scale-110"
                 title="Cerrar galería"
@@ -834,46 +834,46 @@ const verMasInfo = (tour) => {
             </div>
           </div>
         </template>
-        
+
         <div class="bg-gradient-to-br from-gray-50 to-white p-0">
           <!-- Imagen principal -->
           <div class="relative h-72 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl overflow-hidden mb-6 flex items-center justify-center shadow-lg border-2 border-gray-200">
-            <img 
-              :src="selectedTourImages[currentImageIndex]" 
+            <img
+              :src="selectedTourImages[currentImageIndex]"
               alt="Tour imagen"
               class="max-w-full max-h-full object-contain rounded-lg"
             />
-            
+
             <!-- Botones de navegación profesionales -->
             <div v-if="selectedTourImages.length > 1" class="absolute inset-0 flex items-center justify-between p-0 md:p-12">
-              <button 
+              <button
                 @click="imagenAnterior"
                 class="bg-gradient-to-r from-black/60 to-gray-800/60 backdrop-blur-sm text-white p-3 rounded-full hover:from-black/80 hover:to-gray-800/80 transition-all z-10 border border-white/20 shadow-lg transform hover:scale-110"
               >
                 <FontAwesomeIcon :icon="faChevronLeft" class="w-6 h-4"/>
               </button>
-              <button 
+              <button
                 @click="siguienteImagen"
                 class="bg-gradient-to-r from-black/60 to-gray-800/60 backdrop-blur-sm text-white p-3 rounded-full hover:from-black/80 hover:to-gray-800/80 transition-all z-10 border border-white/20 shadow-lg transform hover:scale-110"
               >
                 <FontAwesomeIcon :icon="faChevronRight" class="w-6 h-4"/>
               </button>
             </div>
-            
+
             <!-- Contador de imágenes profesional -->
-            <div v-if="selectedTourImages.length > 1" 
+            <div v-if="selectedTourImages.length > 1"
                 class="absolute bottom-4 right-4 bg-gradient-to-r from-black/80 to-gray-800/80 backdrop-blur-sm text-white px-4 py-2 rounded-full text-sm font-medium z-10 border border-white/20 shadow-lg">
               {{ currentImageIndex + 1 }} / {{ selectedTourImages.length }}
             </div>
-            
+
             <!-- Indicador de autoplay profesional -->
-            <div v-if="selectedTourImages.length > 1 && isGalleryAutoPlaying" 
+            <div v-if="selectedTourImages.length > 1 && isGalleryAutoPlaying"
                 class="absolute top-4 right-4 bg-gradient-to-r from-blue-500/90 to-blue-600/90 backdrop-blur-sm text-white px-3 py-2 rounded-full text-xs font-medium z-10 flex items-center gap-2 border border-green-300/30 shadow-lg">
               <div class="w-2 h-2 bg-white rounded-full animate-pulse"></div>
               <span>Auto</span>
             </div>
           </div>
-          
+
           <!-- Miniaturas profesionales -->
           <div v-if="selectedTourImages.length > 1" class="flex gap-3 overflow-x-auto pb-2 px-2">
             <button
@@ -883,8 +883,8 @@ const verMasInfo = (tour) => {
               class="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-3 transition-all bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center shadow-md hover:shadow-lg transform hover:scale-110"
               :class="currentImageIndex === index ? 'border-blue-500 ring-2 ring-blue-300' : 'border-gray-300 hover:border-gray-400'"
             >
-              <img 
-                :src="imagen" 
+              <img
+                :src="imagen"
                 :alt="`Miniatura ${index + 1}`"
                 class="max-w-full max-h-full object-contain rounded"
               />
