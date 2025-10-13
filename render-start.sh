@@ -1,36 +1,47 @@
 #!/bin/bash
-# Render deployment script
 
-echo "📦 Iniciando proceso de despliegue..."
+# Script de inicio para Render
+set -e
 
-# Instalar dependencias de PHP
-echo "🔧 Instalando dependencias de PHP..."
-composer install --no-dev --optimize-autoloader
+echo "🚀 Iniciando aplicación Laravel en Render..."
 
-# Instalar dependencias de Node.js
-echo "🔧 Instalando dependencias de Node.js..."
-npm ci
+# Esperar a que la base de datos esté disponible
+echo "⏳ Esperando conexión a la base de datos..."
+until php artisan db:show --quiet 2>/dev/null; do
+    echo "⏳ Base de datos no disponible, esperando..."
+    sleep 2
+done
 
-# Compilar assets
-echo "🏗️ Compilando assets..."
-npm run build
+echo "✅ Base de datos conectada!"
 
 # Ejecutar migraciones
-echo "🗄️ Ejecutando migraciones..."
+echo "🔄 Ejecutando migraciones..."
 php artisan migrate --force
 
-# Limpiar y optimizar caché
-echo "🧹 Optimizando aplicación..."
-php artisan config:cache
-php artisan route:cache
-php artisan view:cache
+# Ejecutar seeders (datos iniciales)
+echo "🌱 Ejecutando seeders..."
+php artisan db:seed --force
 
 # Configurar sistema de almacenamiento
 echo "📁 Configurando almacenamiento..."
 php setup-storage.php
 
-# Crear enlace simbólico de storage
-echo "🔗 Creando enlace de storage..."
-php artisan storage:link
+# Asegurar que el symlink funcione
+echo "🔗 Creando enlace simbólico de storage..."
+php artisan storage:link || echo "⚠️ Error creando symlink con artisan, usando script personalizado"
 
-echo "🎉 Despliegue completado exitosamente!"
+# Limpiar y cachear configuraciones
+echo "🧹 Optimizando aplicación..."
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# Crear enlace simbólico para storage si no existe
+if [ ! -L public/storage ]; then
+    php artisan storage:link
+fi
+
+echo "✅ Aplicación lista!"
+
+# Iniciar Apache
+exec apache2-foreground
