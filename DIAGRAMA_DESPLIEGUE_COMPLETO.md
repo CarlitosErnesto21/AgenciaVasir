@@ -5,59 +5,59 @@
 ```mermaid
 graph TB
     %% CAPA DE USUARIO
-    subgraph "👥 USUARIOS"
-        USER1[📱 Cliente Móvil]
-        USER2[💻 Cliente Desktop]
-        USER3[👨‍💼 Administrador]
+    subgraph "👥 USUARIOS / USERS"
+        USER1[📱 Cliente Móvil<br/>Mobile Client]
+        USER2[💻 Cliente Escritorio<br/>Desktop Client]
+        USER3[👨‍💼 Administrador<br/>Administrator]
     end
 
     %% CAPA DE RED/INTERNET
-    subgraph "🌐 INTERNET"
-        CDN[🚀 Render CDN]
-        SSL[🔒 SSL Certificate]
-        DNS[🌍 DNS Resolution]
+    subgraph "🌐 INTERNET / RED"
+        CDN[🚀 CDN de Render<br/>Render CDN]
+        SSL[🔒 Certificado SSL<br/>SSL Certificate]
+        DNS[🌍 Resolución DNS<br/>DNS Resolution]
     end
 
     %% CAPA DE APLICACIÓN (RENDER)
-    subgraph "☁️ RENDER CLOUD PLATFORM"
-        subgraph "🐳 Docker Container - Web Server"
-            APACHE[🌐 Apache 2.4]
-            PHP[🐘 PHP 8.2-FPM]
-            LARAVEL[⚡ Laravel 12 App]
+    subgraph "☁️ PLATAFORMA RENDER CLOUD"
+        subgraph "🐳 Contenedor Docker - Servidor Web"
+            APACHE[🌐 Apache 2.4<br/>Servidor HTTP]
+            PHP[🐘 PHP 8.2-FPM<br/>Motor PHP]
+            LARAVEL[⚡ Aplicación Laravel 12<br/>Laravel App]
         end
         
-        subgraph "📁 File System"
-            STORAGE[💾 Persistent Storage]
-            SYMLINK[🔗 Storage Symlinks]
-            LOGS[📋 Application Logs]
+        subgraph "📁 Sistema de Archivos"
+            STORAGE[💾 Almacenamiento Persistente<br/>Persistent Storage]
+            SYMLINK[🔗 Enlaces Simbólicos<br/>Storage Symlinks]
+            LOGS[📋 Registros de Aplicación<br/>Application Logs]
         end
         
-        subgraph "🔧 System Services"
-            CRON[⏰ Laravel Scheduler]
-            QUEUE[📬 Queue Worker]
-            CACHE[🗄️ File Cache]
+        subgraph "🔧 Servicios del Sistema"
+            CRON[⏰ Programador Laravel<br/>Laravel Scheduler]
+            QUEUE[📬 Procesador de Colas<br/>Queue Worker]
+            CACHE[🗄️ Caché de Archivos<br/>File Cache]
         end
     end
 
     %% CAPA DE BASE DE DATOS (RAILWAY)
-    subgraph "🚄 RAILWAY CLOUD"
-        subgraph "🗄️ Database Cluster"
-            MYSQL[💾 MySQL 8.0 Primary]
-            BACKUP[💿 Automated Backups]
-            REPLICA[🔄 Read Replica]
+    subgraph "🚄 NUBE RAILWAY CLOUD"
+        subgraph "🗄️ Clúster de Base de Datos"
+            MYSQL[💾 MySQL 8.0 Principal<br/>MySQL Primary]
+            BACKUP[💿 Respaldos Automáticos<br/>Automated Backups]
+            REPLICA[🔄 Réplica de Lectura<br/>Read Replica]
         end
         
-        subgraph "🔒 Security"
-            FIREWALL[🛡️ Database Firewall]
-            ENCRYPT[🔐 Data Encryption]
+        subgraph "🔒 Seguridad / Security"
+            FIREWALL[🛡️ Firewall de BD<br/>Database Firewall]
+            ENCRYPT[🔐 Cifrado de Datos<br/>Data Encryption]
         end
     end
 
     %% CAPA DE MONITOREO
-    subgraph "📊 MONITORING & ANALYTICS"
-        RENDER_LOGS[📈 Render Metrics]
-        RAILWAY_METRICS[📊 Railway Analytics]
-        UPTIME[⏱️ Uptime Monitoring]
+    subgraph "📊 MONITOREO Y ANALÍTICAS"
+        RENDER_LOGS[📈 Métricas de Render<br/>Render Metrics]
+        RAILWAY_METRICS[📊 Analíticas Railway<br/>Railway Analytics]
+        UPTIME[⏱️ Monitoreo de Tiempo<br/>Uptime Monitoring]
     end
 
     %% CONEXIONES CON PROTOCOLOS Y PUERTOS
@@ -104,19 +104,19 @@ graph TB
 
 ## 🏢 ESPECIFICACIONES TÉCNICAS DE DESPLIEGUE
 
-### **☁️ TIER 1: FRONTEND & WEB SERVER (RENDER)**
+### **☁️ NIVEL 1: FRONTEND Y SERVIDOR WEB (RENDER)**
 
 | Componente | Especificación | Puerto | Protocolo |
 |------------|----------------|--------|-----------|
-| **Apache HTTP Server** | 2.4.x | 80, 443 | HTTP/HTTPS |
+| **Servidor Apache HTTP** | 2.4.x | 80, 443 | HTTP/HTTPS |
 | **PHP-FPM** | 8.2 | 9000 | FastCGI |
-| **Laravel Application** | 12.x | Internal | PHP |
-| **Static Assets** | Vite Bundle | 80 | HTTP |
-| **Storage Symlinks** | /storage → /app/public | File System | - |
+| **Aplicación Laravel** | 12.x | Interno | PHP |
+| **Recursos Estáticos** | Bundle Vite | 80 | HTTP |
+| **Enlaces de Almacenamiento** | /storage → /app/public | Sistema de Archivos | - |
 
 **Configuración del Servidor:**
 ```apache
-# Apache Virtual Host Configuration
+# Configuración de Virtual Host de Apache
 <VirtualHost *:80>
     ServerName vasir-agency-app.onrender.com
     DocumentRoot /var/www/html/public
@@ -126,7 +126,7 @@ graph TB
         Require all granted
     </Directory>
     
-    # Redirect HTTP to HTTPS
+    # Redireccionar HTTP a HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule ^(.*)$ https://%{HOST}%1 [R=301,L]
@@ -136,10 +136,10 @@ graph TB
     ServerName vasir-agency-app.onrender.com
     DocumentRoot /var/www/html/public
     
-    # SSL Configuration (Managed by Render)
+    # Configuración SSL (Administrado por Render)
     SSLEngine on
     
-    # Laravel URL Rewriting
+    # Reescritura de URLs de Laravel
     <Directory /var/www/html/public>
         RewriteEngine On
         RewriteCond %{REQUEST_FILENAME} !-f
@@ -149,111 +149,111 @@ graph TB
 </VirtualHost>
 ```
 
-### **🗄️ TIER 2: DATABASE LAYER (RAILWAY)**
+### **🗄️ NIVEL 2: CAPA DE BASE DE DATOS (RAILWAY)**
 
 | Componente | Especificación | Puerto | Protocolo |
 |------------|----------------|--------|-----------|
-| **MySQL Primary** | 8.0.x | 3306 | TCP/MySQL |
-| **Connection Pool** | Max 100 conexiones | 3306 | TCP |
-| **SSL Encryption** | TLS 1.2+ | 3306 | Encrypted TCP |
-| **Backup System** | Automated Daily | - | - |
+| **MySQL Principal** | 8.0.x | 3306 | TCP/MySQL |
+| **Pool de Conexiones** | Máx 100 conexiones | 3306 | TCP |
+| **Cifrado SSL** | TLS 1.2+ | 3306 | TCP Cifrado |
+| **Sistema de Respaldos** | Diario Automático | - | - |
 
 **Configuración de Conexión:**
 ```env
-# Database Connection Settings
+# Configuración de Conexión a Base de Datos
 DB_CONNECTION=mysql
 DB_HOST=roundhouse.proxy.rlwy.net
 DB_PORT=3306
 DB_DATABASE=railway
 DB_USERNAME=root
-DB_PASSWORD=[ENCRYPTED]
+DB_PASSWORD=[CIFRADO]
 
-# Connection Pool Settings
+# Configuración del Pool de Conexiones
 DB_POOL_MIN=5
 DB_POOL_MAX=20
 DB_TIMEOUT=30
 ```
 
-### **📁 TIER 3: STORAGE LAYER (RENDER PERSISTENT DISK)**
+### **📁 NIVEL 3: CAPA DE ALMACENAMIENTO (DISCO PERSISTENTE RENDER)**
 
-| Directorio | Propósito | Permisos | Backup |
-|------------|-----------|----------|---------|
-| `/storage/app/public/tours/` | Imágenes de tours | 775 | Included |
-| `/storage/app/public/productos/` | Imágenes de productos | 775 | Included |
-| `/storage/app/public/hoteles/` | Imágenes de hoteles | 775 | Included |
-| `/storage/app/public/aerolinea/` | Imágenes de aerolíneas | 775 | Included |
-| `/storage/logs/` | Application logs | 755 | Excluded |
-| `/storage/framework/cache/` | Application cache | 755 | Excluded |
+| Directorio | Propósito | Permisos | Respaldo |
+|------------|-----------|----------|----------|
+| `/storage/app/public/tours/` | Imágenes de tours | 775 | Incluido |
+| `/storage/app/public/productos/` | Imágenes de productos | 775 | Incluido |
+| `/storage/app/public/hoteles/` | Imágenes de hoteles | 775 | Incluido |
+| `/storage/app/public/aerolinea/` | Imágenes de aerolíneas | 775 | Incluido |
+| `/storage/logs/` | Registros de aplicación | 755 | Excluido |
+| `/storage/framework/cache/` | Caché de aplicación | 755 | Excluido |
 
 ---
 
 ## 🔄 FLUJO DE DESPLIEGUE DETALLADO
 
-### **PROCESO DE DEPLOYMENT AUTOMÁTICO**
+### **PROCESO DE DESPLIEGUE AUTOMÁTICO / AUTOMATIC DEPLOYMENT**
 
 ```mermaid
 sequenceDiagram
-    participant DEV as 👨‍💻 Developer
-    participant GIT as 📚 GitHub
-    participant RENDER as ☁️ Render
-    participant RAILWAY as 🚄 Railway
-    participant USERS as 👥 Users
+    participant DEV as 👨‍💻 Desarrollador<br/>Developer
+    participant GIT as 📚 GitHub<br/>Repositorio
+    participant RENDER as ☁️ Render<br/>Servidor
+    participant RAILWAY as 🚄 Railway<br/>Base de Datos
+    participant USERS as 👥 Usuarios<br/>Users
 
     Note over DEV,USERS: 🚀 Proceso de Despliegue Automático
 
-    DEV->>GIT: 1. git push origin main
-    GIT->>RENDER: 2. Webhook trigger
+    DEV->>GIT: 1. git push origin main<br/>(Subir código)
+    GIT->>RENDER: 2. Webhook trigger<br/>(Activar despliegue)
     
-    Note over RENDER: 🐳 Build Process
-    RENDER->>RENDER: 3. Docker build
-    RENDER->>RENDER: 4. composer install
-    RENDER->>RENDER: 5. npm run build
+    Note over RENDER: 🐳 Proceso de Construcción
+    RENDER->>RENDER: 3. Docker build<br/>(Crear contenedor)
+    RENDER->>RENDER: 4. composer install<br/>(Instalar dependencias PHP)
+    RENDER->>RENDER: 5. npm run build<br/>(Compilar assets)
     
-    Note over RENDER: ⚙️ Deployment Process
-    RENDER->>RAILWAY: 6. Test DB connection
-    RAILWAY-->>RENDER: 7. Connection OK
+    Note over RENDER: ⚙️ Proceso de Despliegue
+    RENDER->>RAILWAY: 6. Test DB connection<br/>(Probar conexión BD)
+    RAILWAY-->>RENDER: 7. Connection OK<br/>(Conexión exitosa)
     
-    RENDER->>RENDER: 8. php artisan migrate
-    RENDER->>RENDER: 9. php artisan config:cache
-    RENDER->>RENDER: 10. setup-storage.php
+    RENDER->>RENDER: 8. php artisan migrate<br/>(Ejecutar migraciones)
+    RENDER->>RENDER: 9. php artisan config:cache<br/>(Cachear configuración)
+    RENDER->>RENDER: 10. setup-storage.php<br/>(Configurar almacenamiento)
     
-    Note over RENDER: 🌐 Go Live
-    RENDER->>RENDER: 11. Apache restart
-    RENDER->>USERS: 12. Service available
+    Note over RENDER: 🌐 Puesta en Marcha
+    RENDER->>RENDER: 11. Apache restart<br/>(Reiniciar servidor)
+    RENDER->>USERS: 12. Service available<br/>(Servicio disponible)
     
-    Note over USERS: ✅ Zero Downtime Deployment
+    Note over USERS: ✅ Despliegue Sin Tiempo de Inactividad
 ```
 
 ### **CONFIGURACIÓN DE VARIABLES DE ENTORNO**
 
 ```bash
-# Production Environment Variables
+# Variables de Entorno de Producción
 APP_NAME=VASIR
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://vasir-agency-app.onrender.com
 
-# Database Configuration
+# Configuración de Base de Datos
 DB_CONNECTION=mysql
 DB_HOST=roundhouse.proxy.rlwy.net
 DB_PORT=3306
 DB_DATABASE=railway
 DB_USERNAME=root
-DB_PASSWORD=[RAILWAY_GENERATED]
+DB_PASSWORD=[GENERADO_POR_RAILWAY]
 
-# Cache & Session Configuration
+# Configuración de Caché y Sesiones
 CACHE_DRIVER=file
 SESSION_DRIVER=database
 QUEUE_CONNECTION=database
 
-# Storage Configuration
+# Configuración de Almacenamiento
 FILESYSTEM_DISK=public
 
-# Security
-APP_KEY=[LARAVEL_GENERATED]
+# Seguridad
+APP_KEY=[GENERADO_POR_LARAVEL]
 BCRYPT_ROUNDS=12
 
-# Mail Configuration (Future)
+# Configuración de Correo (Futuro)
 MAIL_MAILER=smtp
 MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
@@ -266,43 +266,43 @@ MAIL_PORT=587
 ### **MEDIDAS DE SEGURIDAD IMPLEMENTADAS**
 
 ```yaml
-Network Security:
+Seguridad de Red:
   - HTTPS obligatorio (SSL/TLS 1.2+)
-  - Headers de seguridad (HSTS, CSP)
-  - Rate limiting en API endpoints
+  - Cabeceras de seguridad (HSTS, CSP)
+  - Limitación de velocidad en endpoints API
   
-Database Security:
-  - Conexiones encriptadas (SSL)
+Seguridad de Base de Datos:
+  - Conexiones cifradas (SSL)
   - Firewall de Railway activo
   - Credenciales en variables de entorno
   
-Application Security:
-  - Laravel CSRF protection
-  - Sanctum authentication
-  - Input validation & sanitization
-  - Spatie permissions system
+Seguridad de Aplicación:
+  - Protección CSRF de Laravel
+  - Autenticación Sanctum
+  - Validación y sanitización de entradas
+  - Sistema de permisos Spatie
 ```
 
 ### **MONITOREO Y ALERTAS**
 
 ```yaml
-Render Monitoring:
-  - CPU usage alerts (>80%)
-  - Memory usage alerts (>80%)
-  - Response time monitoring
-  - Error rate tracking
+Monitoreo de Render:
+  - Alertas de uso de CPU (>80%)
+  - Alertas de uso de memoria (>80%)
+  - Monitoreo de tiempo de respuesta
+  - Seguimiento de tasa de errores
 
-Railway Monitoring:
-  - Database connection monitoring
-  - Query performance analysis
-  - Storage usage tracking
-  - Backup verification
+Monitoreo de Railway:
+  - Monitoreo de conexiones de BD
+  - Análisis de rendimiento de consultas
+  - Seguimiento de uso de almacenamiento
+  - Verificación de respaldos
 
-Application Monitoring:
-  - Laravel error logging
-  - Performance metrics
-  - User activity tracking
-  - System health checks
+Monitoreo de Aplicación:
+  - Registro de errores de Laravel
+  - Métricas de rendimiento
+  - Seguimiento de actividad de usuarios
+  - Verificaciones de salud del sistema
 ```
 
 ---
@@ -323,24 +323,24 @@ Application Monitoring:
 
 ```mermaid
 graph LR
-    subgraph "🏃‍♂️ Current (Starter)"
+    subgraph "🏃‍♂️ Actual (Inicial)"
         C1[512MB RAM]
         C2[1 vCPU]
-        C3[1GB Storage]
+        C3[1GB Almacenamiento]
     end
     
-    subgraph "🚀 Growth (Pro)"
+    subgraph "🚀 Crecimiento (Pro)"
         G1[2GB RAM]
         G2[2 vCPU]
-        G3[10GB Storage]
+        G3[10GB Almacenamiento]
     end
     
-    subgraph "🏢 Scale (Enterprise)"
+    subgraph "🏢 Escala (Empresarial)"
         E1[8GB RAM]
         E2[4 vCPU]
-        E3[100GB Storage]
-        E4[Load Balancer]
-        E5[Multiple Instances]
+        E3[100GB Almacenamiento]
+        E4[Balanceador de Carga]
+        E5[Múltiples Instancias]
     end
     
     C1 --> G1
@@ -355,44 +355,44 @@ graph LR
 ### **Docker Container Specifications**
 
 ```dockerfile
-# Production Container Details
+# Detalles del Contenedor de Producción
 FROM php:8.2-apache
 
-# System Resources
+# Recursos del Sistema
 ENV APACHE_MEMORY_LIMIT=256M
 ENV PHP_MEMORY_LIMIT=512M
 ENV PHP_MAX_EXECUTION_TIME=300
 ENV PHP_UPLOAD_MAX_FILESIZE=10M
 
-# Apache Configuration
+# Configuración de Apache
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 ENV APACHE_SERVER_NAME=vasir-agency-app.onrender.com
 
-# Laravel Optimizations
+# Optimizaciones de Laravel
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 ENV LOG_LEVEL=error
 ```
 
-### **Performance Optimizations**
+### **Optimizaciones de Rendimiento**
 
 ```php
-// config/app.php - Production optimizations
+// config/app.php - Optimizaciones de producción
 'providers' => [
-    // Only essential service providers in production
+    // Solo proveedores de servicios esenciales en producción
     App\Providers\AppServiceProvider::class,
     App\Providers\RouteServiceProvider::class,
-    // Removed: unnecessary debug providers
+    // Removidos: proveedores de debug innecesarios
 ],
 
 // config/cache.php
-'default' => 'file', // Fast file-based caching
+'default' => 'file', // Caché rápido basado en archivos
 
 // config/session.php  
-'driver' => 'database', // Persistent sessions
+'driver' => 'database', // Sesiones persistentes
 
 // config/queue.php
-'default' => 'database', // Simple queue processing
+'default' => 'database', // Procesamiento simple de colas
 ```
 
 ---
