@@ -47,7 +47,7 @@ const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
 const horaRegresoCalendar = ref(null);
 const url = "/api/tours";
-const IMAGE_PATH = "/storage/";
+const IMAGE_PATH = "/storage/tours/";
 const tipoTransportes = ref([]);
 const categoriasOptions = ref([
     { label: 'Nacional', value: 'NACIONAL' },

@@ -21,7 +21,7 @@ class RoleController extends Controller
         // Solo traer usuarios que sean empleados o administradores (no clientes)
         $users = User::with('roles')
             ->whereHas('roles', function($query) {
-                $query->whereIn('name', ['admin', 'empleado']);
+                $query->whereIn('name', ['Administrador', 'Empleado']);
             })
             ->get()
             ->map(function ($user) {
@@ -70,7 +70,7 @@ class RoleController extends Controller
         try {
             // Sincronizar roles (esto elimina los roles anteriores y asigna los nuevos)
             $user->syncRoles($request->roles);
-            
+
             // Actualizar el timestamp updated_at
             $user->touch();
 
@@ -173,7 +173,7 @@ class RoleController extends Controller
     {
         try {
             $directPermissions = $user->getDirectPermissions()->pluck('name')->toArray();
-            
+
             return response()->json([
                 'success' => true,
                 'permissions' => $directPermissions,
@@ -199,14 +199,14 @@ class RoleController extends Controller
         try {
             // Get current direct permissions
             $currentPermissions = $user->getDirectPermissions()->pluck('name')->toArray();
-            
+
             // Add the new permission if not already present
             if (!in_array($request->permission, $currentPermissions)) {
                 $currentPermissions[] = $request->permission;
-                
+
                 // Use syncPermissions to ensure consistency
                 $user->syncPermissions($currentPermissions);
-                
+
                 // Actualizar el timestamp updated_at
                 $user->touch();
             }
@@ -246,15 +246,15 @@ class RoleController extends Controller
         try {
             // Get current direct permissions
             $currentPermissions = $user->getDirectPermissions()->pluck('name')->toArray();
-            
+
             // Remove the permission if present
             $currentPermissions = array_filter($currentPermissions, function($permission) use ($request) {
                 return $permission !== $request->permission;
             });
-            
+
             // Use syncPermissions to ensure consistency
             $user->syncPermissions(array_values($currentPermissions));
-            
+
             // Actualizar el timestamp updated_at
             $user->touch();
 
@@ -294,7 +294,7 @@ class RoleController extends Controller
         try {
             // Sync all permissions at once
             $user->syncPermissions($request->permissions);
-            
+
             // Update the timestamp
             $user->touch();
 
@@ -330,7 +330,7 @@ class RoleController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'role' => 'required|in:admin,empleado',
+            'role' => 'required|in:Administrador,Empleado',
             'cargo' => 'required|string|max:25',
             'telefono' => 'required|string|size:8',
             'permissions' => 'array',
@@ -376,7 +376,7 @@ class RoleController extends Controller
                     'created_at' => $user->created_at->format('d/m/Y'),
                     'updated_at' => $user->updated_at->format('d/m/Y'),
                 ],
-                'empleado' => [
+                'Empleado' => [
                     'id' => $empleado->id,
                     'cargo' => $empleado->cargo,
                     'telefono' => $empleado->telefono,
@@ -399,7 +399,7 @@ class RoleController extends Controller
     {
         try {
             $empleado = Empleado::where('user_id', $user->id)->first();
-            
+
             return response()->json([
                 'success' => true,
                 'employee' => $empleado ? [

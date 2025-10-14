@@ -34,11 +34,13 @@ class AerolineaController extends Controller
         // Crear una nueva aerolínea
         $aerolinea = Aerolinea::create($validated);
 
-        // Guardar imágenes
+        // Guardar imágenes usando Storage persistente
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('aerolinea', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('aerolinea', 'public');
+                    $nombreArchivo = basename($path);
                     $aerolinea->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -72,7 +74,9 @@ class AerolineaController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('aerolinea', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('aerolinea', 'public');
+                    $nombreArchivo = basename($path);
                     $aerolinea->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -85,7 +89,8 @@ class AerolineaController extends Controller
             foreach ($request->input('removed_images') as $imageName) {
                 $imagen = $aerolinea->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
-                    Storage::disk('public')->delete($imagen->nombre);
+                    // Eliminar usando Storage Laravel
+                    Storage::disk('public')->delete('aerolinea/' . $imagen->nombre);
                     $imagen->forceDelete();
                 }
             }
@@ -114,7 +119,8 @@ class AerolineaController extends Controller
         $aerolinea = Aerolinea::with('imagenes')->findOrFail($id);
 
         foreach ($aerolinea->imagenes as $imagen) {
-            Storage::disk('public')->delete($imagen->nombre);
+            // Eliminar usando Storage Laravel
+            Storage::disk('public')->delete('aerolinea/' . $imagen->nombre);
             $imagen->forceDelete();
         }
 

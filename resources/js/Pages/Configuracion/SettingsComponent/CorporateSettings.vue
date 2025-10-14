@@ -19,20 +19,20 @@
                         <span class="text-base sm:text-lg mr-2">📝</span>
                         Información Básica
                     </h3>
-                    
+
                     <!-- Descripción de la Empresa - Ancho completo -->
                     <div class="mb-4">
                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
                             Descripción de la Empresa
                         </label>
-                        <textarea 
+                        <textarea
                             v-model="currentFormData.description"
                             rows="4"
                             class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
                             placeholder="Describe brevemente qué es VASIR, su propósito y lo que ofrece a los clientes..."
                         ></textarea>
                     </div>
-                    
+
                     <!-- Misión y Visión - Grid 2 columnas -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         <!-- Misión -->
@@ -41,21 +41,21 @@
                                 <span class="text-sm mr-1">🎯</span>
                                 Misión Corporativa
                             </label>
-                            <textarea 
+                            <textarea
                                 v-model="currentFormData.mission"
                                 rows="4"
                                 class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
                                 placeholder="Nuestra misión es..."
                             ></textarea>
                         </div>
-                        
+
                         <!-- Visión -->
                         <div>
                             <label class="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-2">
                                 <span class="text-sm mr-1">🌟</span>
                                 Visión Corporativa
                             </label>
-                            <textarea 
+                            <textarea
                                 v-model="currentFormData.vision"
                                 rows="4"
                                 class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
@@ -72,7 +72,7 @@
                             <span class="text-base sm:text-lg mr-2">💎</span>
                             Valores Corporativos
                         </h3>
-                        <button 
+                        <button
                             @click="showAddValueForm = !showAddValueForm"
                             type="button"
                             class="px-3 py-1.5 text-xs sm:text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center"
@@ -87,16 +87,16 @@
                     <div v-if="showAddValueForm" class="bg-white rounded-lg p-3 mb-3 border border-purple-300">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <input 
+                                <input
                                     v-model="newValue.titulo"
-                                    type="text" 
+                                    type="text"
                                     maxlength="100"
                                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     placeholder="Título del valor (ej: Integridad)"
                                 />
                             </div>
                             <div>
-                                <textarea 
+                                <textarea
                                     v-model="newValue.descripcion"
                                     rows="1"
                                     maxlength="500"
@@ -106,7 +106,7 @@
                             </div>
                         </div>
                         <div class="flex gap-2 mt-3">
-                            <button 
+                            <button
                                 @click="addValue"
                                 :disabled="!newValue.titulo || !newValue.descripcion"
                                 type="button"
@@ -114,7 +114,7 @@
                             >
                                 Agregar
                             </button>
-                            <button 
+                            <button
                                 @click="cancelAddValue"
                                 type="button"
                                 class="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -126,8 +126,8 @@
 
                     <!-- Lista compacta de valores existentes -->
                     <div class="max-h-48 overflow-y-auto">
-                        <div 
-                            v-for="(value, index) in currentCompanyValues.filter(v => !v.isDeleted)" 
+                        <div
+                            v-for="(value, index) in currentCompanyValues.filter(v => !v.isDeleted)"
                             :key="value.id"
                             :class="[
                                 `value-container-${value.id}`,
@@ -149,7 +149,7 @@
                                     <p class="text-xs text-gray-600 mt-1 line-clamp-2">{{ value.descripcion }}</p>
                                 </div>
                                 <div class="flex gap-1 flex-shrink-0">
-                                    <button 
+                                    <button
                                         @click="startEditValue(value)"
                                         type="button"
                                         class="px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 flex items-center hover:shadow"
@@ -158,7 +158,7 @@
                                         <FontAwesomeIcon :icon="faPencil" class="mr-1" />
                                         Editar
                                     </button>
-                                    <button 
+                                    <button
                                         @click="deleteValue(value.id)"
                                         type="button"
                                         class="px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 flex items-center hover:shadow"
@@ -172,14 +172,14 @@
 
                             <!-- Modo edición compacto -->
                             <div v-else class="space-y-2">
-                                <input 
+                                <input
                                     v-model="editingValue.titulo"
-                                    type="text" 
+                                    type="text"
                                     maxlength="100"
                                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                     placeholder="Título"
                                 />
-                                <textarea 
+                                <textarea
                                     v-model="editingValue.descripcion"
                                     rows="2"
                                     maxlength="500"
@@ -187,7 +187,7 @@
                                     placeholder="Descripción"
                                 ></textarea>
                                 <div class="flex gap-2" :class="`edit-buttons-${value.id}`">
-                                    <button 
+                                    <button
                                         @click="saveEditValue"
                                         :disabled="!editingValue.titulo || !editingValue.descripcion"
                                         type="button"
@@ -195,7 +195,7 @@
                                     >
                                         Guardar
                                     </button>
-                                    <button 
+                                    <button
                                         @click="cancelEditValue"
                                         type="button"
                                         class="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
@@ -205,7 +205,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Mensaje cuando no hay valores -->
                         <div v-if="currentCompanyValues.filter(v => !v.isDeleted).length === 0" class="text-center py-6">
                             <span class="text-3xl mb-2 block">💎</span>
@@ -218,7 +218,7 @@
 
             <!-- Botones de Acción -->
             <div class="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4 pt-3 border-t border-gray-200">
-                <button 
+                <button
                     @click="handleReset"
                     :disabled="!canReset || isSaving"
                     type="button"
@@ -226,16 +226,16 @@
                 >
                     Restablecer
                 </button>
-                <button 
+                <button
                     @click="handleSave"
                     :disabled="!canSave || isSaving"
                     type="button"
                     class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
                 >
-                    <FontAwesomeIcon 
-                        v-if="isSaving" 
-                        :icon="faSpinner" 
-                        class="animate-spin mr-2" 
+                    <FontAwesomeIcon
+                        v-if="isSaving"
+                        :icon="faSpinner"
+                        class="animate-spin mr-2"
                     />
                     {{ isSaving ? 'Guardando...' : 'Guardar Configuración' }}
                 </button>
@@ -265,7 +265,7 @@
             @continue-editing="cancelDelete"
             @exit-without-saving="confirmDelete"
         />
-        
+
         <!-- Toast para notificaciones -->
         <Toast />
     </div>
@@ -309,14 +309,14 @@ const isInitialized = ref(false)
 // Inicializar datos
 const initializeData = (data) => {
     if (!data) return
-    
+
     const formattedData = {
         description: data.description || '',
         mission: data.mission || '',
         vision: data.vision || '',
         ...data
     }
-    
+
     originalFormData.value = JSON.parse(JSON.stringify(formattedData))
     currentFormData.value = JSON.parse(JSON.stringify(formattedData))
     hasUnsavedChanges.value = false
@@ -372,16 +372,16 @@ const detectValuesChanges = () => {
 const customCheckForChanges = () => {
     // Detectar cambios en campos básicos comparando con los datos originales
     const basicChanges = JSON.stringify(currentFormData.value) !== JSON.stringify(originalFormData.value)
-    
+
     // Detectar cambios en valores corporativos
     const valuesChanges = detectValuesChanges()
-    
+
     // Detectar si hay un formulario de agregar valor abierto con datos
     const pendingNewValue = showAddValueForm.value && (newValue.titulo || newValue.descripcion)
-    
+
     // Detectar si hay una edición en curso
     const pendingEdit = editingValueId.value !== null
-    
+
     hasUnsavedChanges.value = basicChanges || valuesChanges || pendingNewValue || pendingEdit
 }
 
@@ -421,14 +421,14 @@ const handleSave = async () => {
         // Marcar que estamos guardando para evitar que aparezca el modal
         const originalHasUnsavedChanges = hasUnsavedChanges.value
         hasUnsavedChanges.value = false
-        
+
         // Preparar todos los datos para enviar
         const dataToSave = {
             // Campos básicos
             description: currentFormData.value.description,
             mission: currentFormData.value.mission,
             vision: currentFormData.value.vision,
-            
+
             // Valores corporativos con sus operaciones
             companyValues: {
                 // Valores nuevos a crear
@@ -436,31 +436,29 @@ const handleSave = async () => {
                     titulo: v.titulo,
                     descripcion: v.descripcion
                 })),
-                
+
                 // Valores existentes a actualizar
                 updated: currentCompanyValues.value.filter(v => v.isModified && !v.isDeleted && !v.isNew).map(v => ({
                     id: v.id,
                     titulo: v.titulo,
                     descripcion: v.descripcion
                 })),
-                
+
                 // IDs de valores a eliminar
-                deleted: originalCompanyValues.value.filter(original => 
-                    currentCompanyValues.value.find(current => 
+                deleted: originalCompanyValues.value.filter(original =>
+                    currentCompanyValues.value.find(current =>
                         current.id === original.id && current.isDeleted
                     )
                 ).map(v => v.id)
             }
         }
-        
+
         // Enviar todos los datos en una sola petición
         router.post(route('settings.update'), dataToSave, {
             onSuccess: () => {
-                console.log('💾 Datos guardados exitosamente, actualizando estado local...');
-                
                 // Actualizar datos originales con los datos guardados (tanto campos básicos como valores)
                 originalFormData.value = JSON.parse(JSON.stringify(currentFormData.value))
-                
+
                 // Limpiar marcas de modificación en valores PRIMERO
                 const cleanedValues = currentCompanyValues.value
                     .filter(v => !v.isDeleted)
@@ -470,18 +468,17 @@ const handleSave = async () => {
                         descripcion: v.descripcion
                         // Remover isNew, isModified, isDeleted
                     }))
-                
+
                 // Actualizar AMBOS arrays con la misma estructura limpia
                 currentCompanyValues.value = cleanedValues
                 originalCompanyValues.value = JSON.parse(JSON.stringify(cleanedValues))
-                
+
                 cancelAddValue()
                 cancelEditValue()
-                
-                console.log('📤 Emitiendo evento settings-updated al componente padre...');
+
                 // Emitir evento para que el padre recargue los datos
                 emit('settings-updated')
-                
+
                 // Forzar re-verificación de cambios después de actualizar datos
                 nextTick(() => {
                     customCheckForChanges()
@@ -491,7 +488,7 @@ const handleSave = async () => {
                 // Si hay error, restaurar el estado original
                 hasUnsavedChanges.value = originalHasUnsavedChanges
                 console.error('Error al guardar configuración corporativa:', errors)
-                
+
                 // Función para traducir mensajes de error comunes
                 const translateError = (error) => {
                     const translations = {
@@ -502,27 +499,27 @@ const handleSave = async () => {
                         'required': 'es obligatorio',
                         'field is required': 'es obligatorio'
                     }
-                    
+
                     // Buscar traducción exacta primero
                     if (translations[error]) {
                         return translations[error]
                     }
-                    
+
                     // Buscar patrones comunes
                     if (error.includes('field is required')) {
                         return error.replace('field is required', 'es obligatorio').replace('The ', 'El campo ')
                     }
-                    
+
                     return error // Si no hay traducción, devolver el original
                 }
-                
+
                 // Mostrar notificación de error con detalles específicos
                 let errorMessage = 'Error al guardar la configuración corporativa.'
-                
+
                 if (errors && typeof errors === 'object') {
                     // Construir mensaje de error específico
                     const errorList = []
-                    
+
                     if (errors.mission) {
                         const originalError = Array.isArray(errors.mission) ? errors.mission[0] : errors.mission
                         errorList.push('• Misión: ' + translateError(originalError))
@@ -535,14 +532,14 @@ const handleSave = async () => {
                         const originalError = Array.isArray(errors.description) ? errors.description[0] : errors.description
                         errorList.push('• Descripción: ' + translateError(originalError))
                     }
-                    
+
                     // Agregar errores de valores corporativos
                     Object.keys(errors).forEach(key => {
                         if (key.startsWith('company_values.')) {
                             const valueIndex = key.split('.')[1]
                             const field = key.split('.')[2]
                             const originalError = Array.isArray(errors[key]) ? errors[key][0] : errors[key]
-                            
+
                             if (field === 'title') {
                                 errorList.push(`• Valor corporativo ${parseInt(valueIndex) + 1} - Título: ${translateError(originalError)}`)
                             } else if (field === 'description') {
@@ -550,12 +547,12 @@ const handleSave = async () => {
                             }
                         }
                     })
-                    
+
                     if (errorList.length > 0) {
                         errorMessage = 'Por favor corrija los siguientes errores:\n\n' + errorList.join('\n')
                     }
                 }
-                
+
                 toast.add({
                     severity: 'error',
                     summary: 'Error de Validación',
@@ -564,10 +561,10 @@ const handleSave = async () => {
                 })
             }
         })
-        
+
     } catch (error) {
         console.error('Error al guardar configuración corporativa:', error)
-        
+
         toast.add({
             severity: 'error',
             summary: 'Error Interno',
@@ -612,7 +609,7 @@ const cancelReset = () => {
 // Agregar nuevo valor (solo local, no va a BD hasta hacer "Guardar")
 const addValue = () => {
     if (!newValue.titulo || !newValue.descripcion) return
-    
+
     // Agregar al estado local con ID temporal
     const newValueItem = {
         id: `temp_${Date.now()}`, // ID temporal para identificarlo
@@ -620,14 +617,14 @@ const addValue = () => {
         descripcion: newValue.descripcion,
         isNew: true // Marca para saber que es nuevo
     }
-    
+
     currentCompanyValues.value.push(newValueItem)
-    
+
     // Resetear formulario
     newValue.titulo = ''
     newValue.descripcion = ''
     showAddValueForm.value = false
-    
+
     // Detectar cambios
     customCheckForChanges()
 }
@@ -644,14 +641,14 @@ const startEditValue = (value) => {
     editingValueId.value = value.id
     editingValue.titulo = value.titulo
     editingValue.descripcion = value.descripcion
-    
+
     // Hacer scroll automático al contenedor completo del valor que se está editando
     nextTick(() => {
         setTimeout(() => {
             const valueContainer = document.querySelector(`.value-container-${value.id}`)
             if (valueContainer) {
-                valueContainer.scrollIntoView({ 
-                    behavior: 'smooth', 
+                valueContainer.scrollIntoView({
+                    behavior: 'smooth',
                     block: 'start',
                     inline: 'nearest'
                 })
@@ -663,7 +660,7 @@ const startEditValue = (value) => {
 // Guardar edición de valor (solo local, no va a BD hasta hacer "Guardar")
 const saveEditValue = () => {
     if (!editingValue.titulo || !editingValue.descripcion) return
-    
+
     // Actualizar el estado local
     const index = currentCompanyValues.value.findIndex(v => v.id === editingValueId.value)
     if (index !== -1) {
@@ -674,11 +671,11 @@ const saveEditValue = () => {
             currentCompanyValues.value[index].isModified = true
         }
     }
-    
+
     editingValueId.value = null
     editingValue.titulo = ''
     editingValue.descripcion = ''
-    
+
     // Detectar cambios
     customCheckForChanges()
 }
@@ -699,11 +696,11 @@ const deleteValue = (id) => {
 // Confirmar eliminación
 const confirmDelete = () => {
     if (!valueToDelete.value) return
-    
+
     const valueIndex = currentCompanyValues.value.findIndex(v => v.id === valueToDelete.value)
     if (valueIndex !== -1) {
         const value = currentCompanyValues.value[valueIndex]
-        
+
         if (value.isNew) {
             // Si es nuevo, simplemente removerlo de la lista
             currentCompanyValues.value.splice(valueIndex, 1)
@@ -712,10 +709,10 @@ const confirmDelete = () => {
             currentCompanyValues.value[valueIndex].isDeleted = true
         }
     }
-    
+
     // Detectar cambios
     customCheckForChanges()
-    
+
     showDeleteModal.value = false
     valueToDelete.value = null
 }
@@ -727,21 +724,15 @@ const cancelDelete = () => {
 }
 
 // Watcher para re-inicializar cuando cambien los props
-watch([() => props.settings, () => props.companyValues], 
+watch([() => props.settings, () => props.companyValues],
     ([newSettings, newCompanyValues]) => {
-        console.log('👀 Props cambiaron, re-inicializando...');
-        console.log('📊 New settings:', newSettings);
-        console.log('🏢 New company values:', newCompanyValues);
-        
         if (newSettings) {
-            console.log('🔄 Re-inicializando settings...');
             initializeData(newSettings)
         }
         if (newCompanyValues) {
-            console.log('🔄 Re-inicializando company values...');
             initializeCompanyValues()
         }
-    }, 
+    },
     { deep: true }
 )
 

@@ -21,6 +21,7 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\InventarioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 
 // ═══════════════════════════════════════════════════════════
 // RUTAS PÚBLICAS (sin autenticación)
@@ -41,6 +42,19 @@ Route::get('/hoteles', [HotelController::class, 'index']);
 Route::get('/paquetes', [PaqueteController::class, 'index']);
 
 // ═══════════════════════════════════════════════════════════
+// RUTAS DE WOMPI (PAGOS) - PÚBLICAS
+// ═══════════════════════════════════════════════════════════
+use App\Http\Controllers\PagoController;
+
+// Rutas públicas para configuración de Wompi
+Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
+Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
+Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLink']);
+
+// Webhook de Wompi (debe ser público para que Wompi pueda llamarlo)
+Route::post('/wompi/webhook', [PagoController::class, 'webhook']);
+
+// ═══════════════════════════════════════════════════════════
 // RUTAS PROTEGIDAS (requieren autenticación)
 // ═══════════════════════════════════════════════════════════
 Route::middleware('auth:sanctum')->group(function () {
@@ -51,6 +65,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [ApiAuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {
         return $request->user();
+    });
+
+    // ───────────────────────────────────────────────────────
+    // RUTAS DE TESTING (temporal)
+    // ───────────────────────────────────────────────────────
+    Route::get('/test-auth', function(Request $request) {
+        return response()->json([
+            'authenticated' => Auth::check(),
+            'user_id' => Auth::id(),
+            'user' => Auth::user(),
+            'session_data' => session()->all()
+        ]);
     });
 
     // ───────────────────────────────────────────────────────
@@ -129,5 +155,20 @@ Route::middleware('auth:sanctum')->group(function () {
         //     Route::post('/{venta}/procesar', [VentaController::class, 'procesar']);
         //     Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar']);
         // });
+
+        // ═══════════════════════════════════════════════════════════
+        // RUTAS DE PAGOS WOMPI (PROTEGIDAS)
+        // ═══════════════════════════════════════════════════════════
+        Route::prefix('pagos')->name('pagos.')->group(function () {
+            // Procesar pagos
+            Route::post('/venta', [PagoController::class, 'procesarPagoVenta'])->name('venta');
+            Route::post('/reserva', [PagoController::class, 'procesarPagoReserva'])->name('reserva');
+
+            // Consultar estado de pagos
+            Route::get('/{pago}/estado', [PagoController::class, 'consultarEstadoPago'])->name('estado');
+
+            // Administración de pagos (solo para admin)
+            Route::get('/', [PagoController::class, 'index'])->name('index');
+        });
     });
 });

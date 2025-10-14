@@ -6,8 +6,8 @@
         <nav class="mb-4 sm:mb-8">
           <ol class="flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm">
             <li>
-              <Link 
-                href="/" 
+              <Link
+                href="/"
                 :class="tipo === 'nacional' ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'"
               >
                 Inicio
@@ -15,7 +15,7 @@
             </li>
             <li class="text-gray-500">/</li>
             <li>
-              <Link 
+              <Link
                 :href="tipo === 'nacional' ? '/tours-nacionales' : '/tours-internacionales'"
                 :class="tipo === 'nacional' ? 'text-red-600 hover:text-red-800' : 'text-blue-600 hover:text-blue-800'"
               >
@@ -45,8 +45,8 @@
             </div>
             <h3 class="text-lg font-medium text-gray-900 mb-2">Error al cargar el tour</h3>
             <p class="text-gray-600 mb-4">{{ error }}</p>
-            <button 
-              @click="obtenerTour" 
+            <button
+              @click="obtenerTour"
               :class="tipo === 'nacional' ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'"
               class="px-4 py-2 text-white rounded-lg transition-colors"
             >
@@ -58,7 +58,7 @@
         <!-- Contenido principal -->
         <div v-else-if="tour" class="bg-white rounded-lg shadow-lg overflow-hidden">
           <!-- Galería de imágenes -->
-          <div 
+          <div
             class="relative w-full h-64 sm:h-72 md:h-80 lg:h-96 bg-gray-100 rounded-t-lg overflow-hidden flex items-center justify-center"
             @mouseenter="detenerCarrusel"
             @mouseleave="iniciarCarrusel"
@@ -69,7 +69,7 @@
                 :alt="tour.nombre"
                 class="max-w-full max-h-full object-contain transition-opacity duration-500"
               />
-              
+
               <!-- Controles de navegación de imágenes -->
               <div v-if="tour.imagenes.length > 1" class="absolute inset-0 flex items-center justify-between p-2 sm:p-4 pointer-events-none">
                 <button
@@ -112,7 +112,7 @@
               <!-- Información principal -->
               <div class="order-2 xl:order-1">
                 <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">{{ tour.nombre }}</h1>
-                
+
                 <div class="mb-4 sm:mb-6">
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800">
                     {{ tour.categoria === 'NACIONAL' ? 'Nacional' : tour.categoria === 'INTERNACIONAL' ? 'Internacional' : 'Categoría no asignada' }}
@@ -142,7 +142,7 @@
                   </div>
                   <div class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-users mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
-                    <span><strong>Cupos disponibles:</strong> 
+                    <span><strong>Cupos disponibles:</strong>
                       <span :class="obtenerClaseCuposDetalle(tour)">
                         {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
                       </span>
@@ -166,8 +166,8 @@
                     'w-full font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base',
                     (tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0) === 0
                       ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : tipo === 'nacional' 
-                        ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : tipo === 'nacional'
+                        ? 'bg-red-600 hover:bg-red-700 text-white'
                         : 'bg-blue-600 hover:bg-blue-700 text-white'
                   ]"
                 >
@@ -190,8 +190,8 @@
                         </h3>
                         <div class="bg-green-50 rounded-lg p-2">
                           <ul v-if="textoALista(tour.incluye).length > 0" class="space-y-1">
-                            <li 
-                              v-for="(item, index) in textoALista(tour.incluye)" 
+                            <li
+                              v-for="(item, index) in textoALista(tour.incluye)"
                               :key="index"
                               class="text-gray-700 text-xs leading-tight flex items-start"
                             >
@@ -202,7 +202,7 @@
                           <p v-else class="text-gray-500 text-xs italic">No hay información disponible</p>
                         </div>
                       </div>
-                      
+
                       <!-- Lo que NO incluye -->
                       <div>
                         <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
@@ -211,8 +211,8 @@
                         </h3>
                         <div class="bg-red-50 rounded-lg p-2">
                           <ul v-if="textoALista(tour.no_incluye).length > 0" class="space-y-1">
-                            <li 
-                              v-for="(item, index) in textoALista(tour.no_incluye)" 
+                            <li
+                              v-for="(item, index) in textoALista(tour.no_incluye)"
                               :key="index"
                               class="text-gray-700 text-xs leading-tight flex items-start"
                             >
@@ -236,8 +236,8 @@
                       </h3>
                       <div class="bg-green-50 rounded-lg p-3 sm:p-4">
                         <ul v-if="textoALista(tour.incluye).length > 0" class="space-y-2">
-                          <li 
-                            v-for="(item, index) in textoALista(tour.incluye)" 
+                          <li
+                            v-for="(item, index) in textoALista(tour.incluye)"
                             :key="index"
                             class="text-gray-700 text-sm sm:text-base flex items-start"
                           >
@@ -257,8 +257,8 @@
                       </h3>
                       <div class="bg-red-50 rounded-lg p-3 sm:p-4">
                         <ul v-if="textoALista(tour.no_incluye).length > 0" class="space-y-2">
-                          <li 
-                            v-for="(item, index) in textoALista(tour.no_incluye)" 
+                          <li
+                            v-for="(item, index) in textoALista(tour.no_incluye)"
                             :key="index"
                             class="text-gray-700 text-sm sm:text-base flex items-start"
                           >
@@ -296,8 +296,8 @@
             @click="regresar"
             :class="[
               'inline-flex items-center text-white text-sm sm:text-base py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200',
-              tipo === 'nacional' 
-                ? 'bg-red-400 hover:bg-red-500' 
+              tipo === 'nacional'
+                ? 'bg-red-400 hover:bg-red-500'
                 : 'bg-blue-400 hover:bg-blue-500'
             ]"
           >
@@ -385,10 +385,10 @@ const obtenerTour = async () => {
   try {
     loading.value = true
     error.value = null
-    
+
     const tourId = props.tour.id
     const apiUrl = `${url}/${tourId}`
-    
+
     const response = await fetch(apiUrl, {
       method: 'GET',
       headers: {
@@ -397,21 +397,20 @@ const obtenerTour = async () => {
         'X-Requested-With': 'XMLHttpRequest'
       }
     })
-    
+
     if (!response.ok) {
       throw new Error(`Error ${response.status}: ${response.statusText}`)
     }
-    
+
     const data = await response.json()
-    
+
     // Asegurar que el tour tenga cupos_disponibles
     if (data.cupos_disponibles === undefined || data.cupos_disponibles === null) {
-      console.warn(`Tour ${data.id} sin cupos_disponibles, usando cupo_max como fallback`)
       data.cupos_disponibles = data.cupo_max || 0
     }
-    
+
     tourData.value = data
-    
+
   } catch (err) {
     console.error('Error al obtener el tour:', err)
     error.value = err.message
@@ -436,17 +435,17 @@ const formatearFecha = (fecha) => {
 // Función para calcular duración
 const calcularDuracion = (fechaSalida, fechaRegreso) => {
   if (!fechaSalida || !fechaRegreso) return '1 día'
-  
+
   const salida = new Date(fechaSalida)
   const regreso = new Date(fechaRegreso)
-  
+
   // Normalizar las fechas para que solo considere el día (sin hora)
   salida.setHours(0, 0, 0, 0)
   regreso.setHours(0, 0, 0, 0)
-  
+
   const diffTime = regreso.getTime() - salida.getTime()
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 porque incluimos el día de salida
-  
+
   return diffDays === 1 ? '1 día' : `${diffDays} días`
 }
 
@@ -461,18 +460,18 @@ const obtenerImagenActual = () => {
   if (!tour.value?.imagenes || tour.value.imagenes.length === 0) {
     return 'https://via.placeholder.com/800x500/2563eb/ffffff?text=Sin+Imagen+Disponible'
   }
-  
+
   const imagen = tour.value.imagenes[currentImageIndex.value]
   const nombreImagen = typeof imagen === 'string' ? imagen : imagen.nombre
-  
-  return `/images/tours/${nombreImagen}`
+
+  return `/storage/tours/${nombreImagen}`
 }
 
 // Funciones de navegación de imágenes
 const imagenAnterior = () => {
   if (tour.value.imagenes && tour.value.imagenes.length > 1) {
-    currentImageIndex.value = currentImageIndex.value === 0 
-      ? tour.value.imagenes.length - 1 
+    currentImageIndex.value = currentImageIndex.value === 0
+      ? tour.value.imagenes.length - 1
       : currentImageIndex.value - 1
     iniciarCarrusel() // Reiniciar el carrusel después de navegación manual
   }
@@ -523,20 +522,20 @@ const verificarReservaPendiente = () => {
   try {
     const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente')
     const sessionActiva = sessionStorage.getItem('reserva_session_activa')
-    
+
     // Solo procesar si hay reserva pendiente Y la sesión está activa
     if (reservaPendiente && sessionActiva === 'true' && user.value && tour.value) {
       const data = JSON.parse(reservaPendiente)
-      
+
       // Verificar si es el tour actual
       if (tour.value.id === data.tourId) {
         // Abrir modal de reserva automáticamente
         showReservaDialog.value = true
-        
+
         // Limpiar sessionStorage
         sessionStorage.removeItem('tour_reserva_pendiente')
         sessionStorage.removeItem('reserva_session_activa')
-        
+
         // Mostrar mensaje informativo DESPUÉS de abrir el modal
         setTimeout(() => {
           toast.add({
@@ -564,11 +563,11 @@ const verificarReservaPendiente = () => {
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {
-  toast.add({ 
-    severity: 'success', 
-    summary: 'Reserva Confirmada', 
-    detail: 'Tu reserva ha sido registrada. Te contactaremos pronto.', 
-    life: 5000 
+  toast.add({
+    severity: 'success',
+    summary: 'Reserva Confirmada',
+    detail: 'Tu reserva ha sido registrada. Te contactaremos pronto.',
+    life: 5000
   })
 
   // Cerrar modal
@@ -578,7 +577,7 @@ const manejarConfirmacionReserva = (reserva) => {
 // Función para actualizar cupos dinámicamente
 const actualizarCupos = (datosActualizacion) => {
   const { tourId, cuposDisponibles } = datosActualizacion
-  
+
   // Actualizar los cupos disponibles en tourData si es el mismo tour
   if (tourData.value.id === tourId) {
     tourData.value.cupos_disponibles = cuposDisponibles
@@ -588,7 +587,7 @@ const actualizarCupos = (datosActualizacion) => {
 // Función para refrescar el tour actual desde la API
 const refrescarTour = async () => {
   if (!props.tour?.id) return
-  
+
   try {
     const tourId = props.tour.id
     const response = await fetch(`/api/tours/${tourId}`, {
@@ -598,7 +597,7 @@ const refrescarTour = async () => {
         'Accept': 'application/json',
       }
     })
-    
+
     if (response.ok) {
       const tourActualizado = await response.json()
       tourData.value = tourActualizado
@@ -635,7 +634,7 @@ const obtenerClaseCuposDetalle = (tour) => {
   const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
   const cupoMax = tour.cupo_max || 1
   const porcentajeDisponible = (cuposDisponibles / cupoMax) * 100
-  
+
   if (cuposDisponibles === 0) {
     return 'text-red-600 font-bold' // Sin cupos
   } else if (porcentajeDisponible <= 20) {

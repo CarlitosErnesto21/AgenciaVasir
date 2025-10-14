@@ -47,7 +47,9 @@ class HotelController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('hoteles', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('hoteles', 'public');
+                    $nombreArchivo = basename($path);
                     $hotel->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -81,7 +83,9 @@ class HotelController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('hoteles', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('hoteles', 'public');
+                    $nombreArchivo = basename($path);
                     $hotele->imagenes()->create([
                         'nombre' => $nombreArchivo
                     ]);
@@ -94,7 +98,8 @@ class HotelController extends Controller
             foreach ($request->input('removed_images') as $imageName) {
                 $imagen = $hotele->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
-                    Storage::disk('public')->delete($imagen->nombre);
+                    // Eliminar usando Storage Laravel
+                    Storage::disk('public')->delete('hoteles/' . $imagen->nombre);
                     $imagen->forceDelete(); // Cambiado de delete() a forceDelete()
                 }
             }
@@ -133,7 +138,8 @@ class HotelController extends Controller
         $hotel->loadMissing(['imagenes', 'provincia', 'categoriaHotel']);
 
         foreach ($hotel->imagenes as $imagen) {
-            Storage::disk('public')->delete($imagen->nombre);
+            // Eliminar usando Storage Laravel
+            Storage::disk('public')->delete('hoteles/' . $imagen->nombre);
             $imagen->forceDelete();
         }
 

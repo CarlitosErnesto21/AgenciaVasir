@@ -28,8 +28,19 @@ const verDetalles = (producto) => {
   emit('ver-detalles', producto)
 }
 
-const handleImageError = (event, producto) => {
-  event.target.src = `https://via.placeholder.com/300x200/ef4444/ffffff?text=${encodeURIComponent(producto.nombre.substring(0, 15))}`
+// Helper para construir URL de imagen
+const getImageUrl = (producto) => {
+  if (!producto.imagen) {
+    return null
+  }
+
+  // Si ya es una URL completa, usarla tal como está
+  if (producto.imagen.startsWith('http') || producto.imagen.startsWith('data:')) {
+    return producto.imagen
+  }
+
+  // Construir URL relativa
+  return `/storage/productos/${producto.imagen}`
 }
 </script>
 
@@ -57,16 +68,16 @@ const handleImageError = (event, producto) => {
       <template #header>
         <div class="w-full flex justify-center items-center h-32 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 rounded-t-lg overflow-hidden group relative">
           <ImageWithFallback
-            :src="producto.imagen"
+            :src="getImageUrl(producto)"
             :alt="producto.nombre"
             :fallback-text="producto.nombre"
-            image-classes="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-            placeholder-classes="w-full h-full"
+            container-class="w-full h-full"
+            image-class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
           />
-          <div class="absolute top-1 right-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:right-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg">
+          <div class="absolute top-1 right-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:right-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg z-10">
             {{ producto.categoria }}
           </div>
-          <div class="absolute top-1 left-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:left-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg">
+          <div class="absolute top-1 left-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:left-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg z-10">
             Stock: {{ producto.stock_actual }}
           </div>
           <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>

@@ -64,7 +64,7 @@ class CategoriaProductoController extends Controller
     {
         try {
             $categoriaProducto = CategoriaProducto::findOrFail($id);
-            
+
             $validated = $request->validate([
                 'nombre' => 'required|string|min:3|max:50|unique:categorias_productos,nombre,' . $id,
             ]);
@@ -102,12 +102,12 @@ class CategoriaProductoController extends Controller
     {
         try {
             $categoriaProducto = CategoriaProducto::findOrFail($id);
-            
+
             // 🔍 Verificar si la categoría tiene productos asociados
             $productosCount = DB::table('productos')
                 ->where('categoria_id', $categoriaProducto->id)
                 ->count();
-            
+
             if ($productosCount > 0) {
                 return response()->json([
                     'message' => 'No se puede eliminar la categoría',

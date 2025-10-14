@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\WelcomeUserMail;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -64,8 +67,8 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
         Auth::login($user);
 
-        // Enviar notificación de verificación de correo electrónico
-        $user->sendEmailVerificationNotification();
+        // Enviar email de bienvenida personalizado con verificación
+        $this->sendWelcomeEmail($user);
 
         //Redireccionando según el rol asignado
         return $this->redirectBasedOnUserRole($user);
@@ -81,15 +84,15 @@ class RegisteredUserController extends Controller
     /**
     * Redirigir al usuario según su rol
     */
-    private function redirectBasedOnUserRole(User $user): RedirectResponse 
+    private function redirectBasedOnUserRole(User $user): RedirectResponse
     {
         // Actualizar roles del usuario en la sesión
         $user->load('roles');
-        
+
         if ($user->hasRole('Administrador')) {
             return redirect(route('dashboard')); // ← Dashboard admin
         } elseif ($user->hasRole('Empleado')) {
-            return redirect(route('dashboard')); // ← Dashboard empleado  
+            return redirect(route('dashboard')); // ← Dashboard empleado
         } else {
             return redirect(route('inicio')); // ← Página cliente
         }
@@ -123,5 +126,24 @@ class RegisteredUserController extends Controller
             $response['message'] = 'Este correo ya está registrado.';
         }
         return response()->json($response);
+    }
+
+    /**
+     * Enviar email de bienvenida personalizado con verificación
+     */
+    private function sendWelcomeEmail(User $user): void
+    {
+        // Generar URL de verificación
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            [
+                'id' => $user->id,
+                'hash' => sha1($user->email),
+            ]
+        );
+
+        // Enviar email personalizado
+        Mail::to($user->email)->send(new WelcomeUserMail($user, $verificationUrl));
     }
 }

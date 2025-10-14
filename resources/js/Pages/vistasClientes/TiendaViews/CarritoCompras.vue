@@ -1,8 +1,10 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useCarritoStore } from '@/stores/carrito'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import ImageWithFallback from '@/Components/ImageWithFallback.vue'
+import CarritoCheckoutModal from '@/Components/CarritoCheckoutModal.vue'
+import { usePage } from '@inertiajs/vue3'
 import {
   faShoppingCart,
   faTrash,
@@ -14,6 +16,13 @@ import {
 } from '@fortawesome/free-solid-svg-icons'
 
 const carritoStore = useCarritoStore()
+const page = usePage()
+
+// Estado del modal de checkout
+const showCheckoutModal = ref(false)
+
+// Verificar si el usuario está autenticado
+const isAuthenticated = computed(() => !!page.props.auth?.user)
 
 // Formatear precio
 const formatPrice = (price) => {
@@ -27,10 +36,51 @@ const formatPrice = (price) => {
 
 // Función para proceder al checkout
 const procederAlCheckout = () => {
-  // Aquí puedes implementar la lógica de checkout
-  // Por ejemplo, redirigir a una página de checkout
-  console.log('Procediendo al checkout con:', carritoStore.items)
-  // router.visit('/checkout') o la ruta que uses
+  // Verificar que el usuario esté autenticado
+  if (!isAuthenticated.value) {
+    // Mostrar modal de autenticación requerida o redirigir al login
+    // Aquí podrías emitir un evento o mostrar un toast
+    alert('Debes iniciar sesión para continuar con la compra')
+    return
+  }
+
+  // Verificar que el carrito no esté vacío
+  if (carritoStore.isEmpty) {
+    alert('Tu carrito está vacío')
+    return
+  }
+
+  // Abrir modal de checkout
+  showCheckoutModal.value = true
+}
+
+// Manejar cierre del modal
+const closeCheckoutModal = () => {
+  showCheckoutModal.value = false
+}
+
+// Manejar pago completado
+const handlePaymentCompleted = (paymentData) => {
+  console.log('Pago completado:', paymentData)
+  showCheckoutModal.value = false
+
+  // Aquí podrías mostrar un mensaje de éxito o redirigir
+  // Por ejemplo, mostrar un toast de éxito
+}
+
+// Helper para construir URL de imagen
+const getImageUrl = (producto) => {
+  if (!producto.imagen) {
+    return null
+  }
+
+  // Si ya es una URL completa, usarla tal como está
+  if (producto.imagen.startsWith('http') || producto.imagen.startsWith('data:')) {
+    return producto.imagen
+  }
+
+  // Construir URL relativa
+  return `/storage/productos/${producto.imagen}`
 }
 </script>
 
@@ -96,11 +146,11 @@ const procederAlCheckout = () => {
               <!-- Imagen del producto -->
               <div class="flex-shrink-0 w-16 h-16 producto-imagen">
                 <ImageWithFallback
-                  :src="item.imagen"
+                  :src="getImageUrl(item)"
                   :alt="item.nombre"
                   :fallback-text="item.nombre"
-                  image-classes="w-full h-full object-cover rounded-md border border-gray-200"
-                  placeholder-classes="w-full h-full rounded-md border border-gray-200"
+                  container-class="w-full h-full"
+                  image-class="w-full h-full object-cover rounded-md border border-gray-200"
                 />
               </div>
 
@@ -194,6 +244,13 @@ const procederAlCheckout = () => {
       </div>
     </div>
   </div>
+
+  <!-- Modal de Checkout -->
+  <CarritoCheckoutModal
+    :is-visible="showCheckoutModal"
+    @close="closeCheckoutModal"
+    @payment-completed="handlePaymentCompleted"
+  />
 </template>
 
 <style scoped>

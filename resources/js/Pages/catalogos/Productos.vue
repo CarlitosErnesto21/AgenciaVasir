@@ -65,7 +65,7 @@ const fileInput = ref(null);
 
 // 🎯 URLs y constantes
 const url = "/api/productos";
-const IMAGE_PATH = "/storage/";
+const IMAGE_PATH = "/storage/productos/";
 
 // 🔍 Productos filtrados
 const filteredProductos = computed(() => {

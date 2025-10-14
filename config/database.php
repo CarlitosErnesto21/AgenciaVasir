@@ -44,11 +44,6 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'dump' => [
-                'dump_binary_path' => 'C:\wamp64\bin\mysql\mysql9.1.0\bin',
-                'use_single_transaction' => true,
-                'timeout' => 60 * 5,
-            ],
             'url' => env('DB_URL'),
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '3306'),
@@ -60,10 +55,11 @@ return [
             'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => 'InnoDB',
+            'strict' => false, // PlanetScale requirement
+            'engine' => null, // PlanetScale handles this
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+                PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => false,
             ]) : [],
         ],
 

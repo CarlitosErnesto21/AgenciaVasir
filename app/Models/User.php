@@ -58,6 +58,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Empleado::class);
     }
 
+    /**
+     * Get the cliente associated with the user.
+     */
+    public function cliente()
+    {
+        return $this->hasOne(Cliente::class);
+    }
+
     public function comentarios()
     {
         return $this->hasMany(Comentario::class, 'user_id');

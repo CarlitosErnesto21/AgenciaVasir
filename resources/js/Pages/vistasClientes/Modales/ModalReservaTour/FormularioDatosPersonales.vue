@@ -55,7 +55,7 @@ const cargarTiposDocumentos = async () => {
         'Accept': 'application/json'
       }
     })
-    
+
     if (response.ok) {
       const data = await response.json()
       tiposDocumentos.value = data.tipos || data
@@ -88,7 +88,7 @@ const onValidate = (phoneObject) => {
       telefonoValidation.value.isValid = phoneObject.valid === true
       telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
       telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
-      
+
       if (formularioLocal.value.telefono && phoneObject.valid === false) {
         telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
       } else if (phoneObject.valid === true) {
@@ -98,7 +98,6 @@ const onValidate = (phoneObject) => {
       }
     }
   } catch (error) {
-    console.warn('Error en validación de teléfono:', error)
     telefonoValidation.value.mensaje = 'Error en validación'
   }
 }
@@ -192,10 +191,10 @@ defineExpose({
 // Función para manejar cambio de tipo de documento
 const onTipoDocumentoChange = (nuevoTipo) => {
   if (nuevoTipo && nuevoTipo.id) {
-    const nuevoFormulario = { 
-      ...formularioLocal.value, 
+    const nuevoFormulario = {
+      ...formularioLocal.value,
       tipo_documento: nuevoTipo,
-      tipo_documento_id: nuevoTipo.id 
+      tipo_documento_id: nuevoTipo.id
     }
     emit('update:formulario', nuevoFormulario)
   }
@@ -239,7 +238,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
       <span class="hidden sm:inline">Datos personales</span>
       <span class="sm:hidden">Datos</span>
     </h4>
-    
+
     <!-- Mensaje informativo para datos precargados -->
     <div v-if="tieneClienteExistente" class="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
       <p class="text-xs sm:text-sm text-blue-700 flex items-center">
@@ -248,51 +247,51 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
         <span class="sm:hidden">Datos cargados desde su perfil. Solo puede modificar cupos.</span>
       </p>
     </div>
-    
+
     <form class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Correo electrónico</label>
-        <InputText 
-          v-model="formularioLocal.correo" 
+        <InputText
+          v-model="formularioLocal.correo"
           type="email"
           :disabled="!!user"
           placeholder="ejemplo@email.com"
           class="w-full"
           :pt="{
-            root: { 
+            root: {
               class: [
                 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
                 'focus:ring-2 focus:ring-red-500 focus:border-red-500',
                 { 'bg-gray-100 cursor-not-allowed': !!user }
-              ] 
+              ]
             }
           }"
         />
       </div>
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Nombre Completo</label>
-        <InputText 
-          v-model="formularioLocal.nombres" 
+        <InputText
+          v-model="formularioLocal.nombres"
           :disabled="!!user"
           placeholder="Nombres y apellidos"
           class="w-full"
           :pt="{
-            root: { 
+            root: {
               class: [
                 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
                 'focus:ring-2 focus:ring-red-500 focus:border-red-500',
                 { 'bg-gray-100 cursor-not-allowed': !!user }
-              ] 
+              ]
             }
           }"
         />
       </div>
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Tipo documento</label>
-        <Select 
-          :model-value="formularioLocal.tipo_documento" 
+        <Select
+          :model-value="formularioLocal.tipo_documento"
           @update:model-value="onTipoDocumentoChange"
-          :options="tiposDocumentos" 
+          :options="tiposDocumentos"
           optionLabel="nombre"
           :loading="cargandoTipos"
           :disabled="tieneClienteExistente"
@@ -309,57 +308,57 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
       </div>
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Número de identificación</label>
-        <InputText 
-          v-model="formularioLocal.numero_identificacion" 
+        <InputText
+          v-model="formularioLocal.numero_identificacion"
           :disabled="tieneClienteExistente"
           placeholder="Número de documento"
           class="w-full"
           :pt="{
-            root: { 
+            root: {
               class: [
                 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
                 'focus:ring-2 focus:ring-red-500 focus:border-red-500',
                 { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ] 
+              ]
             }
           }"
         />
       </div>
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Fecha de nacimiento</label>
-        <DatePicker 
-          v-model="formularioLocal.fecha_nacimiento" 
-          dateFormat="dd/mm/yy" 
-          class="w-full" 
+        <DatePicker
+          v-model="formularioLocal.fecha_nacimiento"
+          dateFormat="dd/mm/yy"
+          class="w-full"
           :inputClass="tieneClienteExistente ? 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-100 cursor-not-allowed' : 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors'"
-          placeholder="dd/mm/aaaa" 
-          :maxDate="new Date()" 
+          placeholder="dd/mm/aaaa"
+          :maxDate="new Date()"
           :disabled="tieneClienteExistente"
-          showIcon 
+          showIcon
         />
       </div>
       <div>
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Género</label>
-        <Select 
-          v-model="formularioLocal.genero" 
+        <Select
+          v-model="formularioLocal.genero"
           :options="[
             { label: 'Masculino', value: 'MASCULINO' },
             { label: 'Femenino', value: 'FEMENINO' }
-          ]" 
+          ]"
           optionLabel="label"
           optionValue="value"
           :disabled="tieneClienteExistente"
           placeholder="Seleccionar género"
           class="w-full"
           :pt="{
-            root: { 
+            root: {
               class: [
                 'w-full border border-gray-300 rounded-lg',
                 { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ] 
+              ]
             },
-            input: { 
-              class: 'px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors' 
+            input: {
+              class: 'px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors'
             },
             trigger: { class: 'text-gray-400' },
             panel: { class: 'border border-gray-300 rounded-lg shadow-lg' },
@@ -369,19 +368,19 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
       </div>
       <div class="sm:col-span-2">
         <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Dirección de residencia</label>
-        <Textarea 
-          v-model="formularioLocal.direccion" 
+        <Textarea
+          v-model="formularioLocal.direccion"
           :disabled="tieneClienteExistente"
           rows="2"
           placeholder="Dirección completa de residencia"
           class="w-full"
           :pt="{
-            root: { 
+            root: {
               class: [
                 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
                 'focus:ring-2 focus:ring-red-500 focus:border-red-500',
                 { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ] 
+              ]
             }
           }"
         />
@@ -409,8 +408,8 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
           @validate="onValidate"
         />
         <!-- Mensaje de validación -->
-        <p 
-          v-if="telefonoValidation.mensaje" 
+        <p
+          v-if="telefonoValidation.mensaje"
           :class="[
             'text-xs mt-1 flex items-center',
             telefonoValidation.isValid ? 'text-green-600' : 'text-red-600'

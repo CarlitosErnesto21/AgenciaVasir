@@ -6,9 +6,7 @@ const showImagenAmpliada = ref(false)
 function ampliarImagen(event) {
   event.preventDefault()
   event.stopPropagation()
-  console.log('Función ampliarImagen ejecutada')
   showImagenAmpliada.value = true
-  console.log('showImagenAmpliada:', showImagenAmpliada.value)
   // Prevenir scroll del body cuando el modal está abierto
   document.body.style.overflow = 'hidden'
 }
@@ -18,7 +16,6 @@ function cerrarImagen(event) {
     event.preventDefault()
     event.stopPropagation()
   }
-  console.log('Función cerrarImagen ejecutada')
   showImagenAmpliada.value = false
   // Restaurar scroll del body
   document.body.style.overflow = 'auto'
@@ -68,7 +65,7 @@ function cerrarImagen(event) {
             <h4 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent">Ubicación Estratégica</h4>
           </div>
           <p class="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-            Contamos con modernas instalaciones ubicadas en el corazón de Chalatenango, 
+            Contamos con modernas instalaciones ubicadas en el corazón de Chalatenango,
             diseñadas para brindarte el mejor servicio y atención personalizada.
           </p>
         </div>
@@ -78,7 +75,7 @@ function cerrarImagen(event) {
             <h4 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-red-600 bg-clip-text text-transparent">Equipo Profesional</h4>
           </div>
           <p class="text-sm sm:text-base md:text-lg text-gray-700 leading-relaxed">
-            Nuestro equipo profesional y apasionado por el turismo está siempre dispuesto 
+            Nuestro equipo profesional y apasionado por el turismo está siempre dispuesto
             a ayudarte y a hacer de tu viaje una experiencia memorable que atesorarás para siempre.
           </p>
         </div>
@@ -127,7 +124,7 @@ function cerrarImagen(event) {
                 class="max-w-full max-h-[85vh] rounded-xl object-contain mx-auto block"
                 @click.stop
               />
-              
+
               <!-- Header del modal -->
               <div class="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/60 to-transparent p-4 rounded-t-2xl">
                 <div class="flex items-center justify-between">
@@ -147,7 +144,7 @@ function cerrarImagen(event) {
                   </button>
                 </div>
               </div>
-              
+
               <!-- Footer del modal -->
               <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-6 rounded-b-2xl">
                 <div class="text-center">
@@ -174,7 +171,7 @@ function cerrarImagen(event) {
                   </div>
                 </div>
               </div>
-              
+
               <!-- Botón de cerrar lateral -->
               <button
                 class="absolute top-6 right-6 bg-red-600/90 hover:bg-red-700 text-white rounded-full w-12 h-12 flex items-center justify-center transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-110 backdrop-blur-sm border-2 border-white/20"
@@ -187,7 +184,7 @@ function cerrarImagen(event) {
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
               </button>
-              
+
               <!-- Indicador de zoom -->
               <div class="absolute bottom-6 right-6 bg-blue-600/90 text-white px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 backdrop-blur-sm border border-white/20">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

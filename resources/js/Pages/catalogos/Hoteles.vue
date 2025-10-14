@@ -38,7 +38,7 @@ const filters = ref({
 });
 const btnTitle = ref("Guardar");
 const url = "/api/hoteles";
-const IMAGE_PATH = "/storage/";
+const IMAGE_PATH = "/storage/hoteles/";
 const paises = ref([]);
 const provincias = ref([]);
 const categoriasHoteles = ref([]);

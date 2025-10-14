@@ -66,6 +66,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    // Rutas de carrito y pagos (requieren autenticación web)
+    Route::post('/carrito/create-venta', [\App\Http\Controllers\PagoController::class, 'createVentaFromCarrito']);
+    Route::post('/pagos/venta', [\App\Http\Controllers\PagoController::class, 'procesarPagoVenta']);
+    Route::get('/pagos/{pago}/estado', [\App\Http\Controllers\PagoController::class, 'consultarEstadoPago']);
 });
 
 //Rutas de clientes
@@ -76,6 +81,9 @@ Route::get('tours-internacionales', fn() => Inertia::render('VistasClientes/Tour
 Route::get('tienda', fn() => Inertia::render('VistasClientes/Tienda'))->name('tienda');
 Route::get('sobre-nosotros', [SobreNosotrosController::class, 'index'])->name('sobre-nosotros');
 Route::get('contactos', fn() => Inertia::render('VistasClientes/Contactos'))->name('contactos');
+
+// Ruta de prueba para Wompi
+Route::get('test-wompi', fn() => Inertia::render('PruebaWompiSimple'))->name('test-wompi');
 
 //Estas rutas muestran un tour ya sea nacional o internacional
 Route::get('/tours-nacionales/{id}', [TourController::class, 'mostrarTourNacional'])->name('tour-nacional.show');

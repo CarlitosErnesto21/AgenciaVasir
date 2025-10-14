@@ -232,7 +232,6 @@ const obtenerTours = async () => {
     const toursConCupos = (data.data || data || []).map(tour => {
       // Si no tiene cupos_disponibles, usar cupo_max como fallback temporal
       if (tour.cupos_disponibles === undefined || tour.cupos_disponibles === null) {
-        console.warn(`Tour ${tour.id} sin cupos_disponibles, usando cupo_max como fallback`)
         tour.cupos_disponibles = tour.cupo_max || 0
       }
       return tour
@@ -296,12 +295,12 @@ const obtenerImagenActual = (tour) => {
   }
 
   // Asegurarse de que el tour tenga un ID para el índice
-  if (!tour.id) return `/storage/${typeof tour.imagenes[0] === 'string' ? tour.imagenes[0] : tour.imagenes[0].nombre}`;
+  if (!tour.id) return `/storage/tours/${typeof tour.imagenes[0] === 'string' ? tour.imagenes[0] : tour.imagenes[0].nombre}`;
 
   // Si solo tiene una imagen, mostrar esa
   if (tour.imagenes.length === 1) {
     const nombreImagen = typeof tour.imagenes[0] === 'string' ? tour.imagenes[0] : tour.imagenes[0].nombre
-    return `/storage/${nombreImagen}`
+    return `/storage/tours/${nombreImagen}`
   }
 
   // Si tiene múltiples imágenes, usar el índice del carrusel
@@ -309,7 +308,7 @@ const obtenerImagenActual = (tour) => {
   const imagen = tour.imagenes[currentIndex]
   const nombreImagen = typeof imagen === 'string' ? imagen : imagen.nombre
 
-  return `/storage/${nombreImagen}`;
+  return `/storage/tours/${nombreImagen}`;
 }
 
 // Función para inicializar carrusel automático
@@ -369,7 +368,7 @@ const obtenerTodasLasImagenes = (imagenes) => {
 
   return imagenes.map(imagen => {
     const nombreImagen = typeof imagen === 'string' ? imagen : imagen.nombre
-    return `/storage/${nombreImagen}`;
+    return `/storage/tours/${nombreImagen}`;
   })
 }
 
@@ -910,4 +909,4 @@ const verMasInfo = (tour) => {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-</style>
+</style>s

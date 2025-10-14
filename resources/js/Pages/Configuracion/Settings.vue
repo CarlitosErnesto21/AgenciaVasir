@@ -2,7 +2,7 @@
     <AuthenticatedLayout>
         <!-- Toast para notificaciones -->
         <Toast />
-        
+
         <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-6 lg:py-8">
             <div class="bg-white rounded-lg shadow-lg overflow-hidden">
                 <!-- Header -->
@@ -233,7 +233,7 @@ const settings = ref({
     mission: props.siteSettings.mission || '',
     vision: props.siteSettings.vision || '',
     description: props.siteSettings.description || '',
-    
+
     // Configuraciones del sistema (solo para display, no funcionales aún)
     systemName: 'Sistema VASIR',
     version: '1.0.0',
@@ -264,7 +264,7 @@ const saveSettings = async () => {
                 originalSettings.value.mission = settings.value.mission;
                 originalSettings.value.vision = settings.value.vision;
                 originalSettings.value.description = settings.value.description;
-                
+
                 // Mostrar toast de éxito
                 toast.add({
                     severity: 'success',
@@ -275,7 +275,7 @@ const saveSettings = async () => {
             },
             onError: (errors) => {
                 console.error('Error al guardar la configuración:', errors);
-                
+
                 // Mostrar toast de error
                 toast.add({
                     severity: 'error',
@@ -285,10 +285,10 @@ const saveSettings = async () => {
                 });
             }
         });
-        
+
     } catch (error) {
         console.error('Error al guardar la configuración:', error);
-        
+
         // Mostrar toast de error
         toast.add({
             severity: 'error',
@@ -309,30 +309,24 @@ const resetSettings = () => {
 
 // Función para recargar settings después de un guardado exitoso
 const reloadSettings = () => {
-    console.log('🔄 Iniciando recarga de settings...');
-    
     router.get(route('settings'), {}, {
         preserveState: false,
         preserveScroll: true,
         only: ['siteSettings', 'companyValues'],
         onSuccess: (page) => {
-            console.log('✅ Datos recargados exitosamente:', page.props);
-            
+
             // Actualizar los settings locales con los nuevos datos del servidor
             settings.value.mission = page.props.siteSettings.mission || '';
             settings.value.vision = page.props.siteSettings.vision || '';
             settings.value.description = page.props.siteSettings.description || '';
-            
+
             // Actualizar también los originalSettings
             originalSettings.value.mission = settings.value.mission;
             originalSettings.value.vision = settings.value.vision;
             originalSettings.value.description = settings.value.description;
-            
+
             // Actualizar companyValues con los datos frescos del servidor
             companyValues.value = page.props.companyValues;
-            
-            console.log('📊 Settings actualizados:', settings.value);
-            console.log('🏢 Company values actualizados:', companyValues.value);
         },
         onError: (errors) => {
             console.error('❌ Error al recargar settings:', errors);

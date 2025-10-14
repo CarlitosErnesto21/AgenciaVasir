@@ -40,9 +40,6 @@ class TourController extends Controller
 
             $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
 
-            // Debug log
-            Log::info("Tour {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservados}, disponibles={$cuposDisponibles}");
-
             $tour->cupos_disponibles = $cuposDisponibles;
         });
 
@@ -78,11 +75,19 @@ class TourController extends Controller
         // Crear tour
         $tour = Tour::create($tourData);
 
-        // Guardar imágenes nuevas
+        // Guardar imágenes nuevas usando Storage Laravel (persistente)
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('tours', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('tours', 'public');
+                    $nombreArchivo = basename($path);
+
+                    if (empty($path)) {
+                        Log::error('ERROR: No se pudo guardar la imagen');
+                        continue;
+                    }
+
                     $tour->imagenes()->create(['nombre' => $nombreArchivo]);
                 }
             }
@@ -110,9 +115,6 @@ class TourController extends Controller
             ->sum('cupos_reservados');
 
         $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
-
-        // Debug log
-        Log::info("Tour show {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservados}, disponibles={$cuposDisponibles}");
 
         $tour->cupos_disponibles = $cuposDisponibles;
 
@@ -153,7 +155,15 @@ class TourController extends Controller
         if ($request->hasFile('imagenes')) {
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
-                    $nombreArchivo = $imagen->store('tours', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('tours', 'public');
+                    $nombreArchivo = basename($path);
+
+                    if (empty($path)) {
+                        Log::error('ERROR: No se pudo actualizar la imagen');
+                        continue;
+                    }
+
                     $tour->imagenes()->create(['nombre' => $nombreArchivo]);
                 }
             }
@@ -164,7 +174,8 @@ class TourController extends Controller
             foreach ($request->input('removed_images') as $imageName) {
                 $imagen = $tour->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
-                    Storage::disk('public')->delete($imagen->nombre);
+                    // Eliminar usando Storage Laravel
+                    Storage::disk('public')->delete('tours/' . $imagen->nombre);
                     $imagen->forceDelete();
                 }
             }
@@ -184,9 +195,9 @@ class TourController extends Controller
         $tour = Tour::findOrFail($id);
         $tour->loadMissing(['imagenes', 'transporte']);
 
-        // Eliminar imágenes físicas y registros
+        // Eliminar imágenes físicas y registros usando Storage Laravel
         foreach ($tour->imagenes as $imagen) {
-            Storage::disk('public')->delete($imagen->nombre);
+            Storage::disk('public')->delete('tours/' . $imagen->nombre);
             $imagen->forceDelete();
         }
 

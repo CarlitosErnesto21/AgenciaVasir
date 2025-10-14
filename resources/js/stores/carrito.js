@@ -22,7 +22,7 @@ export const useCarritoStore = defineStore('carrito', () => {
   // 🔧 Acciones del carrito
   const agregarProducto = (producto) => {
     const existingItem = items.value.find(item => item.id === producto.id)
-    
+
     if (existingItem) {
       // Si ya existe, incrementar cantidad
       existingItem.cantidad += 1
@@ -37,7 +37,7 @@ export const useCarritoStore = defineStore('carrito', () => {
         cantidad: 1
       })
     }
-    
+
     // Guardar en localStorage para persistencia
     guardarEnStorage()
   }
@@ -88,7 +88,6 @@ export const useCarritoStore = defineStore('carrito', () => {
   }
 
   const limpiarCarritoAlCerrarSesion = () => {
-    console.log('🚪 Usuario cerró sesión - Limpiando carrito')
     items.value = []
     isVisible.value = false
     localStorage.removeItem('carrito_agencia_vasir')
@@ -97,10 +96,9 @@ export const useCarritoStore = defineStore('carrito', () => {
   const verificarEstadoAutenticacion = () => {
     const user = page.props.auth?.user
     const carritoTieneItems = items.value.length > 0
-    
+
     // Si no hay usuario logueado pero hay items en el carrito, limpiar
     if (!user && carritoTieneItems) {
-      console.log('🔍 Usuario no autenticado detectado - Limpiando carrito')
       limpiarCarritoAlCerrarSesion()
     }
   }
@@ -157,12 +155,12 @@ export const useCarritoStore = defineStore('carrito', () => {
     // Estado
     items,
     isVisible,
-    
+
     // Computed
     itemCount,
     totalPrice,
     isEmpty,
-    
+
     // Acciones
     agregarProducto,
     eliminarProducto,
@@ -174,7 +172,7 @@ export const useCarritoStore = defineStore('carrito', () => {
     toggleVisibility,
     mostrarCarrito,
     ocultarCarrito,
-    
+
     // Utilidades
     getItem,
     hasItem,

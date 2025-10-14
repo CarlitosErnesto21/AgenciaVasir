@@ -217,7 +217,6 @@ onMounted(async () => {
 
 const fetchPaquetes = async () => {
     const { data } = await axios.get(url);
-    console.log('Respuesta API paquetes:', data);
     // Forzar a array si es posible
     const paquetesArray = Array.isArray(data) ? data : (data.data || data.paquetes || []);
     paquetes.value = paquetesArray.map(p => ({
@@ -332,7 +331,7 @@ const hideDialog = () => {
 };
 
 const closeDialogWithoutSaving = () => {
-    dialog.value = false; 
+    dialog.value = false;
     unsavedChangesDialog.value = false;
     hasUnsavedChanges.value = false;
     originalTourData.value = null;
@@ -805,7 +804,7 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                         <div class="flex items-center gap-4">
                             <label class="w-24 flex items-center gap-1">Imágenes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
-                                <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/> 
+                                <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
                                 <button type="button" class="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-red-500 hover:border-red-600 px-6 py-2 rounded-md flex items-center gap-2"
                                     @click="$refs.fileInput.click()">
                                     <FontAwesomeIcon :icon="faPlus" class="h-4" /><span>Subir imágenes</span>
@@ -898,4 +897,4 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
             </Dialog>
         </div>
     </AuthenticatedLayout>
-</template>                 
+</template>

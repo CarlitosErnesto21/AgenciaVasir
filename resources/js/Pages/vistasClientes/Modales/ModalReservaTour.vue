@@ -116,7 +116,7 @@ const resetFormularioReserva = async () => {
   // Cargar datos existentes del cliente si está logueado
   if (loggedInUser) {
     const clienteExistente = await cargarDatosCliente()
-    
+
     if (clienteExistente) {
       // Marcar que hay datos precargados
       tieneClienteExistente.value = true
@@ -127,7 +127,7 @@ const resetFormularioReserva = async () => {
         try {
           fechaNacimientoFormateada = new Date(clienteExistente.fecha_nacimiento)
         } catch (error) {
-          console.warn('Error al formatear fecha de nacimiento:', error)
+          // Ignorar error de formato de fecha
         }
       }
 
@@ -191,7 +191,7 @@ const confirmarReserva = async () => {
       cupos_menores: reservaForm.value.cupos_menores,
       precio_total: precios.value.total
     })
-    
+
     // Emitir cupos actualizados si están disponibles en la respuesta
     if (response.data?.data?.cupos_disponibles_actualizados !== undefined) {
       emit('actualizar-cupos', {
@@ -199,10 +199,10 @@ const confirmarReserva = async () => {
         cuposDisponibles: response.data.data.cupos_disponibles_actualizados
       })
     }
-    
+
     // También emitir para refrescar el tour completo como respaldo
     emit('refrescar-tour', props.tourSeleccionado.id)
-    
+
     emit('confirmar-reserva', response.data)
     cerrarModal()
   } catch (error) {
@@ -276,7 +276,7 @@ const precios = computed(() => {
   }
 })
 
-// Watch para resetear el formulario cuando se abre el modal  
+// Watch para resetear el formulario cuando se abre el modal
 watch(() => props.visible, async (newValue) => {
   if (newValue) {
     await resetFormularioReserva()
@@ -287,13 +287,13 @@ watch(() => props.visible, async (newValue) => {
 <template>
   <!-- Toast para notificaciones dentro del modal -->
   <Toast />
-  
-  <Dialog 
-    :visible="visible" 
+
+  <Dialog
+    :visible="visible"
     @update:visible="emit('update:visible', $event)"
-    modal 
-    :closable="false" 
-    class="w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] xl:max-w-4xl mx-2 sm:mx-4" 
+    modal
+    :closable="false"
+    class="w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[80vw] xl:max-w-4xl mx-2 sm:mx-4"
     :draggable="false"
   >
     <template #header>
@@ -309,7 +309,7 @@ watch(() => props.visible, async (newValue) => {
       <ResumenTour :tour-seleccionado="tourSeleccionado" />
 
       <!-- Formulario de datos personales usando componente modular -->
-      <FormularioDatosPersonales 
+      <FormularioDatosPersonales
         ref="formularioDatosRef"
         v-model:formulario="reservaForm"
         :tiene-cliente-existente="tieneClienteExistente"
@@ -318,7 +318,7 @@ watch(() => props.visible, async (newValue) => {
       />
 
       <!-- Selector de cupos usando componente modular -->
-      <SelectorCupos 
+      <SelectorCupos
         v-model:cupos-adultos="reservaForm.cupos_adultos"
         v-model:cupos-menores="reservaForm.cupos_menores"
         :tour-seleccionado="tourSeleccionado"
@@ -328,8 +328,8 @@ watch(() => props.visible, async (newValue) => {
 
     <template #footer>
       <div class="flex flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 px-1 sm:px-0">
-        <button 
-          @click="cerrarModal" 
+        <button
+          @click="cerrarModal"
           type="button"
           class="bg-white hover:bg-red-50 text-red-600 border border-red-600 flex-1 sm:flex-none sm:px-6 px-3 py-3 sm:py-2 text-sm sm:text-base font-medium rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center gap-2"
         >
@@ -337,8 +337,8 @@ watch(() => props.visible, async (newValue) => {
           <span class="hidden sm:inline">Cancelar</span>
           <span class="sm:hidden">Cancelar</span>
         </button>
-        <button 
-          @click="confirmarReserva" 
+        <button
+          @click="confirmarReserva"
           type="button"
           class="bg-red-600 hover:bg-red-700 text-white border border-red-600 flex-1 sm:flex-none sm:px-6 px-3 py-3 sm:py-2 text-sm sm:text-base font-semibold rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
         >

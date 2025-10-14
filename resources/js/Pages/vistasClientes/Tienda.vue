@@ -103,9 +103,11 @@ const cargarProductos = async () => {
       stock_actual: producto.stock_actual,
       categoria: producto.categoria?.nombre || 'Sin categoría',
       categoria_id: producto.categoria_id,
-      // Manejar imágenes
+      // Manejar imágenes - solo guardar el nombre del archivo
       imagen: producto.imagenes && producto.imagenes.length > 0
-        ? `/storage/${producto.imagenes[0].nombre}`
+        ? (typeof producto.imagenes[0] === 'string'
+           ? producto.imagenes[0]
+           : producto.imagenes[0].nombre)
         : null,
       imagenes: producto.imagenes || []
     })).filter(producto => producto.stock_actual > 0) // Solo productos en stock

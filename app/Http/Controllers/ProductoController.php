@@ -8,8 +8,8 @@ use App\Models\CategoriaProducto;
 use App\Models\Inventario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Auth;
 use Exception;
 
@@ -78,10 +78,12 @@ class ProductoController extends Controller
                 Log::info('Registro de inventario creado exitosamente');
             }
 
-            // 🖼️ Manejar imágenes
+            // 🖼️ Manejar imágenes usando Storage persistente
             if ($request->hasFile('imagenes')) {
                 foreach ($request->file('imagenes') as $imagen) {
-                    $nombreImagen = $imagen->store('productos', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('productos', 'public');
+                    $nombreImagen = basename($path);
 
                     $producto->imagenes()->create([
                         'nombre' => $nombreImagen,
@@ -195,16 +197,19 @@ class ProductoController extends Controller
                     $imagen = $producto->imagenes()->where('nombre', $removedImage)->first();
 
                     if ($imagen) {
-                        Storage::disk('public')->delete($imagen->nombre);
+                        // Eliminar usando Storage Laravel
+                        Storage::disk('public')->delete('productos/' . $imagen->nombre);
                         $imagen->delete();
                     }
                 }
             }
 
-            // 🖼️ Manejar nuevas imágenes
+            // 🖼️ Manejar nuevas imágenes usando Storage persistente
             if ($request->hasFile('imagenes')) {
                 foreach ($request->file('imagenes') as $imagen) {
-                    $nombreImagen = $imagen->store('productos', 'public');
+                    // Usar Storage::disk('public') que es persistente en Render
+                    $path = $imagen->store('productos', 'public');
+                    $nombreImagen = basename($path);
 
                     $producto->imagenes()->create([
                         'nombre' => $nombreImagen,
@@ -278,9 +283,9 @@ class ProductoController extends Controller
                 ]);
             }
 
-            // 🗑️ Eliminar imágenes del storage
+            // 🗑️ Eliminar imágenes del storage usando Storage Laravel
             foreach ($producto->imagenes as $imagen) {
-                Storage::disk('public')->delete($imagen->nombre);
+                Storage::disk('public')->delete('productos/' . $imagen->nombre);
                 $imagen->delete();
             }
 
