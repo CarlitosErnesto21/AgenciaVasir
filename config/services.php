@@ -35,4 +35,21 @@ return [
         ],
     ],
 
-];
+    'wompi' => [
+        // Configuración para Wompi El Salvador (OAuth 2.0)
+        'client_id' => env('WOMPI_CLIENT_ID'),
+        'client_secret' => env('WOMPI_CLIENT_SECRET'),
+        'sandbox' => env('WOMPI_SANDBOX', true),
+        'auth_url' => 'https://id.wompi.sv/connect/token',
+        'base_url' => env('WOMPI_SANDBOX', true)
+            ? 'https://api.wompi.sv'
+            : 'https://api.wompi.sv',
+        'audience' => 'wompi_api',
+
+        // Claves antiguas para compatibilidad (por si cambias a Wompi Colombia)
+        'public_key' => env('WOMPI_PUBLIC_KEY'),
+        'private_key' => env('WOMPI_PRIVATE_KEY'),
+        'widget_url' => env('WOMPI_SANDBOX', true)
+            ? 'https://checkout.wompi.co/widget.js'
+            : 'https://checkout.wompi.co/widget.js',
+    ],];

@@ -61,7 +61,6 @@ const closeCheckoutModal = () => {
 
 // Manejar pago completado
 const handlePaymentCompleted = (paymentData) => {
-  console.log('Pago completado:', paymentData)
   showCheckoutModal.value = false
 
   // Aquí podrías mostrar un mensaje de éxito o redirigir

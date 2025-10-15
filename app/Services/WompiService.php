@@ -26,7 +26,7 @@ class WompiService
         $clientConfig = [];
 
         // En desarrollo/sandbox, deshabilitar verificación SSL
-        if (config('app.env') !== 'production' || config('services.wompi.sandbox')) {
+        if (config('app.env') !== 'production') {
             $clientConfig['verify'] = false;
         }
 
@@ -37,8 +37,9 @@ class WompiService
         $this->clientSecret = config('services.wompi.client_secret');
         $this->authUrl = config('services.wompi.auth_url');
         $this->audience = config('services.wompi.audience');
+        $this->sandbox = env('WOMPI_SANDBOX', true);
 
-        // Configuración tradicional (compatibilidad)
+                // Configuración tradicional (compatibilidad)
         $this->publicKey = config('services.wompi.public_key');
         $this->privateKey = config('services.wompi.private_key');
         $this->baseUrl = config('services.wompi.base_url');
@@ -184,16 +185,6 @@ class WompiService
      */
     public function getAccessToken()
     {
-        // En modo de desarrollo, usar token mock
-        if (config('app.env') === 'local' && ($this->clientId === 'tu_app_id_aqui' || empty($this->clientId))) {
-            Log::info('Wompi - Usando access token mock para desarrollo');
-            return [
-                'success' => true,
-                'access_token' => 'mock_access_token_' . time(),
-                'expires_in' => 3600
-            ];
-        }
-
         try {
             $requestConfig = [
                 'form_params' => [
@@ -227,18 +218,9 @@ class WompiService
 
         } catch (RequestException $e) {
             Log::error('Wompi - Error obteniendo access token', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
             ]);
-
-            // Fallback en desarrollo
-            if (config('app.env') === 'local') {
-                Log::warning('Wompi - Usando access token mock como fallback');
-                return [
-                    'success' => true,
-                    'access_token' => 'fallback_mock_token_' . time(),
-                    'expires_in' => 3600
-                ];
-            }
 
             return [
                 'success' => false,
@@ -270,17 +252,6 @@ class WompiService
      */
     public function createPaymentLink($paymentData)
     {
-        // En modo de desarrollo, devolver datos mock solo si no hay credenciales reales
-        if (config('app.env') === 'local' && ($this->clientId === 'tu_app_id_aqui' || empty($this->clientId))) {
-            Log::info('Wompi - Creando enlace de pago mock para desarrollo');
-            return [
-                'success' => true,
-                'payment_link' => 'https://pay.wompi.sv/mock_link_' . time(),
-                'link_id' => 'mock_link_' . time(),
-                'reference' => $paymentData['reference'] ?? 'MOCK_REF_' . time()
-            ];
-        }
-
         // Obtener access token primero
         $tokenResult = $this->getAccessToken();
         if (!$tokenResult['success']) {
@@ -288,14 +259,35 @@ class WompiService
         }
 
         try {
-            // EXACTAMENTE LO MISMO QUE FUNCIONÓ EN SWAGGER
+            // USAR LOS CAMPOS BÁSICOS + IMAGEN PÚBLICA
             $requestPayload = [
                 'identificadorEnlaceComercio' => $paymentData['reference'],
                 'monto' => (float) ($paymentData['amount_in_cents'] / 100),
                 'nombreProducto' => $paymentData['product_name'] ?? $paymentData['description'] ?? 'Productos Vasir'
             ];
 
-            Log::info('Wompi - Enviando payload exacto como Swagger', $requestPayload);
+            // Solo agregar descripción si es corta (evitar caracteres especiales)
+            if (!empty($paymentData['description']) && strlen($paymentData['description']) < 100) {
+                $requestPayload['nombreProducto'] = $paymentData['description'];
+            }
+
+            // Usar imagen real del producto si está disponible
+            if (!empty($paymentData['product_image'])) {
+                $requestPayload['imagenProducto'] = $paymentData['product_image'];
+                Log::info('🖼️ Usando imagen real del producto', [
+                    'imagen_url' => $paymentData['product_image']
+                ]);
+            } else {
+                // Fallback: imagen por defecto de VASIR más profesional
+                $requestPayload['imagenProducto'] = 'https://via.placeholder.com/300x200/1F2937/FFFFFF?text=VASIR+Productos';
+                Log::info('🖼️ Usando imagen placeholder por defecto');
+            }
+
+            // Log para debuggear qué estamos enviando
+            Log::info('Wompi - Enviando payload para enlace de pago', [
+                'payload' => $requestPayload,
+                'productos_detalle' => $paymentData['productos_detalle'] ?? null
+            ]);
 
             $requestConfig = [
                 'json' => $requestPayload,
@@ -319,25 +311,17 @@ class WompiService
                 'success' => true,
                 'payment_link' => $body['urlEnlace'] ?? $body['enlace'] ?? $body['url'],
                 'link_id' => $body['idEnlace'] ?? $body['id'],
-                'reference' => $paymentData['reference'] // Usar la referencia que enviamos
+                'reference' => $paymentData['reference']
             ];
 
         } catch (RequestException $e) {
+            $errorResponse = $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null;
+
             Log::error('Wompi - Error creando enlace de pago', [
                 'error' => $e->getMessage(),
-                'response' => $e->hasResponse() ? $e->getResponse()->getBody()->getContents() : null
+                'response' => $errorResponse,
+                'payload_sent' => $requestPayload ?? null
             ]);
-
-            // Fallback en desarrollo solo si hay error crítico
-            if (config('app.env') === 'local') {
-                Log::warning('Wompi - Usando enlace mock como fallback');
-                return [
-                    'success' => true,
-                    'payment_link' => 'https://pay.wompi.sv/fallback_mock_' . time(),
-                    'link_id' => 'fallback_mock_' . time(),
-                    'reference' => $paymentData['reference'] ?? 'FALLBACK_' . time()
-                ];
-            }
 
             return [
                 'success' => false,

@@ -55,57 +55,7 @@ class PagoController extends Controller
         ]);
     }
 
-    /**
-     * Crear enlace de pago para una venta
-     */
-    public function createPaymentLink(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'venta_id' => 'required|exists:ventas,id',
-                'customer_email' => 'required|email',
-                'customer_name' => 'string|nullable'
-            ]);
 
-            $venta = Venta::findOrFail($validated['venta_id']);
-
-            // Crear enlace de pago con Wompi
-            $paymentData = [
-                'amount_in_cents' => $venta->total * 100, // Convertir a centavos
-                'description' => "Venta #{$venta->id} - Productos Vasir",
-                'reference' => "VENTA-{$venta->id}-" . time(),
-                'customer_email' => $validated['customer_email'],
-                'customer_name' => $validated['customer_name'] ?? 'Cliente'
-            ];
-
-            $result = $this->wompiService->createPaymentLink($paymentData);
-
-            if ($result['success']) {
-                return response()->json([
-                    'success' => true,
-                    'payment_link' => $result['payment_link'],
-                    'link_id' => $result['link_id'],
-                    'reference' => $result['reference']
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => $result['error']
-            ], 400);
-
-        } catch (Exception $e) {
-            Log::error('Error creando enlace de pago', [
-                'error' => $e->getMessage(),
-                'venta_id' => $request->venta_id
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error interno del servidor'
-            ], 500);
-        }
-    }
 
     /**
      * Crear venta desde carrito de compras (público)
@@ -124,6 +74,8 @@ class PagoController extends Controller
             'productos.*.cantidad' => 'required|integer|min:1',
             'productos.*.precio' => 'required|numeric|min:0',
             'productos.*.nombre' => 'required|string',
+            'productos.*.imagen' => 'nullable|string', // Campo opcional para compatibilidad
+            'productos.*.subtotal' => 'nullable|numeric|min:0', // Campo opcional para compatibilidad
             'customer_email' => 'required|email',
         ]);
 
@@ -240,10 +192,28 @@ class PagoController extends Controller
             // Obtener empleado por defecto (puede ser un empleado sistema)
             $empleado = \App\Models\Empleado::first();
             if (!$empleado) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No se encontró empleado para procesar la venta'
-                ], 400);
+                Log::warning('⚠️ No hay empleados en el sistema - Creando empleado por defecto');
+
+                // Crear usuario empleado por defecto
+                $userEmpleado = \App\Models\User::firstOrCreate(
+                    ['email' => 'sistema@agencia.com'],
+                    [
+                        'name' => 'Sistema Agencia',
+                        'password' => \Illuminate\Support\Facades\Hash::make('sistema123'),
+                    ]
+                );
+
+                // Crear empleado por defecto
+                $empleado = \App\Models\Empleado::create([
+                    'user_id' => $userEmpleado->id,
+                    'cargo' => 'Empleado Sistema',
+                    'telefono' => '000-000-0000'
+                ]);
+
+                Log::info('✅ Empleado por defecto creado', [
+                    'empleado_id' => $empleado->id,
+                    'user_id' => $userEmpleado->id
+                ]);
             }
 
             // Crear la venta
@@ -632,6 +602,111 @@ class PagoController extends Controller
             ]);
 
             return response()->json(['error' => 'Internal server error'], 500);
+        }
+    }
+
+    /**
+     * Crear enlace de pago directamente desde el carrito
+     */
+    public function createPaymentLinkFromCart(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'customer_email' => 'required|email',
+                'amount' => 'required|numeric|min:0.01',
+                'description' => 'string|nullable',
+                'reference' => 'string|nullable',
+                'productos' => 'required|array|min:1',
+                'productos.*.id' => 'required|integer',
+                'productos.*.nombre' => 'required|string',
+                'productos.*.precio' => 'required|numeric|min:0',
+                'productos.*.cantidad' => 'required|integer|min:1',
+                'productos.*.subtotal' => 'required|numeric|min:0'
+            ]);
+
+            // Calcular total de items para descripción
+            $totalItems = 0;
+            foreach ($validated['productos'] as $producto) {
+                $totalItems += $producto['cantidad'];
+            }
+
+            // Crear descripción simple
+            if (count($validated['productos']) == 1) {
+                $prod = $validated['productos'][0];
+                if ($prod['cantidad'] == 1) {
+                    $descripcionDetallada = "{$prod['nombre']} - \${$prod['precio']}";
+                } else {
+                    $descripcionDetallada = "{$prod['cantidad']}x {$prod['nombre']} - \${$prod['precio']} c/u";
+                }
+            } else {
+                $detalles = [];
+                foreach ($validated['productos'] as $producto) {
+                    if ($producto['cantidad'] == 1) {
+                        $detalles[] = "1x {$producto['nombre']} - \${$producto['precio']}";
+                    } else {
+                        $detalles[] = "{$producto['cantidad']}x {$producto['nombre']} - \${$producto['precio']} c/u";
+                    }
+                }
+                $descripcionDetallada = implode(" | ", $detalles);
+            }
+
+            // No enviar imagen ya que no se muestra en Wompi
+            $imagenProducto = null;
+
+            // Crear nombre de producto simple
+            if (count($validated['productos']) === 1) {
+                $prod = $validated['productos'][0];
+                if ($prod['cantidad'] == 1) {
+                    $nombreProducto = $prod['nombre'];
+                } else {
+                    $nombreProducto = "{$prod['cantidad']}x {$prod['nombre']}";
+                }
+            } else {
+                $nombreProducto = "Paquete de {$totalItems} productos - VASIR";
+            }
+
+            // Crear enlace de pago con Wompi (sin imagen)
+            $paymentData = [
+                'amount_in_cents' => $validated['amount'] * 100,
+                'description' => $descripcionDetallada,
+                'reference' => $validated['reference'] ?? 'CART-' . time(),
+                'customer_email' => $validated['customer_email'],
+                'product_name' => $nombreProducto,
+                'productos_detalle' => $validated['productos']
+            ];
+
+            $result = $this->wompiService->createPaymentLink($paymentData);
+
+            if ($result['success']) {
+                return response()->json([
+                    'success' => true,
+                    'payment_link' => $result['payment_link'],
+                    'link_id' => $result['link_id'],
+                    'reference' => $result['reference']
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => $result['error']
+            ], 400);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos inválidos',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (Exception $e) {
+            Log::error('❌ Error general en createPaymentLinkFromCart', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ], 500);
         }
     }
 

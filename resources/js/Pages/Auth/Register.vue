@@ -28,11 +28,14 @@ onMounted(() => {
             if (!newName || newName.length < 3) return;
             nameCheckLoading.value = true;
             try {
+                const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 const response = await fetch('/api/auth/check-name', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({ name: newName })
                 });
@@ -63,11 +66,14 @@ onMounted(() => {
             }
             emailCheckLoading.value = true;
             try {
+                const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
                 const response = await fetch('/api/auth/check-email', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken,
+                        'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({ email: newEmail })
                 });
@@ -147,7 +153,7 @@ const submit = () => {
             // Verificar si hay una reserva pendiente ACTIVA de esta sesión
             const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente');
             const sessionActiva = sessionStorage.getItem('reserva_session_activa');
-            
+
             if (reservaPendiente && sessionActiva === 'true') {
                 const tourInfo = JSON.parse(reservaPendiente);
                 // NO limpiar aquí - dejar que la vista de destino lo maneje
@@ -155,11 +161,11 @@ const submit = () => {
                 router.visit(tourInfo.returnUrl);
                 return;
             }
-            
+
             // Verificar si hay un producto pendiente ACTIVO de esta sesión
             const productoPendiente = sessionStorage.getItem('producto_compra_pendiente');
             const sessionActivaProducto = sessionStorage.getItem('compra_session_activa');
-            
+
             if (productoPendiente && sessionActivaProducto === 'true') {
                 const productoInfo = JSON.parse(productoPendiente);
                 // NO limpiar aquí - dejar que la vista de destino lo maneje
@@ -167,13 +173,13 @@ const submit = () => {
                 router.visit(productoInfo.returnUrl);
                 return;
             }
-            
+
             // Si no hay reserva o compra pendiente activa, limpiar cualquier dato residual
             if (!sessionActiva || sessionActiva !== 'true') {
                 sessionStorage.removeItem('tour_reserva_pendiente');
                 sessionStorage.removeItem('reserva_session_activa');
             }
-            
+
             if (!sessionActivaProducto || sessionActivaProducto !== 'true') {
                 sessionStorage.removeItem('producto_compra_pendiente');
                 sessionStorage.removeItem('compra_session_activa');
@@ -189,8 +195,8 @@ const submit = () => {
     <!-- Logo responsive -->
     <div class="flex justify-center mb-4 sm:mb-6">
         <Link href="/">
-            <img src="../../../../imagenes/logo.png" alt="Logo" 
-                 class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105" 
+            <img src="../../../../imagenes/logo.png" alt="Logo"
+                 class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105"
                  title="Ir al catálogo"/>
         </Link>
     </div>
@@ -203,7 +209,7 @@ const submit = () => {
     <form @submit.prevent="submit" class="w-full max-w-sm mx-auto space-y-3" novalidate>
             <!-- Campo Nombre -->
             <div class="space-y-1">
-                <InputLabel for="register-name" value="Nombre Completo:" 
+                <InputLabel for="register-name" value="Nombre Completo:"
                            class="text-sm font-semibold text-gray-700"/>
                 <TextInput
                     id="register-name"
@@ -222,7 +228,7 @@ const submit = () => {
 
             <!-- Campo Email -->
             <div class="space-y-1">
-                <InputLabel for="register-email" value="Correo Electrónico:" 
+                <InputLabel for="register-email" value="Correo Electrónico:"
                            class="text-sm font-semibold text-gray-700"/>
                 <TextInput
                     id="register-email"
@@ -244,7 +250,7 @@ const submit = () => {
 
             <!-- Campo Contraseña -->
             <div class="space-y-1">
-                <InputLabel for="register-password" value="Contraseña:" 
+                <InputLabel for="register-password" value="Contraseña:"
                            class="text-sm font-semibold text-gray-700"/>
                 <div class="relative">
                     <TextInput

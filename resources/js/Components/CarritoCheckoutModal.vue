@@ -208,22 +208,68 @@ const procesarPagoWompi = async () => {
   error.value = null
 
   try {
-    // Crear cliente axios con CSRF token
-    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    // Obtener token CSRF actual
+    const getCsrfToken = () => {
+      return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || null
+    }
 
-    const response = await fetch('/api/wompi/payment-link', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': csrfToken,
-        'X-Requested-With': 'XMLHttpRequest'
-      },
-      body: JSON.stringify({
-        venta_id: ventaCreada.value.id,
-        customer_email: customerEmail.value,
-        customer_name: customerName.value
+    // Función para hacer el request
+    const makePaymentRequest = async () => {
+      return await fetch('/wompi/payment-link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': getCsrfToken(),
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          customer_email: customerEmail.value,
+          amount: carritoStore.totalPrice,
+          description: `Compra de ${carritoStore.items.length} producto(s) - ${customerName.value}`,
+          reference: `CART-${Date.now()}`,
+          customer_name: customerName.value,
+          productos: carritoStore.items.map(item => ({
+            id: item.id,
+            nombre: item.nombre,
+            precio: item.precio,
+            cantidad: item.cantidad,
+            imagen: item.primera_imagen || item.imagen || null,
+            subtotal: item.precio * item.cantidad
+          }))
+        })
       })
-    })
+    }
+
+    let response = await makePaymentRequest()
+
+    // Si es error 419, intentar renovar token
+    if (response.status === 419) {
+      console.log('🔄 Token CSRF expirado, renovando...')
+
+      // Hacer petición para obtener nuevo token
+      const freshResponse = await fetch('/tienda', {
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'text/html,application/xhtml+xml'
+        }
+      })
+
+      const html = await freshResponse.text()
+      const match = html.match(/name="csrf-token" content="([^"]+)"/)
+
+      if (match) {
+        const newToken = match[1]
+        const metaTag = document.querySelector('meta[name="csrf-token"]')
+        if (metaTag) {
+          metaTag.setAttribute('content', newToken)
+          console.log('✅ Token CSRF renovado:', newToken)
+        }
+      }
+
+      // Reintentar con nuevo token
+      response = await makePaymentRequest()
+    }
 
     const data = await response.json()
 

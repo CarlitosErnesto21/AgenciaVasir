@@ -21,6 +21,10 @@ class Producto extends Model
         'precio' => 'decimal:2',
     ];
 
+    protected $appends = [
+        'primera_imagen'
+    ];
+
     // ===== RELACIONES =====
     
     public function inventarios(): HasMany

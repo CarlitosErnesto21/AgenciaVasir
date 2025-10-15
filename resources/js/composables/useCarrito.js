@@ -10,22 +10,25 @@ export function useCarrito() {
     // Crear instancia de axios con CSRF para rutas web
     const webAxios = axios.create()
 
-    // Configurar CSRF token para esta instancia
-    const token = document.head.querySelector('meta[name="csrf-token"]')
-
-    console.log('🔒 Debug CSRF:', {
-        metaTag: token,
-        tokenContent: token?.content,
-        documentHead: document.head.innerHTML.substring(0, 500)
-    })
-
-    if (token) {
-        webAxios.defaults.headers.common['X-CSRF-TOKEN'] = token.content
-        console.log('✅ Token CSRF configurado:', token.content)
-    } else {
-        console.error('❌ Token CSRF NO encontrado')
+    // Función para obtener el token CSRF actual
+    const getCsrfToken = () => {
+        const metaToken = document.head.querySelector('meta[name="csrf-token"]')?.content
+        return metaToken || null
     }
-    webAxios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest'
+
+    // Configurar interceptor para incluir siempre el token CSRF más reciente
+    webAxios.interceptors.request.use((config) => {
+        const token = getCsrfToken()
+
+        if (token) {
+            config.headers['X-CSRF-TOKEN'] = token
+        }
+
+        config.headers['X-Requested-With'] = 'XMLHttpRequest'
+        config.headers['Accept'] = 'application/json'
+
+        return config
+    })
 
     /**
      * Crear una venta desde el carrito actual
@@ -40,7 +43,9 @@ export function useCarrito() {
                 id: item.id,
                 cantidad: item.cantidad,
                 precio: item.precio,
-                nombre: item.nombre
+                nombre: item.nombre,
+                imagen: item.primera_imagen || item.imagen || null,
+                subtotal: item.precio * item.cantidad
             }))
 
             const payload = {
@@ -48,15 +53,45 @@ export function useCarrito() {
                 customer_email: customerEmail
             }
 
-            console.log('🛒 Datos del carrito a enviar:', {
-                payload,
-                carritoItems: carritoStore.items,
-                customerEmail
-            })
+            let response
+            try {
+                response = await webAxios.post('/carrito/create-venta', payload)
+            } catch (firstAttemptError) {
+                // Si es error 419 (CSRF), intentar renovar token
+                if (firstAttemptError.response?.status === 419) {
+                    console.log('🔄 Token CSRF expirado, renovando...')
+                    try {
+                        // Hacer una petición GET para obtener nuevo token
+                        const freshResponse = await axios.get('/tienda', {
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'text/html,application/xhtml+xml'
+                            }
+                        })
 
-            console.log('📡 Headers a enviar:', webAxios.defaults.headers.common)
+                        // Extraer el nuevo token del HTML
+                        if (freshResponse.data && typeof freshResponse.data === 'string') {
+                            const match = freshResponse.data.match(/name="csrf-token" content="([^"]+)"/);
+                            if (match) {
+                                const newToken = match[1];
+                                // Actualizar el meta tag
+                                const metaTag = document.head.querySelector('meta[name="csrf-token"]')
+                                if (metaTag) {
+                                    metaTag.setAttribute('content', newToken)
+                                    console.log('✅ Token CSRF renovado:', newToken)
+                                }
+                            }
+                        }
 
-            const response = await webAxios.post('/carrito/create-venta', payload)
+                        // Reintentar la petición original
+                        response = await webAxios.post('/carrito/create-venta', payload)
+                    } catch (retryError) {
+                        throw retryError
+                    }
+                } else {
+                    throw firstAttemptError
+                }
+            }
 
             if (response.data.success) {
                 return {
@@ -70,23 +105,6 @@ export function useCarrito() {
 
         } catch (err) {
             console.error('Error creando venta desde carrito:', err)
-            console.error('📋 Detalles del error:', {
-                status: err.response?.status,
-                statusText: err.response?.statusText,
-                data: err.response?.data,
-                headers: err.response?.headers
-            })
-            
-            // Mostrar detalles específicos del error de validación
-            if (err.response?.data) {
-                console.error('🔍 Respuesta del servidor:', err.response.data)
-                if (err.response.data.errors) {
-                    console.error('❌ Errores de validación:', err.response.data.errors)
-                }
-                if (err.response.data.message) {
-                    console.error('💬 Mensaje del servidor:', err.response.data.message)
-                }
-            }
 
             let errorMessage = 'Error al crear la venta'
 

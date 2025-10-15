@@ -49,7 +49,10 @@ use App\Http\Controllers\PagoController;
 // Rutas públicas para configuración de Wompi
 Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
 Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
-Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLink']);
+Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLinkFromCart']);
+
+// Ruta de prueba para verificar imágenes de productos (temporal)
+Route::get('/debug/product-images', [PagoController::class, 'testProductImages']);
 
 // Webhook de Wompi (debe ser público para que Wompi pueda llamarlo)
 Route::post('/wompi/webhook', [PagoController::class, 'webhook']);
@@ -66,6 +69,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
+
+
 
     // ───────────────────────────────────────────────────────
     // RUTAS DE TESTING (temporal)
