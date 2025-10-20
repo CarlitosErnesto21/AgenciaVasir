@@ -21,10 +21,8 @@ class CustomVerifyEmailController extends Controller
     public function verify(Request $request): RedirectResponse
     {
         // El middleware CustomSignedMiddleware ya validó la URL
-        Log::info('CustomVerifyEmailController: Procesando verificación de email', [
-            'email' => $request->email,
-            'hash' => $request->hash
-        ]);        // Obtener datos de registro pendientes de la sesión
+        
+        // Obtener datos de registro pendientes de la sesión
         $pendingData = session('pending_registration');
 
         if (!$pendingData) {
