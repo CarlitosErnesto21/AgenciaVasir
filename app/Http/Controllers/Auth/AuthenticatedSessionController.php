@@ -63,16 +63,12 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        // ✅ CORREGIDO: Eliminar tokens
         if ($request->user()) {
             $request->user()->tokens()->delete();
         }
-
         Auth::guard('web')->logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-
-        // ✅ CORREGIDO: Limpiar cookie
         $cookie = cookie()->forget('api_token');
         return redirect('/')->withCookie($cookie);
     }
