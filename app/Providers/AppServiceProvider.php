@@ -29,6 +29,11 @@ class AppServiceProvider extends ServiceProvider
         // Forzar HTTPS en producción para evitar Mixed Content
         if (app()->environment('production')) {
             \Illuminate\Support\Facades\URL::forceScheme('https');
+            \Illuminate\Support\Facades\URL::forceRootUrl(config('app.url'));
+
+            // Configurar proxies confiables para detectar HTTPS correctamente
+            $this->app['request']->server->set('HTTPS', 'on');
+            $this->app['request']->server->set('SERVER_PORT', 443);
         }
 
         // Configuración para PlanetScale

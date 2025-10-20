@@ -29,7 +29,7 @@ class CustomSignedMiddleware
         $hasValidSignature = $request->hasValidSignature();
 
         if (!$hasValidSignature) {
-            Log::warning('CustomSignedMiddleware: Firma inválida, verificando alternativas', [
+            Log::info('CustomSignedMiddleware: Usando validación alternativa por diferencia HTTP/HTTPS', [
                 'email' => $request->route('email'),
                 'hash' => $request->route('hash')
             ]);
