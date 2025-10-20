@@ -47,7 +47,7 @@ Route::post('verification-notification', [EmailVerificationPromptController::cla
 // Ruta personalizada de verificación (pública)
 use App\Http\Controllers\Auth\CustomVerifyEmailController;
 Route::get('verify-email-custom/{email}/{hash}', [CustomVerifyEmailController::class, 'verify'])
-    ->middleware(['signed', 'throttle:6,1'])
+    ->middleware(['custom.signed', 'throttle:6,1'])
     ->name('custom.verification.verify');
 
 Route::middleware('auth')->group(function () {

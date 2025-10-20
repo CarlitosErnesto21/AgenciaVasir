@@ -20,35 +20,11 @@ class CustomVerifyEmailController extends Controller
      */
     public function verify(Request $request): RedirectResponse
     {
-        // Log para debugging
-        Log::info('Email verification attempt', [
+        // El middleware CustomSignedMiddleware ya validó la URL
+        Log::info('CustomVerifyEmailController: Procesando verificación de email', [
             'email' => $request->email,
-            'hash' => $request->hash,
-            'has_signature' => $request->hasValidSignature(),
-            'query_params' => $request->query(),
-            'app_url' => config('app.url'),
-            'current_url' => $request->url()
-        ]);
-
-        // Primero validar que el enlace no esté expirado usando signature
-        if (!$request->hasValidSignature()) {
-            Log::warning('Signature verification failed', [
-                'email' => $request->email,
-                'url' => $request->fullUrl()
-            ]);
-
-            // Intentar validación con hash como fallback
-            $expectedHash = sha1($request->email);
-            if ($request->hash !== $expectedHash) {
-                return redirect()->route('register')
-                    ->withErrors(['email' => 'El enlace de verificación no es válido o ha expirado.']);
-            }
-
-            // Si el hash es válido pero la signature falla, continuar con warning
-            Log::warning('Continuing with hash validation despite signature failure');
-        }
-
-        // Obtener datos de registro pendientes de la sesión
+            'hash' => $request->hash
+        ]);        // Obtener datos de registro pendientes de la sesión
         $pendingData = session('pending_registration');
 
         if (!$pendingData) {
