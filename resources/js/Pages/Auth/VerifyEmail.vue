@@ -9,9 +9,14 @@ const props = defineProps({
     status: {
         type: String,
     },
+    email: {
+        type: String,
+    },
 });
 
-const form = useForm({});
+const form = useForm({
+    email: props.email,
+});
 
 const submit = () => {
     form.post(route('verification.send'));
@@ -31,10 +36,10 @@ const verificationLinkSent = computed(
             <!-- ✅ Logo centrado responsive -->
             <div class="flex justify-center mb-6 sm:mb-8">
                 <Link href="/">
-                    <img 
-                        src="../../../../imagenes/logo.png" 
-                        alt="VASIR Logo" 
-                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200" 
+                    <img
+                        src="images/logo.png"
+                        alt="VASIR Logo"
+                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
                         title="Ir al inicio"
                     />
                 </Link>
@@ -68,7 +73,7 @@ const verificationLinkSent = computed(
                             </div>
                             <div class="flex-1">
                                 <p class="text-xs sm:text-sm lg:text-base text-blue-800 leading-relaxed">
-                                    ¡Gracias por registrarte en <strong class="text-red-600">VASIR</strong>! 
+                                    ¡Gracias por registrarte en <strong class="text-red-600">VASIR</strong>!
                                     Hemos enviado un enlace de verificación a tu correo electrónico.
                                 </p>
                             </div>
@@ -163,7 +168,7 @@ const verificationLinkSent = computed(
                         </div>
                         <div class="flex items-start text-xs sm:text-xs lg:text-sm text-gray-600">
                             <span class="text-red-500 mr-1.5 sm:mr-2 flex-shrink-0">•</span>
-                            <span>El enlace expira en <strong>60 minutos</strong> por seguridad</span>
+                            <span>El enlace expira en <strong>15 minutos</strong> por seguridad</span>
                         </div>
                         <div class="flex items-start text-xs sm:text-xs lg:text-sm text-gray-600">
                             <span class="text-red-500 mr-1.5 sm:mr-2 flex-shrink-0">•</span>
@@ -176,7 +181,7 @@ const verificationLinkSent = computed(
             <!-- ✅ Footer con soporte responsive -->
             <div class="text-center mt-4 sm:mt-6">
                 <p class="text-xs sm:text-sm text-gray-500 px-2">
-                    ¿Tienes problemas? 
+                    ¿Tienes problemas?
                     <a href="mailto:soporte@vasir.com" class="text-red-600 hover:text-red-700 underline font-medium">
                         Contacta a soporte
                     </a>

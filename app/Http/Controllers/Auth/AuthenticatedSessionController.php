@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Mail\StaffLoginNotificationMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -37,6 +40,9 @@ class AuthenticatedSessionController extends Controller
             $user = Auth::user();
 
             if ($user && ($user->hasRole('Administrador') || $user->hasRole('Empleado'))) {
+                // Enviar email de notificación para staff
+                $this->sendStaffLoginNotification($user, $request);
+
                 //Crear token
                 $token = $user->createToken('web-admin-token')->plainTextToken;
 
@@ -69,5 +75,28 @@ class AuthenticatedSessionController extends Controller
         // ✅ CORREGIDO: Limpiar cookie
         $cookie = cookie()->forget('api_token');
         return redirect('/')->withCookie($cookie);
+    }
+
+    /**
+     * Enviar notificación de login para staff (Empleados y Administradores)
+     */
+    private function sendStaffLoginNotification($user, Request $request): void
+    {
+        try {
+            // Recopilar información del login
+            $loginDetails = [
+                'timestamp' => now()->format('d/m/Y H:i:s'),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'session_id' => $request->session()->getId(),
+            ];
+
+            // Enviar email de notificación
+            Mail::to($user->email)->send(new StaffLoginNotificationMail($user, $loginDetails));
+
+        } catch (\Exception $e) {
+            // Log del error pero no interrumpir el login
+            Log::error('Error enviando notificación de login para staff: ' . $e->getMessage());
+        }
     }
 }

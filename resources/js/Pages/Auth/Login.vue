@@ -35,7 +35,7 @@ const submit = () => {
             // Verificar si hay una reserva pendiente ACTIVA de esta sesión
             const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente');
             const sessionActiva = sessionStorage.getItem('reserva_session_activa');
-            
+
             if (reservaPendiente && sessionActiva === 'true') {
                 const tourInfo = JSON.parse(reservaPendiente);
                 // NO limpiar aquí - dejar que la vista de destino lo maneje
@@ -43,11 +43,11 @@ const submit = () => {
                 router.visit(tourInfo.returnUrl);
                 return;
             }
-            
+
             // Verificar si hay un producto pendiente ACTIVO de esta sesión
             const productoPendiente = sessionStorage.getItem('producto_compra_pendiente');
             const sessionActivaProducto = sessionStorage.getItem('compra_session_activa');
-            
+
             if (productoPendiente && sessionActivaProducto === 'true') {
                 const productoInfo = JSON.parse(productoPendiente);
                 // NO limpiar aquí - dejar que la vista de destino lo maneje
@@ -55,13 +55,13 @@ const submit = () => {
                 router.visit(productoInfo.returnUrl);
                 return;
             }
-            
+
             // Si no hay reserva o compra pendiente activa, limpiar cualquier dato residual
             if (!sessionActiva || sessionActiva !== 'true') {
                 sessionStorage.removeItem('tour_reserva_pendiente');
                 sessionStorage.removeItem('reserva_session_activa');
             }
-            
+
             if (!sessionActivaProducto || sessionActivaProducto !== 'true') {
                 sessionStorage.removeItem('producto_compra_pendiente');
                 sessionStorage.removeItem('compra_session_activa');
@@ -98,12 +98,12 @@ const toggleForm = () => {
             <div v-if="status" class="mb-4 text-xs sm:text-sm font-medium text-green-600 text-center">
                 {{ status }}
             </div>
-            
+
             <!-- Logo responsive -->
             <div class="flex justify-center mb-4 sm:mb-6">
                 <Link href="/">
-                    <img src="../../../../imagenes/logo.png" alt="Logo" 
-                         class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105" 
+                    <img src="images/logo.png" alt="Logo"
+                         class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105"
                          title="Ir al Catálogo"/>
                 </Link>
             </div>
@@ -116,7 +116,7 @@ const toggleForm = () => {
             <form @submit.prevent="submit" class="w-full max-w-sm mx-auto space-y-4">
                 <!-- Campo Email -->
                 <div class="space-y-1">
-                    <InputLabel for="login-email" value="Correo Electrónico:" 
+                    <InputLabel for="login-email" value="Correo Electrónico:"
                                class="text-sm font-semibold text-gray-700" />
                     <TextInput
                         id="login-email"
@@ -124,7 +124,7 @@ const toggleForm = () => {
                         class="mt-1 block w-full text-sm sm:text-base rounded-lg bg-white text-black border border-gray-300 focus:border-red-500 focus:ring-red-500 transition-colors"
                         v-model="form.email"
                         required
-                        :autofocus="!isRegister" 
+                        :autofocus="!isRegister"
                         autocomplete="username"
                         placeholder="correo@ejemplo.com"
                     />
@@ -133,7 +133,7 @@ const toggleForm = () => {
 
                 <!-- Campo Contraseña -->
                 <div class="space-y-1">
-                    <InputLabel for="login-password" value="Contraseña:" 
+                    <InputLabel for="login-password" value="Contraseña:"
                                class="text-sm font-semibold text-gray-700" />
                     <div class="relative">
                         <TextInput

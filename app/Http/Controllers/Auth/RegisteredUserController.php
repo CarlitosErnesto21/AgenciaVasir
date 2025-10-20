@@ -5,13 +5,12 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\WelcomeUserMail;
 use App\Models\User;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -33,9 +32,10 @@ class RegisteredUserController extends Controller
     public function store(Request $request): RedirectResponse
     {
         try {
+            // Primero validamos formato básico
             $request->validate([
                 'name' => 'required|string|max:255',
-                'email' => 'required|string|lowercase|email:rfc,dns|max:255|unique:users,email',
+                'email' => 'required|string|lowercase|email:rfc,dns|max:255',
                 'password' => [
                     'required',
                     'confirmed',
@@ -46,32 +46,56 @@ class RegisteredUserController extends Controller
             ], [
                 'email.required' => 'El correo electrónico es obligatorio.',
                 'email.email' => 'El formato del correo electrónico no es válido.',
-                'email.unique' => 'Este correo ya está registrado.',
                 'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
                 'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número.',
                 'password.confirmed' => 'Las contraseñas no coinciden.'
             ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            // Verificar si las credenciales ya existen (nombre o email)
+            $nameExists = User::where('name', $request->name)->exists();
+            $emailExists = User::where('email', $request->email)->exists();
+
+            // Si el nombre o email ya existen, mostrar el error siempre en el campo email
+            if ($nameExists || $emailExists) {
+                throw ValidationException::withMessages([
+                    'email' => 'Estas credenciales ya están en uso. Por favor, crea una cuenta nueva o inicia sesión.'
+                ]);
+            }
+
+        } catch (ValidationException $e) {
             // Enviar los mensajes personalizados al frontend
             throw $e;
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+        // GUARDAR DATOS TEMPORALMENTE EN SESIÓN (no crear usuario aún)
+        session([
+            'pending_registration' => [
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]
         ]);
 
-        //Implementando lógica de admin automático
-        $this->assignUserRole($user);
-        event(new Registered($user));
-        Auth::login($user);
+                // Generar URL de verificación personalizada con datos en sesión
+        $verificationUrl = URL::temporarySignedRoute(
+            'custom.verification.verify',
+            now()->addMinutes(15),
+            [
+                'email' => $request->email,
+                'hash' => sha1($request->email)
+            ]
+        );
 
-        // Enviar email de bienvenida personalizado con verificación
-        $this->sendWelcomeEmail($user);
+        // Enviar email de verificación con datos del usuario
+        $userData = [
+            'name' => $request->name,
+            'email' => $request->email,
+        ];
 
-        //Redireccionando según el rol asignado
-        return $this->redirectBasedOnUserRole($user);
+        Mail::to($request->email)->send(new WelcomeUserMail($userData, $verificationUrl));
+
+        // Redirigir a la vista de verificación con el email
+        return redirect()->route('verification.notice', ['email' => $request->email]);
     }
 
     /**
@@ -82,8 +106,8 @@ class RegisteredUserController extends Controller
     private function assignUserRole(User $user): void { $user->assignRole('Cliente'); }
 
     /**
-    * Redirigir al usuario según su rol
-    */
+     * Redirigir al usuario según su rol
+     */
     private function redirectBasedOnUserRole(User $user): RedirectResponse
     {
         // Actualizar roles del usuario en la sesión
@@ -96,54 +120,5 @@ class RegisteredUserController extends Controller
         } else {
             return redirect(route('inicio')); // ← Página cliente
         }
-    }
-
-    /**
-     * Endpoint para validar si el nombre de usuario ya existe
-     */
-    public function checkName(Request $request)
-    {
-        $name = $request->input('name');
-        $exists = User::where('name', $name)->first() !== null;
-        return response()->json(['exists' => $exists]);
-    }
-
-    /**
-     * Endpoint para validar si el correo ya existe
-     */
-    public function checkEmail(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email:rfc,dns'
-        ], [
-            'email.required' => 'El correo electrónico es obligatorio.',
-            'email.email' => 'El formato del correo electrónico no es válido.'
-        ]);
-
-        $exists = User::where('email', $request->email)->first() !== null;
-        $response = ['exists' => $exists];
-        if ($exists) {
-            $response['message'] = 'Este correo ya está registrado.';
-        }
-        return response()->json($response);
-    }
-
-    /**
-     * Enviar email de bienvenida personalizado con verificación
-     */
-    private function sendWelcomeEmail(User $user): void
-    {
-        // Generar URL de verificación
-        $verificationUrl = URL::temporarySignedRoute(
-            'verification.verify',
-            now()->addMinutes(60),
-            [
-                'id' => $user->id,
-                'hash' => sha1($user->email),
-            ]
-        );
-
-        // Enviar email personalizado
-        Mail::to($user->email)->send(new WelcomeUserMail($user, $verificationUrl));
     }
 }

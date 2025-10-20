@@ -18,7 +18,7 @@ const userMenuOpen = ref(false)
 const lockBodyScroll = () => {
   // Obtener la posición actual del scroll
   const scrollY = window.scrollY
-  
+
   document.body.style.position = 'fixed'
   document.body.style.top = `-${scrollY}px`
   document.body.style.left = '0'
@@ -30,13 +30,13 @@ const lockBodyScroll = () => {
 
 const unlockBodyScroll = () => {
   const scrollY = document.body.getAttribute('data-scroll-y')
-  
+
   document.body.style.position = ''
   document.body.style.top = ''
   document.body.style.left = ''
   document.body.style.right = ''
   document.body.style.overflow = ''
-  
+
   if (scrollY) {
     window.scrollTo(0, parseInt(scrollY))
     document.body.removeAttribute('data-scroll-y')
@@ -71,13 +71,13 @@ onBeforeUnmount(() => {
 const logout = () => {
     // Limpiar carrito al cerrar sesión
     carrito.limpiarCarritoAlCerrarSesion()
-    
+
     // Limpiar cualquier información de reserva pendiente al cerrar sesión
     sessionStorage.removeItem('tour_reserva_pendiente')
     sessionStorage.removeItem('reserva_session_activa')
     sessionStorage.removeItem('producto_compra_pendiente')
     sessionStorage.removeItem('compra_session_activa')
-    
+
     router.post(route('logout'), {}, {
         onSuccess: () => router.visit('/')
     })
@@ -115,10 +115,10 @@ watch(isAuthenticated, (newValue, oldValue) => {
                     <span class="sr-only">Abrir menú</span>
                     <FontAwesomeIcon :icon="faList" class="w-5 h-5 md:w-7 md:h-7  text-white hover:text-red-300 bg-red-600/80 hover:bg-red-600/90 p-2 rounded-full transform hover:scale-105 transition-transform duration-200" />
                 </button>
-                
+
                 <!-- Logo con efecto -->
                 <Link :href="route('inicio')" title="Ir a la página de inicio" class="flex items-center cursor-pointer select-none group">
-                    <img src="../../../imagenes/logo.png" alt="Logo VASIR" class="w-22 h-7 md:w-32 md:h-10 lg:w-28 lg:h-10 xl:w-44 xl:h-14 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
+                    <img src="images/logo.png" alt="Logo VASIR" class="w-22 h-7 md:w-32 md:h-10 lg:w-28 lg:h-10 xl:w-44 xl:h-14 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                 </Link>
             </div>
 
@@ -126,7 +126,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
             <nav class="hidden lg:flex items-center bg-white/80 backdrop-blur-sm rounded-full lg:py-3 lg:px-5 xl:py-4 xl:px-6 shadow-xl border border-red-100/50">
               <!-- Indicador decorativo -->
               <div class="w-1 h-1 rounded-full bg-gradient-to-r from-red-500 to-blue-500 animate-pulse"></div>
-                
+
                 <Link
                     :href="route('inicio')"
                     :class=" [
@@ -192,7 +192,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                             :class="['w-5 h-4 ml-3 transition-all duration-300 group-hover:scale-110', toursOpen ? 'rotate-180' : '']"
                         />
                     </button>
-                    
+
                     <!-- Desplegable de tours con efecto glassmorphism -->
                     <div
                         class="absolute left-0 mt-2 w-64 bg-white/95 backdrop-blur-xl shadow-2xl border border-red-100/50 rounded-2xl z-[9999] transition-all overflow-hidden"
@@ -244,10 +244,10 @@ watch(isAuthenticated, (newValue, oldValue) => {
                     <FontAwesomeIcon :icon="faStore" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
                     <span class="text-center">Tienda</span>
                 </Link>
-                
+
                 <!-- Separador visual -->
                 <div class="w-px h-6 bg-red-200/40"></div>
-                
+
                 <Link
                     :href="route('sobre-nosotros')"
                     :class=" [
@@ -260,10 +260,10 @@ watch(isAuthenticated, (newValue, oldValue) => {
                     <FontAwesomeIcon :icon="faUsers" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
                     <span class="text-center">Sobre Nosotros</span>
                 </Link>
-                
+
                 <!-- Separador visual -->
                 <div class="w-px h-6 bg-red-200/40"></div>
-                
+
                 <Link
                     :href="route('contactos')"
                     :class=" [
@@ -276,11 +276,11 @@ watch(isAuthenticated, (newValue, oldValue) => {
                     <FontAwesomeIcon :icon="faEnvelope" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
                     <span class="text-center">Contactos</span>
                 </Link>
-                
+
                 <!-- Indicador decorativo final -->
                 <div class="hidden lg:block w-1 h-1 rounded-full bg-gradient-to-r from-blue-500 to-red-500 animate-pulse"></div>
             </nav>
-            
+
             <!-- Contenedor derecho: Auth -->
             <div class="flex items-center space-x-2 sm:space-x-3 md:space-x-4 lg:space-x-2 xl:space-x-4">
                 <template v-if="!isAuthenticated">
@@ -315,7 +315,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                         class="w-5 h-5 sm:w-5 sm:h-5 md:w-5 text-red-600 group-hover:text-white transition-colors duration-200 drop-shadow-sm"
                       />
                     </button>
-                    <transition 
+                    <transition
                       enter-active-class="transition-all duration-200"
                       leave-active-class="transition-all duration-150"
                       enter-from-class="opacity-0 scale-95 -translate-y-1"
@@ -400,9 +400,9 @@ watch(isAuthenticated, (newValue, oldValue) => {
       leave-to-class="opacity-0"
     >
       <!-- Overlay con glassmorphism mejorado -->
-      <div 
-        v-if="isSidebarOpen" 
-        class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm lg:hidden" 
+      <div
+        v-if="isSidebarOpen"
+        class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm lg:hidden"
         @click="isSidebarOpen = false"
         @touchmove.prevent
         @scroll.prevent
@@ -414,22 +414,22 @@ watch(isAuthenticated, (newValue, oldValue) => {
       enter-from-class="-translate-x-full opacity-0"
       leave-to-class="-translate-x-full opacity-0"
     >
-      <aside 
-        v-if="isSidebarOpen" 
+      <aside
+        v-if="isSidebarOpen"
         class="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white/95 via-blue-50/90 to-red-50/95 backdrop-blur-xl shadow-2xl z-[9999] flex flex-col lg:hidden border-r border-white/30 overflow-hidden"
         @touchmove.stop
       >
         <!-- Elementos decorativos de fondo -->
         <div class="absolute inset-0 bg-gradient-to-br from-red-100/20 via-transparent to-blue-100/20"></div>
         <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 via-blue-400 to-red-400"></div>
-        
+
         <!-- Header del sidebar -->
         <div class="relative flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-red-100/50 bg-white/80 backdrop-blur-sm">
             <Link :href="route('inicio')" class="flex items-center group" @click="isSidebarOpen = false">
-              <img src="../../../imagenes/logo.png" class="w-20 h-7 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
+              <img src="/images/logo.png" class="w-20 h-7 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
             </Link>
-              <button 
-                @click="isSidebarOpen = false" 
+              <button
+                @click="isSidebarOpen = false"
                 class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-600/80 text-white hover:bg-gray-700/80 hover:scale-110 transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                 aria-label="Cerrar menú"
               >
@@ -445,14 +445,14 @@ watch(isAuthenticated, (newValue, oldValue) => {
             <!-- Elementos decorativos internos -->
             <div class="absolute inset-0 bg-gradient-to-br from-white/30 via-transparent to-blue-50/30 pointer-events-none"></div>
             <div class="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-red-300/40 to-transparent pointer-events-none"></div>
-          
+
           <!-- Inicio -->
           <Link
             :href="route('inicio')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('inicio') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('inicio')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -467,8 +467,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
             :href="route('paquetes')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('paquetes') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('paquetes')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -483,8 +483,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
             :href="route('reservaciones')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('reservaciones') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('reservaciones')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -499,7 +499,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
             <button
               @click="toursOpenAside = !toursOpenAside"
               class="relative w-full flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-300/50 group"
-              :class="{ 
+              :class="{
                 'bg-gradient-to-r from-red-600 to-red-400 text-white shadow-lg font-bold': toursOpenAside || route().current('tours-nacionales') || route().current('tours-internacionales'),
                 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg': !(toursOpenAside || route().current('tours-nacionales') || route().current('tours-internacionales'))
               }"
@@ -508,20 +508,20 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 <FontAwesomeIcon :icon="faMapLocationDot" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
                 <span class="font-semibold">Tours</span>
               </div>
-              <FontAwesomeIcon 
-                :icon="faChevronDown" 
-                :class="['w-4 h-4 transition-all duration-300 group-hover:scale-110', toursOpenAside ? 'rotate-180' : '']" 
+              <FontAwesomeIcon
+                :icon="faChevronDown"
+                :class="['w-4 h-4 transition-all duration-300 group-hover:scale-110', toursOpenAside ? 'rotate-180' : '']"
               />
             </button>
-            
+
             <!-- Submenu de Tours -->
             <div v-show="toursOpenAside" class="ml-6 mr-2 mt-2 flex flex-col space-y-1 bg-white/40 backdrop-blur-sm rounded-lg p-2 border border-white/30">
               <Link
                 :href="route('tours-nacionales')"
                 :class=" [
                   'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                  route().current('tours-nacionales') 
-                    ? 'bg-gradient-to-r from-red-600 to-red-400 text-white shadow-lg font-bold' 
+                  route().current('tours-nacionales')
+                    ? 'bg-gradient-to-r from-red-600 to-red-400 text-white shadow-lg font-bold'
                     : 'text-red-600 hover:bg-red-600 hover:text-white hover:shadow-md'
                 ]"
                 @click="isSidebarOpen = false"
@@ -533,8 +533,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 :href="route('tours-internacionales')"
                 :class=" [
                   'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                  route().current('tours-internacionales') 
-                    ? 'bg-gradient-to-r from-red-600 to-red-400 text-white shadow-lg font-bold' 
+                  route().current('tours-internacionales')
+                    ? 'bg-gradient-to-r from-red-600 to-red-400 text-white shadow-lg font-bold'
                     : 'text-red-600 hover:bg-red-600 hover:text-white hover:shadow-md'
                 ]"
                 @click="isSidebarOpen = false"
@@ -551,8 +551,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
             :href="route('tienda')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('tienda') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('tienda')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -561,14 +561,14 @@ watch(isAuthenticated, (newValue, oldValue) => {
             <span class="font-semibold">Tienda</span>
           </Link>
           <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
-          
+
           <!-- Sobre Nosotros -->
           <Link
             :href="route('sobre-nosotros')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('sobre-nosotros') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('sobre-nosotros')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -577,14 +577,14 @@ watch(isAuthenticated, (newValue, oldValue) => {
             <span class="font-semibold">Sobre Nosotros</span>
           </Link>
           <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
-          
+
           <!-- Contactos -->
           <Link
             :href="route('contactos')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('contactos') 
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg' 
+              route().current('contactos')
+                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
@@ -611,7 +611,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
       <!-- Elementos decorativos de fondo -->
       <div class="absolute inset-0 bg-gradient-to-r from-red-900/20 via-transparent to-red-900/20"></div>
       <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-400 via-red-300 to-red-400"></div>
-      
+
       <div class="relative max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 md:grid-cols-3 gap-8">
         <div class="space-y-4">
           <div class="flex items-center space-x-1 mb-4">
@@ -634,7 +634,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
             </p>
           </div>
         </div>
-        
+
         <div class="space-y-4">
           <div class="flex items-center space-x-3 mb-4">
             <div class="w-8 h-8 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center shadow-lg">
@@ -657,7 +657,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 </div>
               </div>
             </div>
-            
+
             <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all duration-200">
               <FontAwesomeIcon :icon="faEnvelope" class="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
               <div class="flex-1 min-w-0">
@@ -669,7 +669,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 </a>
               </div>
             </div>
-            
+
             <div class="flex items-start space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all duration-200">
               <FontAwesomeIcon :icon="faMapMarkerAlt" class="w-5 h-5 text-red-300 mt-1 flex-shrink-0" />
               <div class="flex-1 min-w-0">
@@ -683,7 +683,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
             </div>
           </div>
         </div>
-        
+
         <div class="space-y-4">
           <div class="flex items-center space-x-3 mb-4">
             <div class="w-8 h-8 bg-gradient-to-br from-pink-400 to-purple-600 rounded-full flex items-center justify-center shadow-lg">
@@ -693,21 +693,21 @@ watch(isAuthenticated, (newValue, oldValue) => {
           </div>
           <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20 space-y-3">
             <div class="grid grid-cols-1 gap-3">
-              <a href="https://www.facebook.com/share/1C7tZxDHzh/" target="_blank" 
+              <a href="https://www.facebook.com/share/1C7tZxDHzh/" target="_blank"
                  class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all duration-200 group">
                 <div class="w-8 h-8 bg-gradient-to-br from-white/20 to-white/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <FontAwesomeIcon :icon="faFacebook" class="w-4 h-4 text-white group-hover:text-yellow-300 transition-colors" />
                 </div>
                 <span class="text-red-100 group-hover:text-white transition-colors font-medium">Facebook</span>
               </a>
-              <a href="https://www.tiktok.com/@vasir_sv?_t=ZM-8wz8jwve57Y&_r=1" target="_blank" 
+              <a href="https://www.tiktok.com/@vasir_sv?_t=ZM-8wz8jwve57Y&_r=1" target="_blank"
                  class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all duration-200 group">
                 <div class="w-8 h-8 bg-gradient-to-br from-white/20 to-white/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <FontAwesomeIcon :icon="faTiktok" class="w-4 h-4 text-white group-hover:text-yellow-300 transition-colors" />
                 </div>
                 <span class="text-red-100 group-hover:text-white transition-colors font-medium">TikTok</span>
               </a>
-              <a href="https://www.instagram.com/vasir_sv?igsh=MWx3aGFzdnB5Y2l2OA==" target="_blank" 
+              <a href="https://www.instagram.com/vasir_sv?igsh=MWx3aGFzdnB5Y2l2OA==" target="_blank"
                  class="flex items-center space-x-3 p-2 rounded-lg hover:bg-white/10 transition-all duration-200 group">
                 <div class="w-8 h-8 bg-gradient-to-br from-white/20 to-white/10 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
                   <FontAwesomeIcon :icon="faInstagram" class="w-4 h-4 text-white group-hover:text-yellow-300 transition-colors" />
@@ -716,7 +716,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
               </a>
             </div>
           </div>
-          
+
           <div class="bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/20">
             <div class="flex items-center space-x-3 mb-3">
               <div class="w-6 h-6 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center">
@@ -728,7 +728,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
           </div>
         </div>
       </div>
-      
+
       <div class="relative bg-gradient-to-r from-red-900 via-red-800 to-red-900 text-center py-4 border-t border-red-600/30">
         <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
         <p class="relative text-red-100 text-sm font-medium">

@@ -30,10 +30,10 @@ const submit = () => {
             <!-- ✅ Logo centrado -->
             <div class="flex justify-center mb-6 sm:mb-8">
                 <Link href="/">
-                    <img 
-                        src="../../../../imagenes/logo.png" 
-                        alt="VASIR Logo" 
-                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200" 
+                    <img
+                        src="images/logo.png"
+                        alt="VASIR Logo"
+                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
                         title="Ir al inicio"
                     />
                 </Link>
@@ -67,7 +67,7 @@ const submit = () => {
                             </div>
                             <div class="flex-1">
                                 <p class="text-xs sm:text-sm lg:text-base text-blue-800 leading-relaxed">
-                                    Ingresa tu dirección de correo electrónico y te enviaremos un enlace 
+                                    Ingresa tu dirección de correo electrónico y te enviaremos un enlace
                                     para restablecer tu contraseña.
                                 </p>
                             </div>
@@ -163,7 +163,7 @@ const submit = () => {
             <!-- ✅ Footer -->
             <div class="text-center mt-4 sm:mt-6">
                 <p class="text-xs sm:text-sm text-gray-500">
-                    ¿No tienes cuenta? 
+                    ¿No tienes cuenta?
                     <Link :href="route('register')" class="text-red-600 hover:text-red-700 underline font-medium">
                         Regístrate aquí
                     </Link>

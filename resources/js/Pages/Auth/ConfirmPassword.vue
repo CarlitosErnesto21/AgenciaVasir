@@ -22,7 +22,7 @@ const submit = () => {
 
 const handleForgotPasswordLink = (e) => {
     e.preventDefault(); // Prevenir navegación normal del Link
-    
+
     // Hacer logout primero
     router.post(route('logout'), {}, {
         onSuccess: () => {
@@ -51,10 +51,10 @@ const handleForgotPasswordLink = (e) => {
             <!-- ✅ Logo centrado -->
             <div class="flex justify-center mb-6 sm:mb-8">
                 <Link href="/">
-                    <img 
-                        src="../../../../imagenes/logo.png" 
-                        alt="VASIR Logo" 
-                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200" 
+                    <img
+                        src="images/logo.png"
+                        alt="VASIR Logo"
+                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
                         title="Ir al inicio"
                     />
                 </Link>
@@ -88,7 +88,7 @@ const handleForgotPasswordLink = (e) => {
                             </div>
                             <div class="flex-1">
                                 <p class="text-xs sm:text-sm lg:text-base text-yellow-800 leading-relaxed">
-                                    Esta es un área segura de <strong class="text-red-600">VASIR</strong>. 
+                                    Esta es un área segura de <strong class="text-red-600">VASIR</strong>.
                                     Por tu seguridad, confirma tu contraseña antes de continuar.
                                 </p>
                             </div>
@@ -99,10 +99,10 @@ const handleForgotPasswordLink = (e) => {
                 <!-- ✅ Formulario -->
                 <form @submit.prevent="submit" class="space-y-4 sm:space-y-6">
                     <div>
-                        <InputLabel 
-                            for="password" 
-                            value="🔒 Contraseña Actual" 
-                            class="text-sm sm:text-base font-medium text-gray-700" 
+                        <InputLabel
+                            for="password"
+                            value="🔒 Contraseña Actual"
+                            class="text-sm sm:text-base font-medium text-gray-700"
                         />
 
                         <div class="relative">
@@ -209,9 +209,9 @@ const handleForgotPasswordLink = (e) => {
                     </summary>
                     <div class="mt-2 sm:mt-3 pl-4 sm:pl-6">
                         <div class="text-xs sm:text-sm text-gray-600">
-                            Si no recordás tu contraseña, podés 
-                            <Link 
-                                :href="route('password.request')" 
+                            Si no recordás tu contraseña, podés
+                            <Link
+                                :href="route('password.request')"
                                 @click="handleForgotPasswordLink"
                                 class="text-red-600 hover:text-red-700 underline font-medium"
                             >
@@ -225,7 +225,7 @@ const handleForgotPasswordLink = (e) => {
             <!-- ✅ Footer -->
             <div class="text-center mt-4 sm:mt-6">
                 <p class="text-xs sm:text-sm text-gray-500">
-                    🔒 Tu seguridad es nuestra prioridad en 
+                    🔒 Tu seguridad es nuestra prioridad en
                     <span class="text-red-600 font-medium">VASIR</span>
                 </p>
             </div>

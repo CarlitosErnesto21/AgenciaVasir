@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\PasswordChangedConfirmationMail;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
@@ -52,6 +54,15 @@ class NewPasswordController extends Controller
                 ])->save();
 
                 event(new PasswordReset($user));
+
+                // Enviar email de confirmación de cambio de contraseña
+                $changeDetails = [
+                    'timestamp' => now()->format('d/m/Y H:i:s'),
+                    'ip' => $request->ip(),
+                    'user_agent' => $request->userAgent(),
+                ];
+
+                Mail::to($user->email)->send(new PasswordChangedConfirmationMail($user, $changeDetails));
             }
         );
 

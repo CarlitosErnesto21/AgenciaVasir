@@ -34,7 +34,7 @@ function cerrarImagen(event) {
       <div class="w-full lg:w-1/2">
         <div class="relative group cursor-pointer">
           <img
-            src="../../../../../imagenes/Negocio.jpg"
+            src="images/instalacion_negocio.jpg"
             alt="Oficinas VASIR"
             class="w-full rounded-xl shadow-lg border-4 border-gradient-to-r from-red-200 to-blue-200 cursor-pointer hover:scale-105 transition-transform duration-300 group-hover:shadow-2xl"
             @click="ampliarImagen"
@@ -119,7 +119,7 @@ function cerrarImagen(event) {
             >
               <!-- Imagen principal -->
               <img
-                src="../../../../../imagenes/Negocio.jpg"
+                src="images/instalacion_negocio.jpg"
                 alt="Oficinas VASIR - Vista ampliada"
                 class="max-w-full max-h-[85vh] rounded-xl object-contain mx-auto block"
                 @click.stop

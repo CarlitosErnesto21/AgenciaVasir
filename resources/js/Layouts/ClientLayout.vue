@@ -12,22 +12,22 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
                 <div class="flex items-center justify-between">
                     <!-- Botón de regreso y logo -->
                     <div class="flex items-center space-x-4">
-                        <Link 
+                        <Link
                             :href="route('inicio')"
                             class="flex items-center space-x-2 px-3 py-2 rounded-lg text-gray-600 hover:text-red-600 hover:bg-red-50 transition-all duration-200 group"
                         >
-                            <FontAwesomeIcon 
-                                :icon="faArrowLeft" 
-                                class="w-5 h-5 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200" 
+                            <FontAwesomeIcon
+                                :icon="faArrowLeft"
+                                class="w-5 h-5 group-hover:transform group-hover:-translate-x-1 transition-transform duration-200"
                             />
                             <span class="font-medium">Volver al Inicio</span>
                         </Link>
-                        
+
                         <div class="hidden sm:block w-px h-6 bg-gray-300"></div>
-                        
+
                         <!-- Logo VASIR -->
                         <Link :href="route('inicio')" class="flex items-center" title="Volver a inicio">
-                            <img src="../../../imagenes/logo.png" class="h-8" alt="VASIR" />
+                            <img src="images/logo.png" class="h-8" alt="VASIR" />
                         </Link>
                     </div>
 

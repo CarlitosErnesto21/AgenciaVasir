@@ -36,17 +36,29 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
-Route::middleware('auth')->group(function () {
-    Route::get('verify-email', EmailVerificationPromptController::class)
-        ->name('verification.notice');
+// Ruta de verificación personalizada (pública para usuarios no logueados)
+Route::get('verify-email', EmailVerificationPromptController::class)
+    ->name('verification.notice');
 
-    Route::get('verify-email/{id}/{hash}', VerifyEmailController::class)
+Route::post('verification-notification', [EmailVerificationPromptController::class, 'resend'])
+    ->middleware('throttle:6,1')
+    ->name('verification.send');
+
+// Ruta personalizada de verificación (pública)
+use App\Http\Controllers\Auth\CustomVerifyEmailController;
+Route::get('verify-email-custom/{email}/{hash}', [CustomVerifyEmailController::class, 'verify'])
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('custom.verification.verify');
+
+Route::middleware('auth')->group(function () {
+    // Ruta original para usuarios ya logueados
+    Route::get('verify-email-logged/{id}/{hash}', VerifyEmailController::class)
         ->middleware(['signed', 'throttle:6,1'])
         ->name('verification.verify');
 
     Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
         ->middleware('throttle:6,1')
-        ->name('verification.send');
+        ->name('verification.resend');
 
     Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
         ->name('password.confirm');

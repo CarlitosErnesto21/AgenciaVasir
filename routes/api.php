@@ -17,7 +17,6 @@ use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\TransporteController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\PaqueteController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\InventarioController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -30,14 +29,11 @@ use Illuminate\Support\Facades\Auth;
 // Rutas de autenticación
 Route::post('/login', [ApiAuthController::class, 'login']);
 
-//Rutas de validación en tiempo real para el registro
-Route::post('/auth/check-name', [RegisteredUserController::class, 'checkName']);
-Route::post('/auth/check-email', [RegisteredUserController::class, 'checkEmail']);
-
 // Rutas para la tienda
 Route::get('/productos', [ProductoController::class, 'index']);
 Route::get('/categorias-productos', [CategoriaProductoController::class, 'index']);
 Route::get('/tours', [TourController::class, 'index']);
+Route::get('/tours/{id}', [TourController::class, 'show']);
 Route::get('/hoteles', [HotelController::class, 'index']);
 Route::get('/paquetes', [PaqueteController::class, 'index']);
 
@@ -103,7 +99,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
-        Route::apiResource('tours', TourController::class)->except(['index']);
+        Route::apiResource('tours', TourController::class)->except(['index', 'show']);
         Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
         Route::apiResource('ventas', VentaController::class);

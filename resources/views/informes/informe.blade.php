@@ -154,7 +154,7 @@
     <!-- Business Header -->
     <div class="main-header">
         <div class="logo-header">
-            <img src="{{ base_path('imagenes/logo.png') }}" alt="Logo VASIR" class="logo-img">
+            <img src="{{ asset('images/logo.png') }}" alt="Logo VASIR" class="logo-img">
             <div class="business-details">
                 <div class="business-info">
                     Dirección: Chalatenango, El Salvador<br>

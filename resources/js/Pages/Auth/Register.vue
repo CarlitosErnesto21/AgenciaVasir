@@ -8,100 +8,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm, router } from '@inertiajs/vue3';
-import { ref, computed, watch, onMounted } from 'vue';
-// Estado y validación para nombre de usuario existente
-const nameExists = ref(false);
-const nameCheckLoading = ref(false);
-const nameCheckError = ref('');
-
-// Estado y validación para correo existente
-const emailExists = ref(false);
-const emailCheckLoading = ref(false);
-const emailCheckError = ref('');
-
-onMounted(() => {
-    watch(
-        () => form.name,
-        async (newName) => {
-            nameCheckError.value = '';
-            nameExists.value = false;
-            if (!newName || newName.length < 3) return;
-            nameCheckLoading.value = true;
-            try {
-                const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const response = await fetch('/api/auth/check-name', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ name: newName })
-                });
-                const data = await response.json();
-                nameExists.value = !!data.exists;
-                if (nameExists.value) {
-                    nameCheckError.value = 'Este nombre ya está registrado.';
-                }
-            } catch (e) {
-                nameCheckError.value = 'No se pudo validar el nombre.';
-            } finally {
-                nameCheckLoading.value = false;
-            }
-        }
-    );
-
-    watch(
-        () => form.email,
-        async (newEmail) => {
-            emailCheckError.value = '';
-            emailExists.value = false;
-            if (!newEmail || newEmail.length < 5) return;
-            // Validación de formato de correo en frontend (más estricta)
-            if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(newEmail)) {
-                emailCheckError.value = 'El correo electrónico no tiene un formato válido.';
-                emailExists.value = false;
-                return;
-            }
-            emailCheckLoading.value = true;
-            try {
-                const csrfToken = document.head.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const response = await fetch('/api/auth/check-email', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ email: newEmail })
-                });
-                if (response.status === 422) {
-                    response.json().then(errorData => {
-                        if (errorData.errors && errorData.errors.email && errorData.errors.email.length) {
-                            emailCheckError.value = errorData.errors.email[0];
-                        } else {
-                            emailCheckError.value = 'El formato del correo electrónico no es válido.';
-                        }
-                        emailExists.value = false;
-                    });
-                    return;
-                }
-                const data = await response.json();
-                emailExists.value = !!data.exists;
-                if (emailExists.value) {
-                    emailCheckError.value = data.message || 'Este correo ya está registrado.';
-                }
-            } catch (e) {
-                // No mostrar el error en consola, solo mostrar mensaje al usuario
-                emailCheckError.value = 'No se pudo validar el correo.';
-            } finally {
-                emailCheckLoading.value = false;
-            }
-        }
-    );
-});
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     isRegister: Boolean
@@ -195,7 +102,7 @@ const submit = () => {
     <!-- Logo responsive -->
     <div class="flex justify-center mb-4 sm:mb-6">
         <Link href="/">
-            <img src="../../../../imagenes/logo.png" alt="Logo"
+            <img src="images/logo.png" alt="Logo"
                  class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105"
                  title="Ir al catálogo"/>
         </Link>
@@ -222,8 +129,6 @@ const submit = () => {
                     placeholder="Tu nombre completo"
                 />
                 <InputError class="mt-1 text-xs" :message="form.errors.name" />
-                <!-- <div v-if="nameCheckLoading" class="mt-1 text-xs text-gray-400">Verificando nombre...</div> -->
-                <div v-if="nameCheckError" class="mt-1 text-xs text-red-500">{{ nameCheckError }}</div>
             </div>
 
             <!-- Campo Email -->
@@ -235,17 +140,11 @@ const submit = () => {
                     type="text"
                     v-model="form.email"
                     class="mt-1 block w-full text-sm sm:text-base rounded-lg bg-white text-black border transition-colors"
-                    :class="{
-                        'border-red-500 focus:border-red-500 focus:ring-red-500': emailCheckError,
-                        'border-green-500 focus:border-green-500 focus:ring-green-500': !emailCheckError && form.email.length > 5 && !emailExists
-                    }"
                     required
                     autocomplete="username"
                     placeholder="correo@ejemplo.com"
                 />
                 <InputError class="mt-1 text-xs" :message="form.errors.email" />
-                <!-- <div v-if="emailCheckLoading" class="mt-1 text-xs text-gray-400">Verificando correo...</div> -->
-                <div v-if="emailCheckError" class="mt-1 text-xs text-red-500">{{ emailCheckError }}</div>
             </div>
 
             <!-- Campo Contraseña -->
@@ -328,8 +227,8 @@ const submit = () => {
             <div class="pt-2 flex justify-center">
                 <PrimaryButton
                     class="px-8 sm:px-12 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 focus:ring-red-500 text-white font-semibold py-2.5 sm:py-3 text-sm sm:text-base rounded-lg transition-all duration-300 transform hover:scale-[1.02] focus:scale-[1.02] shadow-lg hover:shadow-xl"
-                    :class="{ 'opacity-50 cursor-not-allowed': form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete || nameExists || emailExists }"
-                    :disabled="form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete || nameExists || emailExists"
+                    :class="{ 'opacity-50 cursor-not-allowed': form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete }"
+                    :disabled="form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete"
                 >
                     <span v-if="form.processing" class="flex items-center justify-center">
                         <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">

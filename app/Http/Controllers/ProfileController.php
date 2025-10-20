@@ -3,10 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Mail\GoodbyeUserMail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Redirect;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -50,6 +53,13 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        // Enviar email de despedida antes de eliminar la cuenta
+        try {
+            Mail::to($user->email)->send(new GoodbyeUserMail($user));
+        } catch (\Exception $e) {
+            Log::error('Error enviando email de despedida: ' . $e->getMessage());
+        }
 
         Auth::logout();
 

@@ -22,14 +22,14 @@
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #007bff;
+            border-bottom: 3px solid #ff0000;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
         .logo {
             font-size: 28px;
             font-weight: bold;
-            color: #007bff;
+            color: #ff0000;
             margin-bottom: 10px;
         }
         .welcome-message {
@@ -39,7 +39,7 @@
         }
         .verify-btn {
             display: inline-block;
-            background-color: #007bff;
+            background-color: #ff0000;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -48,7 +48,7 @@
             font-weight: bold;
         }
         .verify-btn:hover {
-            background-color: #0056b3;
+            background-color: #b30000;
         }
         .info-section {
             background-color: #f8f9fa;
@@ -69,7 +69,13 @@
 <body>
     <div class="container">
         <div class="header">
-            <div class="logo">🌍 {{ $companyName }}</div>
+            <div class="logo" style="text-align: center;">
+                <img src="{{ $message->embed(public_path('images/logo_gmail.png')) }}"
+                     alt="{{ $companyName }}"
+                     style="height: 60px; width: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
+
+                <div style="font-size: 28px; font-weight: bold; color: #ff0000; margin-top: 10px;"></div>
+            </div>
             <p>Tu Agencia de Viajes de Confianza</p>
         </div>
 
@@ -87,7 +93,7 @@
                     Verificar mi correo electrónico
                 </a>
             </div>
-            <p><small>Este enlace expirará en 60 minutos por seguridad.</small></p>
+            <p><small>Este enlace expirará en 15 minutos por seguridad.</small></p>
         </div>
         @endif
 
@@ -102,22 +108,74 @@
             </ul>
         </div>
 
-        <div class="info-section">
-            <h3>📞 ¿Necesitas ayuda?</h3>
-            <p>Nuestro equipo está aquí para ayudarte:</p>
-            <ul>
-                <li>📧 Email: <a href="mailto:{{ $supportEmail }}">{{ $supportEmail }}</a></li>
-                <li>🌐 Sitio web: <a href="{{ config('app.url') }}">{{ config('app.url') }}</a></li>
-            </ul>
-        </div>
+        <!-- Sección de Contacto y Redes Sociales -->
+        <div class="info-section" style="text-align: center;">
+            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <p>Síguenos en nuestras redes sociales y contáctanos directamente:</p>
+            <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
+                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000; text-decoration: none;">+503 7985 8777</a> | <a href="tel:+50323279199" style="color: #ff0000; text-decoration: none;">+503 2327 9199</a><br>
+                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+            </p>
 
-        <div class="footer">
+            <!-- Iconos de redes sociales usando imágenes embebidas -->
+            <table align="center" style="margin: 20px auto; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 6px; text-align: center;">
+                        <!-- Facebook -->
+                        <a href="https://www.facebook.com/share/1C7tZxDHzh/" target="_blank" rel="noopener noreferrer"
+                           style="text-decoration: none;">
+                            <img src="{{ $message->embed(public_path('images/facebook-icon.png')) }}"
+                                 alt="Facebook"
+                                 style="width: 35px; height: 35px; border: none;">
+                        </a>
+                    </td>
+                    <td style="padding: 6px; text-align: center;">
+                        <!-- Instagram -->
+                        <a href="https://www.instagram.com/vasir_sv?igsh=MWx3aGFzdnB5Y2x2OA==" target="_blank" rel="noopener noreferrer"
+                           style="text-decoration: none;">
+                            <img src="{{ $message->embed(public_path('images/instagram-icon.png')) }}"
+                                 alt="Instagram"
+                                 style="width: 35px; height: 35px; border: none;">
+                        </a>
+                    </td>
+                    <td style="padding: 6px; text-align: center;">
+                        <!-- TikTok -->
+                        <a href="https://www.tiktok.com/@vasir_sv?_t=ZM-8wz8jwve57Y&_r=1" target="_blank" rel="noopener noreferrer"
+                           style="text-decoration: none;">
+                            <img src="{{ $message->embed(public_path('images/tiktok-icon.png')) }}"
+                                 alt="TikTok"
+                                 style="width: 35px; height: 35px; border: none;">
+                        </a>
+                    </td>
+                    <td style="padding: 6px; text-align: center;">
+                        <!-- WhatsApp -->
+                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer"
+                           style="text-decoration: none;">
+                            <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
+                                 alt="WhatsApp"
+                                 style="width: 35px; height: 35px; border: none;">
+                        </a>
+                    </td>
+                    <td style="padding: 6px; text-align: center;">
+                        <!-- Gmail -->
+                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer"
+                           style="text-decoration: none;">
+                            <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
+                                 alt="Gmail"
+                                 style="width: 35px; height: 35px; border: none;">
+                        </a>
+                    </td>
+                </tr>
+            </table>
+            <div class="footer">
             <p>Gracias por confiar en {{ $companyName }}</p>
             <p><strong>¡Comencemos a planear tu próxima aventura! 🚀</strong></p>
             <hr>
             <p><small>
                 Este correo fue enviado automáticamente. Si no creaste esta cuenta, puedes ignorar este mensaje.
             </small></p>
+            <hr style="margin: 15px 0;">
+            <p><small>© {{ date('Y') }} VASIR. Todos los derechos reservados.</small></p>
         </div>
     </div>
 </body>
