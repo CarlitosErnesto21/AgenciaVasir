@@ -31,40 +31,30 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        try {
-            // Primero validamos formato básico
-            $request->validate([
-                'name' => 'required|string|max:255',
-                'email' => 'required|string|lowercase|email:rfc,dns|max:255',
-                'password' => [
-                    'required',
-                    'confirmed',
-                    'min:8',
-                    'regex:/[A-Z]/', // al menos una mayúscula
-                    'regex:/[0-9]/', // al menos un número
-                ],
-            ], [
-                'email.required' => 'El correo electrónico es obligatorio.',
-                'email.email' => 'El formato del correo electrónico no es válido.',
-                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-                'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número.',
-                'password.confirmed' => 'Las contraseñas no coinciden.'
+        // Validar formato básico
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|lowercase|email:rfc,dns|max:255',
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/[A-Z]/', // al menos una mayúscula
+                'regex:/[0-9]/', // al menos un número
+            ],
+        ], [
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El formato del correo electrónico no es válido.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número.',
+            'password.confirmed' => 'Las contraseñas no coinciden.'
+        ]);
+
+        // Verificar si las credenciales ya existen
+        if (User::where('name', $request->name)->exists() || User::where('email', $request->email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'Estas credenciales ya están en uso. Por favor, crea una cuenta nueva o inicia sesión.'
             ]);
-
-            // Verificar si las credenciales ya existen (nombre o email)
-            $nameExists = User::where('name', $request->name)->exists();
-            $emailExists = User::where('email', $request->email)->exists();
-
-            // Si el nombre o email ya existen, mostrar el error siempre en el campo email
-            if ($nameExists || $emailExists) {
-                throw ValidationException::withMessages([
-                    'email' => 'Estas credenciales ya están en uso. Por favor, crea una cuenta nueva o inicia sesión.'
-                ]);
-            }
-
-        } catch (ValidationException $e) {
-            // Enviar los mensajes personalizados al frontend
-            throw $e;
         }
 
         // GUARDAR DATOS TEMPORALMENTE EN SESIÓN (no crear usuario aún)
@@ -76,7 +66,7 @@ class RegisteredUserController extends Controller
             ]
         ]);
 
-                // Generar URL de verificación personalizada con datos en sesión
+        // Generar URL de verificación personalizada con datos en sesión
         $verificationUrl = URL::temporarySignedRoute(
             'custom.verification.verify',
             now()->addMinutes(15),
@@ -96,29 +86,5 @@ class RegisteredUserController extends Controller
 
         // Redirigir a la vista de verificación con el email
         return redirect()->route('verification.notice', ['email' => $request->email]);
-    }
-
-    /**
-    * Asignar rol al usuario recién registrado
-    * Los administradores se crean SOLO por seeder o comando artisan
-    */
-
-    private function assignUserRole(User $user): void { $user->assignRole('Cliente'); }
-
-    /**
-     * Redirigir al usuario según su rol
-     */
-    private function redirectBasedOnUserRole(User $user): RedirectResponse
-    {
-        // Actualizar roles del usuario en la sesión
-        $user->load('roles');
-
-        if ($user->hasRole('Administrador')) {
-            return redirect(route('dashboard')); // ← Dashboard admin
-        } elseif ($user->hasRole('Empleado')) {
-            return redirect(route('dashboard')); // ← Dashboard empleado
-        } else {
-            return redirect(route('inicio')); // ← Página cliente
-        }
     }
 }
