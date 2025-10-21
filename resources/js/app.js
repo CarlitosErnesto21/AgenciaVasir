@@ -55,11 +55,18 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
             .use(createPinia()) // Configurar Pinia para el estado global
-            //configuración global de SweetAlert2 
+            //configuración global de SweetAlert2
             app.config.globalProperties.$swal = Swal;
             app.use(PrimeVue, {
                 theme: {
-                    preset: Aura
+                    preset: Aura,
+                    options: {
+                        darkModeSelector: 'false',
+                        cssLayer: {
+                            name: 'primevue',
+                            order: 'tailwind-base, primevue, tailwind-utilities'
+                        }
+                    }
                 }
             });
             app.use(ToastService);

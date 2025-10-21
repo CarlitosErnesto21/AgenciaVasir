@@ -47,7 +47,7 @@ const submit = () => {
                 <Link href="/">
                     <img
                         src="images/logo.png"
-                        alt="VASIR Logo"
+                        alt="Putas"
                         class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
                         title="Ir al inicio"
                     />
@@ -99,7 +99,7 @@ const submit = () => {
                         <TextInput
                             id="email"
                             type="email"
-                            class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm sm:text-base"
+                            class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 border border-gray-300 rounded-lg bg-gray-50 text-sm sm:text-base text-black"
                             v-model="form.email"
                             readonly
                             autocomplete="username"
@@ -116,7 +116,7 @@ const submit = () => {
                             <TextInput
                                 id="password"
                                 :type="showPassword ? 'text' : 'password'"
-                                class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-sm sm:text-base"
+                                class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-sm sm:text-base text-black"
                                 v-model="form.password"
                                 required
                                 autocomplete="new-password"
@@ -148,7 +148,7 @@ const submit = () => {
                             <TextInput
                                 id="password_confirmation"
                                 :type="showPasswordConfirmation ? 'text' : 'password'"
-                                class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-sm sm:text-base"
+                                class="mt-2 block w-full px-3 sm:px-4 py-2.5 sm:py-3 pr-10 border border-gray-300 rounded-lg focus:ring-red-500 focus:border-red-500 text-sm sm:text-base text-black"
                                 v-model="form.password_confirmation"
                                 required
                                 autocomplete="new-password"

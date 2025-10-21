@@ -5,6 +5,7 @@ import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import Select from "primevue/select";
 import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faFilter, faPencil, faSignOut, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
@@ -34,6 +35,12 @@ const filters = ref({
 const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
+
+// Opciones para el select de estado
+const estadoOptions = ref([
+    { label: 'DISPONIBLE', value: 'DISPONIBLE' },
+    { label: 'NO DISPONIBLE', value: 'NO_DISPONIBLE' }
+]);
 
 const filteredTransportes = computed(() => {
     let filtered = transportes.value;
@@ -216,10 +223,55 @@ const closeDialogWithoutSaving = () => {
 const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
+
+// Variable para controlar el mensaje de límite máximo
+const showMaxLimitMessage = ref(false);
+
+// Función para prevenir teclas no válidas antes de escribir
+const onKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+    if (!/[0-9]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+    const newValue = currentValue + key;
+    const num = parseInt(newValue);
+
+    if (newValue.length > 3 || num > 500) {
+        event.preventDefault();
+        if (num > 500 || newValue.length > 3) {
+            showMaxLimitMessage.value = true;
+        }
+        return;
+    }
+    showMaxLimitMessage.value = false;
+};
+
+// Función para limpiar valor en caso de paste
+const onPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    const numericValue = paste.replace(/[^0-9]/g, '');
+
+    if (numericValue) {
+        let num = parseInt(numericValue);
+        if (num > 500) {
+            num = 500;
+            showMaxLimitMessage.value = true;
+        }
+        transporte.value.capacidad = num.toString();
+    }
+};
 </script>
 <template>
     <Head title="Catálogo de Transportes" />
-    <AuthenticatedLayout>   
+    <AuthenticatedLayout>
         <Toast class="z-[9999]" />
         <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-lg rounded-lg h-screen-full">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
@@ -232,7 +284,7 @@ const continueEditing = () => {
                 <button
                     class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
                     <FontAwesomeIcon :icon="faBusSimple" class="h-4 w-4 text-white" /><span>&nbsp;Agregar transporte</span>
-                </button>                
+                </button>
             </div>
             <DataTable
                 :value="filteredTransportes"
@@ -339,14 +391,15 @@ const continueEditing = () => {
                     </template>
                 </Column>
             </DataTable>
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="{ width: '400px' }" :closable="false">
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="{ width: '400px' }"
+                :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
                             <label for="numero_placa" class="w-24 flex items-center gap-1">
                                 Placa: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.numero_placa" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1" placeholder="Ej. ABC123, 12A345"/>
+                            <InputText v-model.trim="transporte.numero_placa" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. ABC123, 12A345"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.numero_placa && transporte.numero_placa.length < 5">
                             La placa debe tener al menos 5 caracteres. Actual: {{ transporte.numero_placa.length }}/5
@@ -363,7 +416,7 @@ const continueEditing = () => {
                             <label for="nombre" class="w-24 flex items-center gap-1">
                                 Nombre: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1" placeholder="Ej. Autobús, Carro, etc."/>
+                            <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. Autobús, Carro, etc."/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.nombre && transporte.nombre.length < 3">
                             El nombre debe tener al menos 3 caracteres. Actual: {{ transporte.nombre.length }}/3
@@ -380,10 +433,26 @@ const continueEditing = () => {
                             <label for="capacidad" class="w-24 flex items-center gap-1">
                                 Capacidad: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputNumber v-model="transporte.capacidad" id="capacidad" name="capacidad" :min="1" :max="500" :step="1" class="flex-1" :class="{'p-invalid': submitted && (!transporte.capacidad || transporte.capacidad < 1),}" placeholder="Cantidad"/>
+                            <InputText
+                                v-model="transporte.capacidad"
+                                id="capacidad"
+                                name="capacidad"
+                                type="number"
+                                inputmode="numeric"
+                                min="1"
+                                max="500"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :class="{'p-invalid': submitted && (!transporte.capacidad || transporte.capacidad < 1),}"
+                                placeholder="Cantidad (1-500)"
+                                @keydown="onKeyDown"
+                                @paste="onPaste"
+                            />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && (!transporte.capacidad || transporte.capacidad < 1)">
                             La capacidad es obligatoria y debe ser mayor o igual a 1.
+                        </small>
+                        <small class="text-orange-500 ml-28" v-if="showMaxLimitMessage">
+                            Capacidad ajustada al límite máximo permitido (500).
                         </small>
                     </div>
                     <div class="w-full flex flex-col">
@@ -391,7 +460,7 @@ const continueEditing = () => {
                             <label for="marca" class="w-24 flex items-center gap-1">
                                 Marca: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.marca" id="marca" name="marca" :maxlength="30" :class="{'p-invalid': submitted && (!transporte.marca || transporte.marca.length < 2 || transporte.marca.length > 30),}" class="flex-1" placeholder="Ej. Toyota, Mercedes"/>
+                            <InputText v-model.trim="transporte.marca" id="marca" name="marca" :maxlength="30" :class="{'p-invalid': submitted && (!transporte.marca || transporte.marca.length < 2 || transporte.marca.length > 30),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. Toyota, Mercedes"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.marca && transporte.marca.length < 2">
                             La marca debe tener al menos 2 caracteres. Actual: {{ transporte.marca.length }}/2
@@ -408,10 +477,14 @@ const continueEditing = () => {
                             <label for="estado" class="w-24 flex items-center gap-1">
                                 Estado: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <select v-model="transporte.estado" id="estado" name="estado" class="flex-1 border rounded px-2 py-1">
-                                <option value="DISPONIBLE">DISPONIBLE</option>
-                                <option value="NO_DISPONIBLE">NO DISPONIBLE</option>
-                            </select>
+                            <Select
+                                v-model="transporte.estado"
+                                :options="estadoOptions"
+                                optionLabel="label"
+                                optionValue="value"
+                                id="estado"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                            />
                         </div>
                     </div>
                 </div>
@@ -426,7 +499,7 @@ const continueEditing = () => {
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="deleteDialog" header="Eliminar transporte" :modal="true" :style="{ width: '350px' }" :closable="false">
+            <Dialog v-model:visible="deleteDialog" header="Eliminar transporte" :modal="true" :style="{ width: '350px' }" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -447,8 +520,9 @@ const continueEditing = () => {
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false">
-                <div class="flex items-center gap-3"><i class="pi pi-exclamation-triangle text-gray-800" style="font-size: 24px;"></i>
+            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false" :draggable="false">
+                <div class="flex items-center gap-3">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-orange-500" />
                     <span>Tienes información sin guardar. ¿Deseas salir sin guardar?</span>
                 </div>
                 <template #footer>

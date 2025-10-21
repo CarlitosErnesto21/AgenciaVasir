@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -32,37 +33,29 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
-        $request->session()->regenerate();
+        try {
+            $request->authenticate();
+            $request->session()->regenerate();
 
-        $user = Auth::user();
+            $user = Auth::user();
 
-        // Verificar si es staff (Administrador o Empleado)
-        if ($user->hasRole('Administrador') || $user->hasRole('Empleado')) {
-            // Enviar email de notificación para staff
-            $this->sendStaffLoginNotification($user, $request);
+            if ($user && ($user->hasRole('Administrador') || $user->hasRole('Empleado'))) {
+                // Enviar email de notificación para staff
+                $this->sendStaffLoginNotification($user, $request);
 
-            // Crear token de API para dashboard
-            $token = $user->createToken('web-admin-token')->plainTextToken;
+                //Crear token
+                $token = $user->createToken('web-admin-token')->plainTextToken;
 
-            // 🔍 TEMPORAL: Log del token creado para debugging
-            Log::info('🎫 Token Created for Staff Login', [
-                'user_id' => $user->id,
-                'user_email' => $user->email,
-                'token_prefix' => substr($token, 0, 12) . '...',
-                'token_suffix' => '...' . substr($token, -8),
-                'cookie_expires' => now()->addDays(7)->toDateTimeString(),
-            ]);
-
-            // Cookie accesible desde JavaScript para peticiones AJAX
-            // secure=false para desarrollo local HTTP, httpOnly=false para que JS pueda leerlo
-            $cookie = cookie('api_token', $token, 60 * 24 * 7, '/', null, false, false);
-
-            return redirect()->route('dashboard')->withCookie($cookie);
+                $cookie = cookie('api_token', $token, 60 * 24 * 7, null, null, true, true);
+                return redirect()->route('dashboard')->withCookie($cookie);
+            } else {
+                return redirect()->route('inicio');
+            }
+        } catch (ValidationException $e) {
+            return back()->withErrors([
+                'email' => 'Estas credenciales no coinciden con nuestros registros.',
+            ])->withInput($request->only('email'));
         }
-
-        // Usuario cliente
-        return redirect()->route('inicio');
     }
 
     /**

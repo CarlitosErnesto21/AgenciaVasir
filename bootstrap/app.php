@@ -4,7 +4,6 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RutasAdmin;
 use App\Http\Middleware\CustomSignedMiddleware;
 use App\Http\Middleware\TrustedProxies;
-use App\Http\Middleware\DebugAuthMiddleware;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,14 +31,8 @@ return Application::configure(basePath: dirname(__DIR__))
             AddLinkHeadersForPreloadedAssets::class
         ]);
 
-        // ✅ AGREGAR: Middleware de Sanctum para API
         $middleware->api(prepend: [
             EnsureFrontendRequestsAreStateful::class,
-        ]);
-
-        // 🔍 TEMPORAL: Middleware de debug para diagnóstico de auth
-        $middleware->api(append: [
-            DebugAuthMiddleware::class,
         ]);
 
         // Mueve tu alias aquí:
