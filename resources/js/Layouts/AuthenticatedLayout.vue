@@ -187,7 +187,7 @@ onBeforeUnmount(() => {
                         class="flex items-center cursor-pointer select-none group"
                     >
                         <img
-                            src="images/logo.png"
+                            src="/images/logo.png"
                             alt="Logo VASIR"
                             class="w-24 h-8 sm:w-28 sm:h-10 md:w-32 md:h-11 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
                         />

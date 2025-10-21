@@ -31,7 +31,7 @@ const submit = () => {
             <div class="flex justify-center mb-6 sm:mb-8">
                 <Link href="/">
                     <img
-                        src="images/logo.png"
+                        src="/images/logo.png"
                         alt="VASIR Logo"
                         class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
                         title="Ir al inicio"

@@ -118,7 +118,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
 
                 <!-- Logo con efecto -->
                 <Link :href="route('inicio')" title="Ir a la página de inicio" class="flex items-center cursor-pointer select-none group">
-                    <img src="images/logo.png" alt="Logo VASIR" class="w-22 h-7 md:w-32 md:h-10 lg:w-28 lg:h-10 xl:w-44 xl:h-14 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
+                    <img src="/images/logo.png" alt="Logo VASIR" class="w-22 h-7 md:w-32 md:h-10 lg:w-28 lg:h-10 xl:w-44 xl:h-14 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                 </Link>
             </div>
 

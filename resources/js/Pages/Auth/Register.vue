@@ -102,9 +102,9 @@ const submit = () => {
     <!-- Logo responsive -->
     <div class="flex justify-center mb-4 sm:mb-6">
         <Link href="/">
-            <img src="images/logo.png" alt="Logo"
+            <img src="/images/logo.png" alt="Logo"
                  class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105"
-                 title="Ir al catálogo"/>
+                 title="Ir al Catálogo" />
         </Link>
     </div>
 

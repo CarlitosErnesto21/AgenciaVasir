@@ -27,7 +27,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
                         <!-- Logo VASIR -->
                         <Link :href="route('inicio')" class="flex items-center" title="Volver a inicio">
-                            <img src="images/logo.png" class="h-8" alt="VASIR" />
+                            <img src="/images/logo.png" class="h-8" alt="VASIR" />
                         </Link>
                     </div>
 
