@@ -31,6 +31,8 @@ const originalTransporteData = ref(null);
 // Variables de loading para los botones
 const isLoading = ref(false);
 const isDeleting = ref(false);
+const isClearingFilters = ref(false);
+const isNavigatingToTours = ref(false);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -338,6 +340,37 @@ const onPaste = (event) => {
     }
 };
 
+// Función para limpiar filtros con loading
+const clearFilters = async () => {
+    isClearingFilters.value = true;
+    
+    try {
+        // Simular un pequeño delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Limpiar todos los filtros
+        filters.value.global.value = null;
+        filters.value.estado.value = null;
+        
+        // Mostrar toast de confirmación
+        toast.add({
+            severity: "success",
+            summary: "Filtros limpiados",
+            detail: "Se han eliminado todos los filtros aplicados.",
+            life: 2000
+        });
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Hubo un problema al limpiar los filtros.",
+            life: 3000
+        });
+    } finally {
+        isClearingFilters.value = false;
+    }
+};
+
 // Función para manejar el clic en la fila
 const onRowClick = (event) => {
     // Verificar si el clic fue en un botón para evitar abrir el modal
@@ -348,6 +381,11 @@ const onRowClick = (event) => {
         viewTransporteDetails(event.data);
     }
 };
+
+// Función para manejar el clic en el enlace de Tours
+const handleToursClick = () => {
+    isNavigatingToTours.value = true;
+};
 </script>
 <template>
     <Head title="Catálogo de Transportes" />
@@ -356,8 +394,21 @@ const onRowClick = (event) => {
         <div class="px-auto md:px-2 mt-6">
             <div class="flex justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
                 <div class="flex items-center gap-0 sm:gap-3">
-                    <Link :href="route('tours')" class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg" title="Regresar a Tours">
-                        <FontAwesomeIcon :icon="faArrowLeft" class="h-7 sm:h-8" />
+                    <Link 
+                        :href="route('tours')" 
+                        @click="handleToursClick"
+                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" 
+                        :class="{ 'opacity-50 cursor-not-allowed': isNavigatingToTours }"
+                        title="Regresar a Tours"
+                    >
+                        <FontAwesomeIcon 
+                            :icon="isNavigatingToTours ? faSpinner : faArrowLeft" 
+                            :class="[
+                                'h-7 sm:h-8',
+                                { 'animate-spin': isNavigatingToTours }
+                            ]" 
+                        />
+                        <span v-if="isNavigatingToTours" class="ml-2 text-sm hidden sm:inline">Navegando...</span>
                     </Link>
                     <h3 class="text-3xl text-blue-600 font-bold hidden md:block">Catálogo de Transportes</h3>
                     <h3 class="text-2xl text-blue-600 font-bold block md:hidden">Transportes</h3>
@@ -407,11 +458,18 @@ const onRowClick = (event) => {
                                     {{ filteredTransportes.length }} resultado{{ filteredTransportes.length !== 1 ? 's' : '' }}
                                 </div>
                                 <button
-                                    @click="filters.global.value = null; filters.estado.value = null;"
-                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 inline sm:hidden mb-2"
+                                    @click="clearFilters"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 inline sm:hidden mb-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="isClearingFilters"
                                     title="Limpiar filtros"
                                 >
-                                    Limpiar filtros
+                                    <FontAwesomeIcon 
+                                        v-if="isClearingFilters" 
+                                        :icon="faSpinner" 
+                                        class="h-3 w-3 animate-spin mr-1" 
+                                    />
+                                    <span v-if="isClearingFilters">Limpiando...</span>
+                                    <span v-else>Limpiar filtros</span>
                                 </button>
                             </div>
                             <div class="flex items-center gap-2">
@@ -428,11 +486,18 @@ const onRowClick = (event) => {
                                     style="background-color: white; border-color: #93c5fd;"
                                 />
                                 <button
-                                    @click="filters.global.value = null; filters.estado.value = null;"
-                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 w-full rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 hidden sm:inline"
+                                    @click="clearFilters"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 w-full rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 hidden sm:inline disabled:opacity-50 disabled:cursor-not-allowed"
+                                    :disabled="isClearingFilters"
                                     title="Limpiar filtros"
                                 >
-                                    Limpiar filtros
+                                    <FontAwesomeIcon 
+                                        v-if="isClearingFilters" 
+                                        :icon="faSpinner" 
+                                        class="h-3 w-3 animate-spin mr-1" 
+                                    />
+                                    <span v-if="isClearingFilters">Limpiando...</span>
+                                    <span v-else>Limpiar filtros</span>
                                 </button>
                             </div>
                         </div>

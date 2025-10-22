@@ -37,6 +37,10 @@ const originalTourData = ref(null);
 // Variables de loading para los botones
 const isLoading = ref(false);
 const isDeleting = ref(false);
+const isUploadingImages = ref(false);
+const isOpeningGallery = ref(false);
+const isClearingFilters = ref(false);
+const isNavigatingToTransportes = ref(false);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -230,7 +234,7 @@ const listaATexto = (lista) => {
 onMounted(() => {
     fetchTours();
     fetchTipoTransportes();
-    
+
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', handleResize);
     }
@@ -333,17 +337,39 @@ const onFechaFinFilterChange = () => {
     }
 };
 
-const clearFilters = () => {
-    selectedCategoria.value = null;
-    selectedTipoTransporte.value = null;
-    selectedEstado.value = null;
-    selectedFechaInicio.value = null;
-    selectedFechaFin.value = null;
-    filters.value.global.value = null;
-    filters.value.categoria.value = null;
-    filters.value['transporte.nombre'].value = null;
-    filters.value.estado.value = null;
-    filters.value.fecha_salida.value = null;
+const clearFilters = async () => {
+    isClearingFilters.value = true;
+
+    try {
+        // Simular un pequeño delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        selectedCategoria.value = null;
+        selectedTipoTransporte.value = null;
+        selectedEstado.value = null;
+        selectedFechaInicio.value = null;
+        selectedFechaFin.value = null;
+        filters.value.global.value = null;
+        filters.value.categoria.value = null;
+        filters.value['transporte.nombre'].value = null;
+        filters.value.estado.value = null;
+        filters.value.fecha_salida.value = null;
+
+        toast.add({
+            severity: "success",
+            summary: "Filtros limpiados",
+            detail: "Los filtros han sido restablecidos correctamente.",
+            life: 3000
+        });
+    } finally {
+        isClearingFilters.value = false;
+    }
+};
+
+// Función para manejar el clic en el enlace de transportes
+const handleTransportesClick = () => {
+    isNavigatingToTransportes.value = true;
+    // El estado de loading se resetea automáticamente cuando se cambia de página
 };
 
 const openNew = () => {
@@ -453,7 +479,7 @@ const saveOrUpdate = async () => {
         });
         return;
     }
-    
+
     isLoading.value = true;
     try {
         const formData = new FormData();
@@ -583,35 +609,109 @@ const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
 
-const onImageSelect = (event) => {
+// Función para manejar el clic del botón de subir imágenes
+const handleImageUploadClick = async () => {
+    isOpeningGallery.value = true;
+
+    // Simular un pequeño delay para mostrar el estado "Abriendo galería"
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Hacer clic en el input file
+    fileInput.value.click();
+
+    // El estado se mantendrá hasta que se seleccionen archivos o se cancele
+    // Se resetea en onImageSelect o cuando se detecta que no se seleccionó nada
+    setTimeout(() => {
+        if (!isUploadingImages.value) {
+            isOpeningGallery.value = false;
+        }
+    }, 1000);
+};
+
+const onImageSelect = async (event) => {
     const files = event.target ? event.target.files : event.files;
     const maxSize = 2 * 1024 * 1024; // 2MB en bytes
-    for (const file of files) {
-        if (file instanceof File) {
-            // Validar tamaño del archivo
-            if (file.size > maxSize) {
-                toast.add({
-                    severity: "warn",
-                    summary: "Archivo no válido",
-                    detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).",
-                    life: 5000
+
+    // Resetear el estado de apertura de galería
+    isOpeningGallery.value = false;
+
+    if (!files || files.length === 0) {
+        // Si no se seleccionaron archivos, volver al estado inicial
+        return;
+    }
+
+    // Cambiar a estado de carga
+    isUploadingImages.value = true;
+
+    try {
+        const processingPromises = [];
+
+        for (const file of files) {
+            if (file instanceof File) {
+                // Validar tamaño del archivo
+                if (file.size > maxSize) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Archivo no válido",
+                        detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).",
+                        life: 5000
+                    });
+                    continue; // Saltar este archivo
+                }
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Formato no válido",
+                        detail: "Por favor selecciona únicamente archivos de imagen válidos.",
+                        life: 4000
+                    });
+                    continue; // Saltar este archivo
+                }
+
+                imagenFiles.value.push(file);
+
+                // Crear promesa para procesar la imagen
+                const imagePromise = new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagenPreviewList.value.push(e.target.result);
+                        resolve();
+                    };
+                    reader.readAsDataURL(file);
                 });
-                continue; // Saltar este archivo
+
+                processingPromises.push(imagePromise);
             }
-            // Validar tipo de archivo
-            if (!file.type.startsWith('image/')) {
-                toast.add({
-                    severity: "warn",
-                    summary: "Formato no válido",
-                    detail: "Por favor selecciona únicamente archivos de imagen válidos.",
-                    life: 4000
-                });
-                continue; // Saltar este archivo
-            }
-            imagenFiles.value.push(file);
-            const reader = new FileReader();
-            reader.onload = (e) => imagenPreviewList.value.push(e.target.result);
-            reader.readAsDataURL(file);
+        }
+
+        // Esperar a que todas las imágenes se procesen
+        await Promise.all(processingPromises);
+
+        // Mostrar mensaje de éxito si se procesaron imágenes
+        if (processingPromises.length > 0) {
+            toast.add({
+                severity: "success",
+                summary: "Imágenes cargadas",
+                detail: `${processingPromises.length} imagen${processingPromises.length > 1 ? 'es' : ''} cargada${processingPromises.length > 1 ? 's' : ''} correctamente.`,
+                life: 3000
+            });
+        }
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error al cargar imágenes",
+            detail: "Hubo un problema al procesar las imágenes. Inténtalo de nuevo.",
+            life: 4000
+        });
+    } finally {
+        // Volver al estado inicial
+        isUploadingImages.value = false;
+        isOpeningGallery.value = false;
+
+        // Limpiar el input file para permitir seleccionar los mismos archivos nuevamente
+        if (event.target) {
+            event.target.value = '';
         }
     }
 };
@@ -635,11 +735,11 @@ const openImageModal = (index) => {
         carouselIndex.value = index;
         showImageCarouselDialog.value = true;
     } else {
-        toast.add({ 
-            severity: "warn", 
-            summary: "Sin imágenes", 
-            detail: "No hay imágenes disponibles para mostrar.", 
-            life: 3000 
+        toast.add({
+            severity: "warn",
+            summary: "Sin imágenes",
+            detail: "No hay imágenes disponibles para mostrar.",
+            life: 3000
         });
     }
 };
@@ -807,7 +907,7 @@ const onRowClick = (event) => {
     // Verificar si el clic fue en un botón para evitar abrir el modal
     const target = event.originalEvent.target;
     const isButton = target.closest('button');
-    
+
     if (!isButton) {
         selectedTour.value = event.data;
         showImageDialog.value = true;
@@ -824,6 +924,131 @@ const handleEstadoActualizado = async (tourActualizado) => {
     showCambiarEstadoDialog.value = false;
 };
 
+// Función para prevenir teclas no válidas en campos numéricos
+const onKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control (Backspace, Tab, Escape, Enter, Delete, Home, End, Arrow keys)
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Solo permitir números
+    if (!/[0-9]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    const newValue = currentValue + key;
+    const num = parseInt(newValue);
+
+    // Limitar a 3 dígitos y máximo 500
+    if (newValue.length > 3 || num > 500) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para limpiar valor en caso de paste
+const onPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    const numericValue = paste.replace(/[^0-9]/g, '');
+
+    if (numericValue) {
+        let num = parseInt(numericValue);
+        if (num > 500) {
+            num = 500;
+        }
+        event.target.value = num.toString();
+        // Triggear el evento input para actualizar v-model
+        event.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+};
+
+// Función para prevenir teclas no válidas en campo de precio
+const onPriceKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Permitir números y punto decimal
+    if (!/[0-9.]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    // No permitir más de un punto decimal
+    if (key === '.' && currentValue.includes('.')) {
+        event.preventDefault();
+        return;
+    }
+
+    // Validar formato de precio: máximo 3 dígitos antes del punto y 2 después
+    if (key !== '.') {
+        const parts = currentValue.split('.');
+        if (parts[0].length >= 3 && !currentValue.includes('.')) {
+            event.preventDefault();
+            return;
+        }
+        if (parts.length > 1 && parts[1].length >= 2) {
+            event.preventDefault();
+            return;
+        }
+    }
+
+    // Validar que no exceda 999.99
+    const newValue = currentValue + key;
+    const numValue = parseFloat(newValue);
+    if (numValue > 999.99) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para manejar paste en campo de precio
+const onPricePaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+
+    // Filtrar solo números y punto decimal, removiendo cualquier otro carácter
+    let numericValue = paste.replace(/[^\d.]/g, '');
+
+    // Si no hay contenido numérico válido, no hacer nada
+    if (!numericValue || numericValue === '.') return;
+
+    // Verificar que solo tenga un punto decimal
+    const dotCount = (numericValue.match(/\./g) || []).length;
+    if (dotCount > 1) {
+        // Si hay múltiples puntos, mantener solo el primero
+        const firstDotIndex = numericValue.indexOf('.');
+        numericValue = numericValue.substring(0, firstDotIndex + 1) + numericValue.substring(firstDotIndex + 1).replace(/\./g, '');
+    }
+
+    // Convertir a número y validar
+    const num = parseFloat(numericValue);
+    if (isNaN(num)) return;
+
+    // Limitar a máximo 999.99
+    const limitedNum = Math.min(num, 999.99);
+
+    // Formatear a máximo 2 decimales
+    const formattedValue = limitedNum.toFixed(2);
+
+    // Actualizar el modelo de Vue
+    tour.precio = formattedValue;
+
+    // También actualizar el campo input para sincronización
+    event.target.value = formattedValue;
+};
+
 </script>
 <template>
     <Head title="Tours" />
@@ -833,10 +1058,16 @@ const handleEstadoActualizado = async (tourActualizado) => {
             <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4">
                 <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start ml-0 sm:ml-4">Catálogo de Tours</h3>
                 <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end mr-0 sm:mr-4">
-                    <Link :href="route('transportes')"
-                         class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
-                        <FontAwesomeIcon :icon="faBusSimple" class="h-4 mr-1"/>
-                        <span>&nbsp;Control Transportes</span>
+                    <Link
+                        :href="route('transportes')"
+                        @click="handleTransportesClick"
+                        :class="{'opacity-50 cursor-not-allowed': isNavigatingToTransportes}"
+                        class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2">
+                        <FontAwesomeIcon
+                            :icon="isNavigatingToTransportes ? faSpinner : faBusSimple"
+                            :class="{'animate-spin': isNavigatingToTransportes, 'h-4': true}"
+                        />
+                        <span>{{ isNavigatingToTransportes ? 'Cargando...' : 'Control Transportes' }}</span>
                     </Link>
                     <button
                         class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
@@ -882,12 +1113,30 @@ const handleEstadoActualizado = async (tourActualizado) => {
                                 <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
                                     {{ filteredTours.length }} resultado{{ filteredTours.length !== 1 ? 's' : '' }}
                                 </div>
-                                <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md inline sm:hidden" @click="clearFilters">
-                                    <span>Limpiar filtros</span>
+                                <button
+                                    class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md flex sm:hidden disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                    @click="clearFilters"
+                                    :disabled="isClearingFilters"
+                                >
+                                    <FontAwesomeIcon
+                                        v-if="isClearingFilters"
+                                        :icon="faSpinner"
+                                        class="animate-spin h-3 w-3"
+                                    />
+                                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
                                 </button>
                             </div>
-                            <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:inline" @click="clearFilters">
-                                    <span>Limpiar filtros</span>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:flex disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                @click="clearFilters"
+                                :disabled="isClearingFilters"
+                            >
+                                <FontAwesomeIcon
+                                    v-if="isClearingFilters"
+                                    :icon="faSpinner"
+                                    class="animate-spin h-3 w-3"
+                                />
+                                <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
                             </button>
                         </div>
                         <div class="space-y-3">
@@ -911,14 +1160,50 @@ const handleEstadoActualizado = async (tourActualizado) => {
                                     />
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="w-full h-9 text-sm rounded-md" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
+                                    <DatePicker
+                                        v-model="selectedFechaInicio"
+                                        placeholder="Fecha desde"
+                                        class="w-full h-9 text-sm rounded-md border border-blue-300"
+                                        @date-select="onFechaInicioFilterChange"
+                                        @clear="onFechaInicioFilterChange"
+                                        :showIcon="true"
+                                        dateFormat="dd/mm/yy"
+                                        :maxDate="selectedFechaFin"
+                                    />
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="w-full h-9 text-sm rounded-md" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
+                                    <DatePicker
+                                        v-model="selectedFechaFin"
+                                        placeholder="Fecha hasta"
+                                        class="w-full h-9 text-sm rounded-md border border-blue-300"
+                                        @date-select="onFechaFinFilterChange"
+                                        @clear="onFechaFinFilterChange"
+                                        :showIcon="true"
+                                        dateFormat="dd/mm/yy"
+                                        :minDate="selectedFechaInicio"
+                                    />
                                 </div>
                                 <div class="flex w-80 sm:hidden">
-                                    <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="h-9 text-sm rounded-md" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
-                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="h-9 text-sm rounded-md" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
+                                    <DatePicker
+                                        v-model="selectedFechaInicio"
+                                        placeholder="Fecha desde"
+                                        class="h-9 text-sm rounded-md"
+                                        @date-select="onFechaInicioFilterChange"
+                                        @clear="onFechaInicioFilterChange"
+                                        :showIcon="true"
+                                        dateFormat="dd/mm/yy"
+                                        :maxDate="selectedFechaFin"
+                                    />
+                                    <DatePicker
+                                        v-model="selectedFechaFin"
+                                        placeholder="Fecha hasta"
+                                        class="h-9 text-sm rounded-md"
+                                        @date-select="onFechaFinFilterChange"
+                                        @clear="onFechaFinFilterChange"
+                                        :showIcon="true"
+                                        dateFormat="dd/mm/yy"
+                                        :minDate="selectedFechaInicio"
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -926,8 +1211,8 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 </template>
                 <Column field="nombre" header="Nombre" sortable class="w-36 min-w-24">
                     <template #body="slotProps">
-                        <div 
-                            class="text-sm font-medium leading-relaxed overflow-hidden" 
+                        <div
+                            class="text-sm font-medium leading-relaxed overflow-hidden"
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.nombre"
                         >
@@ -937,8 +1222,8 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 </Column>
                 <Column field="punto_salida" header="Punto salida" class="w-32 min-w-32 hidden md:table-cell">
                     <template #body="slotProps">
-                        <div 
-                            class="text-sm leading-relaxed overflow-hidden" 
+                        <div
+                            class="text-sm leading-relaxed overflow-hidden"
                             style="max-width: 128px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.punto_salida"
                         >
@@ -962,7 +1247,7 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 </Column>
                 <Column field="estado" header="Estado" class="w-32 min-w-24 hidden lg:table-cell">
                     <template #body="slotProps">
-                        <span 
+                        <span
                             :class="{
                                 'bg-green-100 text-green-800': slotProps.data.estado === 'DISPONIBLE',
                                 'bg-red-100 text-red-800': slotProps.data.estado === 'AGOTADO' || slotProps.data.estado === 'CANCELADO',
@@ -1012,14 +1297,14 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
-                            <label for="nombre" class="w-24 flex items-center gap-1">Tour: <span class="text-red-500 font-bold">*</span></label>
-                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), }" class="flex-1" @input="validateNombre"/>
+                            <label for="nombre" class="flex items-center gap-1">Tour: <span class="text-red-500 font-bold">*</span></label>
+                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), }" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Tour al Cerro El Pital, etc" @input="validateNombre"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.nombre && tour.nombre.length < 10">
                             El nombre debe tener al menos 10 caracteres. Actual: {{ tour.nombre.length }}/10
                         </small>
                         <small class="text-orange-500 ml-28" v-if="tour.nombre && tour.nombre.length >= 180 && tour.nombre.length <= 200">
-                            Caracteres restantes: {{ 200 - tour.nombre.length }}
+                            Caracteres restantes: {{ 200 - tour.nombre.length }}.
                         </small>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.nombre">
                             El nombre es obligatorio.
@@ -1027,13 +1312,13 @@ const handleEstadoActualizado = async (tourActualizado) => {
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-start gap-4">
-                            <label for="incluye" class="w-24 flex items-center gap-1 mt-2">
+                            <label for="incluye" class="w-12 flex items-center gap-1 mt-2">
                                 Incluye:
                             </label>
-                            <div class="flex-1">
+                            <div class="flex w-full flex-col">
                                 <div class="flex gap-2 mb-3">
                                     <input v-model="nuevoItemIncluye" type="text" placeholder="Agregar nuevo elemento..."
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                         @keyup.enter="agregarItemIncluye"
                                     />
                                     <button type="button" @click="agregarItemIncluye" :disabled="!nuevoItemIncluye.trim()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
@@ -1057,11 +1342,13 @@ const handleEstadoActualizado = async (tourActualizado) => {
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-start gap-4">
-                            <label for="no_incluye" class="w-24 mt-2">No incluye:</label>
-                            <div class="flex-1">
+                            <label for="no_incluye" class="w-12 flex items-center gap-1 mt-2">
+                                No incluye:
+                            </label>
+                            <div class="flex w-full flex-col">
                                 <div class="flex gap-2 mb-3">
                                     <input v-model="nuevoItemNoIncluye" type="text" placeholder="Agregar nuevo elemento..."
-                                        class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                         @keyup.enter="agregarItemNoIncluye"/>
                                     <button type="button" @click="agregarItemNoIncluye" :disabled="!nuevoItemNoIncluye.trim()"
                                         class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
@@ -1082,25 +1369,60 @@ const handleEstadoActualizado = async (tourActualizado) => {
                             </div>
                         </div>
                     </div>
-                    <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
-                            <label for="punto_salida" class="w-24 flex items-center gap-1">Punto salida:<span class="text-red-500 font-bold">*</span></label>
-                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" class="flex-1" @input="validatePuntoSalida"/>
+                    <div class="w-full">
+                        <div class="flex items-start gap-4">
+                            <label for="punto_salida" class="flex w-12 items-center">
+                                Punto salida:
+                                    <span class="text-red-500 font-bold">
+                                        *
+                                    </span>
+                                </label>
+                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="Atrio de Chalatenango, etc"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                @input="validatePuntoSalida"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length < 5" >Debe tener al menos 5 caracteres. Actual: {{ tour.punto_salida.length }}/5</small>
                         <small class="text-orange-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length >= 180 && tour.punto_salida.length <= 200">Caracteres restantes: {{ 200 - tour.punto_salida.length }}</small>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.punto_salida">El punto de salida es obligatorio.</small>
                         <small class="text-red-500 ml-28" v-if="submitted && tour.punto_salida && tour.punto_salida.length < 5">El punto de salida debe tener al menos 5 caracteres.</small>
                     </div>
-                    <div class="flex gap-4">
-                        <div class="flex-1">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="w-full">
                             <label for="cupo_min" class="block mb-2">Cupo mínimo:</label>
-                            <InputNumber v-model="tour.cupo_min" id="cupo_min" name="cupo_min" :min="1" :max="tour.cupo_max ? tour.cupo_max - 1 : 50" :step="1" showButtons :useGrouping="false" :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max, }" class="w-full" @input="validateCupos" placeholder="0"/>
+                            <InputText
+                                v-model="tour.cupo_min"
+                                id="cupo_min"
+                                name="cupo_min"
+                                type="number"
+                                inputmode="numeric"
+                                min="1"
+                                max="500"
+                                class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max,}"
+                                placeholder="1-500"
+                                @keydown="onKeyDown"
+                                @paste="onPaste"
+                                @input="validateCupos"
+                            />
                             <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max" >Debe ser menor al máximo</small>
                         </div>
-                        <div class="flex-1">
+                        <div class="w-full">
                             <label for="cupo_max" class="block mb-2">Cupo máximo:</label>
-                            <InputNumber v-model="tour.cupo_max" id="cupo_max" name="cupo_max" :min="tour.cupo_min ? tour.cupo_min + 1 : 1" :max="100" :step="1" showButtons :useGrouping="false" :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min, }" class="w-full" @input="validateCupos" placeholder="0" />
+                            <InputText
+                                v-model="tour.cupo_max"
+                                id="cupo_max"
+                                name="cupo_max"
+                                type="number"
+                                inputmode="numeric"
+                                min="1"
+                                max="500"
+                                class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min,}"
+                                placeholder="1-500"
+                                @keydown="onKeyDown"
+                                @paste="onPaste"
+                                @input="validateCupos"
+                            />
                             <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min">Debe ser mayor al mínimo</small>
                         </div>
                     </div>
@@ -1108,34 +1430,56 @@ const handleEstadoActualizado = async (tourActualizado) => {
                         <div class="flex-1">
                             <label for="fecha_salida" class="flex items-center gap-1 mb-2">Fecha y hora de salida:<span class="text-red-500 font-bold">*</span></label>
                             <DatePicker v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
-                                :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida()) }" class="w-full" :manualInput="false" @dateSelect="validateFechaSalida" @input="validateFechaSalida" />
+                                :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida()) }"
+                                class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :manualInput="false" @dateSelect="validateFechaSalida" @input="validateFechaSalida"
+                            />
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.fecha_salida" >Fecha y hora de salida requerida.</small>
                         </div>
                         <div class="flex-1">
                             <label for="horaRegresoCalendar" class="flex items-center gap-1 mb-2">Fecha y hora regreso:<span class="text-red-500 font-bold">*</span></label>
                             <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
-                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }" class="w-full" @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>
+                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }"
+                                class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !horaRegresoCalendar">Fecha y hora de regreso requerida.</small>
                         </div>
                     </div>
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-10 sm:gap-9">
                             <label for="precio" class="w-24 flex items-center gap-1">Precio:<span class="text-red-500 font-bold">*</span></label>
-                            <InputNumber v-model="tour.precio" id="precio" name="precio" mode="currency" currency="USD" :locale="'en-US'" :min="0.01" :max="999.99" :maxFractionDigits="2" :minFractionDigits="2" :class="{'p-invalid': submitted && (!tour.precio || tour.precio <= 0 || tour.precio > 999.99),}" class="flex-1" placeholder="$0.00"/>
+                            <div class="w-full relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none">$</span>
+                                <InputText
+                                    v-model="tour.precio"
+                                    id="precio"
+                                    name="precio"
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="w-full pl-8 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                    :class="{'p-invalid': submitted && (!tour.precio || tour.precio <= 0 || tour.precio > 999.99),}"
+                                    placeholder="0.00"
+                                    @keydown="onPriceKeyDown"
+                                    @paste="onPricePaste"
+                                />
+                            </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if=" submitted && (tour.precio == null || tour.precio <= 0 || tour.precio > 999.99)">El precio es obligatorio, debe ser mayor a 0 y menor o igual a 999.99.</small>
                     </div>
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-5">
                             <label for="categoria" class="w-24 flex items-center gap-1">Categoría:<span class="text-red-500 font-bold">*</span></label>
-                            <Select v-model="tour.categoria" :options="categoriasOptions" optionLabel="label" optionValue="value" id="categoria" name="categoria" class="flex-1" placeholder="Selecciona una categoría" :class="{'p-invalid': submitted && !tour.categoria,}" />
+                            <Select v-model="tour.categoria" :options="categoriasOptions" optionLabel="label" optionValue="value" id="categoria" name="categoria"
+                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.categoria,}"
+                            />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.categoria">La categoría es obligatoria.</small>
                     </div>
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-3.5">
                             <label for="transporte_id" class="w-24 flex items-center gap-1">Transporte:<span class="text-red-500 font-bold">*</span></label>
-                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id" class="flex-1" placeholder="Selecciona un tipo de transporte" :class="{'p-invalid': submitted && !tour.transporte_id, }" />
+                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id"
+                            class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.transporte_id, }" />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.transporte_id">El tipo de transporte es obligatorio.</small>
                     </div>
@@ -1144,15 +1488,23 @@ const handleEstadoActualizado = async (tourActualizado) => {
                             <label for="imagenes" class="w-24 flex items-center gap-1">Imágenes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
                                 <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
-                                <button type="button" class="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-red-500 hover:border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none"
-                                    @click="$refs.fileInput.click()">
-                                    <FontAwesomeIcon :icon="faPlus" class="h-4" /><span>Subir imágenes</span>
+                                <button type="button"
+                                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                    @click="handleImageUploadClick"
+                                    :disabled="isUploadingImages || isOpeningGallery">
+                                    <FontAwesomeIcon
+                                        :icon="isUploadingImages ? faSpinner : (isOpeningGallery ? faSpinner : faPlus)"
+                                        :class="['h-4', { 'animate-spin': isUploadingImages || isOpeningGallery }]"
+                                    />
+                                    <span v-if="isOpeningGallery">Abriendo galería...</span>
+                                    <span v-else-if="isUploadingImages">Cargando imágenes...</span>
+                                    <span v-else>Subir imágenes</span>
                                 </button>
                             </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las imágenes son obligatorias (al menos una).</small>
                     </div>
-                    <div class="flex gap-4 flex-wrap mt-4 ml-28">
+                    <div class="grid grid-cols-2 ml-8 sm:ml-16">
                         <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-32 h-32">
                             <img :src=" img.startsWith('data:image') ? img : IMAGE_PATH + img " alt="Vista previa" class="w-full h-full object-cover rounded border"/>
                             <button @click="removeImage(index)" class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow" style="transform: translate(50%, -50%)"> <i class="pi pi-times text-xs"></i></button>
@@ -1160,18 +1512,18 @@ const handleEstadoActualizado = async (tourActualizado) => {
                     </div>
                 </div>
                 <template #footer>
-                    <div class="flex justify-center gap-4 w-full pt-4">
-                        <button 
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                    <div class="flex justify-center gap-4 w-full mt-6">
+                        <button
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
                             :disabled="isLoading"
                         >
-                            <FontAwesomeIcon 
-                                :icon="isLoading ? faSpinner : faCheck" 
+                            <FontAwesomeIcon
+                                :icon="isLoading ? faSpinner : faCheck"
                                 :class="[
                                     'h-5 text-white',
                                     { 'animate-spin': isLoading }
-                                ]" 
+                                ]"
                             />
                             <span v-if="!isLoading">{{ btnTitle }}</span>
                             <span v-else>{{ btnTitle === 'Guardar' ? 'Guardando...' : 'Actualizando...' }}</span>
@@ -1192,18 +1544,18 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="deleteTour"
                             :disabled="isDeleting"
                         >
-                            <FontAwesomeIcon 
-                                :icon="isDeleting ? faSpinner : faCheck" 
+                            <FontAwesomeIcon
+                                :icon="isDeleting ? faSpinner : faCheck"
                                 :class="[
                                     'h-5',
                                     { 'animate-spin': isDeleting }
-                                ]" 
+                                ]"
                             />
                             <span v-if="!isDeleting">Eliminar</span>
                             <span v-else>Eliminando...</span>
@@ -1215,7 +1567,7 @@ const handleEstadoActualizado = async (tourActualizado) => {
                     </div>
                 </template>
             </Dialog>
-            
+
             <!-- Componente de Modales de Tours -->
             <TourModals
                 v-model:visible="moreActionsDialog"
@@ -1241,7 +1593,7 @@ const handleEstadoActualizado = async (tourActualizado) => {
                 :dialog-style="dialogStyle"
                 @estado-actualizado="handleEstadoActualizado"
             />
-            
+
             <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />

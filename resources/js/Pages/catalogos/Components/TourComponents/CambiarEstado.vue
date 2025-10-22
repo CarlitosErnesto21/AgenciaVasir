@@ -107,42 +107,42 @@ const closeModal = () => {
 // Validaciones
 const validarFormulario = () => {
     if (!selectedEstado.value) {
-        toast.add({ 
-            severity: "warn", 
-            summary: "Campos requeridos", 
-            detail: "Debes seleccionar un estado.", 
-            life: 4000 
+        toast.add({
+            severity: "warn",
+            summary: "Campos requeridos",
+            detail: "Debes seleccionar un estado.",
+            life: 4000
         });
         return false;
     }
 
     if (selectedEstado.value === 'REPROGRAMADO') {
         if (!nuevaFechaSalida.value) {
-            toast.add({ 
-                severity: "warn", 
-                summary: "Campos requeridos", 
-                detail: "Debes seleccionar una nueva fecha de salida.", 
-                life: 4000 
+            toast.add({
+                severity: "warn",
+                summary: "Campos requeridos",
+                detail: "Debes seleccionar una nueva fecha de salida.",
+                life: 4000
             });
             return false;
         }
 
         if (!nuevaFechaRegreso.value) {
-            toast.add({ 
-                severity: "warn", 
-                summary: "Campos requeridos", 
-                detail: "Debes seleccionar una nueva fecha de regreso.", 
-                life: 4000 
+            toast.add({
+                severity: "warn",
+                summary: "Campos requeridos",
+                detail: "Debes seleccionar una nueva fecha de regreso.",
+                life: 4000
             });
             return false;
         }
 
         if (!motivoReprogramacion.value.trim()) {
-            toast.add({ 
-                severity: "warn", 
-                summary: "Campos requeridos", 
-                detail: "Debes especificar el motivo de la reprogramación.", 
-                life: 4000 
+            toast.add({
+                severity: "warn",
+                summary: "Campos requeridos",
+                detail: "Debes especificar el motivo de la reprogramación.",
+                life: 4000
             });
             return false;
         }
@@ -150,22 +150,22 @@ const validarFormulario = () => {
         // Validar que las fechas sean futuras
         const now = new Date();
         if (nuevaFechaSalida.value < now) {
-            toast.add({ 
-                severity: "warn", 
-                summary: "Fecha inválida", 
-                detail: "La nueva fecha de salida debe ser futura.", 
-                life: 4000 
+            toast.add({
+                severity: "warn",
+                summary: "Fecha inválida",
+                detail: "La nueva fecha de salida debe ser futura.",
+                life: 4000
             });
             return false;
         }
 
         // Validar que fecha de regreso sea posterior a fecha de salida
         if (nuevaFechaRegreso.value <= nuevaFechaSalida.value) {
-            toast.add({ 
-                severity: "warn", 
-                summary: "Fecha inválida", 
-                detail: "La fecha de regreso debe ser posterior a la fecha de salida.", 
-                life: 4000 
+            toast.add({
+                severity: "warn",
+                summary: "Fecha inválida",
+                detail: "La fecha de regreso debe ser posterior a la fecha de salida.",
+                life: 4000
             });
             return false;
         }
@@ -176,7 +176,7 @@ const validarFormulario = () => {
 
 const cambiarEstado = async () => {
     submitted.value = true;
-    
+
     if (!validarFormulario()) {
         return;
     }
@@ -198,13 +198,13 @@ const cambiarEstado = async () => {
 
         const response = await axios.put(`/api/tours/${props.tour.id}/cambiar-estado`, payload);
 
-        toast.add({ 
-            severity: "success", 
-            summary: "¡Estado actualizado!", 
-            detail: selectedEstado.value === 'REPROGRAMADO' 
-                ? "El tour ha sido reprogramado correctamente." 
-                : `El estado del tour ha sido cambiado a ${estadosOptions.value.find(e => e.value === selectedEstado.value)?.label}.`, 
-            life: 4000 
+        toast.add({
+            severity: "success",
+            summary: "¡Estado actualizado!",
+            detail: selectedEstado.value === 'REPROGRAMADO'
+                ? "El tour ha sido reprogramado correctamente."
+                : `El estado del tour ha sido cambiado a ${estadosOptions.value.find(e => e.value === selectedEstado.value)?.label}.`,
+            life: 4000
         });
 
         // Emitir evento para actualizar la lista
@@ -213,7 +213,7 @@ const cambiarEstado = async () => {
 
     } catch (error) {
         console.error('Error al cambiar estado:', error);
-        
+
         let mensaje = "No se pudo cambiar el estado del tour.";
         if (error.response?.data?.message) {
             mensaje = error.response.data.message;
@@ -222,11 +222,11 @@ const cambiarEstado = async () => {
             mensaje = errores.join(', ');
         }
 
-        toast.add({ 
-            severity: "error", 
-            summary: "Error", 
-            detail: mensaje, 
-            life: 4000 
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: mensaje,
+            life: 4000
         });
     } finally {
         isLoading.value = false;
@@ -250,12 +250,12 @@ const getMinDateRegreso = () => {
 </script>
 
 <template>
-    <Dialog 
-        v-model:visible="isVisible" 
-        header="Cambiar Estado del Tour" 
-        :modal="true" 
-        :style="dialogStyle" 
-        :closable="false" 
+    <Dialog
+        v-model:visible="isVisible"
+        header="Cambiar Estado del Tour"
+        :modal="true"
+        :style="dialogStyle"
+        :closable="false"
         :draggable="false"
     >
         <div v-if="tour" class="space-y-6">
@@ -405,9 +405,9 @@ const getMinDateRegreso = () => {
                     <div>
                         <h5 class="font-medium text-yellow-800">Confirmación de cambio</h5>
                         <p class="text-sm text-yellow-700 mt-1">
-                            Estás a punto de cambiar el estado del tour de 
-                            <strong>{{ estadosOptions.find(e => e.value === tour.estado)?.label }}</strong> 
-                            a 
+                            Estás a punto de cambiar el estado del tour de
+                            <strong>{{ estadosOptions.find(e => e.value === tour.estado)?.label }}</strong>
+                            a
                             <strong>{{ estadosOptions.find(e => e.value === selectedEstado)?.label }}</strong>.
                             <span v-if="selectedEstado === 'REPROGRAMADO'">
                                 Esto actualizará las fechas del tour y notificará a los clientes con reservas.
@@ -419,27 +419,27 @@ const getMinDateRegreso = () => {
         </div>
 
         <template #footer>
-            <div class="flex justify-center gap-4 w-full">
-                <button 
-                    type="button" 
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="closeModal" 
+            <div class="flex justify-center gap-4 w-full mt-6">
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-9 sm:px-12 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeModal"
                     :disabled="isLoading"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />
                     Cancelar
                 </button>
-                <button 
-                    class="bg-green-500 hover:bg-green-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                <button
+                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="cambiarEstado"
                     :disabled="isLoading || !selectedEstado"
                 >
-                    <FontAwesomeIcon 
-                        :icon="isLoading ? faSpinner : faCheck" 
+                    <FontAwesomeIcon
+                        :icon="isLoading ? faSpinner : faCheck"
                         :class="[
                             'h-5 text-white',
                             { 'animate-spin': isLoading }
-                        ]" 
+                        ]"
                     />
                     <span v-if="!isLoading">Cambiar Estado</span>
                     <span v-else>{{ selectedEstado === 'REPROGRAMADO' ? 'Reprogramando...' : 'Actualizando...' }}</span>
