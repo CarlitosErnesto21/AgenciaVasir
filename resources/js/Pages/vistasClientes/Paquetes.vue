@@ -1,109 +1,57 @@
 <script setup>
 import Catalogo from '../Catalogo.vue'
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import axios from 'axios'
 
 // Inicializar toast
 const toast = useToast()
 
-// Datos estáticos de paquetes turísticos
-const paquetes = ref([
-  {
-    id: 1,
-    titulo: 'Aventura Extrema El Salvador',
-    descripcion: 'Paquete completo de adrenalina: rapel, canopy, senderismo y kayak en los mejores destinos naturales.',
-    precio: 145,
-    duracion: '3 días / 2 noches',
-    imagen: '',
-    incluye: ['Transporte privado', 'Equipos de seguridad', 'Guía especializado', 'Desayunos y almuerzos', 'Hospedaje'],
-    destinos: ['Cerro Verde', 'Lago de Coatepeque', 'Parque Nacional El Imposible'],
-    categoria: 'Aventura',
-    personas: '2-8 personas',
-    destacado: true
-  },
-  {
-    id: 2,
-    titulo: 'Ruta Cultural Ancestral',
-    descripcion: 'Descubre la rica historia de El Salvador visitando sitios arqueológicos, museos y pueblos coloniales.',
-    precio: 98,
-    duracion: '2 días / 1 noche',
-    imagen: '',
-    incluye: ['Transporte turístico', 'Entradas a sitios', 'Guía historiador', 'Almuerzo típico', 'Material informativo'],
-    destinos: ['Joya de Cerén', 'Suchitoto', 'Museo Nacional de Antropología'],
-    categoria: 'Cultural',
-    personas: '4-15 personas',
-    destacado: false
-  },
-  {
-    id: 3,
-    titulo: 'Playas y Relax Premium',
-    descripcion: 'Escapada perfecta a las mejores playas del país con servicios de spa y gastronomía de primera.',
-    precio: 189,
-    duracion: '3 días / 2 noches',
-    imagen: '',
-    incluye: ['Resort 4 estrellas', 'Spa incluido', 'Todas las comidas', 'Actividades acuáticas', 'Traslados'],
-    destinos: ['El Tunco', 'Costa del Sol', 'Puerto de La Libertad'],
-    categoria: 'Playa',
-    personas: '2-6 personas',
-    destacado: true
-  },
-  {
-    id: 4,
-    titulo: 'Familia Aventurera',
-    descripcion: 'Paquete diseñado especialmente para familias con actividades seguras y divertidas para todas las edades.',
-    precio: 125,
-    duracion: '2 días / 1 noche',
-    imagen: '',
-    incluye: ['Hotel familiar', 'Actividades para niños', 'Comidas incluidas', 'Transporte seguro', 'Entretenimiento'],
-    destinos: ['Parque Acuático', 'Zoo Nacional', 'Parque de Diversiones'],
-    categoria: 'Familiar',
-    personas: '4-12 personas',
-    destacado: false
-  },
-  {
-    id: 5,
-    titulo: 'Volcanes y Montañas',
-    descripcion: 'Expedición a los volcanes más impresionantes con caminatas, observación de flora y fauna única.',
-    precio: 165,
-    duracion: '4 días / 3 noches',
-    imagen: '',
-    incluye: ['Guía de montaña', 'Equipo de trekking', 'Camping', 'Todas las comidas', 'Transporte 4x4'],
-    destinos: ['Volcán de Santa Ana', 'Volcán de Izalco', 'Cerro El Pital'],
-    categoria: 'Montaña',
-    personas: '3-10 personas',
-    destacado: false
-  },
-  {
-    id: 6,
-    titulo: 'Gastronomía Salvadoreña',
-    descripcion: 'Tour gastronómico completo para conocer los sabores auténticos y tradiciones culinarias del país.',
-    precio: 89,
-    duracion: '1 día',
-    imagen: '',
-    incluye: ['Chef especializado', 'Degustaciones', 'Recetas tradicionales', 'Mercados locales', 'Transporte'],
-    destinos: ['Mercado Central', 'Restaurantes típicos', 'Cocina tradicional'],
-    categoria: 'Gastronomía',
-    personas: '6-20 personas',
-    destacado: true
-  }
-])
-
-// Categorías para filtros
-const categorias = computed(() => {
-  const cats = [...new Set(paquetes.value.map(p => p.categoria))]
-  return cats
-})
-
-const selectedCategoria = ref('Todos')
+// Estado
+const paquetes = ref([])
+const loading = ref(true)
+const error = ref(null)
 const selectedPrecio = ref('Todos')
+
+// Map backend paquete -> cliente view shape
+const mapPaquete = (p) => {
+  return {
+    id: p.id,
+    titulo: p.nombre || p.titulo || `Paquete ${p.id}`,
+    descripcion: p.descripcion || p.descripcion_corta || p.nombre || '',
+    precio: Number(p.precio) || 0,
+    duracion: p.duracion || p.dias ? `${p.dias} días` : '',
+    imagen: p.imagenes && p.imagenes.length ? `/storage/paquetes/${(typeof p.imagenes[0] === 'string' ? p.imagenes[0] : p.imagenes[0].nombre)}` : '',
+    incluye: p.incluye ? (typeof p.incluye === 'string' ? p.incluye.split('|').filter(Boolean) : p.incluye) : [],
+    destinos: p.destinos || [],
+    personas: p.personas || 'N/A',
+    destacado: p.destacado || false,
+  }
+}
+
+const fetchPaquetes = async () => {
+  loading.value = true
+  error.value = null
+  try {
+    const res = await axios.get('/api/paquetes')
+    const data = Array.isArray(res.data) ? res.data : (res.data.data || res.data.paquetes || [])
+    paquetes.value = data.map(mapPaquete)
+  } catch (err) {
+    console.error('Error cargando paquetes:', err)
+    error.value = err?.response?.data?.message || err.message || 'Error desconocido'
+    toast.add({ severity: 'error', summary: 'Error', detail: 'No se pudieron cargar los paquetes.', life: 5000 })
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchPaquetes)
+
 
 // Paquetes filtrados
 const paquetesFiltrados = computed(() => {
+  if (loading.value) return []
   let filtrados = paquetes.value
-  
-  if (selectedCategoria.value !== 'Todos') {
-    filtrados = filtrados.filter(p => p.categoria === selectedCategoria.value)
-  }
   
   if (selectedPrecio.value !== 'Todos') {
     if (selectedPrecio.value === 'bajo') {
@@ -140,245 +88,134 @@ const reservarPaquete = (paquete) => {
 <template>
   <Catalogo>
     <Toast />
-    <div class="p-4 bg-gray-50 min-h-screen pt-16 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-28">
-      <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="text-center mb-8">
-          <h1 class="text-4xl font-bold mb-4 text-red-700">📦 Paquetes Turísticos</h1>
-          <p class="text-lg text-gray-600 mb-2">Experiencias completas diseñadas para crear recuerdos inolvidables</p>
-          <p class="text-sm text-gray-500">Descubre El Salvador con nuestros paquetes todo incluido</p>
-        </div>
+    <div class="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen pt-20 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-28">
+      <div class="w-full px-1 sm:px-1 lg:px-2 max-w-7xl mx-auto">
+        <!-- Header Profesional con Stats Integradas -->
+        <div class="mb-3 sm:mb-4">
+          <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
+            <!-- Header con gradiente -->
+            <div class="bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white text-center py-4 sm:py-6">
+              <div class="flex items-center justify-center gap-3 mb-1">
+                <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
+                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">📦 Paquetes Turísticos</h1>
+              </div>
+              <p class="text-base sm:text-lg text-red-100 px-4">Experiencias completas diseñadas para crear recuerdos inolvidables</p>
+            </div>
 
-        <!-- Stats -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div class="bg-white rounded-lg p-6 shadow-md text-center border border-gray-200">
-            <h3 class="text-2xl font-bold text-red-600">{{ paquetes.length }}</h3>
-            <p class="text-gray-600">Paquetes</p>
-          </div>
-          <div class="bg-white rounded-lg p-6 shadow-md text-center border border-gray-200">
-            <h3 class="text-2xl font-bold text-green-600">{{ categorias.length }}</h3>
-            <p class="text-gray-600">Categorías</p>
-          </div>
-          <div class="bg-white rounded-lg p-6 shadow-md text-center border border-gray-200">
-            <h3 class="text-2xl font-bold text-blue-600">Desde $89</h3>
-            <p class="text-gray-600">Precios</p>
-          </div>
-          <div class="bg-white rounded-lg p-6 shadow-md text-center border border-gray-200">
-            <h3 class="text-2xl font-bold text-purple-600">Todo Incluido</h3>
-            <p class="text-gray-600">Servicios</p>
-          </div>
-        </div>
-
-        <!-- Filtros -->
-        <div class="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-8">
-          <h3 class="text-lg font-semibold text-gray-800 mb-4">Filtrar paquetes</h3>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Por categoría</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  @click="selectedCategoria = 'Todos'"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedCategoria === 'Todos' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-red-100']"
-                >
-                  Todos
-                </button>
-                <button
-                  v-for="categoria in categorias"
-                  :key="categoria"
-                  @click="selectedCategoria = categoria"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedCategoria === categoria ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-red-100']"
-                >
-                  {{ categoria }}
-                </button>
+            <!-- Stats integradas en el header -->
+            <div v-if="paquetes.length > 0" class="bg-white py-3 px-3">
+              <div class="max-w-4xl mx-auto">
+                <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
+                  <div class="text-center bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <h3 class="text-2xl font-bold text-red-600">{{ paquetes.length }}</h3>
+                    <p class="text-sm text-gray-600">Paquetes</p>
+                  </div>
+                  <div class="text-center bg-white rounded-lg p-4 shadow-sm border border-gray-100">
+                    <h3 class="text-2xl font-bold text-blue-600">Desde ${{ paquetes[0]?.precio | currency }}</h3>
+                    <p class="text-sm text-gray-600">Precios</p>
+                  </div>
+                </div>
               </div>
             </div>
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Por precio</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  @click="selectedPrecio = 'Todos'"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedPrecio === 'Todos' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100']"
-                >
-                  Todos
-                </button>
-                <button
-                  @click="selectedPrecio = 'bajo'"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedPrecio === 'bajo' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100']"
-                >
-                  < $100
-                </button>
-                <button
-                  @click="selectedPrecio = 'medio'"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedPrecio === 'medio' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100']"
-                >
-                  $100 - $150
-                </button>
-                <button
-                  @click="selectedPrecio = 'alto'"
-                  :class="['px-3 py-1 rounded-full text-sm font-medium transition-all', 
-                    selectedPrecio === 'alto' ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-green-100']"
-                >
-                  > $150
-                </button>
-              </div>
-            </div>
+          </div>
+        </div>
+
+        <!-- Estados: carga / error / vacío -->
+        <div v-if="loading && paquetes.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl shadow-lg p-8 max-w-md mx-auto border border-gray-200">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-4 border-red-200 border-t-red-600 mb-4"></div>
+            <p class="text-lg font-semibold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent">Cargando paquetes...</p>
+            <p class="text-sm text-gray-500 mt-2">Preparando las mejores experiencias para ti</p>
+          </div>
+        </div>
+
+        <div v-else-if="error && paquetes.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 text-red-700 px-8 py-6 rounded-xl shadow-lg max-w-md mx-auto">
+            <div class="text-4xl mb-4">⚠️</div>
+            <h3 class="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-3">No se pudieron cargar los paquetes</h3>
+            <p class="text-sm text-red-600 leading-relaxed">Por favor, intenta recargar la página o contacta con nosotros.</p>
+          </div>
+        </div>
+
+        <div v-else-if="!loading && paquetes.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-red-50 to-indigo-50 border-2 border-red-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
+            <div class="text-6xl mb-4">📦</div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-red-600 to-indigo-600 bg-clip-text text-transparent mb-3">No hay paquetes disponibles</h3>
+            <p class="text-gray-600 mb-4 leading-relaxed">Próximamente tendremos nuevos paquetes turísticos.</p>
+            <p class="text-sm text-gray-500">Mientras tanto, puedes explorar nuestros tours o contactarnos para solicitudes personalizadas.</p>
           </div>
         </div>
 
         <!-- Paquetes Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <Card
-            v-for="paquete in paquetesFiltrados"
-            :key="paquete.id"
-            class="border border-gray-300 bg-white shadow-md hover:shadow-lg transition-all duration-300 flex flex-col h-full transform hover:-translate-y-1"
-          >
-            <template #header>
-              <div class="relative w-full h-48 bg-gradient-to-br from-gray-100 to-gray-200 rounded-t-lg overflow-hidden group">
-                <div
-                  v-if="paquete.imagen"
-                  class="object-cover h-full w-full group-hover:scale-110 transition-transform duration-500 bg-center bg-cover"
-                  :style="{ backgroundImage: `url(${paquete.imagen})` }"
-                ></div>
-                <div 
-                  v-else
-                  class="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300"
-                >
-                  <div class="text-center text-gray-500">
-                    <i class="fas fa-image text-4xl mb-2"></i>
-                    <p class="text-sm font-medium">{{ paquete.categoria }}</p>
+        <div v-if="paquetesFiltrados.length > 0" class="mb-8">
+          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
+            <Card
+              v-for="paquete in paquetesFiltrados"
+              :key="paquete.id"
+              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-red-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[360px] sm:min-h-[380px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl"
+            >
+              <template #header>
+                <div class="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-200">
+                  <div v-if="paquete.imagen" class="object-cover h-full w-full bg-center bg-cover" :style="{ backgroundImage: `url(${paquete.imagen})` }"></div>
+                  <div v-else class="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-200 to-gray-300">
+                    <div class="text-center text-gray-500">
+                      <i class="fas fa-image text-4xl mb-2"></i>
+                    </div>
+                  </div>
+                  <div class="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
+                    ${{ paquete.precio }}
+                  </div>
+                  <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
+                    {{ paquete.duracion }}
                   </div>
                 </div>
-                <div class="absolute top-2 right-2 bg-green-600 text-white px-3 py-1 rounded-full text-sm font-semibold shadow-lg">
-                  ${{ paquete.precio }}
+              </template>
+
+              <template #title>
+                <div class="h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gray-50 transition-all duration-300 rounded-lg mx-2">
+                  <span class="text-lg font-bold text-gray-800 leading-tight line-clamp-2">{{ paquete.titulo }}</span>
                 </div>
-                <div class="absolute bottom-2 left-2 bg-black/70 text-white px-2 py-1 rounded-full text-xs">
-                  {{ paquete.duracion }}
-                </div>
-                <div class="absolute top-2 left-2 bg-blue-600 text-white px-2 py-1 rounded-full text-xs font-semibold">
-                  {{ paquete.categoria }}
-                </div>
-                <div v-if="paquete.destacado" class="absolute bottom-2 right-2 bg-yellow-500 text-black px-2 py-1 rounded-full text-xs font-bold">
-                  ⭐ Destacado
-                </div>
-              </div>
-            </template>
-            
-            <template #title>
-              <span class="text-lg font-bold text-gray-800 leading-tight line-clamp-2">{{ paquete.titulo }}</span>
-            </template>
-            
-            <template #content>
-              <div class="flex-grow space-y-3">
-                <p class="text-gray-600 text-sm line-clamp-2">
-                  {{ paquete.descripcion }}
-                </p>
-                <div class="space-y-2">
-                  <div class="flex items-center text-xs text-gray-600">
+              </template>
+
+              <template #content>
+                <div class="flex-1 flex flex-col px-4 pb-4 min-h-0">
+                  <p class="text-gray-600 text-sm line-clamp-2 mb-3">{{ paquete.descripcion }}</p>
+                  <div class="flex items-center text-xs text-gray-600 mb-2">
                     <span class="w-1 h-1 bg-blue-500 rounded-full mr-2"></span>
                     <strong>Personas:</strong> {{ paquete.personas }}
                   </div>
-                  <div>
-                    <p class="text-xs font-semibold text-gray-700 mb-1">Destinos principales:</p>
-                    <div class="flex flex-wrap gap-1">
-                      <span
-                        v-for="destino in paquete.destinos.slice(0, 2)"
-                        :key="destino"
-                        class="bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs"
-                      >
-                        {{ destino }}
-                      </span>
-                      <span v-if="paquete.destinos.length > 2" class="text-gray-400 text-xs">
-                        +{{ paquete.destinos.length - 2 }} más
-                      </span>
-                    </div>
-                  </div>
-                  <div>
+                  <div class="mb-2">
                     <p class="text-xs font-semibold text-gray-700 mb-1">Incluye:</p>
                     <ul class="text-xs text-gray-600">
                       <li v-for="item in paquete.incluye.slice(0, 2)" :key="item" class="flex items-center">
                         <span class="w-1 h-1 bg-green-500 rounded-full mr-2"></span>
                         {{ item }}
                       </li>
-                      <li v-if="paquete.incluye.length > 2" class="text-gray-400">
-                        + {{ paquete.incluye.length - 2 }} servicios más...
-                      </li>
+                      <li v-if="paquete.incluye.length > 2" class="text-gray-400">+ {{ paquete.incluye.length - 2 }} servicios más...</li>
                     </ul>
                   </div>
                 </div>
-              </div>
-            </template>
-            
-            <template #footer>
-              <div class="flex gap-2 mt-4">
-                <Button
-                  label="Reservar"
-                  @click="reservarPaquete(paquete)"
-                  class="!bg-red-600 !border-none !px-3 !py-2 !text-white !text-sm font-semibold rounded hover:!bg-red-700 transition-all flex-1 shadow-sm"
-                  size="small"
-                />
-                <Button
-                  label="Detalles"
-                  @click="verDetalles(paquete)"
-                  outlined
-                  class="!border-red-600 !text-red-600 !px-3 !py-2 !text-sm font-semibold rounded hover:!bg-red-50 transition-all"
-                  size="small"
-                />
-              </div>
-            </template>
-          </Card>
-        </div>
+              </template>
 
-        <!-- Info adicional -->
-        <div class="mt-12 bg-white rounded-xl p-8 shadow-md border border-gray-200">
-          <h2 class="text-2xl font-bold text-red-700 mb-6 text-center">¿Por qué elegir nuestros paquetes?</h2>
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div class="text-center">
-              <div class="text-4xl mb-3">📋</div>
-              <h3 class="font-semibold text-red-600 mb-2">Todo Planificado</h3>
-              <p class="text-gray-600 text-sm">Itinerarios completos sin preocupaciones</p>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl mb-3">💰</div>
-              <h3 class="font-semibold text-red-600 mb-2">Mejor Precio</h3>
-              <p class="text-gray-600 text-sm">Paquetes con descuentos y ofertas especiales</p>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl mb-3">👥</div>
-              <h3 class="font-semibold text-red-600 mb-2">Guías Expertos</h3>
-              <p class="text-gray-600 text-sm">Acompañamiento profesional en cada destino</p>
-            </div>
-            <div class="text-center">
-              <div class="text-4xl mb-3">🔒</div>
-              <h3 class="font-semibold text-red-600 mb-2">Seguridad Total</h3>
-              <p class="text-gray-600 text-sm">Seguros y protocolos de seguridad incluidos</p>
-            </div>
+              <template #footer>
+                <div class="flex gap-2 mt-4 px-4 pb-4">
+                  <Button
+                    label="Reservar"
+                    @click="reservarPaquete(paquete)"
+                    class="!bg-red-600 !border-none !px-3 !py-2 !text-white !text-sm font-semibold rounded hover:!bg-red-700 transition-all flex-1 shadow-sm"
+                    size="small"
+                  />
+                  <Button
+                    label="Detalles"
+                    @click="verDetalles(paquete)"
+                    outlined
+                    class="!border-red-600 !text-red-600 !px-3 !py-2 !text-sm font-semibold rounded hover:!bg-red-50 transition-all"
+                    size="small"
+                  />
+                </div>
+              </template>
+            </Card>
           </div>
-        </div>
-
-        <!-- Categorías disponibles -->
-        <div class="mt-8 bg-white rounded-xl p-6 shadow-md border border-gray-200">
-          <h3 class="text-xl font-semibold text-gray-800 mb-4 text-center">Categorías de Paquetes</h3>
-          <div class="flex flex-wrap justify-center gap-3">
-            <span
-              v-for="categoria in categorias"
-              :key="categoria"
-              class="bg-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium"
-            >
-              {{ categoria }}
-            </span>
-          </div>
-        </div>
-
-        <!-- Mensaje de no resultados -->
-        <div v-if="paquetesFiltrados.length === 0" class="text-center py-12">
-          <div class="text-6xl mb-4">🔍</div>
-          <h3 class="text-xl font-semibold text-gray-600 mb-2">No se encontraron paquetes</h3>
-          <p class="text-gray-500">Intenta con otros filtros o <button @click="selectedCategoria = 'Todos'; selectedPrecio = 'Todos'" class="text-red-600 hover:underline">ver todos los paquetes</button></p>
         </div>
 
         <!-- CTA final -->

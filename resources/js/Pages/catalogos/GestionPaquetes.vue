@@ -1,11 +1,11 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head } from "@inertiajs/vue3";
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { Head, Link } from "@inertiajs/vue3";
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import InputText from 'primevue/inputtext';
 import InputNumber from 'primevue/inputnumber';
@@ -42,6 +42,26 @@ const eliminarItemRecordatorio = (index) => {
 
 
 const toast = useToast();
+
+// Loading / UI state (paralel to Tours view)
+const isLoading = ref(false);
+const isDeleting = ref(false);
+
+// Responsive dialog sizing
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) { // sm
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) { // md
+        return { width: '500px' };
+    } else {
+        return { width: '600px' };
+    }
+});
+
+const handleResize = () => {
+    if (typeof window !== 'undefined') windowWidth.value = window.innerWidth;
+};
 
 const paquetes = ref([]);
 const paquete = ref({
@@ -213,6 +233,15 @@ onMounted(async () => {
     filters.value.fecha_salida.value = null;
     await fetchPaquetes();
     await fetchPaises();
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', handleResize);
+    }
+});
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+    }
 });
 
 const fetchPaquetes = async () => {
@@ -334,7 +363,7 @@ const closeDialogWithoutSaving = () => {
     dialog.value = false;
     unsavedChangesDialog.value = false;
     hasUnsavedChanges.value = false;
-    originalTourData.value = null;
+    originalPaqueteData.value = null;
     resetForm();
 };
 
@@ -455,13 +484,23 @@ const savePaquete = async () => {
     let paisId = provinciaObj ? provinciaObj.pais_id : "";
     formData.append("pais_id", paisId);
     formData.append("provincia_id", paquete.value.provincia_id || "");
-    formData.append("fecha_salida", paquete.value.fecha_salida);
-    formData.append("fecha_regreso", paquete.value.fecha_regreso);
+    // Asegurar formato compatible con Laravel (YYYY-MM-DD HH:MM:SS) cuando sean Date
+    if (paquete.value.fecha_salida instanceof Date) {
+        formData.append("fecha_salida", paquete.value.fecha_salida.toISOString().slice(0, 19).replace('T', ' '));
+    } else if (paquete.value.fecha_salida) {
+        formData.append("fecha_salida", paquete.value.fecha_salida);
+    }
+    if (paquete.value.fecha_regreso instanceof Date) {
+        formData.append("fecha_regreso", paquete.value.fecha_regreso.toISOString().slice(0, 19).replace('T', ' '));
+    } else if (paquete.value.fecha_regreso) {
+        formData.append("fecha_regreso", paquete.value.fecha_regreso);
+    }
     imagenFiles.value.forEach(img => formData.append('imagenes[]', img));
     removedImages.value.forEach(img => {
         const fileName = img.includes("/") ? img.split("/").pop() : img;
         formData.append("removed_images[]", fileName);
     });
+    isLoading.value = true;
     try {
         if (paquete.value.id) {
             formData.append("_method", "PUT");
@@ -475,7 +514,28 @@ const savePaquete = async () => {
         hasUnsavedChanges.value = false;
         await fetchPaquetes();
     } catch (err) {
-        toast.add({ severity: "error", summary: "Error", detail: "Revisa los campos e intenta nuevamente.", life: 5000 });
+        // Mostrar errores de validación devueltos por Laravel (422)
+        if (err.response && err.response.status === 422 && err.response.data) {
+            const errors = err.response.data.errors || err.response.data;
+            console.error('Validation errors:', errors);
+            if (typeof errors === 'object') {
+                Object.keys(errors).forEach((key) => {
+                    const msgs = errors[key];
+                    if (Array.isArray(msgs)) {
+                        msgs.forEach(m => toast.add({ severity: 'warn', summary: 'Validación', detail: m, life: 6000 }));
+                    } else if (typeof msgs === 'string') {
+                        toast.add({ severity: 'warn', summary: 'Validación', detail: msgs, life: 6000 });
+                    }
+                });
+            } else if (typeof errors === 'string') {
+                toast.add({ severity: 'warn', summary: 'Validación', detail: errors, life: 6000 });
+            }
+        } else {
+            console.error(err);
+            toast.add({ severity: "error", summary: "Error", detail: "Revisa los campos e intenta nuevamente.", life: 5000 });
+        }
+    } finally {
+        isLoading.value = false;
     }
 }
 const confirmDeletePaquete = (row) => {
@@ -483,13 +543,34 @@ const confirmDeletePaquete = (row) => {
     deleteDialog.value = true;
 }
 const deletePaquete = async () => {
+    isDeleting.value = true;
     try {
         await axios.delete(`${url}/${paquete.value.id}`);
         await fetchPaquetes();
         deleteDialog.value = false;
         toast.add({ severity: "success", summary: "Eliminado", detail: "Paquete eliminado", life: 4000 });
     } catch (err) {
-        toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el paquete.", life: 5000 });
+        if (err.response && err.response.status === 422 && err.response.data) {
+            const errors = err.response.data.errors || err.response.data;
+            console.error('Delete validation errors:', errors);
+            if (typeof errors === 'object') {
+                Object.keys(errors).forEach((key) => {
+                    const msgs = errors[key];
+                    if (Array.isArray(msgs)) {
+                        msgs.forEach(m => toast.add({ severity: 'warn', summary: 'Validación', detail: m, life: 6000 }));
+                    } else if (typeof msgs === 'string') {
+                        toast.add({ severity: 'warn', summary: 'Validación', detail: msgs, life: 6000 });
+                    }
+                });
+            } else if (typeof errors === 'string') {
+                toast.add({ severity: 'warn', summary: 'Validación', detail: errors, life: 6000 });
+            }
+        } else {
+            console.error(err);
+            toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el paquete.", life: 5000 });
+        }
+    } finally {
+        isDeleting.value = false;
     }
 }
 
@@ -683,7 +764,7 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                     </template>
                 </Column>
             </DataTable>
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Paquete'" :modal="true" :style="{ width: '500px' }" :closable="false">
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Paquete'" :modal="true" :style="dialogStyle" :closable="false">
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
@@ -824,16 +905,18 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog">
+                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
                             <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />Cancelar
                         </button>
-                        <button class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="savePaquete">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />{{ btnTitle }}
+                        <button class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" @click="savePaquete" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="isLoading ? faSpinner : faCheck" :class="['h-5 text-white', { 'animate-spin': isLoading }]" />
+                            <span v-if="!isLoading">{{ btnTitle }}</span>
+                            <span v-else>Procesando...</span>
                         </button>
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="deleteDialog" header="Eliminar paquete" :modal="true" :style="{ width: '350px' }" :closable="false">
+            <Dialog v-model:visible="deleteDialog" header="Eliminar paquete" :modal="true" :style="dialogStyle" :closable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -843,18 +926,18 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false">
+                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="deleteDialog = false" :disabled="isDeleting">
                             <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>No</span>
                         </button>
-                        <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deletePaquete">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5" /><span>Sí</span>
+                        <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" @click="deletePaquete" :disabled="isDeleting">
+                            <FontAwesomeIcon :icon="isDeleting ? faSpinner : faCheck" :class="['h-5', { 'animate-spin': isDeleting }]" />
+                            <span v-if="!isDeleting">Sí</span>
+                            <span v-else>Eliminando...</span>
                         </button>
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false">
+            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
