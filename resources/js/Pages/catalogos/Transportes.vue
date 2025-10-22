@@ -1,12 +1,12 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Select from "primevue/select";
-import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faFilter, faPencil, faSignOut, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faEye, faPencil, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const toast = useToast();
@@ -22,21 +22,26 @@ const transporte = ref({
 const selectedTransportes = ref(null);
 const dialog = ref(false);
 const deleteDialog = ref(false);
+const detailsDialog = ref(false);
 const unsavedChangesDialog = ref(false);
 const submitted = ref(false);
 const hasUnsavedChanges = ref(false);
 const originalTransporteData = ref(null);
 
+// Variables de loading para los botones
+const isLoading = ref(false);
+const isDeleting = ref(false);
+
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     nombre: { value: null, matchMode: FilterMatchMode.CONTAINS },
     capacidad: { value: null, matchMode: FilterMatchMode.EQUALS },
+    estado: { value: null, matchMode: FilterMatchMode.EQUALS },
 });
 const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
 
-// Opciones para el select de estado
 const estadoOptions = ref([
     { label: 'DISPONIBLE', value: 'DISPONIBLE' },
     { label: 'NO DISPONIBLE', value: 'NO_DISPONIBLE' }
@@ -50,7 +55,10 @@ const filteredTransportes = computed(() => {
         const searchTerm = filters.value.global.value.toLowerCase();
         filtered = filtered.filter(t =>
             t.nombre.toLowerCase().includes(searchTerm) ||
-            (t.capacidad && t.capacidad.toString().includes(searchTerm))
+            (t.capacidad && t.capacidad.toString().includes(searchTerm)) ||
+            t.numero_placa.toLowerCase().includes(searchTerm) ||
+            t.marca.toLowerCase().includes(searchTerm) ||
+            t.estado.toLowerCase().includes(searchTerm)
         );
     }
 
@@ -65,6 +73,13 @@ const filteredTransportes = computed(() => {
     if (filters.value.capacidad.value) {
         filtered = filtered.filter(t =>
             t.capacidad == filters.value.capacidad.value
+        );
+    }
+
+    // Filtro por estado
+    if (filters.value.estado.value) {
+        filtered = filtered.filter(t =>
+            t.estado === filters.value.estado.value
         );
     }
 
@@ -98,6 +113,21 @@ function resetForm() {
 
 onMounted(() => {
     fetchTransportes();
+    
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', handleResize);
+    }
+});
+
+// Listener para cambios de tamaño de ventana
+const handleResize = () => {
+    windowWidth.value = window.innerWidth;
+};
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+    }
 });
 
 const fetchTransportes = async () => {
@@ -153,6 +183,8 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "La marca debe tener entre 2 y 30 caracteres.", life: 4000 });
         return;
     }
+    
+    isLoading.value = true;
     try {
         let response;
         if (!transporte.value.id) {
@@ -185,6 +217,8 @@ const saveOrUpdate = async () => {
         } else {
             toast.add({ severity: "error", summary: "Error", detail: "No se pudo guardar el transporte.", life: 4000 });
         }
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -193,7 +227,13 @@ const confirmDeleteTransporte = (t) => {
     deleteDialog.value = true;
 };
 
+const viewTransporteDetails = (t) => {
+    transporte.value = { ...t };
+    detailsDialog.value = true;
+};
+
 const deleteTransporte = async () => {
+    isDeleting.value = true;
     try {
         await axios.delete(`/api/transportes/${transporte.value.id}`);
         await fetchTransportes();
@@ -201,6 +241,8 @@ const deleteTransporte = async () => {
         toast.add({ severity: "success", summary: "¡Eliminado!", detail: "Transporte eliminado correctamente.", life: 4000 });
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el transporte.", life: 4000 });
+    } finally {
+        isDeleting.value = false;
     }
 };
 
@@ -227,12 +269,25 @@ const continueEditing = () => {
 // Variable para controlar el mensaje de límite máximo
 const showMaxLimitMessage = ref(false);
 
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) { // sm
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) { // md
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
+
 // Función para prevenir teclas no válidas antes de escribir
 const onKeyDown = (event) => {
     const currentValue = event.target.value;
     const key = event.key;
     if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
-        // Permitir Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
         (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
         return;
     }
@@ -273,17 +328,20 @@ const onPaste = (event) => {
     <Head title="Catálogo de Transportes" />
     <AuthenticatedLayout>
         <Toast class="z-[9999]" />
-        <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-lg rounded-lg h-screen-full">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
-                <div class="flex items-center gap-3">
+        <div class="px-auto md:px-2 mt-6 rounded-lg">
+            <div class="flex flex-row sm:flex-row justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
+                <div class="flex items-center gap-0 sm:gap-3">
                     <Link :href="route('tours')" class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg" title="Regresar a Tours">
-                        <FontAwesomeIcon :icon="faArrowLeft" class="h-8" />
+                        <FontAwesomeIcon :icon="faArrowLeft" class="h-7 sm:h-8" />
                     </Link>
-                    <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Catálogo de Transportes</h3>
+                    <h3 class="text-2xl text-blue-600 font-bold hidden md:block">Catálogo de Transportes</h3>
+                    <h3 class="text-2xl text-blue-600 font-bold block md:hidden">Transportes</h3>
                 </div>
                 <button
-                    class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
-                    <FontAwesomeIcon :icon="faBusSimple" class="h-4 w-4 text-white" /><span>&nbsp;Agregar transporte</span>
+                    class="bg-blue-500 border border-blue-500 p-2 text-sm mr-2 text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex" @click="openNew">
+                    <FontAwesomeIcon :icon="faBusSimple" class="h-4 w-4 mr-2 text-white" />
+                    <span class="hidden md:block">Agregar nuevo</span>
+                    <span class="block md:hidden">Agregar</span>
                 </button>
             </div>
             <DataTable
@@ -296,8 +354,8 @@ const onPaste = (event) => {
                 v-model:rowsPerPage="rowsPerPage"
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} transportes"
-                class="overflow-x-auto max-w-full"
-                style="display: block; max-width: 84vw;"
+                class="overflow-x-auto max-w-full px-auto"
+                
                 responsiveLayout="scroll"
                 :pt="{
                     root: { class: 'text-sm' },
@@ -309,20 +367,49 @@ const onPaste = (event) => {
                     tbody: { class: 'text-sm' },
                     bodyRow: { class: 'h-20 text-sm' },
                     bodyCell: { class: 'py-3 px-2 text-sm' },
-                    paginator: { class: 'text-xs sm:text-sm' },
+                    paginator: { class: 'text-xs sm:text-sm custom-paginator' },
                     paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
                 }"
             >
                 <template #header>
                     <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
-                        <div class="flex items-center justify-between mb-3">
-                            <div class="flex items-center gap-3">
-                                <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
+                        <div class="flex flex-col sm:flex-row items-center justify-between mb-3">
+                            <div class="gap-3 items-center flex">
+                                <h3 class="text-base font-medium text-gray-800 flex items-center gap-2 mb-2">
                                     <i class="pi pi-filter text-blue-600 text-sm"></i><span>Filtros</span>
                                 </h3>
-                                <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
+                                <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium mb-2 sm:mb-0">
                                     {{ filteredTransportes.length }} resultado{{ filteredTransportes.length !== 1 ? 's' : '' }}
                                 </div>
+                                <button
+                                    @click="filters.global.value = null; filters.estado.value = null;"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 inline sm:hidden mb-2"
+                                    title="Limpiar filtros"
+                                >
+                                    Limpiar
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <Select
+                                    v-model="filters['estado'].value"
+                                    :options="[
+                                        { label: 'Todos los estados', value: null },
+                                        { label: 'DISPONIBLE', value: 'DISPONIBLE' },
+                                        { label: 'NO DISPONIBLE', value: 'NO_DISPONIBLE' }
+                                    ]"
+                                    optionLabel="label"
+                                    optionValue="value"
+                                    placeholder="Filtrar por estado"
+                                    class="w-44 h-8 text-sm"
+                                    style="background-color: white; border-color: #93c5fd;"
+                                />
+                                <button
+                                    @click="filters.global.value = null; filters.estado.value = null;"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 hidden sm:inline"
+                                    title="Limpiar filtros"
+                                >
+                                    Limpiar
+                                </button>
                             </div>
                         </div>
                         <div class="space-y-3">
@@ -339,35 +426,35 @@ const onPaste = (event) => {
                         </div>
                     </template>
                 </Column>
-                <Column field="nombre" header="Nombre" sortable class="w-40 min-w-34">
+                <Column field="nombre" header="Nombre" sortable class="w-40 min-w-16">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed">
                             {{ slotProps.data.nombre }}
                         </div>
                     </template>
                 </Column>
-                <Column field="capacidad" header="Capacidad" class="w-32 min-w-20">
+                <Column field="capacidad" header="Capacidad" class="w-32 min-w-20 hidden md:table-cell">
                     <template #body="slotProps">
-                        <div class="text-sm leading-relaxed text-center">
+                        <div class="text-sm leading-relaxed text-center sm:text-left">
                             {{ slotProps.data.capacidad }}
                         </div>
                     </template>
                 </Column>
-                <Column field="marca" header="Marca" sortable class="w-32 min-w-24">
+                <Column field="marca" header="Marca" sortable class="w-32 min-w-24 hidden md:table-cell">
                     <template #body="slotProps">
                         <div class="text-sm leading-relaxed">
                             {{ slotProps.data.marca }}
                         </div>
                     </template>
                 </Column>
-                <Column field="estado" header="Estado" sortable class="w-32 min-w-24">
+                <Column field="estado" header="Estado" sortable class="w-0 min-w-24 hidden md:table-cell">
                     <template #body="slotProps">
                         <span :class="slotProps.data.estado === 'DISPONIBLE' ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full'">
                             {{ slotProps.data.estado === 'NO_DISPONIBLE' ? 'NO DISPONIBLE' : slotProps.data.estado }}
                         </span>
                     </template>
                 </Column>
-                <Column :exportable="false" class="w-40 min-w-52">
+                <Column :exportable="false" class="w-40 min-w-28">
                     <template #header>
                         <div class="text-center w-full font-bold">
                             Acciones
@@ -376,22 +463,29 @@ const onPaste = (event) => {
                     <template #body="slotProps">
                         <div class="flex gap-2 h-full justify-center items-center">
                             <button
-                                class="bg-orange-200/30 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="editTransporte(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                                &nbsp;Editar
+                                class="bg-green-500 border py-1.5 px-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 block sm:hidden"
+                                @click="viewTransporteDetails(slotProps.data)"
+                                title="Ver detalles">
+                                <FontAwesomeIcon :icon="faEye" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Ver</span>
                             </button>
                             <button
-                                class="bg-red-200/30 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="editTransporte(slotProps.data)">
+                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Editar</span>
+                            </button>
+                            <button
+                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteTransporte(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                                &nbsp;Eliminar
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 sm:w-4 text-white" />
+                                <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
                 </Column>
             </DataTable>
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="{ width: '400px' }"
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="dialogStyle"
                 :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
@@ -399,7 +493,7 @@ const onPaste = (event) => {
                             <label for="numero_placa" class="w-24 flex items-center gap-1">
                                 Placa: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.numero_placa" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. ABC123, 12A345"/>
+                            <InputText v-model.trim="transporte.numero_placa" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="ABC123"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.numero_placa && transporte.numero_placa.length < 5">
                             La placa debe tener al menos 5 caracteres. Actual: {{ transporte.numero_placa.length }}/5
@@ -416,7 +510,7 @@ const onPaste = (event) => {
                             <label for="nombre" class="w-24 flex items-center gap-1">
                                 Nombre: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. Autobús, Carro, etc."/>
+                            <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Carro pickup, etc"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.nombre && transporte.nombre.length < 3">
                             El nombre debe tener al menos 3 caracteres. Actual: {{ transporte.nombre.length }}/3
@@ -443,7 +537,7 @@ const onPaste = (event) => {
                                 max="500"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 :class="{'p-invalid': submitted && (!transporte.capacidad || transporte.capacidad < 1),}"
-                                placeholder="Cantidad (1-500)"
+                                placeholder="1-500"
                                 @keydown="onKeyDown"
                                 @paste="onPaste"
                             />
@@ -460,7 +554,7 @@ const onPaste = (event) => {
                             <label for="marca" class="w-24 flex items-center gap-1">
                                 Marca: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.marca" id="marca" name="marca" :maxlength="30" :class="{'p-invalid': submitted && (!transporte.marca || transporte.marca.length < 2 || transporte.marca.length > 30),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Ej. Toyota, Mercedes"/>
+                            <InputText v-model.trim="transporte.marca" id="marca" name="marca" :maxlength="30" :class="{'p-invalid': submitted && (!transporte.marca || transporte.marca.length < 2 || transporte.marca.length > 30),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Toyota, Mercedes, etc"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.marca && transporte.marca.length < 2">
                             La marca debe tener al menos 2 caracteres. Actual: {{ transporte.marca.length }}/2
@@ -490,11 +584,23 @@ const onPaste = (event) => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog">
+                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
                             <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />Cancelar
                         </button>
-                        <button class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="saveOrUpdate">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />{{ btnTitle }}
+                        <button 
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="saveOrUpdate"
+                            :disabled="isLoading"
+                        >
+                            <FontAwesomeIcon 
+                                :icon="isLoading ? faSpinner : faCheck" 
+                                :class="[
+                                    'h-5 text-white',
+                                    { 'animate-spin': isLoading }
+                                ]" 
+                            />
+                            <span v-if="!isLoading">{{ btnTitle }}</span>
+                            <span v-else>{{ transporte.id ? 'Actualizando...' : 'Guardando...' }}</span>
                         </button>
                     </div>
                 </template>
@@ -509,18 +615,30 @@ const onPaste = (event) => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>No</span>
+                        <button 
+                            type="button" 
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="deleteTransporte"
+                            :disabled="isDeleting"
+                        >
+                            <FontAwesomeIcon 
+                                :icon="isDeleting ? faSpinner : faCheck" 
+                                :class="[
+                                    'h-5',
+                                    { 'animate-spin': isDeleting }
+                                ]" 
+                            />
+                            <span v-if="!isDeleting">Eliminar</span>
+                            <span v-else>Eliminando...</span>
                         </button>
-                        <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteTransporte">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5" /><span>Sí</span>
+                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="deleteDialog = false" :disabled="isDeleting">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                         </button>
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false" :draggable="false">
+            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-orange-500" />
                     <span>Tienes información sin guardar. ¿Deseas salir sin guardar?</span>
@@ -538,6 +656,198 @@ const onPaste = (event) => {
                     </div>
                 </template>
             </Dialog>
+            <Dialog v-model:visible="detailsDialog" header="Detalles del Transporte" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="text-sm font-semibold text-gray-700">Placa:</label>
+                            <p class="text-lg font-mono text-gray-900 mt-1">{{ transporte.numero_placa }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="text-sm font-semibold text-gray-700">Nombre:</label>
+                            <p class="text-lg text-gray-900 mt-1">{{ transporte.nombre }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="text-sm font-semibold text-gray-700">Capacidad:</label>
+                            <p class="text-lg text-gray-900 mt-1">{{ transporte.capacidad }} personas</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg">
+                            <label class="text-sm font-semibold text-gray-700">Marca:</label>
+                            <p class="text-lg text-gray-900 mt-1">{{ transporte.marca }}</p>
+                        </div>
+                        <div class="bg-gray-50 p-3 rounded-lg sm:col-span-2">
+                            <label class="text-sm font-semibold text-gray-700">Estado:</label>
+                            <div class="mt-2">
+                                <span :class="transporte.estado === 'DISPONIBLE' ? 'bg-green-100 text-green-800 px-3 py-2 rounded-full font-medium' : 'bg-red-100 text-red-800 px-3 py-2 rounded-full font-medium'">
+                                    {{ transporte.estado === 'NO_DISPONIBLE' ? 'NO DISPONIBLE' : transporte.estado }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <template #footer>
+                    <div class="flex justify-center w-full">
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="detailsDialog = false">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />Cerrar
+                        </button>
+                    </div>
+                </template>
+            </Dialog>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/*//////// Estilos responsivos para Toast notifications /////////*/
+.p-toast {
+  z-index: 9999 !important;
+}
+
+.p-toast .p-toast-message {
+  margin: 0.5rem !important;
+  min-width: 250px !important;
+  max-width: 90vw !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Mobile styles */
+@media (max-width: 639px) {
+  .p-toast {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 1rem !important;
+  }
+  
+  .p-toast .p-toast-message {
+    margin: 0.25rem !important;
+    min-width: unset !important;
+    max-width: calc(100vw - 1rem) !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-message-content {
+    padding: 0.75rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-summary {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-detail {
+    font-size: 0.8125rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  .p-toast .p-toast-icon-close {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .p-toast .p-toast-message {
+    max-width: 400px !important;
+    margin: 0.75rem !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1025px) {
+  .p-toast .p-toast-message {
+    max-width: 450px !important;
+    margin: 1rem !important;
+  }
+}
+
+/* Mejoras generales para mejor UX */
+.p-toast .p-toast-message {
+  border-radius: 0.5rem !important;
+  border: none !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #22c55e !important;
+  color: #15803d !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  background-color: #fffbeb !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #d97706 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-info {
+  background-color: #eff6ff !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: #2563eb !important;
+}
+/*///////// Fin de los estilos para Toast ////////*/
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+</style>

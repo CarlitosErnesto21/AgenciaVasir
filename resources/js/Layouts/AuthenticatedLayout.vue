@@ -158,7 +158,7 @@ onBeforeUnmount(() => {
 <template>
     <div class="min-h-screen flex flex-col bg-white">
         <!-- Header principal profesional -->
-        <header class="bg-gradient-to-r from-white/98 via-red-50/95 to-white/98 backdrop-blur-xl text-black shadow-2xl fixed top-0 left-0 w-full z-50 border-b border-red-100/50 overflow-visible">
+        <header class="bg-gradient-to-r from-white/98 via-red-50/95 to-white/98 backdrop-blur-xl text-black shadow-lg fixed top-0 left-0 w-full z-50 border-b border-red-100/50 overflow-visible">
             <!-- Elementos decorativos de fondo -->
             <div class="absolute inset-0 bg-gradient-to-r from-red-100/20 via-transparent to-red-100/20"></div>
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500 opacity-80"></div>
@@ -835,7 +835,7 @@ onBeforeUnmount(() => {
                 class="flex-1 flex flex-col transition-all duration-300 md:ml-64"
             >
                 <!-- Área de contenido principal -->
-                <main class="flex-1 overflow-auto bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50">
+                <main class="flex-1 overflow-auto bg-white">
                     <slot />
                 </main>
             </div>

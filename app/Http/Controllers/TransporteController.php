@@ -27,6 +27,10 @@ class TransporteController extends Controller
             'capacidad' => 'required|integer|min:1',
             'marca' => 'required|string|max:30',
             'estado' => 'required|in:DISPONIBLE,NO_DISPONIBLE',
+        ], [
+            // Solo mensajes que no se validan del lado cliente
+            'numero_placa.unique' => 'Esta placa ya está registrada en el sistema.',
+            'numero_placa.regex' => 'El formato de la placa no es válido. Debe iniciar con un prefijo válido seguido de 6 caracteres alfanuméricos.',
         ]);
 
         $transporte = Transporte::create($validated);
@@ -56,6 +60,10 @@ class TransporteController extends Controller
             'capacidad' => 'required|integer|min:1',
             'marca' => 'required|string|max:30',
             'estado' => 'required|in:DISPONIBLE,NO_DISPONIBLE',
+        ], [
+            // Solo mensajes que no se validan del lado cliente
+            'numero_placa.unique' => 'Esta placa ya está registrada en el sistema.',
+            'numero_placa.regex' => 'El formato de la placa no es válido. Debe iniciar con un prefijo válido seguido de 6 caracteres alfanuméricos.',
         ]);
 
         $transporte->update($validated);

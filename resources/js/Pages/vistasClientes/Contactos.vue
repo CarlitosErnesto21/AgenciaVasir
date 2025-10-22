@@ -142,12 +142,12 @@ function toggleFAQ(id) {
 // Computed para filtrar FAQs
 const faqsFiltradas = computed(() => {
   if (!busquedaFAQ.value) return preguntasFrecuentes.value
-  
+
   const termino = busquedaFAQ.value.toLowerCase()
   return preguntasFrecuentes.value.map(categoria => ({
     ...categoria,
-    preguntas: categoria.preguntas.filter(p => 
-      p.pregunta.toLowerCase().includes(termino) || 
+    preguntas: categoria.preguntas.filter(p =>
+      p.pregunta.toLowerCase().includes(termino) ||
       p.respuesta.toLowerCase().includes(termino)
     )
   })).filter(categoria => categoria.preguntas.length > 0)
@@ -157,7 +157,7 @@ const faqsFiltradas = computed(() => {
 <template>
   <Catalogo>
     <Toast />
-    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen">
+    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen pt-36">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
         <!-- Header Professional -->
         <div class="mb-8 sm:mb-12">
@@ -183,7 +183,7 @@ const faqsFiltradas = computed(() => {
                   Preguntas Frecuentes
                 </h2>
               </div>
-              
+
               <!-- Buscador de FAQs -->
               <div class="mb-6 sm:mb-8">
                 <div class="relative">
@@ -204,7 +204,7 @@ const faqsFiltradas = computed(() => {
                   <h3 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent border-b-2 border-red-200 pb-2 sm:pb-3">
                     {{ categoria.categoria }}
                   </h3>
-                  
+
                   <div v-for="faq in categoria.preguntas" :key="faq.id" class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200 hover:border-red-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                     <button
                       @click="toggleFAQ(faq.id)"
@@ -217,7 +217,7 @@ const faqsFiltradas = computed(() => {
                         </span>
                       </div>
                     </button>
-                    
+
                     <div v-if="faqAbierta === faq.id" class="p-4 sm:p-5 bg-gradient-to-br from-white to-gray-50 border-t-2 border-red-200">
                       <p class="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">{{ faq.respuesta }}</p>
                     </div>
@@ -233,8 +233,8 @@ const faqsFiltradas = computed(() => {
                   </div>
                   <h3 class="text-lg sm:text-xl font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">No se encontraron resultados</h3>
                   <p class="text-gray-600 mb-4 text-sm sm:text-base">No se encontraron preguntas que coincidan con tu búsqueda.</p>
-                  <button 
-                    @click="busquedaFAQ = ''" 
+                  <button
+                    @click="busquedaFAQ = ''"
                     class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
                   >
                     Ver todas las preguntas
@@ -251,7 +251,7 @@ const faqsFiltradas = computed(() => {
                   Información de Contacto
                 </h3>
               </div>
-              
+
               <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div v-for="info in contactoInfo" :key="info.titulo" class="bg-white rounded-xl p-4 sm:p-5 shadow-lg border border-gray-200 hover:border-red-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
                   <div class="flex items-start space-x-3 sm:space-x-4">
@@ -285,45 +285,45 @@ const faqsFiltradas = computed(() => {
                   Envíanos un Mensaje
                 </h2>
               </div>
-              
+
               <form class="space-y-5 sm:space-y-6" @submit="enviarFormulario">
                 <div>
                   <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Nombre completo</label>
-                  <InputText 
-                    v-model="nombre" 
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300" 
-                    placeholder="Tu nombre completo" 
+                  <InputText
+                    v-model="nombre"
+                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
+                    placeholder="Tu nombre completo"
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Correo electrónico</label>
-                  <InputText 
-                    v-model="email" 
-                    type="email" 
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300" 
-                    placeholder="tu@email.com" 
+                  <InputText
+                    v-model="email"
+                    type="email"
+                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
+                    placeholder="tu@email.com"
                     required
                   />
                 </div>
-                
+
                 <div>
                   <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Mensaje</label>
-                  <Textarea 
-                    v-model="mensaje" 
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300" 
-                    rows="5" 
-                    placeholder="Escribe tu mensaje aquí... Cuéntanos sobre el tour que te interesa, fechas, número de personas, etc." 
-                    autoResize 
+                  <Textarea
+                    v-model="mensaje"
+                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
+                    rows="5"
+                    placeholder="Escribe tu mensaje aquí... Cuéntanos sobre el tour que te interesa, fechas, número de personas, etc."
+                    autoResize
                     required
                   />
                 </div>
-                
-                <Button 
-                  type="submit" 
-                  label="Enviar Mensaje" 
-                  class="!bg-gradient-to-r !from-red-600 !to-blue-600 hover:!from-red-700 hover:!to-blue-700 !border-none !px-6 !py-3 sm:!py-4 !text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full text-sm sm:text-base" 
+
+                <Button
+                  type="submit"
+                  label="Enviar Mensaje"
+                  class="!bg-gradient-to-r !from-red-600 !to-blue-600 hover:!from-red-700 hover:!to-blue-700 !border-none !px-6 !py-3 sm:!py-4 !text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full text-sm sm:text-base"
                 />
               </form>
             </div>
@@ -336,10 +336,10 @@ const faqsFiltradas = computed(() => {
                   Contacto Directo
                 </h3>
               </div>
-              
+
               <div class="space-y-4 sm:space-y-5">
-                <a 
-                  href="https://wa.me/50312345678" 
+                <a
+                  href="https://wa.me/50312345678"
                   target="_blank"
                   class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
@@ -351,8 +351,8 @@ const faqsFiltradas = computed(() => {
                     <p class="text-xs sm:text-sm text-green-600">Respuesta inmediata</p>
                   </div>
                 </a>
-                
-                <a 
+
+                <a
                   href="mailto:info@vasir.com"
                   class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
                 >
@@ -364,7 +364,7 @@ const faqsFiltradas = computed(() => {
                     <p class="text-xs sm:text-sm text-blue-600">info@vasir.com</p>
                   </div>
                 </a>
-                
+
                 <div class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-xl shadow-lg">
                   <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
                     <span class="text-white text-xl">📱</span>
@@ -418,16 +418,16 @@ const faqsFiltradas = computed(() => {
                 ¡Estamos aquí para hacer realidad tu próxima aventura!
               </p>
               <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
-                <a 
-                  href="https://wa.me/50312345678" 
+                <a
+                  href="https://wa.me/50312345678"
                   target="_blank"
                   class="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
                 >
                   <span class="mr-2 text-lg">💬</span>
                   Chatear por WhatsApp
                 </a>
-                <a 
-                  href="/sobre-nosotros" 
+                <a
+                  href="/sobre-nosotros"
                   class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-6 py-3 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
                 >
                   <span class="mr-2 text-lg">🏢</span>
