@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Select from "primevue/select";
-import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faEye, faPencil, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faInfoCircle, faPencil, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const toast = useToast();
@@ -195,7 +195,7 @@ const saveOrUpdate = async () => {
                 marca: transporte.value.marca,
                 estado: transporte.value.estado,
             });
-            toast.add({ severity: "success", summary: "¡Éxito!", detail: "Transporte creado correctamente.", life: 4000 });
+            toast.add({ severity: "success", summary: "¡Creado!", detail: "Transporte creado correctamente.", life: 4000 });
         } else {
             response = await axios.put(`/api/transportes/${transporte.value.id}`, {
                 numero_placa: transporte.value.numero_placa,
@@ -204,7 +204,7 @@ const saveOrUpdate = async () => {
                 marca: transporte.value.marca,
                 estado: transporte.value.estado,
             });
-            toast.add({ severity: "success", summary: "¡Éxito!", detail: "Transporte actualizado correctamente.", life: 4000 });
+            toast.add({ severity: "success", summary: "¡Actualizado!", detail: "Transporte actualizado correctamente.", life: 4000 });
         }
         await fetchTransportes();
         dialog.value = false;
@@ -240,7 +240,21 @@ const deleteTransporte = async () => {
         deleteDialog.value = false;
         toast.add({ severity: "success", summary: "¡Eliminado!", detail: "Transporte eliminado correctamente.", life: 4000 });
     } catch (err) {
-        toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el transporte.", life: 4000 });
+        deleteDialog.value = false;
+        
+        // Verificar si es un error de tours asociados
+        if (err.response && err.response.status === 400 && err.response.data && err.response.data.error === 'TOURS_ASOCIADOS') {
+            const toursCount = err.response.data.tours_count;
+            const tourText = toursCount === 1 ? 'tour asociado' : 'tours asociados';
+            toast.add({ 
+                severity: "warn", 
+                summary: "No se puede eliminar", 
+                detail: `El transporte "${transporte.value.nombre}" tiene ${toursCount} ${tourText}. Para eliminarlo, primero debe cambiar el transporte de los tours asociados o eliminarlos.`, 
+                life: 9000 
+            });
+        } else {
+            toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el transporte.", life: 4000 });
+        }
     } finally {
         isDeleting.value = false;
     }
@@ -323,22 +337,33 @@ const onPaste = (event) => {
         transporte.value.capacidad = num.toString();
     }
 };
+
+// Función para manejar el clic en la fila
+const onRowClick = (event) => {
+    // Verificar si el clic fue en un botón para evitar abrir el modal
+    const target = event.originalEvent.target;
+    const isButton = target.closest('button');
+    
+    if (!isButton) {
+        viewTransporteDetails(event.data);
+    }
+};
 </script>
 <template>
     <Head title="Catálogo de Transportes" />
     <AuthenticatedLayout>
         <Toast class="z-[9999]" />
-        <div class="px-auto md:px-2 mt-6 rounded-lg">
-            <div class="flex flex-row sm:flex-row justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
+        <div class="px-auto md:px-2 mt-6">
+            <div class="flex justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
                 <div class="flex items-center gap-0 sm:gap-3">
                     <Link :href="route('tours')" class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg" title="Regresar a Tours">
                         <FontAwesomeIcon :icon="faArrowLeft" class="h-7 sm:h-8" />
                     </Link>
-                    <h3 class="text-2xl text-blue-600 font-bold hidden md:block">Catálogo de Transportes</h3>
+                    <h3 class="text-3xl text-blue-600 font-bold hidden md:block">Catálogo de Transportes</h3>
                     <h3 class="text-2xl text-blue-600 font-bold block md:hidden">Transportes</h3>
                 </div>
                 <button
-                    class="bg-blue-500 border border-blue-500 p-2 text-sm mr-2 text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex" @click="openNew">
+                    class="bg-blue-500 border border-blue-500 p-2 text-sm mr-4 text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex" @click="openNew">
                     <FontAwesomeIcon :icon="faBusSimple" class="h-4 w-4 mr-2 text-white" />
                     <span class="hidden md:block">Agregar nuevo</span>
                     <span class="block md:hidden">Agregar</span>
@@ -355,7 +380,7 @@ const onPaste = (event) => {
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} transportes"
                 class="overflow-x-auto max-w-full px-auto"
-                
+                @row-click="onRowClick"
                 responsiveLayout="scroll"
                 :pt="{
                     root: { class: 'text-sm' },
@@ -365,7 +390,7 @@ const onPaste = (event) => {
                     headerRow: { class: 'text-sm' },
                     headerCell: { class: 'text-sm font-medium py-3 px-2' },
                     tbody: { class: 'text-sm' },
-                    bodyRow: { class: 'h-20 text-sm' },
+                    bodyRow: { class: 'h-20 text-sm cursor-pointer hover:bg-blue-50 transition-colors duration-200' },
                     bodyCell: { class: 'py-3 px-2 text-sm' },
                     paginator: { class: 'text-xs sm:text-sm custom-paginator' },
                     paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
@@ -386,49 +411,54 @@ const onPaste = (event) => {
                                     class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 inline sm:hidden mb-2"
                                     title="Limpiar filtros"
                                 >
-                                    Limpiar
+                                    Limpiar filtros
                                 </button>
                             </div>
                             <div class="flex items-center gap-2">
                                 <Select
                                     v-model="filters['estado'].value"
                                     :options="[
-                                        { label: 'Todos los estados', value: null },
                                         { label: 'DISPONIBLE', value: 'DISPONIBLE' },
                                         { label: 'NO DISPONIBLE', value: 'NO_DISPONIBLE' }
                                     ]"
                                     optionLabel="label"
                                     optionValue="value"
                                     placeholder="Filtrar por estado"
-                                    class="w-44 h-8 text-sm"
+                                    class="w-full h-8 text-sm border rounded-md sm:w-full"
                                     style="background-color: white; border-color: #93c5fd;"
                                 />
                                 <button
                                     @click="filters.global.value = null; filters.estado.value = null;"
-                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 hidden sm:inline"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-3 py-1.5 w-full rounded-md text-sm border border-gray-300 transition-colors duration-200 h-8 hidden sm:inline"
                                     title="Limpiar filtros"
                                 >
-                                    Limpiar
+                                    Limpiar filtros
                                 </button>
                             </div>
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar transportes..." class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;" />
+                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar transportes..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;" />
                             </div>
                         </div>
                     </div>
                 </template>
-                <Column field="numero_placa" header="Placa" sortable class="w-32 min-w-24">
+                <Column field="numero_placa" header="Placa" sortable class="w-32 min-w-32">
                     <template #body="slotProps">
-                        <div class="text-sm font-mono leading-relaxed">
+                        <div class="text-sm font-medium leading-relaxed overflow-hidden" 
+                            style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.numero_placa"
+                        >
                             {{ slotProps.data.numero_placa }}
                         </div>
                     </template>
                 </Column>
                 <Column field="nombre" header="Nombre" sortable class="w-40 min-w-16">
                     <template #body="slotProps">
-                        <div class="text-sm font-medium leading-relaxed">
+                        <div class="text-sm font-medium leading-relaxed overflow-hidden" 
+                            style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.nombre"
+                        >
                             {{ slotProps.data.nombre }}
                         </div>
                     </template>
@@ -440,14 +470,14 @@ const onPaste = (event) => {
                         </div>
                     </template>
                 </Column>
-                <Column field="marca" header="Marca" sortable class="w-32 min-w-24 hidden md:table-cell">
+                <Column field="marca" header="Marca" class="w-32 min-w-24 hidden md:table-cell">
                     <template #body="slotProps">
                         <div class="text-sm leading-relaxed">
                             {{ slotProps.data.marca }}
                         </div>
                     </template>
                 </Column>
-                <Column field="estado" header="Estado" sortable class="w-0 min-w-24 hidden md:table-cell">
+                <Column field="estado" header="Estado" class="w-0 min-w-24 hidden md:table-cell">
                     <template #body="slotProps">
                         <span :class="slotProps.data.estado === 'DISPONIBLE' ? 'bg-green-100 text-green-800 px-2 py-1 rounded-full' : 'bg-red-100 text-red-800 px-2 py-1 rounded-full'">
                             {{ slotProps.data.estado === 'NO_DISPONIBLE' ? 'NO DISPONIBLE' : slotProps.data.estado }}
@@ -462,13 +492,6 @@ const onPaste = (event) => {
                     </template>
                     <template #body="slotProps">
                         <div class="flex gap-2 h-full justify-center items-center">
-                            <button
-                                class="bg-green-500 border py-1.5 px-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 block sm:hidden"
-                                @click="viewTransporteDetails(slotProps.data)"
-                                title="Ver detalles">
-                                <FontAwesomeIcon :icon="faEye" class="h-4 w-7 text-white" />
-                                <span class="hidden md:block text-white">Ver</span>
-                            </button>
                             <button
                                 class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editTransporte(slotProps.data)">
@@ -567,7 +590,18 @@ const onPaste = (event) => {
                         </small>
                     </div>
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
+                        <div v-if="!transporte.id" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-2">
+                            <div class="flex items-center gap-3">
+                                <div class="bg-blue-500 rounded-full p-2">
+                                    <FontAwesomeIcon :icon="faInfoCircle" class="w-6 h-4 text-white" />
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-semibold text-blue-800">Estado por defecto</h4>
+                                    <p class="text-sm text-blue-700">Este transporte se creará como <span class="font-semibold">DISPONIBLE</span></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="flex items-center gap-4">
                             <label for="estado" class="w-24 flex items-center gap-1">
                                 Estado: <span class="text-red-500 font-bold">*</span>
                             </label>
@@ -584,9 +618,6 @@ const onPaste = (event) => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />Cancelar
-                        </button>
                         <button 
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
@@ -601,6 +632,9 @@ const onPaste = (event) => {
                             />
                             <span v-if="!isLoading">{{ btnTitle }}</span>
                             <span v-else>{{ transporte.id ? 'Actualizando...' : 'Guardando...' }}</span>
+                        </button>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-10 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />Cerrar
                         </button>
                     </div>
                 </template>
@@ -631,7 +665,7 @@ const onPaste = (event) => {
                             <span v-if="!isDeleting">Eliminar</span>
                             <span v-else>Eliminando...</span>
                         </button>
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                             @click="deleteDialog = false" :disabled="isDeleting">
                             <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                         </button>
@@ -640,18 +674,18 @@ const onPaste = (event) => {
             </Dialog>
             <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-orange-500" />
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <span>Tienes información sin guardar. ¿Deseas salir sin guardar?</span>
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-3 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="continueEditing">
-                            <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
-                        </button>
                         <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                             @click="closeDialogWithoutSaving">
                             <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
+                        </button>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="continueEditing">
+                            <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                         </button>
                     </div>
                 </template>
@@ -723,6 +757,7 @@ const onPaste = (event) => {
     background-color: #dbeafe !important;
     color: #1e40af !important;
 }
+/* Fin de los estilos para el select */
 
 /* Estilos para el paginador */
 .p-paginator-current {
@@ -738,104 +773,6 @@ const onPaste = (event) => {
   }
 }
 /* Fin de los estilos para el paginador */
-
-/*//////// Estilos responsivos para Toast notifications /////////*/
-.p-toast {
-  z-index: 9999 !important;
-}
-
-.p-toast .p-toast-message {
-  margin: 0.5rem !important;
-  min-width: 250px !important;
-  max-width: 90vw !important;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
-}
-
-/* Mobile styles */
-@media (max-width: 639px) {
-  .p-toast {
-    width: 100% !important;
-    left: 0 !important;
-    right: 0 !important;
-    top: 1rem !important;
-  }
-  
-  .p-toast .p-toast-message {
-    margin: 0.25rem !important;
-    min-width: unset !important;
-    max-width: calc(100vw - 1rem) !important;
-    border-radius: 0.5rem !important;
-  }
-  
-  .p-toast .p-toast-message .p-toast-message-content {
-    padding: 0.75rem !important;
-  }
-  
-  .p-toast .p-toast-message .p-toast-summary {
-    font-size: 0.875rem !important;
-    font-weight: 600 !important;
-    margin-bottom: 0.25rem !important;
-  }
-  
-  .p-toast .p-toast-message .p-toast-detail {
-    font-size: 0.8125rem !important;
-    line-height: 1.4 !important;
-  }
-  
-  .p-toast .p-toast-icon-close {
-    width: 1.25rem !important;
-    height: 1.25rem !important;
-    top: 0.5rem !important;
-    right: 0.5rem !important;
-  }
-}
-
-/* Tablet styles */
-@media (min-width: 640px) and (max-width: 1024px) {
-  .p-toast .p-toast-message {
-    max-width: 400px !important;
-    margin: 0.75rem !important;
-  }
-}
-
-/* Desktop styles */
-@media (min-width: 1025px) {
-  .p-toast .p-toast-message {
-    max-width: 450px !important;
-    margin: 1rem !important;
-  }
-}
-
-/* Mejoras generales para mejor UX */
-.p-toast .p-toast-message {
-  border-radius: 0.5rem !important;
-  border: none !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-success {
-  background-color: #f0fdf4 !important;
-  border-left: 4px solid #22c55e !important;
-  color: #15803d !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-error {
-  background-color: #fef2f2 !important;
-  border-left: 4px solid #ef4444 !important;
-  color: #dc2626 !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-warn {
-  background-color: #fffbeb !important;
-  border-left: 4px solid #f59e0b !important;
-  color: #d97706 !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-info {
-  background-color: #eff6ff !important;
-  border-left: 4px solid #3b82f6 !important;
-  color: #2563eb !important;
-}
-/*///////// Fin de los estilos para Toast ////////*/
 
 /* Animación para el spinner de loading */
 @keyframes spin {

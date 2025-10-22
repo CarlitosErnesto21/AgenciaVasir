@@ -36,6 +36,7 @@ Route::get('/tours', [TourController::class, 'index']);
 Route::get('/tours/{id}', [TourController::class, 'show']);
 Route::get('/hoteles', [HotelController::class, 'index']);
 Route::get('/paquetes', [PaqueteController::class, 'index']);
+Route::get('/tipo-documentos', [TipoDocumentoController::class, 'index']);
 
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
@@ -92,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}/confirmar', [ReservaController::class, 'confirmar']);
             Route::put('/{id}/rechazar', [ReservaController::class, 'rechazar']);
             Route::put('/{id}/reprogramar', [ReservaController::class, 'reprogramar']);
+            Route::put('/{id}/finalizar', [ReservaController::class, 'finalizar']);
+            Route::post('/finalizar-automaticamente', [ReservaController::class, 'finalizarAutomaticamente']);
             Route::get('/{id}/historial', [ReservaController::class, 'historial']);
         });
 
@@ -100,6 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
+        
+        // Rutas adicionales para tours
+        Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
+        
         Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
         Route::apiResource('ventas', VentaController::class);
@@ -110,7 +117,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');
         Route::apiResource('provincias', ProvinciaController::class)->parameter('provincias', 'provincia');
         Route::apiResource('transportes', TransporteController::class);
-        Route::apiResource('tipo-documentos', TipoDocumentoController::class);
+        Route::apiResource('tipo-documentos', TipoDocumentoController::class)->except(['index']);
 
         //Gestión específica de clientes
         Route::prefix('clientes')->group(function () {

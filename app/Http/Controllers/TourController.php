@@ -209,6 +209,91 @@ class TourController extends Controller
     }
 
     /**
+     * Cambiar el estado de un tour
+     */
+    public function cambiarEstado(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $validated = $request->validate([
+            'estado' => 'required|in:DISPONIBLE,AGOTADO,EN_CURSO,COMPLETADO,CANCELADO,SUSPENDIDO,REPROGRAMADO',
+            'fecha_salida' => 'required_if:estado,REPROGRAMADO|nullable|date|after:now',
+            'fecha_regreso' => 'required_if:estado,REPROGRAMADO|nullable|date|after:fecha_salida',
+            'motivo_reprogramacion' => 'required_if:estado,REPROGRAMADO|nullable|string|max:255',
+            'observaciones' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            // Si es reprogramación, actualizar las fechas también
+            if ($validated['estado'] === 'REPROGRAMADO') {
+                $tour->update([
+                    'estado' => $validated['estado'],
+                    'fecha_salida' => $validated['fecha_salida'],
+                    'fecha_regreso' => $validated['fecha_regreso']
+                ]);
+
+                // Log de la reprogramación
+                Log::info('Tour reprogramado', [
+                    'tour_id' => $tour->id,
+                    'tour_nombre' => $tour->nombre,
+                    'fecha_anterior_salida' => $tour->getOriginal('fecha_salida'),
+                    'fecha_anterior_regreso' => $tour->getOriginal('fecha_regreso'),
+                    'nueva_fecha_salida' => $validated['fecha_salida'],
+                    'nueva_fecha_regreso' => $validated['fecha_regreso'],
+                    'motivo' => $validated['motivo_reprogramacion'],
+                    'observaciones' => $validated['observaciones'] ?? null
+                ]);
+
+                $mensaje = 'Tour reprogramado exitosamente';
+            } else {
+                // Solo cambiar el estado
+                $tour->update([
+                    'estado' => $validated['estado']
+                ]);
+
+                Log::info('Estado de tour actualizado', [
+                    'tour_id' => $tour->id,
+                    'tour_nombre' => $tour->nombre,
+                    'estado_anterior' => $tour->getOriginal('estado'),
+                    'nuevo_estado' => $validated['estado']
+                ]);
+
+                $mensaje = 'Estado del tour actualizado exitosamente';
+            }
+
+            // Recargar el tour con sus relaciones
+            $tour = $tour->fresh(['transporte', 'imagenes']);
+
+            // Agregar cupos_disponibles
+            $cuposReservados = $tour->detalleReservas()
+                ->whereHas('reserva', function($query) {
+                    $query->where('estado', '!=', 'cancelada');
+                })
+                ->sum('cupos_reservados');
+
+            $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
+            $tour->cupos_disponibles = $cuposDisponibles;
+
+            return response()->json([
+                'message' => $mensaje,
+                'tour' => $tour,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al cambiar estado de tour', [
+                'tour_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Error al cambiar el estado del tour',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Mostrar tours nacionales para la vista de clientes
      */
     public function toursNacionales(Request $request)

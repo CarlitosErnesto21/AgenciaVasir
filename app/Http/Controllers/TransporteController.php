@@ -76,6 +76,17 @@ class TransporteController extends Controller
 
     public function destroy(Transporte $transporte)
     {
+        // Verificar si el transporte tiene tours asociados
+        $toursAsociados = $transporte->tours()->count();
+        
+        if ($toursAsociados > 0) {
+            return response()->json([
+                'message' => 'No se puede eliminar el transporte porque tiene ' . $toursAsociados . ' tour(s) asociado(s).',
+                'error' => 'TOURS_ASOCIADOS',
+                'tours_count' => $toursAsociados
+            ], 400);
+        }
+
         $transporte->delete();
 
         return response()->json([

@@ -11,6 +11,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\ReservationConfirmedMail;
+use App\Mail\ReservationRejectedMail;
+use App\Mail\ReservationRescheduledMail;
+use App\Mail\ReservationCompletedMail;
 use Carbon\Carbon;
 
 class ReservaController extends Controller
@@ -407,46 +412,62 @@ class ReservaController extends Controller
         try {
             $reserva = Reserva::findOrFail($id);
             
-            // Log para debug más detallado
-            Log::info('Confirmando reserva - INICIO', [
-                'id' => $id,
-                'estado_actual' => $reserva->estado,
-                'reserva_completa' => $reserva->toArray()
-            ]);
-            
             // Validar que se pueda confirmar
-            if ($reserva->estado !== 'PENDIENTE') {
+            $estadosPermitidos = ['PENDIENTE', 'Pendiente', 'pendiente'];
+            if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
                     'message' => "Solo se pueden confirmar reservas pendientes. Estado actual: {$reserva->estado}"
                 ], 400);
             }
             
-            Log::info('Intentando actualizar estado a CONFIRMADA...');
-            
-            $resultado = $reserva->update([
-                'estado' => 'CONFIRMADA' // Cambiar a CONFIRMADA en lugar de CONFIRMADO
-            ]);
-            
-            Log::info('Resultado de la actualización', [
-                'resultado' => $resultado,
-                'estado_después' => $reserva->fresh()->estado
+            $reserva->update([
+                'estado' => 'CONFIRMADA'
             ]);
 
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Preparar datos para el email
+            $reservationData = [
+                'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
+                'fecha_reserva' => $reserva->fecha,
+                'tipo' => $this->obtenerTipoReserva($reserva),
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email de confirmación solo si hay email
+            if ($clientData['email']) {
+                try {
+                    Mail::to($clientData['email'])
+                        ->send(new ReservationConfirmedMail($reservationData, $clientData));
+                } catch (\Exception $emailError) {
+                    Log::error('Error al enviar email de confirmación', [
+                        'reserva_id' => $id,
+                        'email' => $clientData['email'],
+                        'error' => $emailError->getMessage()
+                    ]);
+                    // No retornamos error aquí para no afectar la confirmación de la reserva
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Reserva confirmada exitosamente',
+                'message' => 'Reserva confirmada exitosamente. Se ha enviado un email de confirmación al cliente.',
                 'data' => $reserva
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error al confirmar reserva', [
                 'id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
@@ -458,6 +479,50 @@ class ReservaController extends Controller
     }
 
     /**
+     * Obtener el nombre de la entidad reservada
+     */
+    private function obtenerNombreEntidad(Reserva $reserva): string
+    {
+        // Para tours
+        if ($reserva->detallesTours && $reserva->detallesTours->count() > 0) {
+            return $reserva->detallesTours->first()->tour->nombre ?? 'Tour no especificado';
+        }
+
+        // Para hoteles (cuando se implemente)
+        // if ($reserva->detallesHoteles && $reserva->detallesHoteles->count() > 0) {
+        //     return $reserva->detallesHoteles->first()->hotel->nombre ?? 'Hotel no especificado';
+        // }
+
+        // Para aerolíneas (cuando se implemente)
+        // if ($reserva->detallesAerolineas && $reserva->detallesAerolineas->count() > 0) {
+        //     return $reserva->detallesAerolineas->first()->aerolinea->nombre ?? 'Aerolínea no especificada';
+        // }
+
+        return 'Servicio no especificado';
+    }
+
+    /**
+     * Obtener el tipo de reserva
+     */
+    private function obtenerTipoReserva(Reserva $reserva): string
+    {
+        if ($reserva->detallesTours && $reserva->detallesTours->count() > 0) {
+            return 'tours';
+        }
+
+        // Para futuras implementaciones
+        // if ($reserva->detallesHoteles && $reserva->detallesHoteles->count() > 0) {
+        //     return 'hoteles';
+        // }
+
+        // if ($reserva->detallesAerolineas && $reserva->detallesAerolineas->count() > 0) {
+        //     return 'aerolineas';
+        // }
+
+        return 'servicio';
+    }
+
+    /**
      * Rechazar una reserva
      */
     public function rechazar(Request $request, $id): JsonResponse
@@ -465,15 +530,20 @@ class ReservaController extends Controller
         try {
             $reserva = Reserva::findOrFail($id);
             
-            // Log para debug
-            Log::info('Rechazando reserva', [
-                'id' => $id,
-                'estado_actual' => $reserva->estado,
-                'motivo' => $request->input('motivo')
-            ]);
+            // Verificar que el motivo esté presente
+            if (!$request->has('motivo') || empty(trim($request->input('motivo')))) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El motivo del rechazo es requerido'
+                ], 400);
+            }
             
             // Ser más flexible con los estados
-            $estadosPermitidos = ['PENDIENTE', 'Pendiente', 'pendiente', 'CONFIRMADO', 'Confirmado', 'confirmado'];
+            $estadosPermitidos = [
+                'PENDIENTE', 'Pendiente', 'pendiente', 
+                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
+            ];
+            
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -481,7 +551,7 @@ class ReservaController extends Controller
                 ], 400);
             }
 
-            $motivo = $request->input('motivo', 'Sin motivo especificado');
+            $motivo = trim($request->input('motivo'));
 
             $reserva->update([
                 'estado' => 'RECHAZADA'
@@ -490,17 +560,46 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Preparar datos para el email de rechazo
+            $reservationData = [
+                'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
+                'fecha_reserva' => $reserva->fecha,
+                'tipo' => $this->obtenerTipoReserva($reserva),
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email de rechazo solo si hay email
+            if ($clientData['email']) {
+                try {
+                    Mail::to($clientData['email'])
+                        ->send(new ReservationRejectedMail($reservationData, $clientData, $motivo));
+                } catch (\Exception $emailError) {
+                    Log::error('Error al enviar email de rechazo', [
+                        'reserva_id' => $id,
+                        'email' => $clientData['email'],
+                        'error' => $emailError->getMessage()
+                    ]);
+                    // No retornamos error aquí para no afectar el rechazo de la reserva
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Reserva rechazada exitosamente',
+                'message' => 'Reserva rechazada exitosamente. Se ha enviado una notificación al cliente.',
                 'data' => $reserva
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error al rechazar reserva', [
                 'id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
@@ -519,16 +618,12 @@ class ReservaController extends Controller
         try {
             $reserva = Reserva::findOrFail($id);
             
-            // Log para debug
-            Log::info('Reprogramando reserva', [
-                'id' => $id,
-                'estado_actual' => $reserva->estado,
-                'nueva_fecha' => $request->input('fecha_nueva'),
-                'motivo' => $request->input('motivo')
-            ]);
-            
             // Ser más flexible con los estados
-            $estadosPermitidos = ['PENDIENTE', 'Pendiente', 'pendiente', 'CONFIRMADO', 'Confirmado', 'confirmado'];
+            $estadosPermitidos = [
+                'PENDIENTE', 'Pendiente', 'pendiente', 
+                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
+            ];
+            
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -543,31 +638,253 @@ class ReservaController extends Controller
             ]);
 
             $fechaAnterior = $reserva->fecha;
+            $fechaNueva = $request->fecha_nueva;
+            $motivo = $request->motivo;
+            $observaciones = $request->observaciones;
             
             $reserva->update([
-                'fecha' => $request->fecha_nueva,
+                'fecha' => $fechaNueva,
                 'estado' => 'REPROGRAMADA'
             ]);
 
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Preparar datos para el email de reprogramación
+            $reservationData = [
+                'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
+                'fecha_reserva' => $fechaAnterior, // Enviamos la fecha anterior para comparar
+                'tipo' => $this->obtenerTipoReserva($reserva),
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email de reprogramación solo si hay email
+            if ($clientData['email']) {
+                try {
+                    Mail::to($clientData['email'])
+                        ->send(new ReservationRescheduledMail(
+                            $reservationData, 
+                            $clientData, 
+                            $motivo, 
+                            $fechaNueva, 
+                            $observaciones
+                        ));
+                    
+                    Log::info('Email de reprogramación enviado exitosamente', [
+                        'reserva_id' => $id,
+                        'email' => $clientData['email'],
+                        'fecha_anterior' => $fechaAnterior,
+                        'fecha_nueva' => $fechaNueva
+                    ]);
+                } catch (\Exception $emailError) {
+                    Log::error('Error al enviar email de reprogramación', [
+                        'reserva_id' => $id,
+                        'email' => $clientData['email'],
+                        'error' => $emailError->getMessage()
+                    ]);
+                    // No retornamos error aquí para no afectar la reprogramación de la reserva
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Reserva reprogramada exitosamente',
+                'message' => 'Reserva reprogramada exitosamente. Se ha notificado al cliente sobre los cambios.',
                 'data' => $reserva
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error al reprogramar reserva', [
                 'id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'error' => $e->getMessage()
             ]);
             
             return response()->json([
                 'success' => false,
                 'message' => 'Error al reprogramar la reserva',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Finalizar una reserva
+     */
+    public function finalizar(Request $request, $id): JsonResponse
+    {
+        try {
+            $reserva = Reserva::findOrFail($id);
+            
+            // Ser más flexible con los estados
+            $estadosPermitidos = [
+                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado',
+                'REPROGRAMADA', 'Reprogramada', 'reprogramada'
+            ];
+            
+            if (!in_array($reserva->estado, $estadosPermitidos)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "No se puede finalizar una reserva en estado: {$reserva->estado}. Solo se pueden finalizar reservas confirmadas o reprogramadas."
+                ], 400);
+            }
+
+            $reserva->update([
+                'estado' => 'FINALIZADA'
+            ]);
+
+            // Recargar la reserva con relaciones
+            $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
+
+            // Preparar datos para el email de finalización
+            $reservationData = [
+                'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
+                'fecha_reserva' => $reserva->fecha,
+                'tipo' => $this->obtenerTipoReserva($reserva),
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email de finalización solo si hay email
+            if ($clientData['email']) {
+                try {
+                    Mail::to($clientData['email'])
+                        ->send(new ReservationCompletedMail($reservationData, $clientData));
+                } catch (\Exception $emailError) {
+                    Log::error('Error al enviar email de finalización', [
+                        'reserva_id' => $id,
+                        'email' => $clientData['email'],
+                        'error' => $emailError->getMessage()
+                    ]);
+                    // No retornamos error aquí para no afectar la finalización de la reserva
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reserva finalizada exitosamente. Se ha enviado un email de agradecimiento al cliente.',
+                'data' => $reserva
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error al finalizar reserva', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al finalizar la reserva',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Finalizar automáticamente las reservas que han llegado a su fecha y hora
+     */
+    public function finalizarAutomaticamente(): JsonResponse
+    {
+        try {
+            $now = now();
+            
+            // Buscar reservas confirmadas o reprogramadas cuya fecha ya ha pasado
+            $reservas = Reserva::whereIn('estado', ['CONFIRMADA', 'REPROGRAMADA'])
+                ->where('fecha', '<=', $now->toDateString())
+                ->with(['cliente.user', 'detallesTours.tour'])
+                ->get();
+
+            $reservasFinalizadas = 0;
+            $errores = [];
+
+            foreach ($reservas as $reserva) {
+                try {
+                    // Lógica simplificada: finalizar reservas con fecha anterior o igual a hoy
+                    $debeFinalizarse = $reserva->fecha <= $now->toDateString();
+                    
+                    if ($debeFinalizarse) {
+                        $reserva->update(['estado' => 'FINALIZADA']);
+                        
+                        // Enviar email de finalización
+                        $reservationData = [
+                            'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
+                            'fecha_reserva' => $reserva->fecha,
+                            'tipo' => $this->obtenerTipoReserva($reserva),
+                            'mayores_edad' => $reserva->mayores_edad,
+                            'menores_edad' => $reserva->menores_edad,
+                            'total' => $reserva->total
+                        ];
+
+                        $clientData = [
+                            'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                            'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+                        ];
+
+                        if ($clientData['email']) {
+                            try {
+                                Mail::to($clientData['email'])
+                                    ->send(new ReservationCompletedMail($reservationData, $clientData));
+                            } catch (\Exception $emailError) {
+                                Log::error('Error al enviar email de finalización automática', [
+                                    'reserva_id' => $reserva->id,
+                                    'email' => $clientData['email'],
+                                    'error' => $emailError->getMessage()
+                                ]);
+                            }
+                        }
+                        
+                        $reservasFinalizadas++;
+                        
+                        Log::info('Reserva finalizada automáticamente', [
+                            'reserva_id' => $reserva->id,
+                            'fecha_reserva' => $reserva->fecha,
+                            'cliente' => $clientData['name']
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    $errores[] = [
+                        'reserva_id' => $reserva->id,
+                        'error' => $e->getMessage()
+                    ];
+                    
+                    Log::error('Error al finalizar automáticamente reserva', [
+                        'reserva_id' => $reserva->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Proceso automático completado. {$reservasFinalizadas} reservas finalizadas.",
+                'reservas_finalizadas' => $reservasFinalizadas,
+                'reservas_procesadas' => $reservas->count(),
+                'data' => [
+                    'reservas_finalizadas' => $reservasFinalizadas,
+                    'total_procesadas' => $reservas->count(),
+                    'errores' => $errores
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error en finalización automática', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Error en el proceso de finalización automática',
                 'error' => $e->getMessage()
             ], 500);
         }

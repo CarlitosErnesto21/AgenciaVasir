@@ -878,3 +878,103 @@ onBeforeUnmount(() => {
     position: absolute !important;
 }
 </style>
+
+<style>
+/*//////// Estilos responsivos para Toast notifications GLOBALES /////////*/
+.p-toast {
+  z-index: 9999 !important;
+}
+
+.p-toast .p-toast-message {
+  margin: 0.5rem !important;
+  min-width: 250px !important;
+  max-width: 90vw !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Mobile styles */
+@media (max-width: 639px) {
+  .p-toast {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 1rem !important;
+  }
+  
+  .p-toast .p-toast-message {
+    margin: 0.25rem !important;
+    min-width: unset !important;
+    max-width: calc(100vw - 1rem) !important;
+    border-radius: 0.5rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-message-content {
+    padding: 0.75rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-summary {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.25rem !important;
+  }
+  
+  .p-toast .p-toast-message .p-toast-detail {
+    font-size: 0.8125rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  .p-toast .p-toast-icon-close {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .p-toast .p-toast-message {
+    max-width: 400px !important;
+    margin: 0.75rem !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1025px) {
+  .p-toast .p-toast-message {
+    max-width: 450px !important;
+    margin: 1rem !important;
+  }
+}
+
+/* Mejoras generales para mejor UX */
+.p-toast .p-toast-message {
+  border-radius: 0.5rem !important;
+  border: none !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #22c55e !important;
+  color: #15803d !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  background-color: #fffbeb !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #d97706 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-info {
+  background-color: #eff6ff !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: #2563eb !important;
+}
+/*///////// Fin de los estilos para Toast GLOBALES ////////*/
+</style>

@@ -1,12 +1,14 @@
 ﻿<script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faExclamationTriangle, faListDots, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
+import TourModals from "./Components/TourComponents/Modales.vue";
+import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
 import axios from "axios";
 
 const toast = useToast();
@@ -26,10 +28,16 @@ const removedImages = ref([]);
 const selectedTours = ref(null);
 const dialog = ref(false);
 const deleteDialog = ref(false);
+const moreActionsDialog = ref(false);
 const unsavedChangesDialog = ref(false);
 const submitted = ref(false);
 const hasUnsavedChanges = ref(false);
 const originalTourData = ref(null);
+
+// Variables de loading para los botones
+const isLoading = ref(false);
+const isDeleting = ref(false);
+
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     categoria: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -63,6 +71,9 @@ const estadosOptions = ref([
     { label: 'Reprogramado', value: 'REPROGRAMADO' }
 ]);
 const showImageDialog = ref(false);
+const showImageCarouselDialog = ref(false);
+const showCambiarEstadoDialog = ref(false);
+const selectedTour = ref(null);
 const selectedImages = ref([]);
 const carouselIndex = ref(0);
 const fileInput = ref(null);
@@ -219,6 +230,21 @@ const listaATexto = (lista) => {
 onMounted(() => {
     fetchTours();
     fetchTipoTransportes();
+    
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', handleResize);
+    }
+});
+
+// Listener para cambios de tamaño de ventana
+const handleResize = () => {
+    windowWidth.value = window.innerWidth;
+};
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', handleResize);
+    }
 });
 
 const fetchTours = async () => {
@@ -318,12 +344,6 @@ const clearFilters = () => {
     filters.value['transporte.nombre'].value = null;
     filters.value.estado.value = null;
     filters.value.fecha_salida.value = null;
-    toast.add({
-        severity: "info",
-        summary: "Filtros limpiados",
-        detail: "Se han removido todos los filtros aplicados.",
-        life: 3000
-    });
 };
 
 const openNew = () => {
@@ -433,6 +453,8 @@ const saveOrUpdate = async () => {
         });
         return;
     }
+    
+    isLoading.value = true;
     try {
         const formData = new FormData();
         // Campos obligatorios con validación
@@ -510,12 +532,15 @@ const saveOrUpdate = async () => {
             detail: "Por favor revisa los campos e intenta nuevamente.",
             life: 6000
         });
+    } finally {
+        isLoading.value = false;
     }
 };
 
 const confirmDeleteTour = (t) => { tour.value = { ...t }; deleteDialog.value = true; };
 
 const deleteTour = async () => {
+    isDeleting.value = true;
     try {
         await axios.delete(`${url}/${tour.value.id}`);
         await fetchTours();
@@ -533,6 +558,8 @@ const deleteTour = async () => {
             detail: "No se pudo eliminar el tour. Inténtalo de nuevo.",
             life: 5000
         });
+    } finally {
+        isDeleting.value = false;
     }
 };
 
@@ -598,9 +625,23 @@ const removeImage = (index) => {
         imagenPreviewList.value.splice(index,1);
     }
 };
-const viewImages = (imagenesTour) => {
-    selectedImages.value = (imagenesTour||[]).map(img=>IMAGE_PATH+(typeof img==="string"?img:img.nombre));
-    showImageDialog.value = true;
+
+const openImageModal = (index) => {
+    if (selectedTour.value && selectedTour.value.imagenes && selectedTour.value.imagenes.length > 0) {
+        selectedImages.value = selectedTour.value.imagenes.map(img => {
+            const imageName = typeof img === "string" ? img : img.nombre;
+            return IMAGE_PATH + imageName;
+        });
+        carouselIndex.value = index;
+        showImageCarouselDialog.value = true;
+    } else {
+        toast.add({ 
+            severity: "warn", 
+            summary: "Sin imágenes", 
+            detail: "No hay imágenes disponibles para mostrar.", 
+            life: 3000 
+        });
+    }
 };
 
 const validateNombre = () => {
@@ -696,23 +737,110 @@ const getMaxDateSalida = () => {
     fechaRegreso.setHours(fechaRegreso.getHours() - 1); // 1 hora antes del regreso
     return fechaRegreso;
 };
+
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) { // sm
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) { // md
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
+
+// Función para abrir el modal de más acciones (corregida para usar selectedTour)
+const openMoreActionsModal = (tourData) => {
+    selectedTour.value = tourData;
+    moreActionsDialog.value = true;
+};
+
+// Funciones para manejar las acciones de los modales
+const handleDuplicateTour = (tour) => {
+    toast.add({
+        severity: "info",
+        summary: "Duplicar Tour",
+        detail: `Funcionalidad de duplicar tour "${tour.nombre}" en desarrollo.`,
+        life: 3000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleChangeStatus = (tour) => {
+    moreActionsDialog.value = false;
+    selectedTour.value = tour;
+    showCambiarEstadoDialog.value = true;
+};
+
+const handleGenerateReport = (tour) => {
+    toast.add({
+        severity: "info",
+        summary: "Generar Reporte",
+        detail: `Funcionalidad de generar reporte del tour "${tour.nombre}" en desarrollo.`,
+        life: 3000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleArchiveTour = (tour) => {
+    toast.add({
+        severity: "info",
+        summary: "Archivar Tour",
+        detail: `Funcionalidad de archivar tour "${tour.nombre}" en desarrollo.`,
+        life: 3000
+    });
+    moreActionsDialog.value = false;
+};
+
+// Función para ver detalles desde el modal de Más Acciones
+const handleViewDetails = (tour) => {
+    moreActionsDialog.value = false;
+    selectedTour.value = tour;
+    showImageDialog.value = true;
+};
+
+// Función para manejar el clic en la fila
+const onRowClick = (event) => {
+    // Verificar si el clic fue en un botón para evitar abrir el modal
+    const target = event.originalEvent.target;
+    const isButton = target.closest('button');
+    
+    if (!isButton) {
+        selectedTour.value = event.data;
+        showImageDialog.value = true;
+    }
+};
+
+// Función para manejar la actualización de estado
+const handleEstadoActualizado = async (tourActualizado) => {
+    // Actualizar el tour en la lista
+    const index = tours.value.findIndex(t => t.id === tourActualizado.id);
+    if (index !== -1) {
+        tours.value[index] = tourActualizado;
+    }
+    showCambiarEstadoDialog.value = false;
+};
+
 </script>
 <template>
     <Head title="Tours" />
     <AuthenticatedLayout>
         <Toast class="z-[9999]" />
-        <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-md rounded-lg h-screen-full">
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
-                <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Catálogo de Tours</h3>
-                <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto lg:justify-end">
+        <div class="px-auto md:px-2 mt-6">
+            <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4">
+                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start ml-0 sm:ml-4">Catálogo de Tours</h3>
+                <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end mr-0 sm:mr-4">
                     <Link :href="route('transportes')"
                          class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
-                        <FontAwesomeIcon :icon="faBusSimple" class="h-4"/>
+                        <FontAwesomeIcon :icon="faBusSimple" class="h-4 mr-1"/>
                         <span>&nbsp;Control Transportes</span>
                     </Link>
                     <button
                         class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
-                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" /><span>&nbsp;Agregar tour</span>
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar Tour</span>
                     </button>
                 </div>
             </div>
@@ -726,8 +854,9 @@ const getMaxDateSalida = () => {
                 v-model:rowsPerPage="rowsPerPage"
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tours"
-                class="overflow-x-auto max-w-full"
-                style="display: block; max-width: 84vw"
+                class="overflow-x-auto max-w-full px-auto"
+                @row-click="onRowClick"
+
                 responsiveLayout="scroll"
                 :pt="{
                     root: { class: 'text-sm' },
@@ -737,7 +866,7 @@ const getMaxDateSalida = () => {
                     headerRow: { class: 'text-sm' },
                     headerCell: { class: 'text-sm font-medium py-3 px-2' },
                     tbody: { class: 'text-sm' },
-                    bodyRow: { class: 'h-20 text-sm' },
+                    bodyRow: { class: 'h-20 text-sm cursor-pointer hover:bg-blue-50 transition-colors duration-200' },
                     bodyCell: { class: 'py-3 px-2 text-sm' },
                     paginator: { class: 'text-xs sm:text-sm' },
                     paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
@@ -745,7 +874,7 @@ const getMaxDateSalida = () => {
             >
                 <template #header>
                     <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
-                        <div class="flex items-center justify-between mb-3">
+                        <div class="flex flex-col sm:flex-row items-center justify-between mb-3">
                             <div class="flex items-center gap-3">
                                 <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
                                     <i class="pi pi-filter text-blue-600 text-sm"></i><span>Filtros</span>
@@ -753,114 +882,133 @@ const getMaxDateSalida = () => {
                                 <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
                                     {{ filteredTours.length }} resultado{{ filteredTours.length !== 1 ? 's' : '' }}
                                 </div>
+                                <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md inline sm:hidden" @click="clearFilters">
+                                    <span>Limpiar filtros</span>
+                                </button>
                             </div>
-                            <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md" @click="clearFilters">
-                                <FontAwesomeIcon :icon="faFilter" class="h-4 w-4 text-white" /><span>&nbsp;Limpiar filtros</span>
+                            <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:inline" @click="clearFilters">
+                                    <span>Limpiar filtros</span>
                             </button>
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar tours..." class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"/>
+                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar tours..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
                             <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 <div>
-                                    <Select v-model="selectedCategoria" :options="categoriasOptions" optionLabel="label" optionValue="value" placeholder="Categoría" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
+                                    <Select v-model="selectedCategoria" :options="categoriasOptions" optionLabel="label" optionValue="value" placeholder="Categoría" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
                                         @change="onCategoriaFilterChange" :clearable="true"
                                     />
                                 </div>
                                 <div>
-                                    <Select v-model="selectedTipoTransporte" :options="tipoTransportes" optionLabel="nombre" optionValue="id" placeholder="Transporte" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
+                                    <Select v-model="selectedTipoTransporte" :options="tipoTransportes" optionLabel="nombre" optionValue="id" placeholder="Transporte" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
                                         @change="onTipoTransporteFilterChange" :clearable="true"
                                     />
                                 </div>
                                 <div>
-                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
+                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
                                         @change="onEstadoFilterChange" :clearable="true"
                                     />
                                 </div>
-                                <div class="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-1">
-                                    <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="w-full h-9 text-sm" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
+                                <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
+                                    <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="w-full h-9 text-sm rounded-md" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
                                 </div>
-                                <div class="col-span-1 sm:col-span-1 md:col-span-1 lg:col-span-1">
-                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="w-full h-9 text-sm" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
+                                <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
+                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="w-full h-9 text-sm rounded-md" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
+                                </div>
+                                <div class="flex w-80 sm:hidden">
+                                    <DatePicker v-model="selectedFechaInicio" placeholder="Fecha desde" class="h-9 text-sm rounded-md" @date-select="onFechaInicioFilterChange" @clear="onFechaInicioFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :maxDate="selectedFechaFin"/>
+                                    <DatePicker v-model="selectedFechaFin" placeholder="Fecha hasta" class="h-9 text-sm rounded-md" @date-select="onFechaFinFilterChange" @clear="onFechaFinFilterChange" :showIcon="true" dateFormat="dd/mm/yy" :minDate="selectedFechaInicio"/>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </template>
-                <Column field="nombre" header="Nombre" sortable class="w-44 min-w-44">
+                <Column field="nombre" header="Nombre" sortable class="w-36 min-w-24">
                     <template #body="slotProps">
-                        <div class="text-sm font-medium leading-relaxed">
+                        <div 
+                            class="text-sm font-medium leading-relaxed overflow-hidden" 
+                            style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.nombre"
+                        >
                             {{ slotProps.data.nombre }}
                         </div>
                     </template>
                 </Column>
-                <Column field="incluye" header="Incluye" class="w-40 min-w-40">
+                <Column field="punto_salida" header="Punto salida" class="w-32 min-w-32 hidden md:table-cell">
                     <template #body="slotProps">
-                        <div class="text-sm leading-relaxed whitespace-normal">
-                            {{ slotProps.data.incluye }}
-                        </div>
-                    </template>
-                </Column>
-                <Column field="no_incluye" header="No incluye" class="w-40 min-w-40">
-                    <template #body="slotProps">
-                        <div class="text-sm leading-relaxed whitespace-normal">
-                            {{ slotProps.data.no_incluye }}
-                        </div>
-                    </template>
-                </Column>
-                <Column field="punto_salida" header="Punto salida" class="w-32 min-w-32">
-                    <template #body="slotProps">
-                        <div class="text-sm leading-relaxed">
+                        <div 
+                            class="text-sm leading-relaxed overflow-hidden" 
+                            style="max-width: 128px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.punto_salida"
+                        >
                             {{ slotProps.data.punto_salida }}
                         </div>
                     </template>
                 </Column>
-                <Column field="fecha_salida" header="Fecha salida" class="w-36 min-w-36">
+                <Column field="fecha_salida" header="Fecha salida" class="w-36 min-w-36 hidden md:table-cell">
                     <template #body="slotProps">
                         <div class="text-sm leading-relaxed">
                             {{slotProps.data.fecha_salida ? new Date(slotProps.data.fecha_salida).toLocaleString("es-ES",{day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: true,}): ""}}
                         </div>
                     </template>
                 </Column>
-                <Column field="precio" header="Precio" class="w-24 min-w-24">
+                <Column field="precio" header="Precio" class="w-24 min-w-18">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed">
                             {{isNaN(Number(slotProps.data.precio)) ? "" : `$${Number(slotProps.data.precio).toFixed(2)}` }}
                         </div>
                     </template>
                 </Column>
-                <Column :exportable="false" class="w-56 min-w-56">
+                <Column field="estado" header="Estado" class="w-32 min-w-24 hidden lg:table-cell">
+                    <template #body="slotProps">
+                        <span 
+                            :class="{
+                                'bg-green-100 text-green-800': slotProps.data.estado === 'DISPONIBLE',
+                                'bg-red-100 text-red-800': slotProps.data.estado === 'AGOTADO' || slotProps.data.estado === 'CANCELADO',
+                                'bg-blue-100 text-blue-800': slotProps.data.estado === 'EN_CURSO',
+                                'bg-gray-100 text-gray-800': slotProps.data.estado === 'COMPLETADO',
+                                'bg-orange-100 text-orange-800': slotProps.data.estado === 'SUSPENDIDO',
+                                'bg-purple-100 text-purple-800': slotProps.data.estado === 'REPROGRAMADO'
+                            }"
+                            class="px-2 py-1 rounded-full text-xs font-medium"
+                        >
+                            {{ estadosOptions.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado }}
+                        </span>
+                    </template>
+                </Column>
+                <Column :exportable="false" class="w-52 min-w-36">
                     <template #header>
                         <div class="text-center w-full font-bold">
                             Acciones
                         </div>
                     </template>
                     <template #body="slotProps">
-                        <div class="flex gap-1 justify-center items-center w-64">
+                        <div class="flex gap-2 justify-center items-center">
                             <button
-                                class="bg-orange-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-green-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="openMoreActionsModal(slotProps.data)"
+                                title="Más acciones">
+                                <FontAwesomeIcon :icon="faListDots" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Más</span>
+                            </button>
+                            <button
+                                class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editTour(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                                &nbsp;Editar
+                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="bg-blue-200/50 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="viewImages(slotProps.data.imagenes)">
-                                <FontAwesomeIcon :icon="faImages" class="h-4 w-4 text-blue-600" />
-                                &nbsp;Imgs
-                            </button>
-                            <button
-                                class="bg-red-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteTour(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                                &nbsp;Eliminar
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
                 </Column>
             </DataTable>
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Tour'" :modal="true" :style="{ width: '500px' }" :closable="false">
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Tour'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
@@ -1012,17 +1160,29 @@ const getMaxDateSalida = () => {
                     </div>
                 </div>
                 <template #footer>
-                    <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />Cancelar
+                    <div class="flex justify-center gap-4 w-full pt-4">
+                        <button 
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+                            @click="saveOrUpdate"
+                            :disabled="isLoading"
+                        >
+                            <FontAwesomeIcon 
+                                :icon="isLoading ? faSpinner : faCheck" 
+                                :class="[
+                                    'h-5 text-white',
+                                    { 'animate-spin': isLoading }
+                                ]" 
+                            />
+                            <span v-if="!isLoading">{{ btnTitle }}</span>
+                            <span v-else>{{ btnTitle === 'Guardar' ? 'Guardando...' : 'Actualizando...' }}</span>
                         </button>
-                        <button class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="saveOrUpdate">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />{{ btnTitle }}
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
                         </button>
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="deleteDialog" header="Eliminar tour" :modal="true" :style="{ width: '350px' }" :closable="false">
+            <Dialog v-model:visible="deleteDialog" header="Eliminar tour" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -1032,18 +1192,57 @@ const getMaxDateSalida = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>No</span>
+                        <button 
+                            type="button" 
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="deleteTour"
+                            :disabled="isDeleting"
+                        >
+                            <FontAwesomeIcon 
+                                :icon="isDeleting ? faSpinner : faCheck" 
+                                :class="[
+                                    'h-5',
+                                    { 'animate-spin': isDeleting }
+                                ]" 
+                            />
+                            <span v-if="!isDeleting">Eliminar</span>
+                            <span v-else>Eliminando...</span>
                         </button>
-                        <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteTour">
-                            <FontAwesomeIcon :icon="faCheck" class="h-5" /><span>Sí</span>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="deleteDialog = false" :disabled="isDeleting">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                         </button>
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false">
+            
+            <!-- Componente de Modales de Tours -->
+            <TourModals
+                v-model:visible="moreActionsDialog"
+                v-model:details-visible="showImageDialog"
+                v-model:carousel-visible="showImageCarouselDialog"
+                v-model:carousel-index="carouselIndex"
+                :tour="selectedTour || tour"
+                :dialog-style="dialogStyle"
+                :selected-images="selectedImages"
+                :image-path="IMAGE_PATH"
+                @duplicate="handleDuplicateTour"
+                @change-status="handleChangeStatus"
+                @generate-report="handleGenerateReport"
+                @archive="handleArchiveTour"
+                @view-details="handleViewDetails"
+                @open-image-modal="openImageModal"
+            />
+
+            <!-- Modal de Cambiar Estado -->
+            <CambiarEstado
+                v-model:visible="showCambiarEstadoDialog"
+                :tour="selectedTour"
+                :dialog-style="dialogStyle"
+                @estado-actualizado="handleEstadoActualizado"
+            />
+            
+            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -1053,33 +1252,13 @@ const getMaxDateSalida = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-3 w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="continueEditing">
-                            <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
-                        </button>
                         <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                             @click="closeDialogWithoutSaving">
                             <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
                         </button>
-                    </div>
-                </template>
-            </Dialog>
-            <Dialog v-model:visible="showImageDialog" header="Imágenes del tour" :modal="true" :closable="false" :style="{ width: '700px' }">
-                <div v-if="selectedImages.length" class="flex flex-col items-center justify-center">
-                    <Carousel :value="selectedImages" :numVisible="1" :numScroll="1" :circular="true" v-model:page="carouselIndex" class="w-full" :showIndicators="selectedImages.length > 1" :showNavigators="selectedImages.length > 1" style="max-width: 610px">
-                        <template #item="slotProps">
-                            <div class="flex justify-center items-center w-full h-96">
-                                <img :src="slotProps.data" alt="Imagen tour" class="w-auto h-full max-h-96 object-contain rounded shadow"/>
-                            </div>
-                        </template>
-                    </Carousel>
-                </div>
-                <div v-else class="text-center text-gray-500 py-8">No hay imágenes para este tour.</div>
-                <template #footer>
-                    <div class="flex justify-center w-full">
-                        <button type="button" class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="showImageDialog = false">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cerrar</span>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="continueEditing">
+                            <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                         </button>
                     </div>
                 </template>
@@ -1087,3 +1266,64 @@ const getMaxDateSalida = () => {
         </div>
     </AuthenticatedLayout>
 </template>
+
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+</style>

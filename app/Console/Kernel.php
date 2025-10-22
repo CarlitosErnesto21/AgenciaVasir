@@ -12,7 +12,19 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // No scheduled tasks for manual backup system
+        // Finalizar reservas automáticamente cada hora
+        $schedule->command('reservas:finalizar-automaticamente')
+                 ->hourly()
+                 ->withoutOverlapping()
+                 ->onOneServer()
+                 ->appendOutputTo(storage_path('logs/scheduled-reservas-finalizacion.log'));
+
+        // También ejecutar una vez al final del día para garantizar completitud
+        $schedule->command('reservas:finalizar-automaticamente')
+                 ->dailyAt('23:30')
+                 ->withoutOverlapping()
+                 ->onOneServer()
+                 ->appendOutputTo(storage_path('logs/scheduled-reservas-finalizacion-daily.log'));
     }
 
     /**
