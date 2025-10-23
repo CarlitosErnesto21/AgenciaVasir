@@ -246,7 +246,7 @@ const listaATexto = (lista) => {
 
 // Obtener tours, categorías y tipos de transporte
 onMounted(() => {
-    fetchTours();
+    fetchToursWithToasts();
     fetchTipoTransportes();
 
     if (typeof window !== 'undefined') {
@@ -268,11 +268,39 @@ onUnmounted(() => {
 const fetchTours = async () => {
     isLoadingTable.value = true;
 
+    try {
+        const response = await axios.get(url);
+        tours.value = response.data.map((t) => ({
+            ...t,
+            imagenes: (t.imagenes || []).map((img) =>
+                typeof img === "string" ? img : img.nombre
+            ),
+            transporte_nombre: t.transporte?.nombre || "",
+            transporte_capacidad: t.transporte?.capacidad || "",
+            // Agregar campos para filtros
+            'transporte.nombre': t.transporte?.nombre,
+        })).sort((a, b) => {
+            // Ordenar por fecha de creación descendente (más recientes primero)
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB - dateA;
+        });
+
+    } catch (err) {
+        toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los tours.", life: 4000 });
+    } finally {
+        isLoadingTable.value = false;
+    }
+};
+
+const fetchToursWithToasts = async () => {
+    isLoadingTable.value = true;
+
     // Mostrar toast de carga con duración automática
     toast.add({
         severity: "info",
         summary: "Cargando tours...",
-        life: 1000 // Duración automática
+        life: 2000
     });
 
     try {
@@ -297,7 +325,7 @@ const fetchTours = async () => {
         toast.add({
             severity: "success",
             summary: "Tours cargados",
-            life: 1000
+            life: 2000
         });
 
     } catch (err) {
@@ -347,7 +375,7 @@ const onFechaInicioFilterChange = () => {
                 severity: "warn",
                 summary: "Fecha ajustada",
                 detail: "La fecha 'hasta' se limpió porque era anterior a la fecha 'desde'.",
-                life: 3000
+                life: 5000
             });
         }
     }
@@ -364,7 +392,7 @@ const onFechaFinFilterChange = () => {
                 severity: "warn",
                 summary: "Fecha ajustada",
                 detail: "La fecha 'desde' se limpió porque era posterior a la fecha 'hasta'.",
-                life: 3000
+                life: 5000
             });
         }
     }
@@ -388,7 +416,6 @@ const clearFilters = async () => {
         toast.add({
             severity: "success",
             summary: "Filtros limpiados",
-            detail: "Los filtros han sido restablecidos correctamente.",
             life: 2000
         });
     } finally {
@@ -810,7 +837,7 @@ const openImageModal = (index) => {
             severity: "warn",
             summary: "Sin imágenes",
             detail: "No hay imágenes disponibles para mostrar.",
-            life: 3000
+            life: 5000
         });
     }
 };
@@ -935,7 +962,7 @@ const handleDuplicateTour = (tour) => {
         severity: "info",
         summary: "Duplicar Tour",
         detail: `Funcionalidad de duplicar tour "${tour.nombre}" en desarrollo.`,
-        life: 3000
+        life: 5000
     });
     moreActionsDialog.value = false;
 };
@@ -951,7 +978,7 @@ const handleGenerateReport = (tour) => {
         severity: "info",
         summary: "Generar Reporte",
         detail: `Funcionalidad de generar reporte del tour "${tour.nombre}" en desarrollo.`,
-        life: 3000
+        life: 5000
     });
     moreActionsDialog.value = false;
 };
@@ -961,7 +988,7 @@ const handleArchiveTour = (tour) => {
         severity: "info",
         summary: "Archivar Tour",
         detail: `Funcionalidad de archivar tour "${tour.nombre}" en desarrollo.`,
-        life: 3000
+        life: 5000
     });
     moreActionsDialog.value = false;
 };

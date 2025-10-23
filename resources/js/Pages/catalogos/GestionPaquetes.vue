@@ -6,15 +6,6 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
-import DatePicker from "primevue/datepicker";
-import InputText from 'primevue/inputtext';
-import InputNumber from 'primevue/inputnumber';
-import Select from 'primevue/dropdown';
-import DataTable from 'primevue/datatable';
-import Column from 'primevue/column';
-import Dialog from 'primevue/dialog';
-import Toast from 'primevue/toast';
-import Carousel from 'primevue/carousel';
 import axios from "axios";
 // --------- CONDICIONES Y RECORDATORIO LISTA
 const condicionesLista = ref([]);
@@ -231,7 +222,7 @@ onMounted(async () => {
     filters.value.pais_id.value = null;
     filters.value.provincia_id.value = null;
     filters.value.fecha_salida.value = null;
-    await fetchPaquetes();
+    await fetchPaquetesWithToasts();
     await fetchPaises();
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', handleResize);
@@ -254,6 +245,37 @@ const fetchPaquetes = async () => {
         provincia: p.provincia || (p.provincia_id ? provincias.value.find(pr => pr.id === p.provincia_id) : null),
         imagenes: (p.imagenes || []).map(img => typeof img === "string" ? img : img.nombre)
     }));
+}
+
+const fetchPaquetesWithToasts = async () => {
+    // Mostrar toast de carga con duración automática
+    toast.add({
+        severity: "info",
+        summary: "Cargando paquetes...",
+        life: 2000
+    });
+
+    try {
+        const { data } = await axios.get(url);
+        // Forzar a array si es posible
+        const paquetesArray = Array.isArray(data) ? data : (data.data || data.paquetes || []);
+        paquetes.value = paquetesArray.map(p => ({
+            ...p,
+            pais: p.pais || (p.pais_id ? paises.value.find(pa => pa.id === p.pais_id) : null),
+            provincia: p.provincia || (p.provincia_id ? provincias.value.find(pr => pr.id === p.provincia_id) : null),
+            imagenes: (p.imagenes || []).map(img => typeof img === "string" ? img : img.nombre)
+        }));
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Paquetes cargados",
+            life: 2000
+        });
+
+    } catch (err) {
+        toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los paquetes.", life: 4000 });
+    }
 }
 const fetchPaises = async () => {
     const { data } = await axios.get("/api/paises");
@@ -981,3 +1003,61 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+</style>

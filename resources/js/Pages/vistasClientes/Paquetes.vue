@@ -52,7 +52,7 @@ onMounted(fetchPaquetes)
 const paquetesFiltrados = computed(() => {
   if (loading.value) return []
   let filtrados = paquetes.value
-  
+
   if (selectedPrecio.value !== 'Todos') {
     if (selectedPrecio.value === 'bajo') {
       filtrados = filtrados.filter(p => p.precio < 100)
@@ -62,7 +62,7 @@ const paquetesFiltrados = computed(() => {
       filtrados = filtrados.filter(p => p.precio >= 150)
     }
   }
-  
+
   return filtrados
 })
 

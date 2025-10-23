@@ -114,8 +114,8 @@ function resetForm() {
 }
 
 onMounted(() => {
-    fetchTransportes();
-    
+    fetchTransportesWithToasts();
+
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', handleResize);
     }
@@ -136,6 +136,30 @@ const fetchTransportes = async () => {
     try {
         const response = await axios.get("/api/transportes");
         transportes.value = response.data.sort((a, b) => b.id - a.id);
+    } catch (err) {
+        toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
+    }
+};
+
+const fetchTransportesWithToasts = async () => {
+    // Mostrar toast de carga con duración automática
+    toast.add({
+        severity: "info",
+        summary: "Cargando transportes...",
+        life: 2000
+    });
+
+    try {
+        const response = await axios.get("/api/transportes");
+        transportes.value = response.data.sort((a, b) => b.id - a.id);
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Transportes cargados",
+            life: 2000
+        });
+
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
     }
@@ -185,7 +209,7 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "La marca debe tener entre 2 y 30 caracteres.", life: 4000 });
         return;
     }
-    
+
     isLoading.value = true;
     try {
         let response;
@@ -243,16 +267,16 @@ const deleteTransporte = async () => {
         toast.add({ severity: "success", summary: "¡Eliminado!", detail: "Transporte eliminado correctamente.", life: 4000 });
     } catch (err) {
         deleteDialog.value = false;
-        
+
         // Verificar si es un error de tours asociados
         if (err.response && err.response.status === 400 && err.response.data && err.response.data.error === 'TOURS_ASOCIADOS') {
             const toursCount = err.response.data.tours_count;
             const tourText = toursCount === 1 ? 'tour asociado' : 'tours asociados';
-            toast.add({ 
-                severity: "warn", 
-                summary: "No se puede eliminar", 
-                detail: `El transporte "${transporte.value.nombre}" tiene ${toursCount} ${tourText}. Para eliminarlo, primero debe cambiar el transporte de los tours asociados o eliminarlos.`, 
-                life: 9000 
+            toast.add({
+                severity: "warn",
+                summary: "No se puede eliminar",
+                detail: `El transporte "${transporte.value.nombre}" tiene ${toursCount} ${tourText}. Para eliminarlo, primero debe cambiar el transporte de los tours asociados o eliminarlos.`,
+                life: 9000
             });
         } else {
             toast.add({ severity: "error", summary: "Error", detail: "No se pudo eliminar el transporte.", life: 4000 });
@@ -343,15 +367,15 @@ const onPaste = (event) => {
 // Función para limpiar filtros con loading
 const clearFilters = async () => {
     isClearingFilters.value = true;
-    
+
     try {
         // Simular un pequeño delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
-        
+
         // Limpiar todos los filtros
         filters.value.global.value = null;
         filters.value.estado.value = null;
-        
+
         // Mostrar toast de confirmación
         toast.add({
             severity: "success",
@@ -376,7 +400,7 @@ const onRowClick = (event) => {
     // Verificar si el clic fue en un botón para evitar abrir el modal
     const target = event.originalEvent.target;
     const isButton = target.closest('button');
-    
+
     if (!isButton) {
         viewTransporteDetails(event.data);
     }
@@ -394,19 +418,19 @@ const handleToursClick = () => {
         <div class="px-auto md:px-2 mt-6">
             <div class="flex justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
                 <div class="flex items-center gap-0 sm:gap-3">
-                    <Link 
-                        :href="route('tours')" 
+                    <Link
+                        :href="route('tours')"
                         @click="handleToursClick"
-                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed" 
+                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
                         :class="{ 'opacity-50 cursor-not-allowed': isNavigatingToTours }"
                         title="Regresar a Tours"
                     >
-                        <FontAwesomeIcon 
-                            :icon="isNavigatingToTours ? faSpinner : faArrowLeft" 
+                        <FontAwesomeIcon
+                            :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
                             :class="[
                                 'h-7 sm:h-8',
                                 { 'animate-spin': isNavigatingToTours }
-                            ]" 
+                            ]"
                         />
                         <span v-if="isNavigatingToTours" class="ml-2 text-sm hidden sm:inline">Navegando...</span>
                     </Link>
@@ -463,10 +487,10 @@ const handleToursClick = () => {
                                     :disabled="isClearingFilters"
                                     title="Limpiar filtros"
                                 >
-                                    <FontAwesomeIcon 
-                                        v-if="isClearingFilters" 
-                                        :icon="faSpinner" 
-                                        class="h-3 w-3 animate-spin mr-1" 
+                                    <FontAwesomeIcon
+                                        v-if="isClearingFilters"
+                                        :icon="faSpinner"
+                                        class="h-3 w-3 animate-spin mr-1"
                                     />
                                     <span v-if="isClearingFilters">Limpiando...</span>
                                     <span v-else>Limpiar filtros</span>
@@ -491,10 +515,10 @@ const handleToursClick = () => {
                                     :disabled="isClearingFilters"
                                     title="Limpiar filtros"
                                 >
-                                    <FontAwesomeIcon 
-                                        v-if="isClearingFilters" 
-                                        :icon="faSpinner" 
-                                        class="h-3 w-3 animate-spin mr-1" 
+                                    <FontAwesomeIcon
+                                        v-if="isClearingFilters"
+                                        :icon="faSpinner"
+                                        class="h-3 w-3 animate-spin mr-1"
                                     />
                                     <span v-if="isClearingFilters">Limpiando...</span>
                                     <span v-else>Limpiar filtros</span>
@@ -510,7 +534,7 @@ const handleToursClick = () => {
                 </template>
                 <Column field="numero_placa" header="Placa" sortable class="w-32 min-w-32">
                     <template #body="slotProps">
-                        <div class="text-sm font-medium leading-relaxed overflow-hidden" 
+                        <div class="text-sm font-medium leading-relaxed overflow-hidden"
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.numero_placa"
                         >
@@ -520,7 +544,7 @@ const handleToursClick = () => {
                 </Column>
                 <Column field="nombre" header="Nombre" sortable class="w-40 min-w-16">
                     <template #body="slotProps">
-                        <div class="text-sm font-medium leading-relaxed overflow-hidden" 
+                        <div class="text-sm font-medium leading-relaxed overflow-hidden"
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.nombre"
                         >
@@ -683,17 +707,17 @@ const handleToursClick = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button 
+                        <button
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
                             :disabled="isLoading"
                         >
-                            <FontAwesomeIcon 
-                                :icon="isLoading ? faSpinner : faCheck" 
+                            <FontAwesomeIcon
+                                :icon="isLoading ? faSpinner : faCheck"
                                 :class="[
                                     'h-5 text-white',
                                     { 'animate-spin': isLoading }
-                                ]" 
+                                ]"
                             />
                             <span v-if="!isLoading">{{ btnTitle }}</span>
                             <span v-else>{{ transporte.id ? 'Actualizando...' : 'Guardando...' }}</span>
@@ -714,18 +738,18 @@ const handleToursClick = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="deleteTransporte"
                             :disabled="isDeleting"
                         >
-                            <FontAwesomeIcon 
-                                :icon="isDeleting ? faSpinner : faCheck" 
+                            <FontAwesomeIcon
+                                :icon="isDeleting ? faSpinner : faCheck"
                                 :class="[
                                     'h-5',
                                     { 'animate-spin': isDeleting }
-                                ]" 
+                                ]"
                             />
                             <span v-if="!isDeleting">Eliminar</span>
                             <span v-else>Eliminando...</span>
