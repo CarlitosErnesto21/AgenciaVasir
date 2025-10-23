@@ -5,9 +5,9 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:5173',
-        'http://192.168.167.144:5173', // Ajusta según tu red local
+        'http://192.168.1.35:5173', // Ajusta según tu red local
         'http://localhost:8000',
-        'http://192.168.167.144:8000', // Ajusta según tu red local
+        'http://192.168.1.35:8000', // Ajusta según tu red local
         'https://web-production-32cf.up.railway.app'
     ], // Ajusta según tu frontend y backend
     'allowed_origins_patterns' => [
