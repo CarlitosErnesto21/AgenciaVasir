@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons'
+import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser } from '@fortawesome/free-solid-svg-icons'
 import { faFacebook, faInstagram, faTiktok, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useCarritoStore } from '@/stores/carrito'
 
@@ -87,6 +87,24 @@ const logout = () => {
 const auth = computed(() => page.props.auth || {})
 const user = computed(() => auth.value.user || null)
 const isAuthenticated = computed(() => !!user.value)
+
+// Computed para verificar roles
+const isCliente = computed(() => {
+  if (!user.value?.roles) return false
+  return user.value.roles.some(role => role.name === 'Cliente')
+})
+
+const isAdmin = computed(() => {
+  if (!user.value?.roles) return false
+  return user.value.roles.some(role => role.name === 'Administrador')
+})
+
+const isEmpleado = computed(() => {
+  if (!user.value?.roles) return false
+  return user.value.roles.some(role => role.name === 'Empleado')
+})
+
+const isAdminOrEmpleado = computed(() => isAdmin.value || isEmpleado.value)
 
 // Watcher para detectar cambios en el estado de autenticación
 watch(isAuthenticated, (newValue, oldValue) => {
@@ -354,6 +372,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                         <!-- Opciones del menú profesional -->
                         <div class="relative py-3 bg-white/95 backdrop-blur-sm">
                           <Link
+                            v-if="isCliente"
                             :href="route('profile.edit')"
                             class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                             @click="userMenuOpen = false"
@@ -366,12 +385,28 @@ watch(isAuthenticated, (newValue, oldValue) => {
                               <span class="text-xs text-gray-500 mt-0.5">Actualizar información personal</span>
                             </div>
                           </Link>
+                          <Link
+                            v-if="isAdminOrEmpleado"
+                            :href="route('dashboard')"
+                            class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                            @click="userMenuOpen = false"
+                          >
+                            <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
+                              <FontAwesomeIcon :icon="faHouseChimneyUser" class="w-4 h-4" />
+                            </div>
+                            <div class="flex flex-col">
+                              <span class="font-semibold">Dashboard administrativo</span>
+                              <span class="text-xs text-gray-500 mt-0.5">Serás redirigido al dashboard administrativo.</span>
+                            </div>
+                          </Link>
+                          
                           <div class="relative my-3 mx-6">
                             <div class="absolute inset-0 flex items-center">
                               <div class="w-full border-t border-red-100"></div>
                             </div>
                           </div>
                           <button
+                            v-if="isCliente"
                             class="flex items-center w-full px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                             @click="logout"
                           >

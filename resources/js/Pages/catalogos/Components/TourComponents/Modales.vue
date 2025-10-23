@@ -1,9 +1,9 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, nextTick } from 'vue';
 import Dialog from 'primevue/dialog';
 import Carousel from 'primevue/carousel';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faEye, faExclamationTriangle, faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faEye, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 // Props
 const props = defineProps({
@@ -19,6 +19,16 @@ const props = defineProps({
     },
     // Modal Carrusel de Imágenes
     carouselVisible: {
+        type: Boolean,
+        default: false
+    },
+    // Modal Eliminar Tour
+    deleteVisible: {
+        type: Boolean,
+        default: false
+    },
+    // Modal Cambios sin guardar
+    unsavedChangesVisible: {
         type: Boolean,
         default: false
     },
@@ -42,16 +52,21 @@ const props = defineProps({
     imagePath: {
         type: String,
         default: '/storage/tours/'
+    },
+    // Para el modal de eliminar
+    isDeleting: {
+        type: Boolean,
+        default: false
     }
 });
 
 // Emits
 const emit = defineEmits([
     // Modal Más Acciones
-    'update:visible', 
-    'duplicate', 
-    'changeStatus', 
-    'generateReport', 
+    'update:visible',
+    'duplicate',
+    'changeStatus',
+    'generateReport',
     'archive',
     'viewDetails',
     // Modal Detalles del Tour
@@ -59,7 +74,15 @@ const emit = defineEmits([
     'openImageModal',
     // Modal Carrusel de Imágenes
     'update:carouselVisible',
-    'update:carouselIndex'
+    'update:carouselIndex',
+    // Modal Eliminar Tour
+    'update:deleteVisible',
+    'deleteTour',
+    'cancelDelete',
+    // Modal Cambios sin guardar
+    'update:unsavedChangesVisible',
+    'closeWithoutSaving',
+    'continueEditing'
 ]);
 
 // Computed para el v-model del modal Más Acciones
@@ -80,10 +103,29 @@ const isCarouselVisible = computed({
     set: (value) => emit('update:carouselVisible', value)
 });
 
-// Computed para el v-model del índice del carrusel
-const currentCarouselIndex = computed({
-    get: () => props.carouselIndex,
-    set: (value) => emit('update:carouselIndex', value)
+// Computed para el v-model del modal de eliminar
+const isDeleteVisible = computed({
+    get: () => props.deleteVisible,
+    set: (value) => emit('update:deleteVisible', value)
+});
+
+// Computed para el v-model del modal de cambios sin guardar
+const isUnsavedChangesVisible = computed({
+    get: () => props.unsavedChangesVisible,
+    set: (value) => emit('update:unsavedChangesVisible', value)
+});
+
+// Variable reactiva para el índice actual del carrusel
+const currentPageIndex = ref(0);
+
+// Watcher para sincronizar el índice cuando cambie el prop
+watch(() => props.carouselIndex, (newIndex) => {
+    currentPageIndex.value = newIndex;
+}, { immediate: true });
+
+// Watcher para emitir cambios del carrusel al padre
+watch(currentPageIndex, (newIndex) => {
+    emit('update:carouselIndex', newIndex);
 });
 
 // Funciones para las acciones
@@ -131,6 +173,46 @@ const closeCarouselModal = () => {
     emit('update:carouselVisible', false);
 };
 
+// Funciones de navegación del carrusel personalizado
+const previousImage = () => {
+    if (props.selectedImages.length > 1) {
+        const newIndex = currentPageIndex.value === 0 ? props.selectedImages.length - 1 : currentPageIndex.value - 1;
+        currentPageIndex.value = newIndex;
+    }
+};
+
+const nextImage = () => {
+    if (props.selectedImages.length > 1) {
+        const newIndex = currentPageIndex.value === props.selectedImages.length - 1 ? 0 : currentPageIndex.value + 1;
+        currentPageIndex.value = newIndex;
+    }
+};
+
+const goToImage = (index) => {
+    if (index >= 0 && index < props.selectedImages.length) {
+        currentPageIndex.value = index;
+    }
+};
+
+// Funciones para el modal de eliminar
+const confirmDelete = () => {
+    emit('deleteTour', props.tour);
+};
+
+const cancelDelete = () => {
+    emit('cancelDelete');
+    emit('update:deleteVisible', false);
+};
+
+// Funciones para el modal de cambios sin guardar
+const closeWithoutSaving = () => {
+    emit('closeWithoutSaving');
+};
+
+const continueEditing = () => {
+    emit('continueEditing');
+};
+
 // Exportar el componente con un nombre específico
 defineOptions({
     name: 'TourModals'
@@ -139,12 +221,12 @@ defineOptions({
 
 <template>
     <!-- Modal de Más Acciones -->
-    <Dialog 
-        v-model:visible="isVisible" 
-        header="Más Acciones" 
-        :modal="true" 
-        :style="dialogStyle" 
-        :closable="false" 
+    <Dialog
+        v-model:visible="isVisible"
+        header="Más Acciones"
+        :modal="true"
+        :style="dialogStyle"
+        :closable="false"
         :draggable="false"
     >
         <div class="space-y-4">
@@ -154,11 +236,11 @@ defineOptions({
                 </h4>
                 <p class="text-sm text-gray-600 mt-1">Selecciona una acción a realizar</p>
             </div>
-            
+
             <div class="grid grid-cols-1 gap-3">
                 <!-- Botón para ver detalles -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="viewDetails"
                 >
@@ -168,10 +250,10 @@ defineOptions({
                         <div class="text-xs opacity-90">Mostrar información completa del tour</div>
                     </div>
                 </button>
-                
+
                 <!-- Botón para duplicar tour -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="duplicateTour"
                 >
@@ -181,10 +263,10 @@ defineOptions({
                         <div class="text-xs opacity-90">Crear una copia de este tour</div>
                     </div>
                 </button>
-                
+
                 <!-- Botón para cambiar estado -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="changeStatus"
                 >
@@ -194,10 +276,10 @@ defineOptions({
                         <div class="text-xs opacity-90">Modificar el estado del tour</div>
                     </div>
                 </button>
-                
+
                 <!-- Botón para generar reporte -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="generateReport"
                 >
@@ -207,10 +289,10 @@ defineOptions({
                         <div class="text-xs opacity-90">Crear reporte detallado del tour</div>
                     </div>
                 </button>
-                
+
                 <!-- Botón para archivar -->
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="archiveTour"
                 >
@@ -221,19 +303,19 @@ defineOptions({
                     </div>
                 </button>
             </div>
-            
+
             <div class="mt-6 pt-4 border-t border-gray-200 text-center">
                 <p class="text-xs text-gray-500">
                     💡 Selecciona una acción para continuar
                 </p>
             </div>
         </div>
-        
+
         <template #footer>
             <div class="flex justify-center w-full">
-                <button 
-                    type="button" 
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />Cerrar
@@ -243,12 +325,12 @@ defineOptions({
     </Dialog>
 
     <!-- Modal de Detalles del Tour -->
-    <Dialog 
-        v-model:visible="isDetailsVisible" 
-        header="Detalles del Tour" 
-        :modal="true" 
-        :closable="false" 
-        :style="dialogStyle" 
+    <Dialog
+        v-model:visible="isDetailsVisible"
+        header="Detalles del Tour"
+        :modal="true"
+        :closable="false"
+        :style="dialogStyle"
         :draggable="false"
     >
         <div v-if="tour" class="space-y-4">
@@ -350,14 +432,14 @@ defineOptions({
             <div v-if="tour.imagenes && tour.imagenes.length > 0" class="bg-gray-50 p-3 rounded-lg">
                 <label class="text-sm font-semibold text-gray-700 mb-3 block">Imágenes del Tour:</label>
                 <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div 
-                        v-for="(imagen, index) in tour.imagenes" 
-                        :key="index" 
+                    <div
+                        v-for="(imagen, index) in tour.imagenes"
+                        :key="index"
                         class="relative group cursor-pointer"
                         @click="openImageModal(index)"
                     >
-                        <img 
-                            :src="imagePath + (typeof imagen === 'string' ? imagen : imagen.nombre)" 
+                        <img
+                            :src="imagePath + (typeof imagen === 'string' ? imagen : imagen.nombre)"
                             :alt="`Imagen ${index + 1} del tour`"
                             class="w-full h-24 sm:h-32 object-cover rounded-lg border-2 border-gray-200 hover:border-blue-400 transition-all duration-200"
                         />
@@ -374,9 +456,9 @@ defineOptions({
         </div>
         <template #footer>
             <div class="flex justify-center w-full mt-6">
-                <button 
-                    type="button" 
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeDetailsModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />Cerrar
@@ -386,42 +468,138 @@ defineOptions({
     </Dialog>
 
     <!-- Modal del carrusel de imágenes -->
-    <Dialog 
-        v-model:visible="isCarouselVisible" 
-        header="Galería de Imágenes" 
-        :modal="true" 
-        :closable="false" 
-        :style="dialogStyle" 
+    <Dialog
+        v-model:visible="isCarouselVisible"
+        header="Galería de Imágenes"
+        :modal="true"
+        :closable="false"
+        :style="dialogStyle"
         :draggable="false"
     >
-        <div v-if="selectedImages.length" class="flex flex-col items-center justify-center">
-            <Carousel 
-                :value="selectedImages" 
-                :numVisible="1" 
-                :numScroll="1" 
-                :circular="true" 
-                v-model:page="currentCarouselIndex" 
-                class="w-full" 
-                :showIndicators="selectedImages.length > 1" 
-                :showNavigators="selectedImages.length > 1" 
-                style="max-width: 610px"
-            >
-                <template #item="slotProps">
-                    <div class="flex justify-center items-center w-full h-96">
-                        <img :src="slotProps.data" alt="Imagen tour" class="w-auto h-full max-h-96 object-contain rounded shadow"/>
-                    </div>
+        <div v-if="props.selectedImages.length" class="flex flex-col items-center justify-center">
+            <!-- Debug info -->
+            <div class="mb-4 text-sm text-gray-600 text-center">
+                Imagen {{ currentPageIndex + 1 }} de {{ props.selectedImages.length }}
+            </div>
+            
+            <!-- Carrusel personalizado con navegación manual -->
+            <div class="relative w-full" style="max-width: 610px">
+                <!-- Imagen actual -->
+                <div class="flex justify-center items-center w-full h-96 bg-gray-50 rounded-lg">
+                    <img 
+                        :src="props.selectedImages[currentPageIndex]" 
+                        :alt="`Imagen ${currentPageIndex + 1} del tour`" 
+                        class="w-auto h-full max-h-96 object-contain rounded shadow"
+                    />
+                </div>
+                
+                <!-- Navegadores -->
+                <template v-if="props.selectedImages.length > 1">
+                    <!-- Botón anterior -->
+                    <button
+                        type="button"
+                        @click="previousImage"
+                        class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                    </button>
+                    
+                    <!-- Botón siguiente -->
+                    <button
+                        type="button"
+                        @click="nextImage"
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-70 text-white p-2 rounded-full transition-all duration-200"
+                    >
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+                        </svg>
+                    </button>
                 </template>
-            </Carousel>
+                
+                <!-- Indicadores -->
+                <div v-if="props.selectedImages.length > 1" class="flex justify-center mt-4 space-x-2">
+                    <button
+                        v-for="(image, index) in props.selectedImages"
+                        :key="index"
+                        @click="goToImage(index)"
+                        :class="{
+                            'bg-blue-500': index === currentPageIndex,
+                            'bg-gray-300 hover:bg-gray-400': index !== currentPageIndex
+                        }"
+                        class="w-3 h-3 rounded-full transition-all duration-200"
+                    ></button>
+                </div>
+            </div>
         </div>
         <div v-else class="text-center text-gray-500 py-8">No hay imágenes para este tour.</div>
         <template #footer>
             <div class="flex justify-center w-full mt-6">
-                <button 
-                    type="button" 
+                <button
+                    type="button"
                     class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeCarouselModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cerrar</span>
+                </button>
+            </div>
+        </template>
+    </Dialog>
+
+    <!-- Modal de Eliminar Tour -->
+    <Dialog v-model:visible="isDeleteVisible" header="Eliminar tour" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+        <div class="flex items-center gap-3">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+            <div class="flex flex-col">
+                <span>¿Estás seguro de eliminar el tour: <b>{{ tour.nombre }}</b>?</span>
+                <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
+            </div>
+        </div>
+        <template #footer>
+            <div class="flex justify-center gap-4 w-full">
+                <button
+                    type="button"
+                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    @click="confirmDelete"
+                    :disabled="isDeleting"
+                >
+                    <FontAwesomeIcon
+                        :icon="isDeleting ? faSpinner : faCheck"
+                        :class="[
+                            'h-5',
+                            { 'animate-spin': isDeleting }
+                        ]"
+                    />
+                    <span v-if="!isDeleting">Eliminar</span>
+                    <span v-else>Eliminando...</span>
+                </button>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="cancelDelete" :disabled="isDeleting">
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
+                </button>
+            </div>
+        </template>
+    </Dialog>
+
+    <!-- Modal de Cambios sin guardar -->
+    <Dialog v-model:visible="isUnsavedChangesVisible" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+        <div class="flex items-center gap-3">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+            <div class="flex flex-col">
+                <span>¡Tienes información sin guardar!</span>
+                <span class="text-red-600 text-sm font-medium mt-1">¿Deseas salir sin guardar?</span>
+            </div>
+        </div>
+        <template #footer>
+            <div class="flex justify-center gap-3 w-full">
+                <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeWithoutSaving">
+                    <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
+                </button>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="continueEditing">
+                    <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                 </button>
             </div>
         </template>

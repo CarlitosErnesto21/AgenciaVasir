@@ -4,7 +4,7 @@ import { usePage, Link, router } from "@inertiajs/vue3";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faRoute, faDoorOpen, faUserCircle, faChevronDown, faUser, faHotel, faPlaneDeparture, faGear, faBoxesStacked,
             faClipboardList, faBox, faHouseChimneyUser, faBars, faFileInvoice, faUserPen,
-            faTimes, faUsers, faCog } from "@fortawesome/free-solid-svg-icons";
+            faTimes, faUsers, faCog, faStore} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { route } from "ziggy-js";
 
@@ -140,6 +140,26 @@ const navigateAndCloseSidebar = (routeName) => {
     router.visit(route(routeName));
 }
 
+// Función para cerrar dropdown de catálogos con animación suave
+const navigateAndCloseDropdown = (routeName) => {
+    // Cerrar el dropdown primero para mostrar la animación
+    isOpen.value = false;
+    // Esperar a que termine la animación antes de navegar
+    setTimeout(() => {
+        router.visit(route(routeName));
+    }, 200); // 200ms coincide con leave-active-class duration
+}
+
+// Función para cerrar dropdown de configuración con animación suave
+const navigateAndCloseConfigDropdown = (routeName) => {
+    // Cerrar el dropdown primero para mostrar la animación
+    isConfigDropdownOpen.value = false;
+    // Esperar a que termine la animación antes de navegar
+    setTimeout(() => {
+        router.visit(route(routeName));
+    }, 200); // 200ms coincide con leave-active-class duration
+}
+
 onMounted(() => {
     window.addEventListener("resize", handleResize);
     // Sidebar expandido por defecto en escritorio
@@ -273,6 +293,18 @@ onBeforeUnmount(() => {
                                         <div class="flex flex-col">
                                             <span class="font-semibold">Editar Perfil</span>
                                             <span class="text-xs text-gray-500 mt-0.5">Actualizar información personal</span>
+                                        </div>
+                                    </Link>
+                                    <Link
+                                        :href="route('inicio')"
+                                        class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                                    >
+                                        <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
+                                            <FontAwesomeIcon :icon="faStore" class="w-4 h-4" />
+                                        </div>
+                                        <div class="flex flex-col">
+                                            <span class="font-semibold">Páginas Públicas</span>
+                                            <span class="text-xs text-gray-500 mt-0.5">Serás redirigido a las vistas públicas.</span>
                                         </div>
                                     </Link>
 
@@ -661,6 +693,7 @@ onBeforeUnmount(() => {
                                                 ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                                 : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                         ]"
+                                        @click.prevent="navigateAndCloseDropdown('productos')"
                                     >
                                         <FontAwesomeIcon :icon="faBox" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Productos</span>
@@ -673,6 +706,7 @@ onBeforeUnmount(() => {
                                                 ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                                 : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                         ]"
+                                        @click.prevent="navigateAndCloseDropdown('tours')"
                                     >
                                         <FontAwesomeIcon :icon="faRoute" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Tours</span>
@@ -685,6 +719,7 @@ onBeforeUnmount(() => {
                                                 ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                                 : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                         ]"
+                                        @click.prevent="navigateAndCloseDropdown('hoteles')"
                                     >
                                         <FontAwesomeIcon :icon="faHotel" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Hoteles</span>
@@ -697,6 +732,7 @@ onBeforeUnmount(() => {
                                                 ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                                 : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                         ]"
+                                        @click.prevent="navigateAndCloseDropdown('aerolineas')"
                                     >
                                         <FontAwesomeIcon :icon="faPlaneDeparture" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Aerolineas</span>
@@ -709,6 +745,7 @@ onBeforeUnmount(() => {
                                                 ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                                 : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                         ]"
+                                        @click.prevent="navigateAndCloseDropdown('gestionPaquetes')"
                                     >
                                         <FontAwesomeIcon :icon="faBoxesStacked" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Paquetes</span>
@@ -796,6 +833,7 @@ onBeforeUnmount(() => {
                                             ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                             : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                     ]"
+                                    @click.prevent="navigateAndCloseConfigDropdown('roles')"
                                 >
                                     <FontAwesomeIcon :icon="faUserCircle" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                     <span class="font-medium text-sm">Usuarios internos</span>
@@ -809,6 +847,7 @@ onBeforeUnmount(() => {
                                         ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                         : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                 ]"
+                                @click.prevent="navigateAndCloseConfigDropdown('clientes')"
                             >
                                 <FontAwesomeIcon :icon="faUsers" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                 <span class="font-medium text-sm">Clientes</span>
@@ -821,8 +860,10 @@ onBeforeUnmount(() => {
                                         ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
                                         : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
                                 ]"
+                                @click.prevent="navigateAndCloseConfigDropdown('settings')"
                             >
-                                <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
+                                <FontAwesomeIcon
+                                    :icon="faCog" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                 <span class="font-medium text-sm">Sistema</span>
                             </Link>
                         </div>
@@ -900,29 +941,29 @@ onBeforeUnmount(() => {
     right: 0 !important;
     top: 1rem !important;
   }
-  
+
   .p-toast .p-toast-message {
     margin: 0.25rem !important;
     min-width: unset !important;
     max-width: calc(100vw - 1rem) !important;
     border-radius: 0.5rem !important;
   }
-  
+
   .p-toast .p-toast-message .p-toast-message-content {
     padding: 0.75rem !important;
   }
-  
+
   .p-toast .p-toast-message .p-toast-summary {
     font-size: 0.875rem !important;
     font-weight: 600 !important;
     margin-bottom: 0.25rem !important;
   }
-  
+
   .p-toast .p-toast-message .p-toast-detail {
     font-size: 0.8125rem !important;
     line-height: 1.4 !important;
   }
-  
+
   .p-toast .p-toast-icon-close {
     width: 1.25rem !important;
     height: 1.25rem !important;

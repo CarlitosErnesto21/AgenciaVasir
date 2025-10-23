@@ -4,10 +4,10 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, onMounted, computed, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { 
-  faCheck, faXmark, faCalendarDays, faClockRotateLeft, 
-  faEye, faFilter, faUsers, faDollarSign, 
-  faCalendarCheck, faExclamationTriangle, faInfoCircle 
+import {
+  faCheck, faXmark, faCalendarDays, faClockRotateLeft,
+  faEye, faFilter, faUsers, faDollarSign,
+  faCalendarCheck, faExclamationTriangle, faInfoCircle
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 axios.defaults.withCredentials = true
@@ -68,29 +68,29 @@ const estadosTours = [
 const reservasPorEstado = computed(() => {
   const estadoActual = estadosReservas[pestanaActiva.value]?.value
   let filtered = reservas.value.filter(reserva => reserva.estado === estadoActual)
-  
+
   // Aplicar filtros adicionales
   if (filtros.value.busqueda) {
     const busqueda = filtros.value.busqueda.toLowerCase()
-    filtered = filtered.filter(reserva => 
+    filtered = filtered.filter(reserva =>
       (reserva.cliente?.user?.name || reserva.cliente?.nombres || '').toLowerCase().includes(busqueda) ||
       (reserva.entidad_nombre || '').toLowerCase().includes(busqueda) ||
       (reserva.cliente?.user?.email || reserva.cliente?.correo || '').toLowerCase().includes(busqueda)
     )
   }
-  
+
   if (filtros.value.fechaDesde) {
-    filtered = filtered.filter(reserva => 
+    filtered = filtered.filter(reserva =>
       new Date(reserva.fecha_reserva) >= new Date(filtros.value.fechaDesde)
     )
   }
-  
+
   if (filtros.value.fechaHasta) {
-    filtered = filtered.filter(reserva => 
+    filtered = filtered.filter(reserva =>
       new Date(reserva.fecha_reserva) <= new Date(filtros.value.fechaHasta)
     )
   }
-  
+
   return filtered
 })
 
@@ -234,14 +234,14 @@ const abrirModalReprogramar = (reserva) => {
   fechaNuevaReprogramacion.value = null
   motivoReprogramacion.value = ''
   observacionesReprogramacion.value = ''
-  
+
   // Cargar el tour relacionado para poder reprogramarlo también
-  const tour = tours.value.find(t => 
+  const tour = tours.value.find(t =>
     reserva.detallesTours?.some(dt => dt.tour_id === t.id) ||
     reserva.entidad_nombre === t.nombre
   )
   tourSeleccionado.value = tour
-  
+
   modalReprogramar.value = true
 }
 
@@ -273,7 +273,7 @@ const reprogramarReserva = async () => {
         const fechaOriginalSalida = new Date(tourSeleccionado.value.fecha_salida)
         const fechaOriginalRegreso = new Date(tourSeleccionado.value.fecha_regreso)
         const duracionTour = fechaOriginalRegreso.getTime() - fechaOriginalSalida.getTime()
-        
+
         const nuevaFechaRegreso = new Date(new Date(fechaNuevaReprogramacion.value).getTime() + duracionTour)
 
         const tourData = {
@@ -285,7 +285,7 @@ const reprogramarReserva = async () => {
         }
 
         await axios.put(`/api/tours/${tourSeleccionado.value.id}/cambiar-estado`, tourData)
-        
+
         toast.add({
           severity: 'info',
           summary: 'Tour actualizado',
@@ -311,7 +311,7 @@ const reprogramarReserva = async () => {
     }
 
     modalReprogramar.value = false
-    
+
     // Recargar datos para mostrar cambios
     await Promise.all([cargarReservas(), cargarTours()])
 
@@ -442,10 +442,10 @@ const getMinDate = () => {
 const ejecutarFinalizacionAutomatica = async () => {
   try {
     loading.value = true
-    
+
     const response = await axios.post('/api/reservas/finalizar-automaticamente')
     const data = response.data
-    
+
     if (data.success) {
       toast.add({
         severity: 'success',
@@ -453,7 +453,7 @@ const ejecutarFinalizacionAutomatica = async () => {
         detail: `${data.reservas_finalizadas} reserva(s) finalizada(s) de ${data.reservas_procesadas} procesada(s)`,
         life: 6000
       })
-      
+
       // Recargar las reservas para mostrar los cambios
       await cargarReservas()
     } else {
@@ -499,78 +499,81 @@ onMounted(() => {
   <AuthenticatedLayout>
     <Toast class="z-[9999]" />
 
-    <div class="px-auto md:px-2 mt-6">
+    <div class="px-2 sm:px-4 lg:px-6 xl:px-8 mt-4 sm:mt-6">
       <!-- Encabezado con estadísticas -->
-      <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-6 gap-4">
-        <div>
-          <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold">Gestión de Reservas</h3>
-          <p class="text-gray-600 mt-1">Administra todas las reservas de tours, hoteles y aerolíneas</p>
+      <div class="flex flex-col xl:flex-row xl:justify-between xl:items-start mb-4 sm:mb-6 gap-4 sm:gap-6">
+        <div class="flex-1">
+          <h3 class="text-xl sm:text-2xl lg:text-3xl text-blue-600 font-bold">Gestión de Reservas</h3>
+          <p class="text-sm sm:text-base text-gray-600 mt-1">Administra todas las reservas de tours, hoteles y aerolíneas</p>
         </div>
-        
+
         <!-- Estadísticas rápidas -->
-        <div class="grid grid-cols-2 lg:grid-cols-5 gap-2 lg:gap-4 text-center">
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-            <div class="text-lg font-bold text-yellow-600">{{ estadisticas.pendientes }}</div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 gap-2 sm:gap-3 lg:gap-4 text-center w-full xl:w-auto">
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-2 sm:p-3 min-w-0">
+            <div class="text-base sm:text-lg font-bold text-yellow-600 truncate">{{ estadisticas.pendientes }}</div>
             <div class="text-xs text-yellow-600">Pendientes</div>
           </div>
-          <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-            <div class="text-lg font-bold text-green-600">{{ estadisticas.confirmadas }}</div>
+          <div class="bg-green-50 border border-green-200 rounded-lg p-2 sm:p-3 min-w-0">
+            <div class="text-base sm:text-lg font-bold text-green-600 truncate">{{ estadisticas.confirmadas }}</div>
             <div class="text-xs text-green-600">Confirmadas</div>
           </div>
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <div class="text-lg font-bold text-blue-600">{{ estadisticas.reprogramadas }}</div>
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-2 sm:p-3 min-w-0">
+            <div class="text-base sm:text-lg font-bold text-blue-600 truncate">{{ estadisticas.reprogramadas }}</div>
             <div class="text-xs text-blue-600">Reprogramadas</div>
           </div>
-          <div class="bg-red-50 border border-red-200 rounded-lg p-3">
-            <div class="text-lg font-bold text-red-600">{{ estadisticas.rechazadas }}</div>
+          <div class="bg-red-50 border border-red-200 rounded-lg p-2 sm:p-3 min-w-0">
+            <div class="text-base sm:text-lg font-bold text-red-600 truncate">{{ estadisticas.rechazadas }}</div>
             <div class="text-xs text-red-600">Rechazadas</div>
           </div>
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3">
-            <div class="text-lg font-bold text-green-600">${{ estadisticas.totalIngresos.toFixed(2) }}</div>
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-2 sm:p-3 min-w-0 col-span-2 sm:col-span-1">
+            <div class="text-base sm:text-lg font-bold text-green-600 truncate">${{ estadisticas.totalIngresos.toFixed(2) }}</div>
             <div class="text-xs text-gray-600">Ingresos</div>
           </div>
         </div>
       </div>
 
       <!-- Filtros mejorados -->
-      <div class="bg-blue-50 p-4 rounded-lg shadow-sm border mb-6">
-        <div class="flex flex-col sm:flex-row items-center justify-between mb-3 gap-3">
-          <div class="flex items-center gap-3">
-            <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
+      <div class="bg-blue-50 p-3 sm:p-4 lg:p-6 rounded-lg shadow-sm border mb-4 sm:mb-6">
+        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-3 sm:mb-4 gap-3 sm:gap-4">
+          <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <h3 class="text-sm sm:text-base font-medium text-gray-800 flex items-center gap-2">
               <FontAwesomeIcon :icon="faFilter" class="text-blue-600 text-sm" />
               <span>Filtros</span>
             </h3>
-            <div class="bg-blue-100 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
+            <div class="bg-blue-100 border border-blue-200 text-blue-700 px-2 sm:px-3 py-1 rounded text-xs sm:text-sm font-medium w-fit">
               {{ reservas.length }} reserva{{ reservas.length !== 1 ? 's' : '' }} total{{ reservas.length !== 1 ? 'es' : '' }}
             </div>
           </div>
-          
-          <div class="flex flex-col sm:flex-row gap-2">
-            <button 
-              class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm transition-colors duration-200 flex items-center gap-2 justify-center" 
+
+          <div class="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <button
+              class="bg-red-500 hover:bg-red-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm transition-colors duration-200 flex items-center gap-2 justify-center w-full sm:w-auto"
               @click="limpiarFiltros"
             >
-              <FontAwesomeIcon :icon="faXmark" class="h-4" />
-              Limpiar filtros
+              <FontAwesomeIcon :icon="faXmark" class="h-3 sm:h-4" />
+              <span class="hidden xs:inline">Limpiar filtros</span>
+              <span class="xs:hidden">Limpiar</span>
             </button>
-            
-            <button 
-              class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-md text-sm transition-colors duration-200 flex items-center gap-2 justify-center" 
+
+            <button
+              class="bg-purple-500 hover:bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md text-xs sm:text-sm transition-colors duration-200 flex items-center gap-2 justify-center w-full sm:w-auto"
               @click="ejecutarFinalizacionAutomatica"
               :disabled="loading"
               title="Finaliza automáticamente las reservas cuyas fechas de tour han pasado"
             >
-              <FontAwesomeIcon :icon="faCalendarCheck" class="h-4" />
-              <span v-if="!loading">Finalización Automática</span>
-              <span v-else>Procesando...</span>
+              <FontAwesomeIcon :icon="faCalendarCheck" class="h-3 sm:h-4" />
+              <span v-if="!loading" class="hidden sm:inline">Finalización Automática</span>
+              <span v-if="!loading" class="sm:hidden">Auto Finalizar</span>
+              <span v-else class="hidden sm:inline">Procesando...</span>
+              <span v-else class="sm:hidden">...</span>
             </button>
           </div>
         </div>
-        
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <!-- Filtro por tipo -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Reserva</label>
+          <div class="w-full">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Tipo de Reserva</label>
             <Select
               v-model="filtros.tipo"
               :options="[
@@ -580,29 +583,29 @@ onMounted(() => {
               ]"
               optionLabel="label"
               optionValue="value"
-              class="w-full h-9"
+              class="w-full h-8 sm:h-9"
               style="background-color: white; border-color: #93c5fd;"
             />
           </div>
 
           <!-- Búsqueda -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Buscar</label>
+          <div class="w-full">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Buscar</label>
             <InputText
               v-model="filtros.busqueda"
-              placeholder="🔍 Cliente, servicio, email..."
-              class="w-full h-9 text-sm"
+              placeholder="🔍 Cliente, servicio..."
+              class="w-full h-8 sm:h-9 text-xs sm:text-sm"
               style="background-color: white; border-color: #93c5fd;"
             />
           </div>
 
           <!-- Fecha desde -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
+          <div class="w-full">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Fecha desde</label>
             <DatePicker
               v-model="filtros.fechaDesde"
               dateFormat="dd/mm/yy"
-              class="w-full h-9"
+              class="w-full h-8 sm:h-9"
               showIcon
               placeholder="Fecha inicio"
               style="background-color: white; border-color: #93c5fd;"
@@ -610,12 +613,12 @@ onMounted(() => {
           </div>
 
           <!-- Fecha hasta -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
+          <div class="w-full">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-1">Fecha hasta</label>
             <DatePicker
               v-model="filtros.fechaHasta"
               dateFormat="dd/mm/yy"
-              class="w-full h-9"
+              class="w-full h-8 sm:h-9"
               showIcon
               placeholder="Fecha fin"
               style="background-color: white; border-color: #93c5fd;"
@@ -625,17 +628,18 @@ onMounted(() => {
       </div>
 
       <!-- Pestañas por estado con iconos -->
-      <Tabs v-model:value="pestanaActiva" class="bg-white rounded-lg shadow">
-        <TabList>
+      <Tabs v-model:value="pestanaActiva" class="bg-white rounded-lg shadow overflow-hidden">
+        <TabList class="flex flex-wrap justify-start overflow-x-auto scrollbar-thin">
           <Tab
             v-for="(estado, index) in estadosReservas"
             :key="estado.value"
             :value="index"
-            class="flex items-center gap-2"
+            class="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium whitespace-nowrap min-w-0"
           >
-            <FontAwesomeIcon :icon="estado.icon" class="h-4" />
-            {{ estado.label }} 
-            <span class="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">
+            <FontAwesomeIcon :icon="estado.icon" class="h-3 sm:h-4 flex-shrink-0" />
+            <span class="hidden xs:inline truncate">{{ estado.label }}</span>
+            <span class="xs:hidden truncate">{{ estado.label.substring(0, 4) }}</span>
+            <span class="bg-gray-200 text-gray-700 px-1 sm:px-2 py-0.5 rounded-full text-xs flex-shrink-0">
               {{ reservas.filter(r => r.estado === estado.value).length }}
             </span>
           </Tab>
@@ -657,17 +661,17 @@ onMounted(() => {
               paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
               currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} reservas"
               responsiveLayout="scroll"
-              class="mt-4"
+              class="mt-2 sm:mt-4 overflow-x-auto"
               :pt="{
-                root: { class: 'text-sm' },
-                wrapper: { class: 'text-sm' },
-                table: { class: 'text-sm' },
-                thead: { class: 'text-sm' },
-                headerRow: { class: 'text-sm' },
-                headerCell: { class: 'text-sm font-medium py-3 px-2' },
-                tbody: { class: 'text-sm' },
-                bodyRow: { class: 'text-sm hover:bg-gray-50 transition-colors duration-200' },
-                bodyCell: { class: 'py-3 px-2 text-sm' }
+                root: { class: 'text-xs sm:text-sm' },
+                wrapper: { class: 'text-xs sm:text-sm overflow-x-auto' },
+                table: { class: 'text-xs sm:text-sm min-w-full' },
+                thead: { class: 'text-xs sm:text-sm' },
+                headerRow: { class: 'text-xs sm:text-sm' },
+                headerCell: { class: 'text-xs sm:text-sm font-medium py-2 sm:py-3 px-1 sm:px-2' },
+                tbody: { class: 'text-xs sm:text-sm' },
+                bodyRow: { class: 'text-xs sm:text-sm hover:bg-gray-50 transition-colors duration-200' },
+                bodyCell: { class: 'py-2 sm:py-3 px-1 sm:px-2 text-xs sm:text-sm' }
               }"
             >
               <template #empty>
@@ -688,11 +692,11 @@ onMounted(() => {
               </template>
 
               <!-- Columna Fecha -->
-              <Column field="fecha_reserva" header="Fecha" sortable class="w-24 min-w-20">
+              <Column field="fecha_reserva" header="Fecha" sortable class="w-16 sm:w-20 lg:w-24 min-w-14">
                 <template #body="slotProps">
-                  <div class="text-sm">
+                  <div class="text-xs sm:text-sm">
                     <div class="font-medium">{{ formatearFecha(slotProps.data.fecha_reserva) }}</div>
-                    <div class="text-xs text-gray-500">
+                    <div class="text-xs text-gray-500 hidden sm:block">
                       {{ new Date(slotProps.data.fecha_reserva).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
                     </div>
                   </div>
@@ -700,17 +704,17 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Cliente -->
-              <Column field="cliente.nombres" header="Cliente" sortable class="w-40 min-w-32">
+              <Column field="cliente.nombres" header="Cliente" sortable class="w-24 sm:w-32 lg:w-40 min-w-20 hidden sm:table-cell">
                 <template #body="slotProps">
-                  <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                      <FontAwesomeIcon :icon="faUsers" class="text-blue-600 text-sm" />
+                  <div class="flex items-center gap-1 sm:gap-3">
+                    <div class="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                      <FontAwesomeIcon :icon="faUsers" class="text-blue-600 text-xs sm:text-sm" />
                     </div>
-                    <div>
-                      <div class="font-medium text-gray-900">
+                    <div class="min-w-0 flex-1">
+                      <div class="font-medium text-gray-900 text-xs sm:text-sm truncate" :title="(slotProps.data.cliente?.user?.name) || (slotProps.data.cliente?.nombres) || 'N/A'">
                         {{ (slotProps.data.cliente?.user?.name) || (slotProps.data.cliente?.nombres) || 'N/A' }}
                       </div>
-                      <div class="text-sm text-gray-500">
+                      <div class="text-xs text-gray-500 truncate hidden sm:block" :title="(slotProps.data.cliente?.user?.email) || (slotProps.data.cliente?.correo) || 'N/A'">
                         {{ (slotProps.data.cliente?.user?.email) || (slotProps.data.cliente?.correo) || 'N/A' }}
                       </div>
                     </div>
@@ -719,17 +723,16 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Servicio -->
-              <Column field="entidad_nombre" header="Servicio" sortable class="w-48 min-w-40">
+              <Column field="entidad_nombre" header="Servicio" sortable class="w-24 sm:w-32 lg:w-48 min-w-20">
                 <template #body="slotProps">
-                  <div>
-                    <div 
-                      class="font-medium text-gray-900 overflow-hidden" 
-                      style="max-width: 180px; text-overflow: ellipsis; white-space: nowrap;"
+                  <div class="min-w-0">
+                    <div
+                      class="font-medium text-gray-900 text-xs sm:text-sm truncate"
                       :title="slotProps.data.entidad_nombre"
                     >
                       {{ slotProps.data.entidad_nombre || 'N/A' }}
                     </div>
-                    <div class="text-sm text-gray-500 capitalize">
+                    <div class="text-xs text-gray-500 capitalize hidden sm:block">
                       {{ slotProps.data.tipo || 'N/A' }}
                     </div>
                   </div>
@@ -737,10 +740,10 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Personas -->
-              <Column header="Personas" class="w-24 min-w-20 hidden md:table-cell">
+              <Column header="Personas" class="w-16 sm:w-20 lg:w-24 min-w-14 hidden md:table-cell">
                 <template #body="slotProps">
                   <div class="text-center">
-                    <div class="text-sm flex items-center justify-center gap-1">
+                    <div class="text-xs sm:text-sm flex items-center justify-center gap-1">
                       <FontAwesomeIcon :icon="faUsers" class="text-gray-400 text-xs" />
                       <span class="font-medium">{{ (slotProps.data.mayores_edad || 0) + (slotProps.data.menores_edad || 0) }}</span>
                     </div>
@@ -752,83 +755,84 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Total -->
-              <Column field="total" header="Total" sortable class="w-24 min-w-20">
+              <Column field="total" header="Total" sortable class="w-16 sm:w-20 lg:w-24 min-w-14">
                 <template #body="slotProps">
                   <div class="text-right">
-                    <div class="font-medium text-green-600 flex items-center justify-end gap-1">
+                    <div class="font-medium text-green-600 flex items-center justify-end gap-1 text-xs sm:text-sm">
                       <FontAwesomeIcon :icon="faDollarSign" class="text-xs" />
-                      {{ Number(slotProps.data.total || 0).toFixed(2) }}
+                      <span class="truncate">{{ Number(slotProps.data.total || 0).toFixed(2) }}</span>
                     </div>
                   </div>
                 </template>
               </Column>
 
               <!-- Columna Estado -->
-              <Column field="estado" header="Estado" class="w-32 min-w-28 hidden lg:table-cell">
+              <Column field="estado" header="Estado" class="w-20 sm:w-24 lg:w-32 min-w-16 hidden lg:table-cell">
                 <template #body="slotProps">
-                  <span :class="getColorEstadoReserva(slotProps.data.estado)" class="px-2 py-1 rounded-full text-xs font-medium">
-                    {{ estadosReservas.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado }}
+                  <span :class="getColorEstadoReserva(slotProps.data.estado)" class="px-1 sm:px-2 py-1 rounded-full text-xs font-medium">
+                    <span class="hidden xl:inline">{{ estadosReservas.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado }}</span>
+                    <span class="xl:hidden">{{ (estadosReservas.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado).substring(0, 4) }}</span>
                   </span>
                 </template>
               </Column>
 
               <!-- Columna Acciones -->
-              <Column header="Acciones" class="w-56 min-w-48">
+              <Column header="Acciones" class="w-32 sm:w-40 lg:w-56 min-w-28">
                 <template #body="slotProps">
                   <div class="flex gap-1 flex-wrap justify-center">
                     <!-- Botón Ver Detalles -->
                     <button
                       v-if="getAccionesDisponibles(slotProps.data).includes('detalles')"
-                      class="bg-gray-500 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                      class="bg-gray-500 hover:bg-gray-600 text-white px-1 sm:px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       @click="verDetallesReserva(slotProps.data)"
                       title="Ver detalles"
                     >
                       <FontAwesomeIcon :icon="faEye" class="text-xs" />
-                      <span class="hidden sm:inline">Detalles</span>
+                      <span class="hidden lg:inline">Detalles</span>
                     </button>
 
                     <!-- Botón Confirmar -->
                     <button
                       v-if="getAccionesDisponibles(slotProps.data).includes('confirmar')"
-                      class="bg-green-500 hover:bg-green-600 text-white px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                      class="bg-green-500 hover:bg-green-600 text-white px-1 sm:px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       @click="confirmarReserva(slotProps.data)"
                       title="Confirmar reserva"
                     >
                       <FontAwesomeIcon :icon="faCheck" class="text-xs" />
-                      <span class="hidden sm:inline">Confirmar</span>
+                      <span class="hidden lg:inline">Confirmar</span>
                     </button>
 
                     <!-- Botón Rechazar -->
                     <button
                       v-if="getAccionesDisponibles(slotProps.data).includes('rechazar')"
-                      class="bg-red-500 hover:bg-red-600 text-white px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                      class="bg-red-500 hover:bg-red-600 text-white px-1 sm:px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       @click="abrirModalRechazar(slotProps.data)"
                       title="Rechazar reserva"
                     >
                       <FontAwesomeIcon :icon="faXmark" class="text-xs" />
-                      <span class="hidden sm:inline">Rechazar</span>
+                      <span class="hidden lg:inline">Rechazar</span>
                     </button>
 
                     <!-- Botón Reprogramar -->
                     <button
                       v-if="getAccionesDisponibles(slotProps.data).includes('reprogramar')"
-                      class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                      class="bg-blue-500 hover:bg-blue-600 text-white px-1 sm:px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       @click="abrirModalReprogramar(slotProps.data)"
                       title="Reprogramar reserva"
                     >
                       <FontAwesomeIcon :icon="faCalendarDays" class="text-xs" />
-                      <span class="hidden sm:inline">Reprogramar</span>
+                      <span class="hidden lg:inline">Reprogramar</span>
                     </button>
 
                     <!-- Botón Finalizar -->
                     <button
                       v-if="getAccionesDisponibles(slotProps.data).includes('finalizar')"
-                      class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
+                      class="bg-purple-500 hover:bg-purple-600 text-white px-1 sm:px-2 py-1 rounded text-xs transition-colors flex items-center gap-1"
                       @click="finalizarReserva(slotProps.data)"
                       title="Finalizar reserva"
                     >
                       <FontAwesomeIcon :icon="faCalendarCheck" class="text-xs" />
-                      <span class="hidden sm:inline">Finalizar</span>
+                      <span class="hidden lg:inline">Finalizar</span>
                     </button>
                   </div>
                 </template>
@@ -843,23 +847,28 @@ onMounted(() => {
         v-model:visible="modalDetalles"
         modal
         header="Detalles de la Reserva"
-        :style="{ width: '600px' }"
+        :style="{ width: '95vw', maxWidth: '800px' }"
         :closable="false"
         :draggable="false"
+        :pt="{
+          root: 'rounded-lg',
+          header: 'text-sm sm:text-base lg:text-lg p-3 sm:p-4',
+          content: 'p-2 sm:p-4 lg:p-6 max-h-[80vh] overflow-y-auto'
+        }"
       >
-        <div v-if="reservaSeleccionada" class="space-y-6">
+        <div v-if="reservaSeleccionada" class="space-y-4 sm:space-y-6">
           <!-- Información del cliente -->
-          <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <h4 class="font-semibold text-blue-800 mb-3 flex items-center gap-2">
-              <FontAwesomeIcon :icon="faUsers" class="text-blue-600" />
+          <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+            <h4 class="font-semibold text-blue-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <FontAwesomeIcon :icon="faUsers" class="text-blue-600 text-sm sm:text-base" />
               Información del Cliente
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+              <div class="break-words">
                 <span class="font-medium text-gray-700">Nombre:</span>
                 <span class="ml-2">{{ (reservaSeleccionada.cliente?.user?.name) || (reservaSeleccionada.cliente?.nombres) || 'N/A' }}</span>
               </div>
-              <div>
+              <div class="break-words">
                 <span class="font-medium text-gray-700">Email:</span>
                 <span class="ml-2">{{ (reservaSeleccionada.cliente?.user?.email) || (reservaSeleccionada.cliente?.correo) || 'N/A' }}</span>
               </div>
@@ -875,13 +884,13 @@ onMounted(() => {
           </div>
 
           <!-- Información del servicio -->
-          <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
-            <h4 class="font-semibold text-gray-800 mb-3 flex items-center gap-2">
-              <FontAwesomeIcon :icon="faCalendarDays" class="text-gray-600" />
+          <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+            <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <FontAwesomeIcon :icon="faCalendarDays" class="text-gray-600 text-sm sm:text-base" />
               Información del Servicio
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
+              <div class="break-words">
                 <span class="font-medium text-gray-700">Servicio:</span>
                 <span class="ml-2">{{ reservaSeleccionada.entidad_nombre || 'N/A' }}</span>
               </div>
@@ -903,12 +912,12 @@ onMounted(() => {
           </div>
 
           <!-- Información de personas y precio -->
-          <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-            <h4 class="font-semibold text-green-800 mb-3 flex items-center gap-2">
-              <FontAwesomeIcon :icon="faDollarSign" class="text-green-600" />
+          <div class="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
+            <h4 class="font-semibold text-green-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+              <FontAwesomeIcon :icon="faDollarSign" class="text-green-600 text-sm sm:text-base" />
               Detalles de la Reserva
             </h4>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm">
               <div>
                 <span class="font-medium text-gray-700">Adultos:</span>
                 <span class="ml-2">{{ reservaSeleccionada.mayores_edad || 0 }}</span>
@@ -917,7 +926,7 @@ onMounted(() => {
                 <span class="font-medium text-gray-700">Niños:</span>
                 <span class="ml-2">{{ reservaSeleccionada.menores_edad || 0 }}</span>
               </div>
-              <div>
+              <div class="col-span-2 sm:col-span-1">
                 <span class="font-medium text-gray-700">Total:</span>
                 <span class="ml-2 font-bold text-green-600">${{ Number(reservaSeleccionada.total || 0).toFixed(2) }}</span>
               </div>
@@ -926,12 +935,12 @@ onMounted(() => {
         </div>
 
         <template #footer>
-          <div class="flex justify-center w-full">
+          <div class="flex justify-center w-full p-2 sm:p-0">
             <button
-              class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded transition-colors flex items-center gap-2"
+              class="bg-blue-500 hover:bg-blue-600 text-white px-4 sm:px-6 py-2 rounded transition-colors flex items-center gap-2 text-sm sm:text-base"
               @click="modalDetalles = false"
             >
-              <FontAwesomeIcon :icon="faXmark" class="h-4" />
+              <FontAwesomeIcon :icon="faXmark" class="h-3 sm:h-4" />
               Cerrar
             </button>
           </div>
@@ -943,34 +952,43 @@ onMounted(() => {
         v-model:visible="modalRechazar"
         modal
         header="Rechazar Reserva"
-        :style="{ width: '500px' }"
+        :style="{ width: '95vw', maxWidth: '600px' }"
         :closable="false"
         :draggable="false"
+        :pt="{
+          root: 'rounded-lg',
+          header: 'text-sm sm:text-base lg:text-lg p-3 sm:p-4',
+          content: 'p-2 sm:p-4 lg:p-6'
+        }"
       >
-        <div class="space-y-4">
-          <div v-if="reservaSeleccionada" class="bg-red-50 border border-red-200 rounded-lg p-4">
-            <div class="flex items-center gap-3 mb-3">
-              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-lg" />
-              <h4 class="font-medium text-red-800">Confirmar Rechazo</h4>
+        <div class="space-y-3 sm:space-y-4">
+          <div v-if="reservaSeleccionada" class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+            <div class="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-base sm:text-lg" />
+              <h4 class="font-medium text-red-800 text-sm sm:text-base">Confirmar Rechazo</h4>
             </div>
-            <div class="text-sm space-y-1">
-              <p><strong>Cliente:</strong> {{ (reservaSeleccionada.cliente?.user?.name) || (reservaSeleccionada.cliente?.nombres) || 'N/A' }}</p>
-              <p><strong>Servicio:</strong> {{ reservaSeleccionada.entidad_nombre }}</p>
+            <div class="text-xs sm:text-sm space-y-1">
+              <p class="break-words"><strong>Cliente:</strong> {{ (reservaSeleccionada.cliente?.user?.name) || (reservaSeleccionada.cliente?.nombres) || 'N/A' }}</p>
+              <p class="break-words"><strong>Servicio:</strong> {{ reservaSeleccionada.entidad_nombre }}</p>
               <p><strong>Fecha:</strong> {{ formatearFecha(reservaSeleccionada.fecha_reserva) }}</p>
               <p><strong>Total:</strong> ${{ Number(reservaSeleccionada.total || 0).toFixed(2) }}</p>
             </div>
           </div>
 
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
+            <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
               Motivo del rechazo <span class="text-red-500">*</span>
             </label>
             <Textarea
               v-model="motivoRechazo"
               placeholder="Especifica el motivo por el cual se rechaza esta reserva..."
               rows="4"
-              class="w-full"
+              class="w-full text-xs sm:text-sm"
               maxlength="500"
+              :pt="{
+                root: 'w-full',
+                textarea: 'text-xs sm:text-sm p-2 sm:p-3'
+              }"
             />
             <small class="text-gray-500 text-xs mt-1">
               {{ motivoRechazo.length }}/500 caracteres
@@ -979,20 +997,20 @@ onMounted(() => {
         </div>
 
         <template #footer>
-          <div class="flex justify-center gap-3 w-full">
+          <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 w-full p-2 sm:p-0">
             <button
-              class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded transition-colors flex items-center gap-2"
+              class="bg-gray-500 hover:bg-gray-600 text-white px-4 sm:px-6 py-2 rounded transition-colors flex items-center justify-center gap-2 text-sm sm:text-base order-2 sm:order-1"
               @click="modalRechazar = false"
             >
-              <FontAwesomeIcon :icon="faXmark" class="h-4" />
+              <FontAwesomeIcon :icon="faXmark" class="h-3 sm:h-4" />
               Cancelar
             </button>
             <button
-              class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded transition-colors flex items-center gap-2"
+              class="bg-red-500 hover:bg-red-600 text-white px-4 sm:px-6 py-2 rounded transition-colors flex items-center justify-center gap-2 text-sm sm:text-base order-1 sm:order-2 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="rechazarReserva"
               :disabled="!motivoRechazo.trim()"
             >
-              <FontAwesomeIcon :icon="faCheck" class="h-4" />
+              <FontAwesomeIcon :icon="faCheck" class="h-3 sm:h-4" />
               Rechazar Reserva
             </button>
           </div>
@@ -1004,7 +1022,12 @@ onMounted(() => {
         v-model:visible="modalReprogramar"
         modal
         header="Reprogramar Reserva"
-        :style="{ width: '650px' }"
+        :style="{ width: '95vw', maxWidth: '800px' }"
+        :pt="{
+          root: 'rounded-lg',
+          header: 'text-sm sm:text-base lg:text-lg p-3 sm:p-4',
+          content: 'p-2 sm:p-4 lg:p-6 max-h-[80vh] overflow-y-auto'
+        }"
         :closable="false"
         :draggable="false"
       >
@@ -1042,7 +1065,7 @@ onMounted(() => {
             </div>
             <div class="text-sm space-y-1">
               <p><strong>Nombre:</strong> {{ tourSeleccionado.nombre }}</p>
-              <p><strong>Estado actual:</strong> 
+              <p><strong>Estado actual:</strong>
                 <span :class="getColorEstadoTour(tourSeleccionado.estado)" class="px-2 py-1 rounded-full text-xs font-medium ml-1">
                   {{ estadosTours.find(e => e.value === tourSeleccionado.estado)?.label || tourSeleccionado.estado }}
                 </span>

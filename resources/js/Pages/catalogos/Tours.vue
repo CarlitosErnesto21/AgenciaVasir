@@ -5,7 +5,7 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faExclamationTriangle, faListDots, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
@@ -41,6 +41,7 @@ const isUploadingImages = ref(false);
 const isOpeningGallery = ref(false);
 const isClearingFilters = ref(false);
 const isNavigatingToTransportes = ref(false);
+const isLoadingTable = ref(true);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -132,6 +133,19 @@ const filteredTours = computed(() => {
         });
     }
     return filtered;
+});
+
+// Computed para verificar si se puede agregar más imágenes
+const canAddMoreImages = computed(() => {
+    return imagenPreviewList.value.length < 5;
+});
+
+// Computed para el texto del botón de imágenes
+const imageButtonText = computed(() => {
+    if (isUploadingImages.value) return 'Cargando...';
+    if (isOpeningGallery.value) return 'Abriendo...';
+    if (!canAddMoreImages.value) return 'Límite alcanzado';
+    return 'Seleccionar';
 });
 
 // Watcher para detectar cambios en el modal
@@ -252,6 +266,15 @@ onUnmounted(() => {
 });
 
 const fetchTours = async () => {
+    isLoadingTable.value = true;
+
+    // Mostrar toast de carga con duración automática
+    toast.add({
+        severity: "info",
+        summary: "Cargando tours...",
+        life: 1000 // Duración automática
+    });
+
     try {
         const response = await axios.get(url);
         tours.value = response.data.map((t) => ({
@@ -269,8 +292,18 @@ const fetchTours = async () => {
             const dateB = new Date(b.created_at);
             return dateB - dateA;
         });
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Tours cargados",
+            life: 1000
+        });
+
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los tours.", life: 4000 });
+    } finally {
+        isLoadingTable.value = false;
     }
 };
 
@@ -341,9 +374,6 @@ const clearFilters = async () => {
     isClearingFilters.value = true;
 
     try {
-        // Simular un pequeño delay para mostrar el loading
-        await new Promise(resolve => setTimeout(resolve, 300));
-
         selectedCategoria.value = null;
         selectedTipoTransporte.value = null;
         selectedEstado.value = null;
@@ -359,7 +389,7 @@ const clearFilters = async () => {
             severity: "success",
             summary: "Filtros limpiados",
             detail: "Los filtros han sido restablecidos correctamente.",
-            life: 3000
+            life: 2000
         });
     } finally {
         isClearingFilters.value = false;
@@ -467,6 +497,18 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estén completos.", life: 4000 });
         return;
     }
+
+    // Validar límite de imágenes
+    if (imagenPreviewList.value.length > 5) {
+        toast.add({
+            severity: "warn",
+            summary: "Demasiadas imágenes",
+            detail: "No puedes subir más de 5 imágenes por tour.",
+            life: 4000
+        });
+        return;
+    }
+
     // Validar tamaño de imágenes antes de enviar
     const maxSize = 2 * 1024 * 1024; // 2MB
     const oversizedFiles = imagenFiles.value.filter(file => file.size > maxSize);
@@ -631,6 +673,7 @@ const handleImageUploadClick = async () => {
 const onImageSelect = async (event) => {
     const files = event.target ? event.target.files : event.files;
     const maxSize = 2 * 1024 * 1024; // 2MB en bytes
+    const maxImages = 5; // Límite máximo de imágenes por tour
 
     // Resetear el estado de apertura de galería
     isOpeningGallery.value = false;
@@ -640,11 +683,28 @@ const onImageSelect = async (event) => {
         return;
     }
 
+    // Verificar límite total de imágenes
+    const imagenesActuales = imagenPreviewList.value.length;
+    const imagenesNuevas = files.length;
+    const totalImagenes = imagenesActuales + imagenesNuevas;
+
+    if (totalImagenes > maxImages) {
+        const imagenesPermitidas = maxImages - imagenesActuales;
+        toast.add({
+            severity: "warn",
+            summary: "Límite de imágenes excedido",
+            detail: `Solo puedes subir un máximo de ${maxImages} imágenes por tour. Actualmente tienes ${imagenesActuales} imagen${imagenesActuales !== 1 ? 'es' : ''}, puedes agregar máximo ${imagenesPermitidas} más.`,
+            life: 6000
+        });
+        return;
+    }
+
     // Cambiar a estado de carga
     isUploadingImages.value = true;
 
     try {
         const processingPromises = [];
+        let validFilesCount = 0;
 
         for (const file of files) {
             if (file instanceof File) {
@@ -652,8 +712,8 @@ const onImageSelect = async (event) => {
                 if (file.size > maxSize) {
                     toast.add({
                         severity: "warn",
-                        summary: "Archivo no válido",
-                        detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).",
+                        summary: "Archivo muy grande",
+                        detail: `El archivo "${file.name}" excede el tamaño máximo de 2MB.`,
                         life: 5000
                     });
                     continue; // Saltar este archivo
@@ -663,13 +723,14 @@ const onImageSelect = async (event) => {
                     toast.add({
                         severity: "warn",
                         summary: "Formato no válido",
-                        detail: "Por favor selecciona únicamente archivos de imagen válidos.",
+                        detail: `El archivo "${file.name}" no es una imagen válida.`,
                         life: 4000
                     });
                     continue; // Saltar este archivo
                 }
 
                 imagenFiles.value.push(file);
+                validFilesCount++;
 
                 // Crear promesa para procesar la imagen
                 const imagePromise = new Promise((resolve) => {
@@ -689,12 +750,12 @@ const onImageSelect = async (event) => {
         await Promise.all(processingPromises);
 
         // Mostrar mensaje de éxito si se procesaron imágenes
-        if (processingPromises.length > 0) {
+        if (validFilesCount > 0) {
             toast.add({
                 severity: "success",
                 summary: "Imágenes cargadas",
-                detail: `${processingPromises.length} imagen${processingPromises.length > 1 ? 'es' : ''} cargada${processingPromises.length > 1 ? 's' : ''} correctamente.`,
-                life: 3000
+                detail: `${validFilesCount} imagen${validFilesCount > 1 ? 'es' : ''} cargada${validFilesCount > 1 ? 's' : ''} correctamente. Total: ${imagenPreviewList.value.length}/${maxImages}`,
+                life: 4000
             });
         }
     } catch (error) {
@@ -728,12 +789,22 @@ const removeImage = (index) => {
 
 const openImageModal = (index) => {
     if (selectedTour.value && selectedTour.value.imagenes && selectedTour.value.imagenes.length > 0) {
+        // Preparar las imágenes para el carrusel
         selectedImages.value = selectedTour.value.imagenes.map(img => {
             const imageName = typeof img === "string" ? img : img.nombre;
             return IMAGE_PATH + imageName;
         });
-        carouselIndex.value = index;
-        showImageCarouselDialog.value = true;
+
+        // Asegurar que el índice esté dentro del rango válido
+        const validIndex = Math.max(0, Math.min(index, selectedImages.value.length - 1));
+
+        // Establecer el índice del carrusel ANTES de abrir el modal
+        carouselIndex.value = validIndex;
+
+        // Abrir el modal después de un pequeño delay para asegurar que todo esté listo
+        setTimeout(() => {
+            showImageCarouselDialog.value = true;
+        }, 50);
     } else {
         toast.add({
             severity: "warn",
@@ -1087,7 +1158,6 @@ const onPricePaste = (event) => {
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} tours"
                 class="overflow-x-auto max-w-full px-auto"
                 @row-click="onRowClick"
-
                 responsiveLayout="scroll"
                 :pt="{
                     root: { class: 'text-sm' },
@@ -1292,6 +1362,8 @@ const onPricePaste = (event) => {
                         </div>
                     </template>
                 </Column>
+
+
             </DataTable>
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Tour'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
@@ -1487,25 +1559,34 @@ const onPricePaste = (event) => {
                         <div class="flex items-center gap-4">
                             <label for="imagenes" class="w-24 flex items-center gap-1">Imágenes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
-                                <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
-                                <button type="button"
-                                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
-                                    @click="handleImageUploadClick"
-                                    :disabled="isUploadingImages || isOpeningGallery">
-                                    <FontAwesomeIcon
-                                        :icon="isUploadingImages ? faSpinner : (isOpeningGallery ? faSpinner : faPlus)"
-                                        :class="['h-4', { 'animate-spin': isUploadingImages || isOpeningGallery }]"
-                                    />
-                                    <span v-if="isOpeningGallery">Abriendo galería...</span>
-                                    <span v-else-if="isUploadingImages">Cargando imágenes...</span>
-                                    <span v-else>Subir imágenes</span>
-                                </button>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
+                                    <button type="button"
+                                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        @click="handleImageUploadClick"
+                                        :disabled="isUploadingImages || isOpeningGallery || !canAddMoreImages">
+                                        <FontAwesomeIcon
+                                            :icon="isUploadingImages ? faSpinner : (isOpeningGallery ? faSpinner : faPlus)"
+                                            :class="{ 'animate-spin': isUploadingImages || isOpeningGallery }"
+                                        />
+                                        {{ imageButtonText }}
+                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium" :class="imagenPreviewList.length >= 5 ? 'text-red-600' : 'text-gray-600'">
+                                            {{ imagenPreviewList.length }}/5
+                                        </span>
+                                        <span class="text-xs text-gray-500">imágenes</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mb-2">
+                                    Máximo 5 imágenes por tour • Formatos: JPG, PNG, GIF • Tamaño máximo: 2MB por imagen
+                                </div>
                             </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las imágenes son obligatorias (al menos una).</small>
                     </div>
-                    <div class="grid grid-cols-2 ml-8 sm:ml-16">
-                        <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-32 h-32">
+                    <div class="grid grid-cols-3 ml-2 sm:ml-5 gap-y-2">
+                        <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-24 sm:w-28 h-24 sm:h-28">
                             <img :src=" img.startsWith('data:image') ? img : IMAGE_PATH + img " alt="Vista previa" class="w-full h-full object-cover rounded border"/>
                             <button @click="removeImage(index)" class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow" style="transform: translate(50%, -50%)"> <i class="pi pi-times text-xs"></i></button>
                         </div>
@@ -1534,54 +1615,29 @@ const onPricePaste = (event) => {
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="deleteDialog" header="Eliminar tour" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
-                <div class="flex items-center gap-3">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-                    <div class="flex flex-col">
-                        <span>¿Estás seguro de eliminar el tour: <b>{{ tour.nombre }}</b>?</span>
-                        <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
-                    </div>
-                </div>
-                <template #footer>
-                    <div class="flex justify-center gap-4 w-full">
-                        <button
-                            type="button"
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                            @click="deleteTour"
-                            :disabled="isDeleting"
-                        >
-                            <FontAwesomeIcon
-                                :icon="isDeleting ? faSpinner : faCheck"
-                                :class="[
-                                    'h-5',
-                                    { 'animate-spin': isDeleting }
-                                ]"
-                            />
-                            <span v-if="!isDeleting">Eliminar</span>
-                            <span v-else>Eliminando...</span>
-                        </button>
-                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false" :disabled="isDeleting">
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
-                        </button>
-                    </div>
-                </template>
-            </Dialog>
+
 
             <!-- Componente de Modales de Tours -->
             <TourModals
                 v-model:visible="moreActionsDialog"
                 v-model:details-visible="showImageDialog"
                 v-model:carousel-visible="showImageCarouselDialog"
+                v-model:delete-visible="deleteDialog"
+                v-model:unsaved-changes-visible="unsavedChangesDialog"
                 v-model:carousel-index="carouselIndex"
                 :tour="selectedTour || tour"
                 :dialog-style="dialogStyle"
                 :selected-images="selectedImages"
                 :image-path="IMAGE_PATH"
+                :is-deleting="isDeleting"
                 @duplicate="handleDuplicateTour"
                 @change-status="handleChangeStatus"
                 @generate-report="handleGenerateReport"
                 @archive="handleArchiveTour"
+                @delete-tour="deleteTour"
+                @cancel-delete="() => deleteDialog = false"
+                @close-without-saving="closeDialogWithoutSaving"
+                @continue-editing="continueEditing"
                 @view-details="handleViewDetails"
                 @open-image-modal="openImageModal"
             />
@@ -1593,28 +1649,6 @@ const onPricePaste = (event) => {
                 :dialog-style="dialogStyle"
                 @estado-actualizado="handleEstadoActualizado"
             />
-
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
-                <div class="flex items-center gap-3">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-                    <div class="flex flex-col">
-                        <span>¡Tienes información sin guardar!</span>
-                        <span class="text-red-600 text-sm font-medium mt-1">¿Deseas salir sin guardar?</span>
-                    </div>
-                </div>
-                <template #footer>
-                    <div class="flex justify-center gap-3 w-full">
-                        <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="closeDialogWithoutSaving">
-                            <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
-                        </button>
-                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="continueEditing">
-                            <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
-                        </button>
-                    </div>
-                </template>
-            </Dialog>
         </div>
     </AuthenticatedLayout>
 </template>

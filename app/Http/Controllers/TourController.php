@@ -64,7 +64,7 @@ class TourController extends Controller
             'precio' => 'required|numeric|min:0|max:9999.99',
             'categoria' => 'required|in:NACIONAL,INTERNACIONAL',
             'transporte_id' => 'required|exists:transportes,id',
-            'imagenes' => 'nullable|array',
+            'imagenes' => 'nullable|array|max:5',
             'imagenes.*' => 'image|max:2048',
         ]);
 
@@ -142,6 +142,21 @@ class TourController extends Controller
             'imagenes.*' => 'image|max:2048',
             'removed_images' => 'nullable|array',
         ]);
+
+        // Validar límite total de imágenes (existentes + nuevas - eliminadas)
+        $imagenesExistentes = $tour->imagenes()->count();
+        $imagenesAEliminar = $request->has('removed_images') ? count($request->input('removed_images')) : 0;
+        $imagenesNuevas = $request->hasFile('imagenes') ? count($request->file('imagenes')) : 0;
+        $totalImagenesFinales = $imagenesExistentes - $imagenesAEliminar + $imagenesNuevas;
+
+        if ($totalImagenesFinales > 5) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => [
+                    'imagenes' => ['El total de imágenes no puede exceder 5. Actualmente tienes ' . $imagenesExistentes . ' imágenes, intentas agregar ' . $imagenesNuevas . ' y eliminar ' . $imagenesAEliminar . '.']
+                ]
+            ], 422);
+        }
 
         // Preparar datos para actualizar el tour
         $tourData = $validated;
