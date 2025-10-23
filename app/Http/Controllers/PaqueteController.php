@@ -8,16 +8,25 @@ use App\Models\Paquete;
 
 use App\Models\Imagen;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class PaqueteController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Traer todos los paquetes con imágenes, país y provincia
-        $paquetes = Paquete::with(['imagenes', 'pais', 'provincia'])->orderByDesc('created_at')->get();
+        $query = Paquete::with(['imagenes', 'pais', 'provincia'])
+            ->orderBy('fecha_salida', 'asc');
+
+        // Filtrar por país si se proporciona
+        if ($request->has('pais_id')) {
+            $query->where('pais_id', $request->input('pais_id'));
+        }
+
+        $paquetes = $query->get();
+
         return response()->json($paquetes);
     }
 
@@ -34,41 +43,56 @@ class PaqueteController extends Controller
      */
     public function store(Request $request)
     {
-
-        $data = $request->validate([
-            'nombre' => 'required|string',
-            'fecha_salida' => 'required|date',
-            'fecha_regreso' => 'required|date',
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:200',
             'incluye' => 'nullable|string',
             'condiciones' => 'required|string',
             'recordatorio' => 'required|string',
+            // aceptar datetimes en el futuro (now) en lugar de after:today para permitir mismo día con hora posterior
+            'fecha_salida' => 'required|date|after:now',
+            'fecha_regreso' => 'required|date|after:fecha_salida',
             'precio' => 'required|numeric|min:0|max:999999.99',
             'pais_id' => 'required|exists:paises,id',
             'provincia_id' => 'required|exists:provincias,id',
-            'imagenes' => 'array',
-            'imagenes.*' => 'file|image',
+            'imagenes' => 'nullable|array',
+            'imagenes.*' => 'image|max:2048',
         ]);
 
-        $paquete = Paquete::create($data);
+        $paqueteData = $validated;
+        unset($paqueteData['imagenes']);
 
+        $paquete = Paquete::create($paqueteData);
+
+        // Guardar imágenes nuevas usando Storage::disk('public')
         if ($request->hasFile('imagenes')) {
-            foreach ($request->file('imagenes') as $img) {
-                $path = $img->store('paquetes', 'public');
-                $paquete->imagenes()->create([
-                    'nombre' => $path
-                ]);
+            foreach ($request->file('imagenes') as $imagen) {
+                if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
+                    $path = $imagen->store('paquetes', 'public');
+                    $fileName = basename($path);
+
+                    if (empty($path)) {
+                        Log::error('ERROR: No se pudo guardar la imagen del paquete');
+                        continue;
+                    }
+
+                    $paquete->imagenes()->create(['nombre' => $fileName]);
+                }
             }
         }
 
-        return response()->json($paquete->load('imagenes'), 201);
+        return response()->json([
+            'message' => 'Paquete creado exitosamente',
+            'paquete' => $paquete->load(['imagenes', 'pais', 'provincia']),
+        ], 201);
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id)
     {
-        $paquete = Paquete::with('imagenes')->findOrFail($id);
+        $paquete = Paquete::with(['imagenes', 'pais', 'provincia'])->findOrFail($id);
+
         return response()->json($paquete);
     }
 
@@ -83,63 +107,84 @@ class PaqueteController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
         $paquete = Paquete::findOrFail($id);
-        $data = $request->validate([
-            'nombre' => 'required|string',
-            'fecha_salida' => 'required|date',
-            'fecha_regreso' => 'required|date',
+
+        $validated = $request->validate([
+            'nombre' => 'required|string|max:200',
             'incluye' => 'nullable|string',
             'condiciones' => 'required|string',
             'recordatorio' => 'required|string',
+            // validar fechas también al actualizar: fecha_salida en el futuro y fecha_regreso posterior a salida
+            'fecha_salida' => 'required|date|after:now',
+            'fecha_regreso' => 'required|date|after:fecha_salida',
             'precio' => 'required|numeric|min:0|max:999999.99',
             'pais_id' => 'required|exists:paises,id',
             'provincia_id' => 'required|exists:provincias,id',
-            'imagenes' => 'array',
-            'imagenes.*' => 'file|image',
-            'removed_images' => 'array',
+            'imagenes' => 'nullable|array',
+            'imagenes.*' => 'image|max:2048',
+            'removed_images' => 'nullable|array',
             'removed_images.*' => 'string',
         ]);
 
-        $paquete->update($data);
+        $paqueteData = $validated;
+        unset($paqueteData['imagenes']);
+        unset($paqueteData['removed_images']);
 
-        // Eliminar imágenes marcadas
-        if ($request->has('removed_images')) {
-            foreach ($request->removed_images as $imgName) {
-                $img = $paquete->imagenes()->where('nombre', $imgName)->first();
-                if ($img) {
-                    Storage::disk('public')->delete($img->nombre);
-                    $img->delete();
+        $paquete->update($paqueteData);
+
+        // Guardar imágenes nuevas
+        if ($request->hasFile('imagenes')) {
+            foreach ($request->file('imagenes') as $imagen) {
+                if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
+                    $path = $imagen->store('paquetes', 'public');
+                    $fileName = basename($path);
+
+                    if (empty($path)) {
+                        Log::error('ERROR: No se pudo guardar la imagen del paquete (update)');
+                        continue;
+                    }
+
+                    $paquete->imagenes()->create(['nombre' => $fileName]);
                 }
             }
         }
 
-        // Agregar nuevas imágenes
-        if ($request->hasFile('imagenes')) {
-            foreach ($request->file('imagenes') as $img) {
-                $path = $img->store('paquetes', 'public');
-                $paquete->imagenes()->create([
-                    'nombre' => $path
-                ]);
+        // Eliminar imágenes seleccionadas
+        if ($request->has('removed_images')) {
+            foreach ($request->input('removed_images') as $imageName) {
+                $imagen = $paquete->imagenes()->where('nombre', $imageName)->first();
+                if ($imagen) {
+                    Storage::disk('public')->delete('paquetes/' . $imagen->nombre);
+                    $imagen->forceDelete();
+                }
             }
         }
 
-        return response()->json($paquete->load(['imagenes', 'pais', 'provincia']));
+        return response()->json([
+            'message' => 'Paquete actualizado exitosamente',
+            'paquete' => $paquete->load(['imagenes', 'pais', 'provincia']),
+        ]);
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
         $paquete = Paquete::findOrFail($id);
-        // Eliminar imágenes físicas y registros
-        foreach ($paquete->imagenes as $img) {
-            Storage::disk('public')->delete($img->nombre);
-            $img->delete();
+        $paquete->loadMissing(['imagenes', 'pais', 'provincia']);
+
+        foreach ($paquete->imagenes as $imagen) {
+            Storage::disk('public')->delete('paquetes/' . $imagen->nombre);
+            $imagen->forceDelete();
         }
+
         $paquete->delete();
-        return response()->json(['message' => 'Paquete eliminado']);
+
+        return response()->json([
+            'message' => 'Paquete eliminado exitosamente',
+        ]);
     }
 }
