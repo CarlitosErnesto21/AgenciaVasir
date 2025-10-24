@@ -148,6 +148,63 @@ const imageButtonText = computed(() => {
     return 'Seleccionar';
 });
 
+// Computed para validar cupos con mensajes específicos
+const cupoMinError = computed(() => {
+    if (!tour.value.cupo_min) return '';
+
+    const cupoMin = parseInt(tour.value.cupo_min) || 0;
+    const cupoMax = parseInt(tour.value.cupo_max) || 0;
+
+    // Validar que el cupo mínimo sea mayor a 0
+    if (cupoMin <= 0) {
+        return 'El cupo mínimo debe ser al menos 1.';
+    }
+
+    const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
+    const capacidadTransporte = transporteSeleccionado ? transporteSeleccionado.capacidad : null;
+
+    if (capacidadTransporte && cupoMin > capacidadTransporte) {
+        return `El cupo mínimo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
+    }
+
+    if (tour.value.cupo_max && cupoMax > 0 && cupoMin >= cupoMax) {
+        return 'El cupo mínimo debe ser menor que el cupo máximo.';
+    }
+
+    return '';
+});
+
+const cupoMaxError = computed(() => {
+    if (!tour.value.cupo_max) return '';
+
+    const cupoMin = parseInt(tour.value.cupo_min) || 0;
+    const cupoMax = parseInt(tour.value.cupo_max) || 0;
+
+    // Validar que el cupo máximo sea mayor a 0
+    if (cupoMax <= 0) {
+        return 'El cupo máximo debe ser al menos 1.';
+    }
+
+    const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
+    const capacidadTransporte = transporteSeleccionado ? transporteSeleccionado.capacidad : null;
+
+    if (capacidadTransporte && cupoMax > capacidadTransporte) {
+        return `El cupo máximo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
+    }
+
+    if (tour.value.cupo_min && cupoMin > 0 && cupoMax <= cupoMin) {
+        return 'El cupo máximo debe ser mayor que el cupo mínimo.';
+    }
+
+    return '';
+});
+
+// Computed para obtener el límite máximo de cupos basado en el transporte seleccionado
+const maxCupoAllowed = computed(() => {
+    const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
+    return transporteSeleccionado ? transporteSeleccionado.capacidad : 30;
+});
+
 // Watcher para detectar cambios en el modal
 watch([tour, horaRegresoCalendar, incluyeLista, noIncluyeLista, imagenPreviewList, removedImages], () => {
     if (originalTourData.value && dialog.value) {
@@ -182,6 +239,26 @@ watch([tour, horaRegresoCalendar, incluyeLista, noIncluyeLista, imagenPreviewLis
         });
     }
 }, { deep: true, flush: 'post' });
+
+// Watcher para ajustar cupos cuando cambia el transporte
+watch(() => tour.value.transporte_id, (newTransporteId, oldTransporteId) => {
+    if (newTransporteId && newTransporteId !== oldTransporteId && dialog.value) {
+        const transporteSeleccionado = tipoTransportes.value.find(t => t.id === newTransporteId);
+        if (transporteSeleccionado) {
+            const capacidadMaxima = transporteSeleccionado.capacidad;
+
+            // Ajustar cupo_min si excede la nueva capacidad
+            if (tour.value.cupo_min && tour.value.cupo_min > capacidadMaxima) {
+                tour.value.cupo_min = capacidadMaxima;
+            }
+
+            // Ajustar cupo_max si excede la nueva capacidad
+            if (tour.value.cupo_max && tour.value.cupo_max > capacidadMaxima) {
+                tour.value.cupo_max = capacidadMaxima;
+            }
+        }
+    }
+});
 
 function resetForm() {
     tour.value = {
@@ -507,6 +584,15 @@ const saveOrUpdate = async () => {
     // Validar punto_salida específicamente
     if (!tour.value.punto_salida || tour.value.punto_salida.length < 5 || tour.value.punto_salida.length > 200) {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estén completos y cumplan los requisitos.", life: 4000 });
+        return;
+    }
+    // Validar cupos con la capacidad del transporte
+    if (cupoMinError.value) {
+        toast.add({ severity: "warn", summary: "Error en cupo mínimo", detail: cupoMinError.value, life: 4000 });
+        return;
+    }
+    if (cupoMaxError.value) {
+        toast.add({ severity: "warn", summary: "Error en cupo máximo", detail: cupoMaxError.value, life: 4000 });
         return;
     }
     // Validar cupos si están definidos
@@ -860,6 +946,31 @@ const validatePuntoSalida = () => {
 };
 
 const validateCupos = () => {
+    // Obtener la capacidad del transporte seleccionado
+    const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
+    const capacidadTransporte = transporteSeleccionado ? transporteSeleccionado.capacidad : null;
+
+    const cupoMin = parseInt(tour.value.cupo_min) || 0;
+    const cupoMax = parseInt(tour.value.cupo_max) || 0;
+
+    // Validar que los cupos sean al menos 1
+    if (tour.value.cupo_min && cupoMin < 1) {
+        return false;
+    }
+    if (tour.value.cupo_max && cupoMax < 1) {
+        return false;
+    }
+
+    // Validar que los cupos no excedan la capacidad del transporte
+    if (capacidadTransporte) {
+        if (tour.value.cupo_min && cupoMin > capacidadTransporte) {
+            return false;
+        }
+        if (tour.value.cupo_max && cupoMax > capacidadTransporte) {
+            return false;
+        }
+    }
+
     // Si se llena cupo_min, asegurar que cupo_max sea al menos cupo_min + 1
     if (tour.value.cupo_min && !tour.value.cupo_max) {
         // Si hay mínimo pero no máximo, sugerir un máximo
@@ -872,7 +983,7 @@ const validateCupos = () => {
     }
     // Si ambos están llenos, validar la lógica
     if (tour.value.cupo_min && tour.value.cupo_max) {
-        if (tour.value.cupo_min >= tour.value.cupo_max) {
+        if (cupoMin >= cupoMax) {
             return false;
         }
     }
@@ -1025,7 +1136,67 @@ const handleEstadoActualizado = async (tourActualizado) => {
     showCambiarEstadoDialog.value = false;
 };
 
-// Función para prevenir teclas no válidas en campos numéricos
+// Función para prevenir teclas no válidas en campos de cupos
+const onCupoKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control (Backspace, Tab, Escape, Enter, Delete, Home, End, Arrow keys)
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Solo permitir números
+    if (!/[0-9]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    const newValue = currentValue + key;
+    const num = parseInt(newValue);
+    const maxCapacidad = maxCupoAllowed.value;
+
+    // Prevenir que el valor sea 0 si es el primer carácter
+    if (newValue === '0' || (currentValue === '' && key === '0')) {
+        event.preventDefault();
+        return;
+    }
+
+    // Validar que no exceda la capacidad del transporte o el límite de 3 dígitos
+    if (newValue.length > 3 || num > maxCapacidad || num < 1) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para manejar paste en campos de cupos
+const onCupoPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    const numericValue = paste.replace(/[^0-9]/g, '');
+
+    if (numericValue) {
+        let num = parseInt(numericValue);
+        const maxCapacidad = maxCupoAllowed.value;
+
+        // Asegurar que el número sea al menos 1
+        if (num < 1) {
+            num = 1;
+        } else if (num > maxCapacidad) {
+            num = maxCapacidad;
+        }
+
+        // Determinar qué campo se está editando y asignar el valor
+        if (event.target.id.includes('cupo_min')) {
+            tour.value.cupo_min = num;
+        } else if (event.target.id.includes('cupo_max')) {
+            tour.value.cupo_max = num;
+        }
+    }
+};
+
+// Función para prevenir teclas no válidas en campos numéricos generales
 const onKeyDown = (event) => {
     const currentValue = event.target.value;
     const key = event.key;
@@ -1491,7 +1662,10 @@ const onPricePaste = (event) => {
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="w-full">
-                            <label for="cupo_min" class="flex items-center gap-1 mb-2">Cupo mínimo: <span class="text-red-500 font-bold">*</span></label>
+                            <label for="cupo_min" class="flex items-center gap-1 mb-2">
+                                Cupo mínimo: <span class="text-red-500 font-bold">*</span>
+                                <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(Máx: {{ maxCupoAllowed }})</small>
+                            </label>
                             <InputText
                                 v-model="tour.cupo_min"
                                 id="cupo_min"
@@ -1499,19 +1673,22 @@ const onPricePaste = (event) => {
                                 type="number"
                                 inputmode="numeric"
                                 min="1"
-                                max="30"
+                                :max="maxCupoAllowed"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                :class="{'p-invalid': (submitted && !tour.cupo_min) || (tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max),}"
-                                placeholder="1-30"
-                                @keydown="onKeyDown"
-                                @paste="onPaste"
+                                :class="{'p-invalid': (submitted && !tour.cupo_min) || cupoMinError}"
+                                :placeholder="`1-${maxCupoAllowed}`"
+                                @keydown="onCupoKeyDown"
+                                @paste="onCupoPaste"
                                 @input="validateCupos"
                             />
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_min">El cupo mínimo es obligatorio.</small>
-                            <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max" >Debe ser menor al máximo</small>
+                            <small class="text-red-500 block text-xs mt-1" v-if="cupoMinError">{{ cupoMinError }}</small>
                         </div>
                         <div class="w-full">
-                            <label for="cupo_max" class="flex items-center gap-1 mb-2">Cupo máximo: <span class="text-red-500 font-bold">*</span></label>
+                            <label for="cupo_max" class="flex items-center gap-1 mb-2">
+                                Cupo máximo: <span class="text-red-500 font-bold">*</span>
+                                <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(Máx: {{ maxCupoAllowed }})</small>
+                            </label>
                             <InputText
                                 v-model="tour.cupo_max"
                                 id="cupo_max"
@@ -1519,16 +1696,16 @@ const onPricePaste = (event) => {
                                 type="number"
                                 inputmode="numeric"
                                 min="1"
-                                max="30"
+                                :max="maxCupoAllowed"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                :class="{'p-invalid': (submitted && !tour.cupo_max) || (tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min),}"
-                                placeholder="1-30"
-                                @keydown="onKeyDown"
-                                @paste="onPaste"
+                                :class="{'p-invalid': (submitted && !tour.cupo_max) || cupoMaxError}"
+                                :placeholder="`1-${maxCupoAllowed}`"
+                                @keydown="onCupoKeyDown"
+                                @paste="onCupoPaste"
                                 @input="validateCupos"
                             />
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_max">El cupo máximo es obligatorio.</small>
-                            <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min">Debe ser mayor al mínimo</small>
+                            <small class="text-red-500 block text-xs mt-1" v-if="cupoMaxError">{{ cupoMaxError }}</small>
                         </div>
                     </div>
                     <div class="flex gap-4">
@@ -1630,7 +1807,7 @@ const onPricePaste = (event) => {
                         <button
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
-                            :disabled="isLoading"
+                            :disabled="isLoading || !!cupoMinError || !!cupoMaxError"
                         >
                             <FontAwesomeIcon
                                 :icon="isLoading ? faSpinner : faCheck"

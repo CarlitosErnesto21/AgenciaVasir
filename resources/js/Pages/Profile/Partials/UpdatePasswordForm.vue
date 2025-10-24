@@ -4,7 +4,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const passwordInput = ref(null);
 const currentPasswordInput = ref(null);
@@ -18,6 +18,41 @@ const form = useForm({
     current_password: '',
     password: '',
     password_confirmation: '',
+});
+
+// Validaciones reactivas de contraseña
+const passwordErrors = computed(() => {
+    const errors = [];
+    const value = form.password || '';
+    if (value.length > 0 && value.length < 8) {
+        errors.push('La contraseña debe tener al menos 8 caracteres.');
+    }
+    if (value.length > 0 && !/[A-Z]/.test(value)) {
+        errors.push('La contraseña debe incluir al menos una letra mayúscula.');
+    }
+    if (value.length > 0 && !/[0-9]/.test(value)) {
+        errors.push('La contraseña debe incluir al menos un número.');
+    }
+    if (value.length > 0 && /[\s.]/.test(value)) {
+        errors.push('La contraseña no puede contener espacios ni puntos.');
+    }
+    return errors;
+});
+
+// Validación reactiva para confirmar contraseña
+const passwordConfirmationError = computed(() => {
+    if (
+        form.password_confirmation.length > 0 &&
+        form.password !== form.password_confirmation
+    ) {
+        return 'Las contraseñas no coinciden.';
+    }
+    return '';
+});
+
+// Validación de campos obligatorios
+const isFormIncomplete = computed(() => {
+    return !form.current_password || !form.password || !form.password_confirmation;
 });
 
 const updatePassword = () => {
@@ -107,6 +142,9 @@ const updatePassword = () => {
                         </button>
                     </div>
                     <InputError :message="form.errors.password" class="text-red-600 text-sm" />
+                    <div v-if="passwordErrors.length" class="mt-1 text-xs text-red-500 space-y-1">
+                        <div v-for="(err, i) in passwordErrors" :key="i">{{ err }}</div>
+                    </div>
                 </div>
 
                 <!-- Confirmar Contraseña -->
@@ -139,6 +177,9 @@ const updatePassword = () => {
                         </button>
                     </div>
                     <InputError :message="form.errors.password_confirmation" class="text-red-600 text-sm" />
+                    <div v-if="passwordConfirmationError" class="mt-1 text-xs text-red-500">
+                        {{ passwordConfirmationError }}
+                    </div>
                 </div>
             </div>
                 
@@ -158,13 +199,17 @@ const updatePassword = () => {
                         <span class="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
                         Un número
                     </div>
+                    <div class="flex items-center col-span-1 sm:col-span-3">
+                        <span class="w-1 h-1 bg-red-500 rounded-full mr-2"></span>
+                        Sin espacios ni puntos
+                    </div>
                 </div>
             </div>
 
             <!-- Botones de acción -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-6 border-t border-gray-200">
                 <PrimaryButton 
-                    :disabled="form.processing"
+                    :disabled="form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete"
                     class="inline-flex items-center px-6 py-2.5 bg-red-600 text-white text-sm font-medium 
                            rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 
                            disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

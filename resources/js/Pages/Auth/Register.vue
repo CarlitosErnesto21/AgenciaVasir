@@ -39,6 +39,9 @@ const passwordErrors = computed(() => {
     if (value.length > 0 && !/[0-9]/.test(value)) {
         errors.push('La contraseña debe incluir al menos un número.');
     }
+    if (value.length > 0 && /[\s.]/.test(value)) {
+        errors.push('La contraseña no puede contener espacios ni puntos.');
+    }
     return errors;
 });
 

@@ -52,12 +52,21 @@ class TourController extends Controller
      */
     public function store(Request $request)
     {
+        // Primero validación básica para obtener transporte_id válido
+        $request->validate([
+            'transporte_id' => 'required|exists:transportes,id',
+        ]);
+
+        // Obtener la capacidad del transporte
+        $transporte = Transporte::find($request->transporte_id);
+        $capacidadMaxima = $transporte ? $transporte->capacidad : 30;
+
         $validated = $request->validate([
             'nombre' => 'required|string|max:200',
             'incluye' => 'nullable|string',
             'no_incluye' => 'nullable|string',
-            'cupo_min' => 'required|integer|min:1|max:30',
-            'cupo_max' => 'required|integer|min:1|max:30',
+            'cupo_min' => 'required|integer|min:1|max:' . $capacidadMaxima,
+            'cupo_max' => 'required|integer|min:1|max:' . $capacidadMaxima,
             'punto_salida' => 'required|string|max:200',
             'fecha_salida' => 'required|date|after:today',
             'fecha_regreso' => 'required|date|after:fecha_salida',
@@ -66,6 +75,9 @@ class TourController extends Controller
             'transporte_id' => 'required|exists:transportes,id',
             'imagenes' => 'nullable|array|max:5',
             'imagenes.*' => 'image|max:2048',
+        ], [
+            'cupo_min.max' => 'El cupo mínimo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
+            'cupo_max.max' => 'El cupo máximo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
         ]);
 
         // Preparar datos para crear el tour
@@ -126,12 +138,21 @@ class TourController extends Controller
      */
     public function update(Request $request, Tour $tour)
     {
+        // Primero validación básica para obtener transporte_id válido
+        $request->validate([
+            'transporte_id' => 'required|exists:transportes,id',
+        ]);
+
+        // Obtener la capacidad del transporte
+        $transporte = Transporte::find($request->transporte_id);
+        $capacidadMaxima = $transporte ? $transporte->capacidad : 30;
+
         $validated = $request->validate([
             'nombre' => 'required|string|max:200',
             'incluye' => 'nullable|string',
             'no_incluye' => 'nullable|string',
-            'cupo_min' => 'required|integer|min:1|max:30',
-            'cupo_max' => 'required|integer|min:1|max:30',
+            'cupo_min' => 'required|integer|min:1|max:' . $capacidadMaxima,
+            'cupo_max' => 'required|integer|min:1|max:' . $capacidadMaxima,
             'punto_salida' => 'required|string|max:200',
             'fecha_salida' => 'required|date',
             'fecha_regreso' => 'required|date',
@@ -141,6 +162,9 @@ class TourController extends Controller
             'imagenes' => 'nullable|array',
             'imagenes.*' => 'image|max:2048',
             'removed_images' => 'nullable|array',
+        ], [
+            'cupo_min.max' => 'El cupo mínimo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
+            'cupo_max.max' => 'El cupo máximo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
         ]);
 
         // Validar límite total de imágenes (existentes + nuevas - eliminadas)

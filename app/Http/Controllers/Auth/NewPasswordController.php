@@ -39,7 +39,18 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/[A-Z]/', // al menos una mayúscula
+                'regex:/[0-9]/', // al menos un número
+                'regex:/^[^\s.]*$/', // no espacios ni puntos
+            ],
+        ], [
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número, y no puede contener espacios ni puntos.',
+            'password.confirmed' => 'Las contraseñas no coinciden.'
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we

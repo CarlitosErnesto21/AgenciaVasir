@@ -47,6 +47,16 @@ const categoriasFiltradas = computed(() => {
     return filtered
 })
 
+// Validación reactiva para nombre duplicado
+const nombreDuplicado = computed(() => {
+    if (!categoria.value.nombre || categoria.value.nombre.length < 3) return false;
+    
+    return categorias.value.some(cat => 
+        cat.nombre.toLowerCase() === categoria.value.nombre.toLowerCase() && 
+        cat.id !== categoria.value.id // Excluir la categoría actual al editar
+    );
+});
+
 // Watcher para detectar cambios en el modal
 watch([categoria], () => {
     if (originalCategoriaData.value && dialog.value) {
@@ -125,6 +135,16 @@ const saveOrUpdate = async () => {
         return
     }
 
+    if (nombreDuplicado.value) {
+        toast.add({ 
+            severity: "warn", 
+            summary: "Categoría duplicada", 
+            detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`, 
+            life: 6000 
+        })
+        return
+    }
+
     try {
         if (!categoria.value.id) {
             await axios.post(`/api/categorias-productos`, { nombre: categoria.value.nombre })
@@ -144,8 +164,41 @@ const saveOrUpdate = async () => {
         originalCategoriaData.value = null
         resetForm()
     } catch (err) {
-        const mensaje = err.response?.data?.message || 'Error al procesar la categoría.'
-        toast.add({ severity: "error", summary: "Error", detail: mensaje, life: 6000 })
+        if (err.response && err.response.status === 422) {
+            // Error de validación
+            const errors = err.response.data.errors;
+            if (errors && errors.nombre) {
+                // Error específico del campo nombre (duplicado u otro)
+                const errorMessage = errors.nombre[0];
+                if (errorMessage.includes('unique') || errorMessage.includes('ya existe') || errorMessage.includes('duplicado')) {
+                    toast.add({ 
+                        severity: "warn", 
+                        summary: "Categoría duplicada", 
+                        detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`, 
+                        life: 6000 
+                    });
+                } else {
+                    toast.add({ 
+                        severity: "warn", 
+                        summary: "Error de validación", 
+                        detail: errorMessage, 
+                        life: 5000 
+                    });
+                }
+            } else {
+                // Otros errores de validación
+                toast.add({ 
+                    severity: "warn", 
+                    summary: "Error de validación", 
+                    detail: err.response.data.message || 'Por favor verifica los datos ingresados.', 
+                    life: 5000 
+                });
+            }
+        } else {
+            // Otros errores del servidor
+            const mensaje = err.response?.data?.message || 'Error al procesar la categoría.';
+            toast.add({ severity: "error", summary: "Error", detail: mensaje, life: 6000 });
+        }
     }
 }
 
@@ -283,7 +336,7 @@ const validateNombre = () => {
                                 id="nombre" 
                                 name="nombre" 
                                 :maxlength="50" 
-                                :class="{'p-invalid': submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)}" 
+                                :class="{'p-invalid': (submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)) || nombreDuplicado}" 
                                 class="flex-1" 
                                 @input="validateNombre"
                                 placeholder="Nombre de la categoría"
@@ -291,6 +344,9 @@ const validateNombre = () => {
                         </div>
                         <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
                             El nombre debe tener al menos 3 caracteres. Actual: {{ categoria.nombre.length }}/3
+                        </small>
+                        <small class="text-red-500 ml-28" v-if="nombreDuplicado">
+                            Ya existe una categoría con este nombre. Por favor, elige un nombre diferente.
                         </small>
                         <small class="text-orange-500 ml-28" v-if="categoria.nombre && categoria.nombre.length >= 45 && categoria.nombre.length <= 50">
                             Caracteres restantes: {{ 50 - categoria.nombre.length }}
@@ -312,8 +368,9 @@ const validateNombre = () => {
                             Cancelar
                         </button>
                         <button 
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
                             @click="saveOrUpdate"
+                            :disabled="nombreDuplicado"
                         >
                             <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
                             {{ btnTitle }}

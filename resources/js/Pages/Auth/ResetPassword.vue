@@ -5,7 +5,7 @@ import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 
 const props = defineProps({
     email: {
@@ -27,6 +27,41 @@ const form = useForm({
     email: props.email,
     password: '',
     password_confirmation: '',
+});
+
+// Validaciones reactivas de contraseña
+const passwordErrors = computed(() => {
+    const errors = [];
+    const value = form.password || '';
+    if (value.length > 0 && value.length < 8) {
+        errors.push('La contraseña debe tener al menos 8 caracteres.');
+    }
+    if (value.length > 0 && !/[A-Z]/.test(value)) {
+        errors.push('La contraseña debe incluir al menos una letra mayúscula.');
+    }
+    if (value.length > 0 && !/[0-9]/.test(value)) {
+        errors.push('La contraseña debe incluir al menos un número.');
+    }
+    if (value.length > 0 && /[\s.]/.test(value)) {
+        errors.push('La contraseña no puede contener espacios ni puntos.');
+    }
+    return errors;
+});
+
+// Validación reactiva para confirmar contraseña
+const passwordConfirmationError = computed(() => {
+    if (
+        form.password_confirmation.length > 0 &&
+        form.password !== form.password_confirmation
+    ) {
+        return 'Las contraseñas no coinciden.';
+    }
+    return '';
+});
+
+// Validación de campos obligatorios
+const isFormIncomplete = computed(() => {
+    return !form.password || !form.password_confirmation;
 });
 
 const submit = () => {
@@ -138,6 +173,9 @@ const submit = () => {
                         </div>
 
                         <InputError class="mt-2" :message="form.errors.password" />
+                        <div v-if="passwordErrors.length" class="mt-2 text-xs text-red-500 space-y-1">
+                            <div v-for="(err, i) in passwordErrors" :key="i">{{ err }}</div>
+                        </div>
                     </div>
 
                     <!-- Confirmar contraseña -->
@@ -170,6 +208,9 @@ const submit = () => {
                         </div>
 
                         <InputError class="mt-2" :message="form.errors.password_confirmation" />
+                        <div v-if="passwordConfirmationError" class="mt-2 text-xs text-red-500">
+                            {{ passwordConfirmationError }}
+                        </div>
                     </div>
 
                     <!-- ✅ Consejos de seguridad -->
@@ -179,7 +220,8 @@ const submit = () => {
                         </h4>
                         <ul class="text-xs text-yellow-700 space-y-1">
                             <li>• Mínimo 8 caracteres</li>
-                            <li>• Combina letras, números y símbolos</li>
+                            <li>• Incluye una letra mayúscula y un número</li>
+                            <li>• No uses espacios ni puntos</li>
                             <li>• Evita información personal</li>
                             <li>• No reutilices contraseñas de otras cuentas</li>
                         </ul>
@@ -189,8 +231,8 @@ const submit = () => {
                     <div class="pt-2">
                         <PrimaryButton
                             class="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500 focus:ring-offset-2 text-white font-medium py-2.5 sm:py-3 lg:py-4 px-4 sm:px-6 rounded-lg transition-colors duration-200 flex items-center justify-center text-sm sm:text-base"
-                            :class="{ 'opacity-75 cursor-not-allowed': form.processing }"
-                            :disabled="form.processing"
+                            :class="{ 'opacity-75 cursor-not-allowed': form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete }"
+                            :disabled="form.processing || passwordErrors.length || passwordConfirmationError || isFormIncomplete"
                         >
                             <svg v-if="form.processing" class="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
