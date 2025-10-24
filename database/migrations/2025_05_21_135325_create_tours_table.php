@@ -10,17 +10,17 @@ return new class extends Migration
     {
         Schema::create('tours', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
+            $table->string('nombre', 200);
             $table->enum('categoria', ['NACIONAL', 'INTERNACIONAL']);
             $table->text('incluye')->nullable();
             $table->text('no_incluye')->nullable();
             $table->integer('cupo_min');
             $table->integer('cupo_max');
-            $table->string('punto_salida');
+            $table->string('punto_salida', 200);
             $table->datetime('fecha_salida');
             $table->datetime('fecha_regreso');
             $table->enum('estado', ['DISPONIBLE', 'AGOTADO', 'EN_CURSO', 'COMPLETADO', 'CANCELADO', 'SUSPENDIDO', 'REPROGRAMADO'])->default('DISPONIBLE');
-                        $table->decimal('precio', 10, 2);
+                        $table->decimal('precio', 6, 2);
             // llave foránea a transportes
             $table->unsignedBigInteger('transporte_id');
             $table->foreign('transporte_id')->references('id')->on('transportes')->onDelete('cascade');

@@ -306,7 +306,7 @@ defineOptions({
 
             <div class="mt-6 pt-4 border-t border-gray-200 text-center">
                 <p class="text-xs text-gray-500">
-                    💡 Selecciona una acción para continuar
+                    💡 Selecciona una acción para continuar.
                 </p>
             </div>
         </div>
@@ -318,7 +318,7 @@ defineOptions({
                     class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeModal"
                 >
-                    <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />Cerrar
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" />Cerrar
                 </button>
             </div>
         </template>
@@ -481,18 +481,18 @@ defineOptions({
             <div class="mb-4 text-sm text-gray-600 text-center">
                 Imagen {{ currentPageIndex + 1 }} de {{ props.selectedImages.length }}
             </div>
-            
+
             <!-- Carrusel personalizado con navegación manual -->
             <div class="relative w-full" style="max-width: 610px">
                 <!-- Imagen actual -->
                 <div class="flex justify-center items-center w-full h-96 bg-gray-50 rounded-lg">
-                    <img 
-                        :src="props.selectedImages[currentPageIndex]" 
-                        :alt="`Imagen ${currentPageIndex + 1} del tour`" 
+                    <img
+                        :src="props.selectedImages[currentPageIndex]"
+                        :alt="`Imagen ${currentPageIndex + 1} del tour`"
                         class="w-auto h-full max-h-96 object-contain rounded shadow"
                     />
                 </div>
-                
+
                 <!-- Navegadores -->
                 <template v-if="props.selectedImages.length > 1">
                     <!-- Botón anterior -->
@@ -505,7 +505,7 @@ defineOptions({
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
                         </svg>
                     </button>
-                    
+
                     <!-- Botón siguiente -->
                     <button
                         type="button"
@@ -517,7 +517,7 @@ defineOptions({
                         </svg>
                     </button>
                 </template>
-                
+
                 <!-- Indicadores -->
                 <div v-if="props.selectedImages.length > 1" class="flex justify-center mt-4 space-x-2">
                     <button

@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('descripcion', 255);
             $table->decimal('precio', 6, 2);
             $table->integer('stock_actual')->default(0);
-            $table->integer('stock_minimo')->default(0);
+            $table->integer('stock_minimo')->default(1);
 
             //Llaves foráneas
             $table->unsignedBigInteger('categoria_id');

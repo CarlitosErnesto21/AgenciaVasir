@@ -402,6 +402,9 @@ const clearFilters = async () => {
     isClearingFilters.value = true;
 
     try {
+        // Simular un pequeño delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 300));
+
         selectedCategoria.value = null;
         selectedTipoTransporte.value = null;
         selectedEstado.value = null;
@@ -520,7 +523,7 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y asegúrate de que sean correctas.", life: 4000 });
         return;
     }
-    if (!tour.value.fecha_salida || !tour.value.precio || !tour.value.categoria || !tour.value.transporte_id || imagenPreviewList.value.length === 0) {
+    if (!tour.value.fecha_salida || !tour.value.precio || !tour.value.categoria || !tour.value.transporte_id || !tour.value.cupo_min || !tour.value.cupo_max || imagenPreviewList.value.length === 0) {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estén completos.", life: 4000 });
         return;
     }
@@ -1042,8 +1045,8 @@ const onKeyDown = (event) => {
     const newValue = currentValue + key;
     const num = parseInt(newValue);
 
-    // Limitar a 3 dígitos y máximo 500
-    if (newValue.length > 3 || num > 500) {
+    // Limitar a 2 dígitos y máximo 30
+    if (newValue.length > 2 || num > 30) {
         event.preventDefault();
         return;
     }
@@ -1057,8 +1060,8 @@ const onPaste = (event) => {
 
     if (numericValue) {
         let num = parseInt(numericValue);
-        if (num > 500) {
-            num = 500;
+        if (num > 30) {
+            num = 30;
         }
         event.target.value = num.toString();
         // Triggear el evento input para actualizar v-model
@@ -1089,10 +1092,10 @@ const onPriceKeyDown = (event) => {
         return;
     }
 
-    // Validar formato de precio: máximo 3 dígitos antes del punto y 2 después
+    // Validar formato de precio: máximo 4 dígitos antes del punto y 2 después
     if (key !== '.') {
         const parts = currentValue.split('.');
-        if (parts[0].length >= 3 && !currentValue.includes('.')) {
+        if (parts[0].length >= 4 && !currentValue.includes('.')) {
             event.preventDefault();
             return;
         }
@@ -1102,10 +1105,10 @@ const onPriceKeyDown = (event) => {
         }
     }
 
-    // Validar que no exceda 999.99
+    // Validar que no exceda 9999.99
     const newValue = currentValue + key;
     const numValue = parseFloat(newValue);
-    if (numValue > 999.99) {
+    if (numValue > 9999.99) {
         event.preventDefault();
         return;
     }
@@ -1134,8 +1137,8 @@ const onPricePaste = (event) => {
     const num = parseFloat(numericValue);
     if (isNaN(num)) return;
 
-    // Limitar a máximo 999.99
-    const limitedNum = Math.min(num, 999.99);
+    // Limitar a máximo 9999.99
+    const limitedNum = Math.min(num, 9999.99);
 
     // Formatear a máximo 2 decimales
     const formattedValue = limitedNum.toFixed(2);
@@ -1168,7 +1171,8 @@ const onPricePaste = (event) => {
                         <span>{{ isNavigatingToTransportes ? 'Cargando...' : 'Control Transportes' }}</span>
                     </Link>
                     <button
-                        class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
+                        class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                        @click="openNew">
                         <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar Tour</span>
                     </button>
                 </div>
@@ -1389,9 +1393,9 @@ const onPricePaste = (event) => {
                         </div>
                     </template>
                 </Column>
-
-
             </DataTable>
+
+            <!-- Modal del formulario -->
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Tour'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
@@ -1487,7 +1491,7 @@ const onPricePaste = (event) => {
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="w-full">
-                            <label for="cupo_min" class="block mb-2">Cupo mínimo:</label>
+                            <label for="cupo_min" class="flex items-center gap-1 mb-2">Cupo mínimo: <span class="text-red-500 font-bold">*</span></label>
                             <InputText
                                 v-model="tour.cupo_min"
                                 id="cupo_min"
@@ -1495,18 +1499,19 @@ const onPricePaste = (event) => {
                                 type="number"
                                 inputmode="numeric"
                                 min="1"
-                                max="500"
+                                max="30"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max,}"
-                                placeholder="1-500"
+                                :class="{'p-invalid': (submitted && !tour.cupo_min) || (tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max),}"
+                                placeholder="1-30"
                                 @keydown="onKeyDown"
                                 @paste="onPaste"
                                 @input="validateCupos"
                             />
+                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_min">El cupo mínimo es obligatorio.</small>
                             <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_min >= tour.cupo_max" >Debe ser menor al máximo</small>
                         </div>
                         <div class="w-full">
-                            <label for="cupo_max" class="block mb-2">Cupo máximo:</label>
+                            <label for="cupo_max" class="flex items-center gap-1 mb-2">Cupo máximo: <span class="text-red-500 font-bold">*</span></label>
                             <InputText
                                 v-model="tour.cupo_max"
                                 id="cupo_max"
@@ -1514,14 +1519,15 @@ const onPricePaste = (event) => {
                                 type="number"
                                 inputmode="numeric"
                                 min="1"
-                                max="500"
+                                max="30"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                :class="{'p-invalid': tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min,}"
-                                placeholder="1-500"
+                                :class="{'p-invalid': (submitted && !tour.cupo_max) || (tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min),}"
+                                placeholder="1-30"
                                 @keydown="onKeyDown"
                                 @paste="onPaste"
                                 @input="validateCupos"
                             />
+                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_max">El cupo máximo es obligatorio.</small>
                             <small class="text-red-500 block text-xs mt-1" v-if="tour.cupo_min && tour.cupo_max && tour.cupo_max <= tour.cupo_min">Debe ser mayor al mínimo</small>
                         </div>
                     </div>
@@ -1556,14 +1562,14 @@ const onPricePaste = (event) => {
                                     type="text"
                                     inputmode="decimal"
                                     class="w-full pl-8 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                    :class="{'p-invalid': submitted && (!tour.precio || tour.precio <= 0 || tour.precio > 999.99),}"
+                                    :class="{'p-invalid': submitted && (!tour.precio || tour.precio < 0.01 || tour.precio > 9999.99),}"
                                     placeholder="0.00"
                                     @keydown="onPriceKeyDown"
                                     @paste="onPricePaste"
                                 />
                             </div>
                         </div>
-                        <small class="text-red-500 ml-28" v-if=" submitted && (tour.precio == null || tour.precio <= 0 || tour.precio > 999.99)">El precio es obligatorio, debe ser mayor a 0 y menor o igual a 999.99.</small>
+                        <small class="text-red-500 ml-28" v-if=" submitted && (tour.precio == null || tour.precio < 0.01 || tour.precio > 9999.99)">El precio es obligatorio, debe ser mayor o igual a 0.01 y menor o igual a 9999.99.</small>
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-5">
@@ -1679,7 +1685,6 @@ const onPricePaste = (event) => {
         </div>
     </AuthenticatedLayout>
 </template>
-
 
 <style>
 /* Estilos para el dropdown del Select de PrimeVue */

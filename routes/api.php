@@ -103,10 +103,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
-        
+
         // Rutas adicionales para tours
         Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
-        
+
         Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
         Route::apiResource('ventas', VentaController::class);
@@ -156,6 +156,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/stock-bajo', [ProductoController::class, 'stockBajo']);
             Route::get('/agotados', [ProductoController::class, 'agotados']);
         });
+
+        // Ruta específica para actualizar stock de productos
+        Route::patch('productos/{id}/actualizar-stock', [ProductoController::class, 'actualizarStock']);
 
         // Rutas adicionales específicas para ventas (sin conflicto)
         // Route::prefix('ventas')->group(function () {

@@ -238,8 +238,22 @@ const saveOrUpdate = async () => {
         originalTransporteData.value = null;
         resetForm();
     } catch (err) {
-        if (err.response && err.response.data && err.response.data.errors && err.response.data.errors.numero_placa) {
-            toast.add({ severity: "error", summary: "Error", detail: err.response.data.errors.numero_placa[0], life: 4000 });
+        if (err.response && err.response.data && err.response.data.errors) {
+            const errors = err.response.data.errors;
+            
+            // Mostrar error de placa si existe
+            if (errors.numero_placa) {
+                toast.add({ severity: "error", summary: "Error", detail: errors.numero_placa[0], life: 4000 });
+            }
+            // Mostrar error de nombre si existe
+            else if (errors.nombre) {
+                toast.add({ severity: "error", summary: "Error", detail: errors.nombre[0], life: 4000 });
+            }
+            // Mostrar el primer error disponible si hay otros
+            else {
+                const firstErrorKey = Object.keys(errors)[0];
+                toast.add({ severity: "error", summary: "Error", detail: errors[firstErrorKey][0], life: 4000 });
+            }
         } else {
             toast.add({ severity: "error", summary: "Error", detail: "No se pudo guardar el transporte.", life: 4000 });
         }

@@ -5,7 +5,8 @@ import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faFilter, faImages, faListDots, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
+import ProductoModals from "./Components/ProductoComponents/Modales.vue";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
@@ -18,8 +19,8 @@ const producto = ref({
     nombre: "",
     descripcion: "",
     precio: null,
-    stock_actual: 0,
-    stock_minimo: 1,
+    stock_actual: null,
+    stock_minimo: null,
     categoria_id: null,
 });
 
@@ -37,6 +38,21 @@ const unsavedChangesDialog = ref(false);
 const submitted = ref(false);
 const hasUnsavedChanges = ref(false);
 const originalProductData = ref(null);
+
+// Variables para modales de productos
+const moreActionsDialog = ref(false);
+const showImageCarouselDialog = ref(false);
+const selectedProduct = ref(null);
+const updateStockDialog = ref(false);
+
+// Variables de loading
+const isNavigatingToCategorias = ref(false);
+const isDeleting = ref(false);
+const isClearingFilters = ref(false);
+const isUploadingImages = ref(false);
+const isOpeningGallery = ref(false);
+const isLoading = ref(false);
+const isLoadingTable = ref(true);
 
 // 📂 Datos de apoyo
 const categorias = ref([]);
@@ -99,6 +115,19 @@ const filteredProductos = computed(() => {
     return filtered;
 });
 
+// Computed para verificar si se puede agregar más imágenes
+const canAddMoreImages = computed(() => {
+    return imagenPreviewList.value.length < 5;
+});
+
+// Computed para el texto del botón de imágenes
+const imageButtonText = computed(() => {
+    if (isUploadingImages.value) return 'Cargando...';
+    if (isOpeningGallery.value) return 'Abriendo...';
+    if (!canAddMoreImages.value) return 'Límite alcanzado';
+    return 'Seleccionar';
+});
+
 // 🎨 Función para determinar estado del stock
 const getEstadoStock = (producto) => {
     if (producto.stock_actual <= 0) {
@@ -155,8 +184,8 @@ function resetForm() {
         nombre: "",
         descripcion: "",
         precio: null,
-        stock_actual: 0,
-        stock_minimo: 1,
+        stock_actual: null,
+        stock_minimo: null,
         categoria_id: null,
     };
     imagenPreviewList.value = [];
@@ -167,7 +196,7 @@ function resetForm() {
 
 // 📊 Cargar datos
 onMounted(() => {
-    fetchProductos();
+    fetchProductosWithToasts();
     fetchCategorias();
 });
 
@@ -191,6 +220,48 @@ const fetchProductos = async () => {
             detail: "No se pudieron cargar los productos.",
             life: 4000
         });
+    }
+};
+
+const fetchProductosWithToasts = async () => {
+    isLoadingTable.value = true;
+
+    // Mostrar toast de carga con duración automática
+    toast.add({
+        severity: "info",
+        summary: "Cargando productos...",
+        life: 2000
+    });
+
+    try {
+        const response = await axios.get(url);
+        productos.value = (response.data.data || response.data || []).map((p) => ({
+            ...p,
+            imagenes: (p.imagenes || []).map((img) =>
+                typeof img === "string" ? img : img.nombre
+            ),
+        })).sort((a, b) => {
+            const dateA = new Date(a.created_at);
+            const dateB = new Date(b.created_at);
+            return dateB - dateA;
+        });
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Productos cargados",
+            life: 2000
+        });
+
+    } catch (err) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "No se pudieron cargar los productos.",
+            life: 4000
+        });
+    } finally {
+        isLoadingTable.value = false;
     }
 };
 
@@ -218,18 +289,33 @@ const onEstadoFilterChange = () => {
     filters.value.estado.value = selectedEstado.value;
 };
 
-const clearFilters = () => {
-    selectedCategoria.value = null;
-    selectedEstado.value = null;
-    filters.value.global.value = null;
-    filters.value.categoria.value = null;
-    filters.value.estado.value = null;
-    toast.add({
-        severity: "info",
-        summary: "Filtros limpiados",
-        detail: "Se han removido todos los filtros aplicados.",
-        life: 3000
-    });
+const clearFilters = async () => {
+    isClearingFilters.value = true;
+
+    try {
+        // Simular un pequeño delay para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        selectedCategoria.value = null;
+        selectedEstado.value = null;
+        filters.value.global.value = null;
+        filters.value.categoria.value = null;
+        filters.value.estado.value = null;
+
+        toast.add({
+            severity: "success",
+            summary: "Filtros limpiados",
+            life: 2000
+        });
+    } finally {
+        isClearingFilters.value = false;
+    }
+};
+
+// Función para manejar el clic en el enlace de categorías
+const handleCategoriasClick = () => {
+    isNavigatingToCategorias.value = true;
+    // El estado de loading se resetea automáticamente cuando se cambia de página
 };
 
 // 📝 CRUD Operations
@@ -300,8 +386,19 @@ const saveOrUpdate = async () => {
         return;
     }
 
+    // Validar campos de stock solo para productos nuevos
+    if (!producto.value.id && (producto.value.stock_actual === null || producto.value.stock_minimo === null)) {
+        toast.add({
+            severity: "warn",
+            summary: "Campos requeridos",
+            detail: "Para productos nuevos, el stock actual y mínimo son obligatorios.",
+            life: 4000
+        });
+        return;
+    }
+
     // Validar precio
-    if (producto.value.precio <= 0 || producto.value.precio > 999.99) {
+    if (producto.value.precio <= 0 || producto.value.precio > 9999.99) {
         toast.add({
             severity: "warn",
             summary: "Verificar datos",
@@ -311,8 +408,10 @@ const saveOrUpdate = async () => {
         return;
     }
 
-    // Validar stock
-    if (producto.value.stock_actual < 0 || producto.value.stock_minimo < 1) {
+    // Validar stock solo para productos nuevos
+    if (!producto.value.id && 
+        ((producto.value.stock_actual !== null && producto.value.stock_actual < 0) ||
+         (producto.value.stock_minimo !== null && producto.value.stock_minimo < 1))) {
         toast.add({
             severity: "warn",
             summary: "Verificar datos",
@@ -336,13 +435,19 @@ const saveOrUpdate = async () => {
     }
 
     try {
+        isLoading.value = true;
+
         const formData = new FormData();
         formData.append("nombre", producto.value.nombre || "");
         formData.append("descripcion", producto.value.descripcion || "");
         formData.append("precio", producto.value.precio || "");
-        formData.append("stock_actual", producto.value.stock_actual || "0");
-        formData.append("stock_minimo", producto.value.stock_minimo || "1");
         formData.append("categoria_id", producto.value.categoria_id || "");
+
+        // Solo incluir campos de stock para productos nuevos
+        if (!producto.value.id) {
+            formData.append("stock_actual", producto.value.stock_actual || "0");
+            formData.append("stock_minimo", producto.value.stock_minimo || "1");
+        }
 
         // Agregar imágenes nuevas
         imagenFiles.value.forEach(f => formData.append("imagenes[]", f));
@@ -389,6 +494,8 @@ const saveOrUpdate = async () => {
             detail: "Por favor revisa los campos e intenta nuevamente.",
             life: 6000
         });
+    } finally {
+        isLoading.value = false;
     }
 };
 
@@ -399,6 +506,7 @@ const confirmDeleteProduct = (p) => {
 
 // 🚀 MEJORADO: Función para eliminar con mejor manejo de errores
 const deleteProduct = async () => {
+    isDeleting.value = true;
     try {
         await axios.delete(`${url}/${producto.value.id}`);
         await fetchProductos();
@@ -459,6 +567,8 @@ const deleteProduct = async () => {
                 life: 6000
             });
         }
+    } finally {
+        isDeleting.value = false;
     }
 };
 
@@ -483,39 +593,254 @@ const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
 
+// Funciones para manejar los modales de productos
+const openMoreActionsModal = (productData) => {
+    selectedProduct.value = productData;
+    moreActionsDialog.value = true;
+};
+
+const handleDuplicateProduct = (product) => {
+    toast.add({
+        severity: "info",
+        summary: "Duplicar Producto",
+        detail: `Funcionalidad de duplicar producto "${product.nombre}" en desarrollo.`,
+        life: 5000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleUpdateStock = (product) => {
+    moreActionsDialog.value = false;
+    selectedProduct.value = product;
+    updateStockDialog.value = true;
+};
+
+const handleGenerateReport = (product) => {
+    toast.add({
+        severity: "info",
+        summary: "Generar Reporte",
+        detail: `Funcionalidad de generar reporte del producto "${product.nombre}" en desarrollo.`,
+        life: 5000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleArchiveProduct = (product) => {
+    toast.add({
+        severity: "info",
+        summary: "Archivar Producto",
+        detail: `Funcionalidad de archivar producto "${product.nombre}" en desarrollo.`,
+        life: 5000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleViewDetails = (product) => {
+    moreActionsDialog.value = false;
+    selectedProduct.value = product;
+    showImageDialog.value = true;
+};
+
+const handleStockUpdated = async (responseData) => {
+    // El backend devuelve { data: { producto: {...}, movimiento: {...} } }
+    const updatedProduct = responseData.data?.producto || responseData.producto || responseData;
+    
+    if (!updatedProduct || !updatedProduct.id) {
+        console.error('No se pudo obtener el producto actualizado');
+        return;
+    }
+    
+    // Actualizar el producto en la lista principal (reactivo)
+    const index = productos.value.findIndex(p => p.id === updatedProduct.id);
+    if (index !== -1) {
+        // Mantener las relaciones existentes y solo actualizar campos específicos
+        productos.value[index] = {
+            ...productos.value[index],
+            stock_actual: updatedProduct.stock_actual,
+            stock_minimo: updatedProduct.stock_minimo,
+            updated_at: updatedProduct.updated_at
+        };
+    }
+    
+    // Actualizar selectedProduct si es el mismo producto que se está viendo
+    if (selectedProduct.value && selectedProduct.value.id === updatedProduct.id) {
+        selectedProduct.value = {
+            ...selectedProduct.value,
+            stock_actual: updatedProduct.stock_actual,
+            stock_minimo: updatedProduct.stock_minimo,
+            updated_at: updatedProduct.updated_at
+        };
+    }
+    
+    // Cerrar el modal de actualización de stock
+    updateStockDialog.value = false;
+    
+    // Mostrar toast de confirmación
+    toast.add({
+        severity: "success",
+        summary: "Stock actualizado",
+        detail: `El stock de "${updatedProduct.nombre}" se ha actualizado correctamente.`,
+        life: 3000
+    });
+    
+    // Forzar reactividad en caso de que Vue no detecte el cambio
+    await nextTick();
+};
+
+const openImageModal = (index) => {
+    if (selectedProduct.value && selectedProduct.value.imagenes && selectedProduct.value.imagenes.length > 0) {
+        selectedImages.value = selectedProduct.value.imagenes.map(img => {
+            const imageName = typeof img === "string" ? img : img.nombre;
+            return IMAGE_PATH + imageName;
+        });
+
+        const validIndex = Math.max(0, Math.min(index, selectedImages.value.length - 1));
+        carouselIndex.value = validIndex;
+
+        setTimeout(() => {
+            showImageCarouselDialog.value = true;
+        }, 50);
+    } else {
+        toast.add({
+            severity: "warn",
+            summary: "Sin imágenes",
+            detail: "No hay imágenes disponibles para mostrar.",
+            life: 5000
+        });
+    }
+};
+
+// Función para manejar el clic en la fila
+const onRowClick = (event) => {
+    // Verificar si el clic fue en un botón para evitar abrir el modal
+    const target = event.originalEvent.target;
+    const isButton = target.closest('button');
+
+    if (!isButton) {
+        selectedProduct.value = event.data;
+        showImageDialog.value = true;
+    }
+};
+
+// Variable reactiva para el ancho de ventana (si no existe)
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) {
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) {
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
+
 // 🖼️ Manejo de imágenes
-const onImageSelect = (event) => {
+// Función para manejar el clic del botón de subir imágenes
+const handleImageUploadClick = async () => {
+    isOpeningGallery.value = true;
+
+    try {
+        // Simular una pequeña demora para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 100));
+        fileInput.value.click();
+    } finally {
+        // Restablecer el estado después de un breve delay
+        setTimeout(() => {
+            isOpeningGallery.value = false;
+        }, 200);
+    }
+};
+
+const onImageSelect = async (event) => {
     const files = event.target ? event.target.files : event.files;
     const maxSize = 2 * 1024 * 1024; // 2MB en bytes
 
-    for (const file of files) {
-        if (file instanceof File) {
-            // Validar tamaño del archivo
-            if (file.size > maxSize) {
-                toast.add({
-                    severity: "warn",
-                    summary: "Archivo no válido",
-                    detail: "Por favor selecciona archivos que cumplan con los requisitos de tamaño (máximo 2MB).",
-                    life: 5000
-                });
-                continue;
-            }
+    if (!files || files.length === 0) return;
 
-            // Validar tipo de archivo
-            if (!file.type.startsWith('image/')) {
-                toast.add({
-                    severity: "warn",
-                    summary: "Formato no válido",
-                    detail: "Por favor selecciona únicamente archivos de imagen válidos.",
-                    life: 4000
-                });
-                continue;
-            }
+    // Verificar límite de imágenes
+    const imagenesTotales = imagenPreviewList.value.length + files.length;
+    if (imagenesTotales > 5) {
+        toast.add({
+            severity: "warn",
+            summary: "Límite de imágenes",
+            detail: `Solo puedes subir máximo 5 imágenes. Actualmente tienes ${imagenPreviewList.value.length} y estás intentando agregar ${files.length}.`,
+            life: 5000
+        });
+        return;
+    }
 
-            imagenFiles.value.push(file);
-            const reader = new FileReader();
-            reader.onload = (e) => imagenPreviewList.value.push(e.target.result);
-            reader.readAsDataURL(file);
+    isUploadingImages.value = true;
+
+    try {
+        for (const file of files) {
+            if (file instanceof File) {
+                // Verificar límite individual antes de procesar cada archivo
+                if (imagenPreviewList.value.length >= 5) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Límite alcanzado",
+                        detail: "Has alcanzado el límite máximo de 5 imágenes.",
+                        life: 4000
+                    });
+                    break;
+                }
+
+                // Validar tamaño del archivo
+                if (file.size > maxSize) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Archivo demasiado grande",
+                        detail: `El archivo "${file.name}" excede el tamaño máximo de 2MB.`,
+                        life: 5000
+                    });
+                    continue;
+                }
+
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Formato no válido",
+                        detail: `El archivo "${file.name}" no es una imagen válida.`,
+                        life: 4000
+                    });
+                    continue;
+                }
+
+                // Simular procesamiento
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+                imagenFiles.value.push(file);
+                const reader = new FileReader();
+                reader.onload = (e) => imagenPreviewList.value.push(e.target.result);
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Mostrar mensaje de éxito
+        if (files.length > 0) {
+            toast.add({
+                severity: "success",
+                summary: "Imágenes cargadas",
+                detail: `Se han cargado ${files.length} imagen(es) correctamente.`,
+                life: 3000
+            });
+        }
+
+    } catch (error) {
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "Ocurrió un error al procesar las imágenes.",
+            life: 4000
+        });
+    } finally {
+        isUploadingImages.value = false;
+        // Limpiar el input para permitir seleccionar los mismos archivos nuevamente
+        if (event.target) {
+            event.target.value = '';
         }
     }
 };
@@ -533,7 +858,8 @@ const removeImage = (index) => {
 
 const viewImages = (imagenesProducto) => {
     selectedImages.value = (imagenesProducto||[]).map(img=>IMAGE_PATH+(typeof img==="string"?img:img.nombre));
-    showImageDialog.value = true;
+    carouselIndex.value = 0;
+    showImageCarouselDialog.value = true;
 };
 
 // ✅ Validaciones en tiempo real
@@ -548,26 +874,203 @@ const validateDescripcion = () => {
         producto.value.descripcion = producto.value.descripcion.substring(0, 255);
     }
 };
+
+// Función para prevenir teclas no válidas en campo de precio
+const onPriceKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Permitir números y punto decimal
+    if (!/[0-9.]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    // No permitir más de un punto decimal
+    if (key === '.' && currentValue.includes('.')) {
+        event.preventDefault();
+        return;
+    }
+
+    // Validar formato de precio: máximo 3 dígitos antes del punto y 2 después
+    if (key !== '.') {
+        const parts = currentValue.split('.');
+        if (parts[0].length >= 3 && !currentValue.includes('.')) {
+            event.preventDefault();
+            return;
+        }
+        if (parts.length > 1 && parts[1].length >= 2) {
+            event.preventDefault();
+            return;
+        }
+    }
+
+    // Validar que no exceda 9999.99
+    const newValue = currentValue + key;
+    const numValue = parseFloat(newValue);
+    if (numValue > 9999.99) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para manejar paste en campo de precio
+const onPricePaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+
+    // Filtrar solo números y punto decimal, removiendo cualquier otro carácter
+    let numericValue = paste.replace(/[^\d.]/g, '');
+
+    // Si no hay contenido numérico válido, no hacer nada
+    if (!numericValue || numericValue === '.') return;
+
+    // Verificar que solo tenga un punto decimal
+    const dotCount = (numericValue.match(/\./g) || []).length;
+    if (dotCount > 1) {
+        // Si hay múltiples puntos, mantener solo el primero
+        const firstDotIndex = numericValue.indexOf('.');
+        numericValue = numericValue.substring(0, firstDotIndex + 1) + numericValue.substring(firstDotIndex + 1).replace(/\./g, '');
+    }
+
+    // Convertir a número y validar
+    const num = parseFloat(numericValue);
+    if (isNaN(num)) return;
+
+    // Limitar a máximo 9999.99
+    const limitedNum = Math.min(num, 9999.99);
+
+    // Formatear a máximo 2 decimales
+    const formattedValue = limitedNum.toFixed(2);
+
+    // Actualizar el modelo de Vue
+    producto.value.precio = formattedValue;
+
+    // También actualizar el campo input para sincronización
+    event.target.value = formattedValue;
+};
+
+// Función para prevenir teclas no válidas en campos de stock
+const onStockKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control (Backspace, Tab, Escape, Enter, Delete, Home, End, Arrow keys)
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Solo permitir números
+    if (!/[0-9]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    const newValue = currentValue + key;
+    const num = parseInt(newValue);
+
+    // Limitar a máximo 4 dígitos y máximo 9999
+    if (newValue.length > 4 || num > 9999) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para limpiar valor en caso de paste en campos de stock
+const onStockPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    const numericValue = paste.replace(/[^0-9]/g, '');
+
+    if (numericValue) {
+        let num = parseInt(numericValue);
+        if (num > 9999) {
+            num = 9999;
+        }
+        event.target.value = num.toString();
+        // Triggear el evento input para actualizar v-model
+        event.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+};
+
+// Función para prevenir teclas no válidas en campo de stock mínimo
+const onStockMinimoKeyDown = (event) => {
+    const currentValue = event.target.value;
+    const key = event.key;
+
+    // Permitir teclas de control
+    if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
+        (event.ctrlKey && [65, 67, 86, 88].includes(event.keyCode))) {
+        return;
+    }
+
+    // Solo permitir números
+    if (!/[0-9]/.test(key)) {
+        event.preventDefault();
+        return;
+    }
+
+    const newValue = currentValue + key;
+    const num = parseInt(newValue);
+
+    // Limitar a máximo 3 dígitos y máximo 100, mínimo 1
+    if (newValue.length > 3 || num > 100) {
+        event.preventDefault();
+        return;
+    }
+};
+
+// Función para limpiar valor en caso de paste en stock mínimo
+const onStockMinimoPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    const numericValue = paste.replace(/[^0-9]/g, '');
+
+    if (numericValue) {
+        let num = parseInt(numericValue);
+        if (num > 100) {
+            num = 100;
+        }
+        if (num < 1) {
+            num = 1;
+        }
+        event.target.value = num.toString();
+        // Triggear el evento input para actualizar v-model
+        event.target.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+};
 </script>
 
 <template>
     <Head title="Productos" />
     <AuthenticatedLayout>
         <Toast class="z-[9999]" />
-        <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-md rounded-lg h-screen-full">
-            <div class="flex flex-col lg:flex-row lg:justify-between lg:items-center mb-4 gap-4">
-                <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Catálogo de Productos</h3>
-                <div class="flex flex-col sm:flex-row items-center gap-2 w-full lg:w-auto lg:justify-end">
-                    <Link :href="route('catProductos')"
-                         class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300">
-                        <FontAwesomeIcon :icon="faTags" class="h-4"/>
-                        <span>&nbsp;Gestionar categorías</span>
+        <div class="px-auto md:px-2 mt-6">
+            <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4">
+                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start ml-0 sm:ml-4">Catálogo de Productos</h3>
+                <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:jusfify-end mr-0 sm:mr-4">
+                    <Link
+                        :href="route('catProductos')"
+                        @click="handleCategoriasClick"
+                        :class="{'opacity-50 cursor-not-allowed': isNavigatingToCategorias}"
+                        class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2">
+                        <FontAwesomeIcon
+                            :icon="isNavigatingToCategorias ? faSpinner : faTags"
+                            :class="{'animate-spin': isNavigatingToCategorias, 'h-4': true}"
+                        />
+                        <span>{{ isNavigatingToCategorias ? 'Cargando...' : 'Gestionar categorías' }}</span>
                     </Link>
                     <button
                         class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                         @click="openNew">
-                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" />
-                        <span>&nbsp;Agregar producto</span>
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar producto</span>
                     </button>
                 </div>
             </div>
@@ -582,8 +1085,8 @@ const validateDescripcion = () => {
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} productos"
                 class="overflow-x-auto max-w-full"
-                style="display: block; max-width: 84vw"
                 responsiveLayout="scroll"
+                @row-click="onRowClick"
                 :pt="{
                     root: { class: 'text-sm' },
                     wrapper: { class: 'text-sm' },
@@ -592,7 +1095,7 @@ const validateDescripcion = () => {
                     headerRow: { class: 'text-sm' },
                     headerCell: { class: 'text-sm font-medium py-3 px-2' },
                     tbody: { class: 'text-sm' },
-                    bodyRow: { class: 'h-20 text-sm' },
+                    bodyRow: { class: 'h-20 text-sm cursor-pointer hover:bg-blue-50 transition-colors duration-200' },
                     bodyCell: { class: 'py-3 px-2 text-sm' },
                     paginator: { class: 'text-xs sm:text-sm' },
                     paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
@@ -600,19 +1103,36 @@ const validateDescripcion = () => {
             >
                 <template #header>
                     <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
-                        <div class="flex items-center justify-between mb-3">
+                        <div class="flex flex-col sm:flex-row items-center justify-between mb-3">
                             <div class="flex items-center gap-3">
                                 <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
-                                    <i class="pi pi-filter text-blue-600 text-sm"></i>
-                                    <span>Filtros</span>
+                                    <i class="pi pi-filter text-blue-600 text-sm"></i><span>Filtros</span>
                                 </h3>
                                 <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
                                     {{ filteredProductos.length }} resultado{{ filteredProductos.length !== 1 ? 's' : '' }}
                                 </div>
+                                <button
+                                    class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md flex sm:hidden disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                    @click="clearFilters"
+                                    :disabled="isClearingFilters">
+                                    <FontAwesomeIcon
+                                        v-if="isClearingFilters"
+                                        :icon="faSpinner"
+                                        class="animate-spin h-3 w-3"
+                                    />
+                                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                </button>
                             </div>
-                            <button class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md" @click="clearFilters">
-                                <FontAwesomeIcon :icon="faFilter" class="h-4 w-4 text-white" />
-                                <span>&nbsp;Limpiar filtros</span>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:flex disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                @click="clearFilters"
+                                :disabled="isClearingFilters">
+                                <FontAwesomeIcon
+                                    v-if="isClearingFilters"
+                                    :icon="faSpinner"
+                                    class="animate-spin h-3 w-3"
+                                />
+                                <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
                             </button>
                         </div>
                         <div class="space-y-3">
@@ -634,41 +1154,38 @@ const validateDescripcion = () => {
                         </div>
                     </div>
                 </template>
-
-                <Column field="nombre" header="Nombre" sortable class="w-44 min-w-44">
+                <Column field="nombre" header="Nombre" sortable class="w-28">
                     <template #body="slotProps">
-                        <div class="text-sm font-medium leading-relaxed">
+                        <div
+                            class="text-sm font-medium leading-relaxed overflow-hidden"
+                            style="max-width: 100px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.nombre"
+                        >
                             {{ slotProps.data.nombre }}
                         </div>
                     </template>
                 </Column>
 
-                <Column field="descripcion" header="Descripción" class="w-48 min-w-48">
+                <Column field="descripcion" header="Descripción" class="w-28 hidden md:table-cell">
                     <template #body="slotProps">
-                        <div class="text-sm leading-relaxed whitespace-normal">
+                        <div
+                            class="text-sm font-medium leading-relaxed overflow-hidden"
+                            style="max-width: 100px; text-overflow: ellipsis; white-space: nowrap;"
+                            :title="slotProps.data.descripcion"
+                        >
                             {{ slotProps.data.descripcion }}
                         </div>
                     </template>
                 </Column>
 
-                <Column field="categoria.nombre" header="Categoría" class="w-32 min-w-32">
+                <Column field="categoria.nombre" header="Categoría" class="w-32 hidden md:table-cell">
                     <template #body="slotProps">
                         <div class="text-sm leading-relaxed">
                             {{ slotProps.data.categoria?.nombre || 'Sin categoría' }}
                         </div>
                     </template>
                 </Column>
-
-                <Column field="stock_actual" header="Stock" class="w-24 min-w-24">
-                    <template #body="slotProps">
-                        <div class="text-sm leading-relaxed">
-                            <span class="font-medium">{{ slotProps.data.stock_actual }}</span>
-                            <span class="text-gray-500">/ {{ slotProps.data.stock_minimo }} mín</span>
-                        </div>
-                    </template>
-                </Column>
-
-                <Column field="precio" header="Precio" class="w-24 min-w-24">
+                <Column field="precio" header="Precio" class="w-16">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed">
                             {{ isNaN(Number(slotProps.data.precio)) ? "" : `$${Number(slotProps.data.precio).toFixed(2)}` }}
@@ -676,7 +1193,7 @@ const validateDescripcion = () => {
                     </template>
                 </Column>
 
-                <Column field="estado" header="Estado" class="w-28 min-w-28">
+                <Column field="estado" header="Estado" class="w-28 hidden sm:table-cell">
                     <template #body="slotProps">
                         <span :class="'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + getEstadoStock(slotProps.data).class">
                             {{ getEstadoStock(slotProps.data).label }}
@@ -684,39 +1201,39 @@ const validateDescripcion = () => {
                     </template>
                 </Column>
 
-                <Column :exportable="false" class="w-56 min-w-56">
+                <Column :exportable="false" class="w-52 min-w-36">
                     <template #header>
                         <div class="text-center w-full font-bold">
                             Acciones
                         </div>
                     </template>
                     <template #body="slotProps">
-                        <div class="flex gap-1 justify-center items-center w-64">
+                        <div class="flex gap-2 justify-center items-center">
                             <button
-                                class="bg-orange-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-green-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="openMoreActionsModal(slotProps.data)">
+                                <FontAwesomeIcon :icon="faListDots" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Más</span>
+                            </button>
+                            <button
+                               class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editProduct(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                                &nbsp;Editar
+                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="bg-blue-200/50 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="viewImages(slotProps.data.imagenes)">
-                                <FontAwesomeIcon :icon="faImages" class="h-4 w-4 text-blue-600" />
-                                &nbsp;Imgs
-                            </button>
-                            <button
-                                class="bg-red-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteProduct(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                                &nbsp;Eliminar
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 text-white" />
+                                <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
                 </Column>
             </DataTable>
 
-            <!-- 📝 Modal de formulario -->
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Producto'" :modal="true" :style="{ width: '500px' }" :closable="false">
+            <!--Modal de formulario -->
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Producto'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <!-- Nombre -->
                     <div class="w-full flex flex-col">
@@ -730,7 +1247,8 @@ const validateDescripcion = () => {
                                 name="nombre"
                                 :maxlength="100"
                                 :class="{'p-invalid': submitted && (!producto.nombre || producto.nombre.length < 3 || producto.nombre.length > 100)}"
-                                class="flex-1"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                placeholder="Taza para café, etc."
                                 @input="validateNombre"
                             />
                         </div>
@@ -758,9 +1276,9 @@ const validateDescripcion = () => {
                                 :maxlength="255"
                                 rows="3"
                                 :class="{'p-invalid': submitted && (!producto.descripcion || producto.descripcion.length < 10 || producto.descripcion.length > 255)}"
-                                class="flex-1"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="validateDescripcion"
-                                placeholder="Describe el producto..."
+                                placeholder="Taza de cerámica ideal para café calientes, etc."
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="producto.descripcion && producto.descripcion.length < 10">
@@ -776,8 +1294,8 @@ const validateDescripcion = () => {
 
                     <!-- Categoría -->
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
-                            <label for="categoria_id" class="w-24 flex items-center gap-1">
+                        <div class="flex items-center gap-4 sm:gap-5">
+                            <label for="categoria_id" class="w-36 sm:w-32 flex items-center gap-1">
                                 Categoría: <span class="text-red-500 font-bold">*</span>
                             </label>
                             <Select
@@ -787,8 +1305,8 @@ const validateDescripcion = () => {
                                 optionValue="id"
                                 id="categoria_id"
                                 name="categoria_id"
-                                class="flex-1"
-                                placeholder="Selecciona una categoría"
+                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
+                                placeholder="Seleccionar"
                                 :class="{'p-invalid': submitted && !producto.categoria_id}"
                             />
                         </div>
@@ -799,240 +1317,240 @@ const validateDescripcion = () => {
 
                     <!-- Precio -->
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4">
+                        <div class="flex items-center gap-12 sm:gap-11">
                             <label for="precio" class="w-24 flex items-center gap-1">
                                 Precio: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputNumber
-                                v-model="producto.precio"
-                                id="precio"
-                                name="precio"
-                                mode="currency"
-                                currency="USD"
-                                :locale="'en-US'"
-                                :min="0.01"
-                                :max="999.99"
-                                :maxFractionDigits="2"
-                                :minFractionDigits="2"
-                                :class="{'p-invalid': submitted && (!producto.precio || producto.precio <= 0 || producto.precio > 999.99)}"
-                                class="flex-1"
-                                placeholder="$0.00"
-                            />
+                            <div class="w-full relative">
+                                <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 pointer-events-none">$</span>
+                                <InputText
+                                    v-model="producto.precio"
+                                    id="precio"
+                                    name="precio"
+                                    type="text"
+                                    inputmode="decimal"
+                                    class="w-full pl-8 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                    :class="{'p-invalid': submitted && (!producto.precio || producto.precio <= 0 || producto.precio > 9999.99)}"
+                                    placeholder="0.00"
+                                    @keydown="onPriceKeyDown"
+                                    @paste="onPricePaste"
+                                />
+                            </div>
                         </div>
-                        <small class="text-red-500 ml-28" v-if="submitted && (producto.precio == null || producto.precio <= 0 || producto.precio > 999.99)">
-                            El precio es obligatorio, debe ser mayor a 0 y menor o igual a 999.99.
+                        <small class="text-red-500 ml-28" v-if="submitted && (producto.precio == null || producto.precio <= 0 || producto.precio > 9999.99)">
+                            El precio es obligatorio, debe ser mayor a 0 y menor o igual a 9999.99.
                         </small>
                     </div>
 
-                    <!-- Stock -->
-                    <div class="flex gap-4">
-                        <div class="flex-1">
-                            <label for="stock_actual" class="block mb-2">Stock actual:</label>
-                            <InputNumber
-                                v-model="producto.stock_actual"
-                                id="stock_actual"
-                                name="stock_actual"
-                                :min="0"
-                                :max="9999"
-                                :step="1"
-                                showButtons
-                                :useGrouping="false"
-                                class="w-full"
-                                placeholder="0"
-                            />
-                        </div>
-                        <div class="flex-1">
-                            <label for="stock_minimo" class="block mb-2">Stock mínimo:</label>
-                            <InputNumber
-                                v-model="producto.stock_minimo"
-                                id="stock_minimo"
-                                name="stock_minimo"
-                                :min="1"
-                                :max="100"
-                                :step="1"
-                                showButtons
-                                :useGrouping="false"
-                                class="w-full"
-                                placeholder="1"
-                            />
-                        </div>
-                    </div>
-
-                    <!-- Imágenes -->
+            <!-- Stock -->
+            <div class="flex gap-4">
+                <div class="flex-1">
+                    <label for="stock_actual" class="block mb-2" :class="producto.id !== null ? 'text-gray-500' : ''">
+                        Stock actual:
+                        <span v-if="producto.id === null" class="text-red-500 font-bold">*</span>
+                        <span v-else class="text-gray-400 text-xs">(Deshabilitado)</span>
+                    </label>
+                    <InputText
+                        v-model="producto.stock_actual"
+                        id="stock_actual"
+                        name="stock_actual"
+                        type="number"
+                        inputmode="numeric"
+                        min="0"
+                        max="9999"
+                        :disabled="producto.id !== null"
+                        :class="{
+                            'bg-gray-100 cursor-not-allowed': producto.id !== null,
+                            'border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none': producto.id === null,
+                            'border-2 border-gray-300': producto.id !== null
+                        }"
+                        class="w-full rounded-md"
+                        placeholder="0"
+                        @keydown="onStockKeyDown"
+                        @paste="onStockPaste"
+                    />
+                    <small v-if="producto.id !== null" class="text-blue-600 text-xs mt-1 block">
+                        Para actualizar el stock usa el botón "Más" → "Actualizar Stock"
+                    </small>
+                </div>
+                <div class="flex-1">
+                    <label for="stock_minimo" class="block mb-2" :class="producto.id !== null ? 'text-gray-500' : ''">
+                        Stock mínimo:
+                        <span v-if="producto.id === null" class="text-red-500 font-bold">*</span>
+                        <span v-else class="text-gray-400 text-xs">(Deshabilitado)</span>
+                    </label>
+                    <InputText
+                        v-model="producto.stock_minimo"
+                        id="stock_minimo"
+                        name="stock_minimo"
+                        type="number"
+                        inputmode="numeric"
+                        min="1"
+                        max="100"
+                        :disabled="producto.id !== null"
+                        :class="{
+                            'bg-gray-100 cursor-not-allowed': producto.id !== null,
+                            'border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none': producto.id === null,
+                            'border-2 border-gray-300': producto.id !== null
+                        }"
+                        class="w-full rounded-md"
+                        placeholder="1"
+                        @keydown="onStockMinimoKeyDown"
+                        @paste="onStockMinimoPaste"
+                    />
+                    <small v-if="producto.id !== null" class="text-blue-600 text-xs mt-1 block">
+                        Para actualizar el stock mínimo usa "Actualizar Stock"
+                    </small>
+                </div>
+            </div>                    <!-- Imágenes -->
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
-                            <label for="imagenes" class="w-24 flex items-center gap-1">
-                                Imágenes: <span class="text-red-500 font-bold">*</span>
-                            </label>
+                            <label for="imagenes" class="w-24 flex items-center gap-1">Imágenes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
-                                <input
-                                    type="file"
-                                    id="imagenes"
-                                    name="imagenes[]"
-                                    accept="image/*"
-                                    multiple
-                                    @change="onImageSelect"
-                                    class="hidden"
-                                    ref="fileInput"
-                                />
-                                <button
-                                    type="button"
-                                    class="bg-white hover:bg-red-50 text-red-500 hover:text-red-600 border border-red-500 hover:border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none"
-                                    @click="$refs.fileInput.click()"
-                                >
-                                    <FontAwesomeIcon :icon="faPlus" class="h-4" />
-                                    <span>Subir imágenes</span>
-                                </button>
+                                <div class="flex items-center gap-3 mb-2">
+                                    <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
+                                    <button type="button"
+                                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 outline-none focus:outline-none active:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                                        @click="handleImageUploadClick"
+                                        :disabled="isUploadingImages || isOpeningGallery || !canAddMoreImages">
+                                        <FontAwesomeIcon
+                                            :icon="isUploadingImages ? faSpinner : (isOpeningGallery ? faSpinner : faPlus)"
+                                            :class="{ 'animate-spin': isUploadingImages || isOpeningGallery }"
+                                        />
+                                        {{ imageButtonText }}
+                                    </button>
+                                    <div class="flex items-center gap-2">
+                                        <span class="text-sm font-medium" :class="imagenPreviewList.length >= 5 ? 'text-red-600' : 'text-gray-600'">
+                                            {{ imagenPreviewList.length }}/5
+                                        </span>
+                                        <span class="text-xs text-gray-500">imágenes</span>
+                                    </div>
+                                </div>
+                                <div class="text-xs text-gray-500 mb-2">
+                                    Máximo 5 imágenes por producto • Formatos: JPG, PNG, GIF • Tamaño máximo: 2MB por imagen
+                                </div>
                             </div>
                         </div>
-                        <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">
-                            Las imágenes son obligatorias (al menos una).
-                        </small>
+                        <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las imágenes son obligatorias (al menos una).</small>
                     </div>
-
-                    <!-- Vista previa de imágenes -->
-                    <div class="flex gap-4 flex-wrap mt-4 ml-28">
-                        <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-32 h-32">
-                            <img
-                                :src="img.startsWith('data:image') ? img : IMAGE_PATH + img"
-                                alt="Vista previa"
-                                class="w-full h-full object-cover rounded border"
-                            />
-                            <button
-                                @click="removeImage(index)"
-                                class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow"
-                                style="transform: translate(50%, -50%)"
-                            >
-                                <i class="pi pi-times text-xs"></i>
-                            </button>
+                    <div class="grid grid-cols-3 ml-2 sm:ml-5 gap-y-2">
+                        <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-24 sm:w-28 h-24 sm:h-28">
+                            <img :src=" img.startsWith('data:image') ? img : IMAGE_PATH + img " alt="Vista previa" class="w-full h-full object-cover rounded border"/>
+                            <button @click="removeImage(index)" class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow" style="transform: translate(50%, -50%)"> <i class="pi pi-times text-xs"></i></button>
                         </div>
                     </div>
                 </div>
 
                 <template #footer>
-                    <div class="flex justify-center gap-4 w-full">
+                    <div class="flex justify-center gap-4 w-full mt-6">
                         <button
-                            type="button"
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="hideDialog"
-                        >
-                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />
-                            Cancelar
-                        </button>
-                        <button
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
+                            :disabled="isLoading"
                         >
-                            <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-                            {{ btnTitle }}
+                            <FontAwesomeIcon
+                                :icon="isLoading ? faSpinner : faCheck"
+                                :class="[
+                                    'h-5 text-white',
+                                    { 'animate-spin': isLoading }
+                                ]"
+                            />
+                            <span v-if="!isLoading">{{ btnTitle }}</span>
+                            <span v-else>{{ btnTitle === 'Guardar' ? 'Guardando...' : 'Actualizando...' }}</span>
+                        </button>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
                         </button>
                     </div>
                 </template>
             </Dialog>
 
-            <!-- 🗑️ Modal de confirmación de eliminación -->
-            <Dialog v-model:visible="deleteDialog" header="Eliminar producto" :modal="true" :style="{ width: '350px' }" :closable="false">
-                <div class="flex items-center gap-3">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-                    <div class="flex flex-col">
-                        <span>¿Estás seguro de eliminar el producto: <b>{{ producto.nombre }}</b>?</span>
-                        <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
-                    </div>
-                </div>
-                <template #footer>
-                    <div class="flex justify-center gap-4 w-full">
-                        <button
-                            type="button"
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false"
-                        >
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" />
-                            <span>No</span>
-                        </button>
-                        <button
-                            type="button"
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteProduct"
-                        >
-                            <FontAwesomeIcon :icon="faCheck" class="h-5" />
-                            <span>Sí</span>
-                        </button>
-                    </div>
-                </template>
-            </Dialog>
-
-            <!-- ⚠️ Modal de cambios sin guardar -->
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false">
-                <div class="flex items-center gap-3">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-                    <div class="flex flex-col">
-                        <span>¡Tienes información sin guardar!</span>
-                        <span class="text-red-600 text-sm font-medium mt-1">¿Deseas salir sin guardar?</span>
-                    </div>
-                </div>
-                <template #footer>
-                    <div class="flex justify-center gap-3 w-full">
-                        <button
-                            type="button"
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="continueEditing"
-                        >
-                            <FontAwesomeIcon :icon="faPencil" class="h-4" />
-                            <span>Continuar</span>
-                        </button>
-                        <button
-                            type="button"
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="closeDialogWithoutSaving"
-                        >
-                            <FontAwesomeIcon :icon="faSignOut" class="h-4" />
-                            <span>Salir sin guardar</span>
-                        </button>
-                    </div>
-                </template>
-            </Dialog>
-
-            <!-- 🖼️ Modal de visualización de imágenes -->
-            <Dialog v-model:visible="showImageDialog" header="Imágenes del producto" :modal="true" :closable="false" :style="{ width: '700px' }">
-                <div v-if="selectedImages.length" class="flex flex-col items-center justify-center">
-                    <Carousel
-                        :value="selectedImages"
-                        :numVisible="1"
-                        :numScroll="1"
-                        :circular="true"
-                        v-model:page="carouselIndex"
-                        class="w-full"
-                        :showIndicators="selectedImages.length > 1"
-                        :showNavigators="selectedImages.length > 1"
-                        style="max-width: 610px"
-                    >
-                        <template #item="slotProps">
-                            <div class="flex justify-center items-center w-full h-96">
-                                <img
-                                    :src="slotProps.data"
-                                    alt="Imagen producto"
-                                    class="w-auto h-full max-h-96 object-contain rounded shadow"
-                                />
-                            </div>
-                        </template>
-                    </Carousel>
-                </div>
-                <div v-else class="text-center text-gray-500 py-8">
-                    No hay imágenes para este producto.
-                </div>
-                <template #footer>
-                    <div class="flex justify-center w-full">
-                        <button
-                            type="button"
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="showImageDialog = false"
-                        >
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" />
-                            <span>Cerrar</span>
-                        </button>
-                    </div>
-                </template>
-            </Dialog>
+            <!-- Componente de Modales de Productos -->
+            <ProductoModals
+                v-model:visible="moreActionsDialog"
+                v-model:details-visible="showImageDialog"
+                v-model:carousel-visible="showImageCarouselDialog"
+                v-model:delete-visible="deleteDialog"
+                v-model:unsaved-changes-visible="unsavedChangesDialog"
+                v-model:update-stock-visible="updateStockDialog"
+                v-model:carousel-index="carouselIndex"
+                :producto="selectedProduct || producto"
+                :dialog-style="dialogStyle"
+                :selected-images="selectedImages"
+                :image-path="IMAGE_PATH"
+                :is-deleting="isDeleting"
+                @duplicate="handleDuplicateProduct"
+                @update-stock="handleUpdateStock"
+                @generate-report="handleGenerateReport"
+                @archive="handleArchiveProduct"
+                @delete-product="deleteProduct"
+                @cancel-delete="() => deleteDialog = false"
+                @close-without-saving="closeDialogWithoutSaving"
+                @continue-editing="continueEditing"
+                @view-details="handleViewDetails"
+                @open-image-modal="openImageModal"
+                @stock-updated="handleStockUpdated"
+            />
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+/* Fin de la animación para el spinner de loading */
+</style>

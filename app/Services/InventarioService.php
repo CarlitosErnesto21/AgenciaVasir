@@ -79,8 +79,7 @@ class InventarioService
                 'tipo_movimiento' => 'ENTRADA',
                 'motivo' => $motivo,
                 'observacion' => $observacion ?? 'Entrada manual de stock',
-                'referenciable_id' => null,
-                'referenciable_type' => null
+                'venta_id' => null
             ]);
         });
     }
@@ -107,8 +106,7 @@ class InventarioService
                     'tipo_movimiento' => 'ENTRADA',
                     'motivo' => 'ajuste_entrada',
                     'observacion' => $observacion,
-                    'referenciable_id' => null,
-                    'referenciable_type' => null
+                    'venta_id' => null
                 ]);
             } else {
                 // Ajuste negativo (salida)
@@ -120,8 +118,7 @@ class InventarioService
                     'tipo_movimiento' => 'SALIDA',
                     'motivo' => 'ajuste_salida',
                     'observacion' => $observacion,
-                    'referenciable_id' => null,
-                    'referenciable_type' => null
+                    'venta_id' => null
                 ]);
             }
         });
@@ -142,8 +139,7 @@ class InventarioService
             'tipo_movimiento' => 'SALIDA',
             'motivo' => 'venta',
             'observacion' => "Venta #{$venta->id}",
-            'referenciable_id' => $venta->id,
-            'referenciable_type' => Venta::class
+            'venta_id' => $venta->id
         ]);
     }
 
@@ -162,8 +158,7 @@ class InventarioService
             'tipo_movimiento' => 'ENTRADA',
             'motivo' => 'cancelacion_venta',
             'observacion' => "Cancelación de venta #{$venta->id}",
-            'referenciable_id' => $venta->id,
-            'referenciable_type' => Venta::class
+            'venta_id' => $venta->id
         ]);
     }
 
@@ -180,8 +175,7 @@ class InventarioService
             'observacion' => $datos['observacion'],
             'user_id' => Auth::id() ?: 1,
             'producto_id' => $datos['producto_id'],
-            'referenciable_id' => $datos['referenciable_id'],
-            'referenciable_type' => $datos['referenciable_type']
+            'venta_id' => $datos['venta_id'] ?? null
         ]);
     }
 }

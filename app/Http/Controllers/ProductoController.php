@@ -49,10 +49,11 @@ class ProductoController extends Controller
             $validatedData = $request->validate([
                 'nombre' => 'required|string|min:3|max:100',
                 'descripcion' => 'required|string|min:10|max:255',
-                'precio' => 'required|numeric|min:0.01|max:999.99',
+                'precio' => 'required|numeric|min:0.01|max:9999.99',
                 'stock_actual' => 'required|integer|min:0',
                 'stock_minimo' => 'required|integer|min:1',
                 'categoria_id' => 'required|exists:categorias_productos,id',
+                'imagenes' => 'nullable|array|max:5',
                 'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
             ]);
 
@@ -149,47 +150,40 @@ class ProductoController extends Controller
     {
         try {
             $producto = Producto::findOrFail($id);
-            $stockAnterior = $producto->stock_actual;
 
-            Log::info("Actualizando producto ID {$id}. Stock anterior: {$stockAnterior}");
+            Log::info("Actualizando producto ID {$id}");
 
             $validatedData = $request->validate([
                 'nombre' => 'required|string|min:3|max:100',
                 'descripcion' => 'required|string|min:10|max:255',
-                'precio' => 'required|numeric|min:0.01|max:999.99',
-                'stock_actual' => 'required|integer|min:0',
-                'stock_minimo' => 'required|integer|min:1',
+                'precio' => 'required|numeric|min:0.01|max:9999.99',
                 'categoria_id' => 'required|exists:categorias_productos,id',
+                'imagenes' => 'nullable|array|max:5',
                 'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+                // Nota: Se removieron stock_actual y stock_minimo para actualizaciones
+                // El stock debe actualizarse a través del endpoint específico /actualizar-stock
             ]);
+
+            // Validar límite total de imágenes (existentes + nuevas - eliminadas)
+            $imagenesExistentes = $producto->imagenes()->count();
+            $imagenesAEliminar = $request->has('removed_images') ? count($request->input('removed_images')) : 0;
+            $imagenesNuevas = $request->hasFile('imagenes') ? count($request->file('imagenes')) : 0;
+            $totalImagenesFinales = $imagenesExistentes - $imagenesAEliminar + $imagenesNuevas;
+
+            if ($totalImagenesFinales > 5) {
+                return response()->json([
+                    'message' => 'Error de validación',
+                    'errors' => [
+                        'imagenes' => ['El total de imágenes no puede exceder 5. Actualmente tienes ' . $imagenesExistentes . ' imágenes, intentas agregar ' . $imagenesNuevas . ' y eliminar ' . $imagenesAEliminar . '.']
+                    ]
+                ], 422);
+            }
 
             // 🗃️ INICIAR TRANSACCIÓN
             DB::beginTransaction();
 
-            // Actualizar producto
+            // Actualizar producto (sin campos de stock)
             $producto->update($validatedData);
-
-            // 📊 REGISTRAR MOVIMIENTO DE INVENTARIO SI CAMBIÓ EL STOCK
-            $nuevoStock = $validatedData['stock_actual'];
-            if ($stockAnterior != $nuevoStock) {
-                $diferencia = $nuevoStock - $stockAnterior;
-                $tipoMovimiento = $diferencia > 0 ? 'ENTRADA' : 'SALIDA';
-                $cantidad = abs($diferencia);
-
-                Log::info("Cambio de stock detectado: {$stockAnterior} -> {$nuevoStock} (diferencia: {$diferencia})");
-
-                Inventario::create([
-                    'producto_id' => $producto->id,
-                    'tipo_movimiento' => $tipoMovimiento,
-                    'cantidad' => $cantidad,
-                    'motivo' => 'ajuste_manual',
-                    'observacion' => "Ajuste manual de stock. Stock anterior: {$stockAnterior}, nuevo stock: {$nuevoStock}",
-                    'user_id' => Auth::id() ?? 1, // ✅ CORREGIDO
-                    'fecha_movimiento' => now(),
-                ]);
-
-                Log::info("Movimiento de inventario registrado: {$tipoMovimiento} de {$cantidad} unidades");
-            }
 
             // 🗑️ Manejar imágenes eliminadas
             if ($request->has('removed_images')) {
@@ -361,5 +355,170 @@ class ProductoController extends Controller
         }
 
         return ['usado' => false];
+    }
+
+    /**
+     * 📦 Actualizar stock del producto con trazabilidad completa
+     */
+    public function actualizarStock(Request $request, $id)
+    {
+        try {
+            $producto = Producto::findOrFail($id);
+
+            Log::info("=== ACTUALIZANDO STOCK PRODUCTO ID {$id} ===");
+            Log::info("Stock actual: {$producto->stock_actual}");
+
+            $validatedData = $request->validate([
+                'tipo_movimiento' => 'required|in:entrada,salida,ajuste',
+                'cantidad' => 'required|integer|min:1|max:9999',
+                'motivo' => 'required|string|min:3|max:100',
+                'stock_resultante' => 'required|integer|min:0|max:9999',
+                'nuevo_stock_minimo' => 'nullable|integer|min:1|max:100'
+            ]);
+
+            // 🔍 Validaciones específicas según tipo de movimiento
+            $stockAnterior = $producto->stock_actual;
+            $cantidad = $validatedData['cantidad'];
+            $tipoMovimiento = strtoupper($validatedData['tipo_movimiento']);
+
+            // Validar coherencia del stock resultante
+            $stockEsperado = $stockAnterior;
+            switch ($validatedData['tipo_movimiento']) {
+                case 'entrada':
+                    $stockEsperado = $stockAnterior + $cantidad;
+                    break;
+                case 'salida':
+                    $stockEsperado = max(0, $stockAnterior - $cantidad);
+                    // Validar que no se retire más stock del disponible
+                    if ($cantidad > $stockAnterior) {
+                        return response()->json([
+                            'message' => 'Error de validación',
+                            'errors' => [
+                                'cantidad' => ["No puedes retirar {$cantidad} unidades. Stock disponible: {$stockAnterior}"]
+                            ]
+                        ], 422);
+                    }
+                    break;
+                case 'ajuste':
+                    $stockEsperado = $cantidad;
+                    break;
+            }
+
+            if ($stockEsperado != $validatedData['stock_resultante']) {
+                return response()->json([
+                    'message' => 'Error de validación',
+                    'errors' => [
+                        'stock_resultante' => ['El stock resultante calculado no coincide con el esperado']
+                    ]
+                ], 422);
+            }
+
+            // 🗃️ INICIAR TRANSACCIÓN
+            DB::beginTransaction();
+
+            // 📊 REGISTRAR MOVIMIENTO DE INVENTARIO
+            $inventario = Inventario::create([
+                'producto_id' => $producto->id,
+                'tipo_movimiento' => $tipoMovimiento,
+                'cantidad' => $cantidad,
+                'motivo' => $validatedData['motivo'],
+                'observacion' => $this->generarObservacionMovimiento(
+                    $validatedData['tipo_movimiento'],
+                    $stockAnterior,
+                    $validatedData['stock_resultante'],
+                    $validatedData['motivo']
+                ),
+                'user_id' => Auth::id(),
+                'fecha_movimiento' => now(),
+                'venta_id' => null // Para movimientos manuales
+            ]);
+
+            Log::info("Movimiento de inventario creado con ID: {$inventario->id}");
+
+            // 🔄 ACTUALIZAR STOCK DEL PRODUCTO
+            $datosActualizacion = ['stock_actual' => $validatedData['stock_resultante']];
+
+            // Actualizar stock mínimo si se proporcionó
+            if (isset($validatedData['nuevo_stock_minimo'])) {
+                $datosActualizacion['stock_minimo'] = $validatedData['nuevo_stock_minimo'];
+            }
+
+            $producto->update($datosActualizacion);
+
+            Log::info("Stock actualizado: {$stockAnterior} -> {$validatedData['stock_resultante']}");
+
+            // ✅ CONFIRMAR TRANSACCIÓN
+            DB::commit();
+
+            // Recargar producto con relaciones para respuesta
+            $producto->load(['categoria', 'imagenes']);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock actualizado correctamente',
+                'data' => [
+                    'producto' => $producto,
+                    'movimiento' => [
+                        'id' => $inventario->id,
+                        'tipo' => $tipoMovimiento,
+                        'cantidad' => $cantidad,
+                        'stock_anterior' => $stockAnterior,
+                        'stock_nuevo' => $validatedData['stock_resultante'],
+                        'motivo' => $validatedData['motivo'],
+                        'fecha' => $inventario->fecha_movimiento->format('Y-m-d H:i:s'),
+                        'usuario' => Auth::user()->name ?? 'Sistema'
+                    ]
+                ]
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Producto no encontrado',
+                'error' => 'El producto especificado no existe'
+            ], 404);
+        } catch (Exception $e) {
+            DB::rollBack();
+            Log::error('Error al actualizar stock: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el stock',
+                'error' => 'Error interno del servidor'
+            ], 500);
+        }
+    }
+
+    /**
+     * 📝 Generar observación detallada para el movimiento
+     */
+    private function generarObservacionMovimiento($tipo, $stockAnterior, $stockNuevo, $motivo)
+    {
+        $usuario = Auth::user()->name ?? 'Sistema';
+        $fecha = now()->format('d/m/Y H:i');
+
+        switch ($tipo) {
+            case 'entrada':
+                $cantidad = $stockNuevo - $stockAnterior;
+                return "Entrada de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+
+            case 'salida':
+                $cantidad = $stockAnterior - $stockNuevo;
+                return "Salida de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+
+            case 'ajuste':
+                $diferencia = $stockNuevo - $stockAnterior;
+                $tipoDiferencia = $diferencia > 0 ? 'aumento' : ($diferencia < 0 ? 'reducción' : 'sin cambio');
+                return "Ajuste de inventario ({$tipoDiferencia}). Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+
+            default:
+                return "Movimiento de stock. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+        }
     }
 }

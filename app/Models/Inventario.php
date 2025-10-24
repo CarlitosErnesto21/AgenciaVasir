@@ -19,8 +19,7 @@ class Inventario extends Model
         'observacion',
         'user_id',
         'producto_id',
-        'referenciable_id',
-        'referenciable_type'
+        'venta_id'
     ];
 
     protected $casts = [
@@ -39,10 +38,9 @@ class Inventario extends Model
         return $this->belongsTo(User::class);
     }
 
-    // Relación polimórfica (para vincular con ventas)
-    public function referenciable(): MorphTo
+    public function venta(): BelongsTo
     {
-        return $this->morphTo();
+        return $this->belongsTo(Venta::class);
     }
 
     // ===== MÉTODOS BÁSICOS =====

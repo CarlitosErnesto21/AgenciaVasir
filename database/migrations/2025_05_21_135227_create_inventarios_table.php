@@ -25,10 +25,9 @@ return new class extends Migration
             $table->unsignedBigInteger('producto_id');
             $table->foreign('producto_id')->references('id')->on('productos')->onDelete('cascade');
 
-            //Relación polimórfica
-            $table->unsignedBigInteger('referenciable_id')->nullable();
-            $table->string('referenciable_type')->nullable();
-            $table->index(['referenciable_type', 'referenciable_id']);
+            //Relación con ventas (opcional)
+            $table->unsignedBigInteger('venta_id')->nullable();
+            $table->foreign('venta_id')->references('id')->on('ventas')->onDelete('set null');
 
             $table->timestamps();
         });
