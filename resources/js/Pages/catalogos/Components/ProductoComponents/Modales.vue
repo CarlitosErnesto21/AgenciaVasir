@@ -1,9 +1,10 @@
 <script setup>
 import { computed, ref, watch, nextTick } from 'vue';
+import { Link } from '@inertiajs/vue3';
 import Dialog from 'primevue/dialog';
 import Carousel from 'primevue/carousel';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faCheck, faEye, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faEye, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faClipboardList } from '@fortawesome/free-solid-svg-icons';
 import ActualizarStock from './ActualizarStock.vue';
 
 // Props
@@ -340,6 +341,19 @@ defineOptions({
                         <div class="text-xs opacity-90">Mover a productos archivados</div>
                     </div>
                 </button>
+
+                <!-- Botón para ver inventarios -->
+                <Link
+                    :href="route('inventario')"
+                    class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    @click="closeModal"
+                >
+                    <FontAwesomeIcon :icon="faClipboardList" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Ver Inventarios</div>
+                        <div class="text-xs opacity-90">Historial y movimientos de inventario</div>
+                    </div>
+                </Link>
             </div>
 
             <div class="mt-6 pt-4 border-t border-gray-200 text-center">
@@ -546,27 +560,23 @@ defineOptions({
             <div class="flex justify-center gap-4 w-full">
                 <button
                     type="button"
-                    class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="cancelDelete"
-                    :disabled="isDeleting"
-                >
-                    <FontAwesomeIcon
-                        :icon="isDeleting ? faSpinner : faXmark"
-                        :class="{'animate-spin': isDeleting, 'h-5': true}"
-                    />
-                    <span>{{ isDeleting ? 'Cancelando...' : 'No' }}</span>
-                </button>
-                <button
-                    type="button"
-                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="confirmDelete"
                     :disabled="isDeleting"
                 >
                     <FontAwesomeIcon
                         :icon="isDeleting ? faSpinner : faCheck"
-                        :class="{'animate-spin': isDeleting, 'h-5': true}"
+                        :class="[
+                            'h-5',
+                            { 'animate-spin': isDeleting }
+                        ]"
                     />
-                    <span>{{ isDeleting ? 'Eliminando...' : 'Sí' }}</span>
+                    <span v-if="!isDeleting">Eliminar</span>
+                    <span v-else>Eliminando...</span>
+                </button>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="cancelDelete" :disabled="isDeleting">
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                 </button>
             </div>
         </template>
@@ -583,21 +593,13 @@ defineOptions({
         </div>
         <template #footer>
             <div class="flex justify-center gap-3 w-full">
-                <button
-                    type="button"
-                    class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="continueEditing"
-                >
-                    <FontAwesomeIcon :icon="faPencil" class="h-4" />
-                    <span>Continuar</span>
+                <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeWithoutSaving">
+                    <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
                 </button>
-                <button
-                    type="button"
-                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="closeWithoutSaving"
-                >
-                    <FontAwesomeIcon :icon="faSignOut" class="h-4" />
-                    <span>Salir sin guardar</span>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="continueEditing">
+                    <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                 </button>
             </div>
         </template>

@@ -8,12 +8,12 @@ import { faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
 // Importar componentes separados
-import LoadingState from '@/Components/DashboardViews/LoadingState.vue';
-import MetricasCard from '@/Components/DashboardViews/MetricasCard.vue';
-import WidgetsSecundarios from '@/Components/DashboardViews/WidgetsSecundarios.vue';
-import ActividadReciente from '@/Components/DashboardViews/ActividadReciente.vue';
-import ModalesInteractivos from '@/Components/DashboardViews/ModalesInteractivos.vue';
-import GraficosSection from '@/Components/DashboardViews/GraficosSection.vue';
+import LoadingState from '@/Pages/Catalogos/Components/DashboardComponents/LoadingState.vue';
+import MetricasCard from '@/Pages/Catalogos/Components/DashboardComponents/MetricasCard.vue';
+import WidgetsSecundarios from '@/Pages/Catalogos/Components/DashboardComponents/WidgetsSecundarios.vue';
+import ActividadReciente from '@/Pages/Catalogos/Components/DashboardComponents/ActividadReciente.vue';
+import ModalesInteractivos from '@/Pages/Catalogos/Components/DashboardComponents/ModalesInteractivos.vue';
+import GraficosSection from '@/Pages/Catalogos/Components/DashboardComponents/GraficosSection.vue';
 
 const chartDataPie = ref();
 const chartDataBar = ref();

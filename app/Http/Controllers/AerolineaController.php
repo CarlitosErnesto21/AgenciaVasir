@@ -27,8 +27,8 @@ class AerolineaController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:50',
             'fecha' => 'required|date',
-            'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes' => 'nullable|array|max:5',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         // Crear una nueva aerolínea
@@ -39,10 +39,12 @@ class AerolineaController extends Controller
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
                     // Usar Storage::disk('public') que es persistente en Render
-                    $path = $imagen->store('aerolinea', 'public');
+                    $path = $imagen->store('aerolineas', 'public');
                     $nombreArchivo = basename($path);
                     $aerolinea->imagenes()->create([
-                        'nombre' => $nombreArchivo
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Aerolinea::class,
+                        'imageable_id' => $aerolinea->id
                     ]);
                 }
             }
@@ -64,8 +66,24 @@ class AerolineaController extends Controller
             'nombre' => 'required|string|max:50',
             'fecha' => 'required|date',
             'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'removed_images' => 'nullable|array',
         ]);
+
+        // Validar límite total de imágenes (existentes + nuevas - eliminadas)
+        $imagenesExistentes = $aerolinea->imagenes()->count();
+        $imagenesAEliminar = $request->has('removed_images') ? count($request->input('removed_images')) : 0;
+        $imagenesNuevas = $request->hasFile('imagenes') ? count($request->file('imagenes')) : 0;
+        $totalImagenesFinales = $imagenesExistentes - $imagenesAEliminar + $imagenesNuevas;
+
+        if ($totalImagenesFinales > 5) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => [
+                    'imagenes' => ['El total de imágenes no puede exceder 5. Actualmente tienes ' . $imagenesExistentes . ' imágenes, intentas agregar ' . $imagenesNuevas . ' y eliminar ' . $imagenesAEliminar . '.']
+                ]
+            ], 422);
+        }
 
         // Actualizar la aerolínea
         $aerolinea->update($validated);
@@ -75,10 +93,12 @@ class AerolineaController extends Controller
             foreach ($request->file('imagenes') as $imagen) {
                 if ($imagen instanceof \Illuminate\Http\UploadedFile && $imagen->isValid()) {
                     // Usar Storage::disk('public') que es persistente en Render
-                    $path = $imagen->store('aerolinea', 'public');
+                    $path = $imagen->store('aerolineas', 'public');
                     $nombreArchivo = basename($path);
                     $aerolinea->imagenes()->create([
-                        'nombre' => $nombreArchivo
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Aerolinea::class,
+                        'imageable_id' => $aerolinea->id
                     ]);
                 }
             }
@@ -90,7 +110,7 @@ class AerolineaController extends Controller
                 $imagen = $aerolinea->imagenes()->where('nombre', $imageName)->first();
                 if ($imagen) {
                     // Eliminar usando Storage Laravel
-                    Storage::disk('public')->delete('aerolinea/' . $imagen->nombre);
+                    Storage::disk('public')->delete('aerolineas/' . $imagen->nombre);
                     $imagen->forceDelete();
                 }
             }
@@ -120,7 +140,7 @@ class AerolineaController extends Controller
 
         foreach ($aerolinea->imagenes as $imagen) {
             // Eliminar usando Storage Laravel
-            Storage::disk('public')->delete('aerolinea/' . $imagen->nombre);
+            Storage::disk('public')->delete('aerolineas/' . $imagen->nombre);
             $imagen->forceDelete();
         }
 

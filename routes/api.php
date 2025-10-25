@@ -102,6 +102,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
+        // Ruta adicional para estadísticas de hoteles
+        Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
+        
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
 
         // Rutas adicionales para tours
@@ -161,11 +164,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('productos/{id}/actualizar-stock', [ProductoController::class, 'actualizarStock']);
 
         // Rutas adicionales específicas para ventas (sin conflicto)
-        // Route::prefix('ventas')->group(function () {
-        //     Route::get('/estado/{estado}', [VentaController::class, 'porEstado']);
-        //     Route::post('/{venta}/procesar', [VentaController::class, 'procesar']);
-        //     Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar']);
-        // });
+        Route::prefix('ventas')->group(function () {
+            Route::get('/estado/{estado}', [VentaController::class, 'porEstado']);
+            Route::post('/{venta}/procesar', [VentaController::class, 'procesar']);
+            Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar']);
+        });
 
         // ═══════════════════════════════════════════════════════════
         // RUTAS DE PAGOS WOMPI (PROTEGIDAS)

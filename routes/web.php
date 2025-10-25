@@ -33,6 +33,8 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
     Route::get('categorias-hoteles', fn() => Inertia::render('Catalogos/CategoriaHoteles'))->name('catHoteles');
     Route::get('gestion-paquetes', fn() => Inertia::render('Catalogos/GestionPaquetes'))->name('gestionPaquetes');
+    Route::get('ventas', fn() => Inertia::render('Catalogos/Ventas'))->name('ventas');
+    Route::get('inventario', fn() => Inertia::render('Catalogos/Inventarios'))->name('inventario');
 
     //Rutas para informes
     Route::get('/descargar-informe', [InformePDFController::class, 'descargarInforme']);

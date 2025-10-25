@@ -409,7 +409,7 @@ const saveOrUpdate = async () => {
     }
 
     // Validar stock solo para productos nuevos
-    if (!producto.value.id && 
+    if (!producto.value.id &&
         ((producto.value.stock_actual !== null && producto.value.stock_actual < 0) ||
          (producto.value.stock_minimo !== null && producto.value.stock_minimo < 1))) {
         toast.add({
@@ -644,12 +644,12 @@ const handleViewDetails = (product) => {
 const handleStockUpdated = async (responseData) => {
     // El backend devuelve { data: { producto: {...}, movimiento: {...} } }
     const updatedProduct = responseData.data?.producto || responseData.producto || responseData;
-    
+
     if (!updatedProduct || !updatedProduct.id) {
         console.error('No se pudo obtener el producto actualizado');
         return;
     }
-    
+
     // Actualizar el producto en la lista principal (reactivo)
     const index = productos.value.findIndex(p => p.id === updatedProduct.id);
     if (index !== -1) {
@@ -661,7 +661,7 @@ const handleStockUpdated = async (responseData) => {
             updated_at: updatedProduct.updated_at
         };
     }
-    
+
     // Actualizar selectedProduct si es el mismo producto que se está viendo
     if (selectedProduct.value && selectedProduct.value.id === updatedProduct.id) {
         selectedProduct.value = {
@@ -671,10 +671,10 @@ const handleStockUpdated = async (responseData) => {
             updated_at: updatedProduct.updated_at
         };
     }
-    
+
     // Cerrar el modal de actualización de stock
     updateStockDialog.value = false;
-    
+
     // Mostrar toast de confirmación
     toast.add({
         severity: "success",
@@ -682,7 +682,7 @@ const handleStockUpdated = async (responseData) => {
         detail: `El stock de "${updatedProduct.nombre}" se ha actualizado correctamente.`,
         life: 3000
     });
-    
+
     // Forzar reactividad en caso de que Vue no detecte el cambio
     await nextTick();
 };
@@ -1049,13 +1049,20 @@ const onStockMinimoPaste = (event) => {
 </script>
 
 <template>
-    <Head title="Productos" />
     <AuthenticatedLayout>
+        <Head title="Productos" />
         <Toast class="z-[9999]" />
-        <div class="px-auto md:px-2 mt-6">
-            <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4">
-                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start ml-0 sm:ml-4">Catálogo de Productos</h3>
-                <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:jusfify-end mr-0 sm:mr-4">
+
+        <div class="container mx-auto px-4 py-6">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Productos</h1>
+                <p class="text-gray-600">Gestión completa del inventario de productos</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Productos</h3>
+                    <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link
                         :href="route('catProductos')"
                         @click="handleCategoriasClick"
@@ -1137,16 +1144,16 @@ const onStockMinimoPaste = (event) => {
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar productos..." class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"/>
+                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar productos..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
                                 <div>
-                                    <Select v-model="selectedCategoria" :options="categorias" optionLabel="nombre" optionValue="id" placeholder="Categoría" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
+                                    <Select v-model="selectedCategoria" :options="categorias" optionLabel="nombre" optionValue="id" placeholder="Categoría" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
                                         @change="onCategoriaFilterChange" :clearable="true"
                                     />
                                 </div>
                                 <div>
-                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm" style="background-color: white; border-color: #93c5fd;"
+                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
                                         @change="onEstadoFilterChange" :clearable="true"
                                     />
                                 </div>
@@ -1210,21 +1217,21 @@ const onStockMinimoPaste = (event) => {
                     <template #body="slotProps">
                         <div class="flex gap-2 justify-center items-center">
                             <button
-                                class="flex bg-green-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="openMoreActionsModal(slotProps.data)">
-                                <FontAwesomeIcon :icon="faListDots" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Más</span>
                             </button>
                             <button
-                               class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                               class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editProduct(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteProduct(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
@@ -1491,6 +1498,7 @@ const onStockMinimoPaste = (event) => {
                 @open-image-modal="openImageModal"
                 @stock-updated="handleStockUpdated"
             />
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>

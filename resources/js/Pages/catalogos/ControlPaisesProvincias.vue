@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted, watch } from "vue";
 import { Head, Link } from "@inertiajs/vue3";
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import Dialog from "primevue/dialog";
@@ -11,7 +11,7 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft, faCheck, faFilter, faPencil, faPlus, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faExclamationTriangle, faFilter, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const toast = useToast();
 
@@ -25,10 +25,30 @@ const busquedaGeneral = ref("");
 const modalAgregar = ref(false);
 const modalEditar = ref(false);
 const modalEliminar = ref(false);
+const modalCambiosSinGuardar = ref(false);
+
+// Estados de carga
+const isLoading = ref(false);
+const isDeleting = ref(false);
+const isNavigatingToHoteles = ref(false);
+
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) {
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) {
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
 
 // 📄 Paginación
 const rowsPerPage = ref(10);
-const rowsPerPageOptions = ref([5, 10, 15, 20, 30]);
+const rowsPerPageOptions = ref([5, 10, 20, 50]);
 
 // Formularios
 const nuevoItem = ref({ id:null, nombre:"", pais_id:null });
@@ -41,10 +61,52 @@ const opcionesMostrar = ref([
   { label: 'Provincias', value: 'Provincia' }
 ]);
 
+// Funciones para manejo de ventana
+const updateWindowWidth = () => {
+    if (typeof window !== 'undefined') {
+        windowWidth.value = window.innerWidth;
+    }
+};
+
+// Función para manejar navegación a hoteles
+const handleHotelesClick = () => {
+    isNavigatingToHoteles.value = true;
+};
+
 // Cargar datos
+const cargarTodosLosDatos = async () => {
+  try {
+    // Mostrar toast de carga
+    toast.add({
+      severity: "info",
+      summary: "Cargando datos...",
+      life: 2000
+    });
+
+    await Promise.all([cargarPaises(), cargarProvincias()]);
+
+    // Mostrar toast de éxito
+    toast.add({
+      severity: "success",
+      summary: "Datos cargados",
+      life: 2000
+    });
+  } catch (error) {
+    // Los errores específicos ya son manejados en cada función individual
+  }
+};
+
 onMounted(() => {
-  cargarPaises();
-  cargarProvincias();
+  cargarTodosLosDatos();
+  if (typeof window !== 'undefined') {
+        window.addEventListener('resize', updateWindowWidth);
+    }
+});
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', updateWindowWidth);
+    }
 });
 
 const cargarPaises = async () => {
@@ -77,14 +139,17 @@ const datosFiltrados = computed(() => {
 // Métodos
 const tipoAgregar = ref(null);
 
-function abrirModalAgregar(){ 
+function abrirModalAgregar(){
   tipoAgregar.value = null;
-  nuevoItem.value={id:null,nombre:"",pais_id:null}; 
-  modalAgregar.value=true; 
+  nuevoItem.value={id:null,nombre:"",pais_id:null};
+  hasUnsavedChanges.value = false;
+  modalAgregar.value=true;
 }
 
 async function guardarItem(){
   try{
+    isLoading.value = true;
+
     // ✅ VALIDACIÓN MEJORADA: Verificar si no hay tipo seleccionado
     if (!tipoAgregar.value) {
       toast.add({severity:"warn", summary:"Atención", detail:"Debe seleccionar qué desea agregar (País o Provincia)", life: 4000});
@@ -114,7 +179,7 @@ async function guardarItem(){
       toast.add({severity:"success", summary:"Guardado", detail:"País agregado correctamente", life: 3000});
     } else if(tipoAgregar.value==="Provincia"){
       const response = await axios.post("/api/provincias",{
-        nombre:nuevoItem.value.nombre.trim(), 
+        nombre:nuevoItem.value.nombre.trim(),
         pais_id:nuevoItem.value.pais_id
       });
       await cargarProvincias();
@@ -124,47 +189,53 @@ async function guardarItem(){
     modalAgregar.value=false;
     nuevoItem.value = { id:null, nombre:"", pais_id:null };
     tipoAgregar.value = null;
-  } catch(error) { 
+    hasUnsavedChanges.value = false;
+  } catch(error) {
     if (error.response?.status === 422) {
       const errors = error.response.data.errors;
-      
+
       if (errors?.nombre) {
         // Mostrar mensaje específico del backend
         toast.add({
-          severity:"error", 
-          summary:"Ya existe", 
-          detail: errors.nombre[0], 
+          severity:"error",
+          summary:"Ya existe",
+          detail: errors.nombre[0],
           life: 5000
         });
       } else {
         toast.add({
-          severity:"error", 
-          summary:"Error de validación", 
-          detail: error.response.data.message || "Datos inválidos", 
+          severity:"error",
+          summary:"Error de validación",
+          detail: error.response.data.message || "Datos inválidos",
           life: 5000
         });
       }
     } else {
       toast.add({
-        severity:"error", 
-        summary:"Error", 
-        detail:"No se pudo guardar. Intente nuevamente.", 
+        severity:"error",
+        summary:"Error",
+        detail:"No se pudo guardar. Intente nuevamente.",
         life: 4000
       });
     }
+  } finally {
+    isLoading.value = false;
   }
 }
 
-function abrirModalEditar(item){ 
+function abrirModalEditar(item){
   itemEdit.value={...item};
   if(modoSeleccionado.value==="Provincia" && item.pais) {
     itemEdit.value.pais_id=item.pais.id;
   }
+  hasUnsavedChanges.value = false;
   modalEditar.value=true;
 }
 
 async function actualizarItem(){
   try {
+    isLoading.value = true;
+
     // ✅ VALIDACIÓN MEJORADA: Verificar nombre vacío
     if (!itemEdit.value.nombre || itemEdit.value.nombre.trim() === "") {
       toast.add({severity:"warn", summary:"Campo requerido", detail:"El nombre es obligatorio", life: 4000});
@@ -187,10 +258,11 @@ async function actualizarItem(){
       await axios.put(`/api/paises/${itemEdit.value.id}`, {
         nombre: itemEdit.value.nombre.trim()
       });
-      
+
       await cargarPaises();
       toast.add({severity:"success", summary:"Actualizado", detail:"País actualizado correctamente", life: 3000});
       modalEditar.value = false;
+      hasUnsavedChanges.value = false;
     } else {
       await axios.put(`/api/provincias/${itemEdit.value.id}`, {
         nombre: itemEdit.value.nombre.trim(),
@@ -199,6 +271,7 @@ async function actualizarItem(){
       await cargarProvincias();
       toast.add({severity:"success", summary:"Actualizado", detail:"Provincia actualizada correctamente", life: 3000});
       modalEditar.value = false;
+      hasUnsavedChanges.value = false;
     }
   } catch (error) {
     if (error.response?.status === 422) {
@@ -212,11 +285,15 @@ async function actualizarItem(){
       const mensaje = error.response?.data?.message || "No se pudo actualizar";
       toast.add({severity:"error", summary:"Error", detail: mensaje, life: 4000});
     }
+  } finally {
+    isLoading.value = false;
   }
 }
 
 async function eliminarItem(){
   try {
+    isDeleting.value = true;
+
     if (!itemEliminar.value?.id) {
       toast.add({severity:"error", summary:"Error", detail:"No se puede eliminar: ID no válido", life: 3000});
       return;
@@ -231,7 +308,7 @@ async function eliminarItem(){
       await cargarProvincias();
       toast.add({severity:"success", summary:"Eliminado", detail:"Provincia eliminada correctamente", life: 3000});
     }
-    
+
     modalEliminar.value = false;
     itemEliminar.value = null;
   } catch (error) {
@@ -242,12 +319,14 @@ async function eliminarItem(){
       const mensaje = error.response?.data?.message || "No se pudo eliminar";
       toast.add({severity:"error", summary:"Error", detail: mensaje, life: 4000});
     }
+  } finally {
+    isDeleting.value = false;
   }
 }
 
-function confirmarEliminar(item) { 
-  itemEliminar.value = item; 
-  modalEliminar.value = true; 
+function confirmarEliminar(item) {
+  itemEliminar.value = item;
+  modalEliminar.value = true;
 }
 
 // ✅ MEJORAR VALIDACIÓN EN TIEMPO REAL
@@ -257,25 +336,94 @@ const validateNombre = (item, isEdit = false) => {
     target.value.nombre = target.value.nombre.substring(0, 50);
   }
 };
+
+// Variables para controlar cambios sin guardar
+const hasUnsavedChanges = ref(false);
+const pendingAction = ref(null);
+
+// Funciones para el modal de cambios sin guardar
+const checkForUnsavedChanges = (action) => {
+  if (hasUnsavedChanges.value) {
+    pendingAction.value = action;
+    modalCambiosSinGuardar.value = true;
+    return true;
+  }
+  return false;
+};
+
+const closeWithoutSaving = () => {
+  hasUnsavedChanges.value = false;
+  modalCambiosSinGuardar.value = false;
+  if (pendingAction.value) {
+    pendingAction.value();
+    pendingAction.value = null;
+  }
+};
+
+const continueEditing = () => {
+  modalCambiosSinGuardar.value = false;
+  pendingAction.value = null;
+};
+
+// Detectar cambios en los formularios
+const watchFormChanges = () => {
+  // Watch para el formulario de agregar
+  watch([() => nuevoItem.value.nombre, () => nuevoItem.value.pais_id, () => tipoAgregar.value], () => {
+    if (modalAgregar.value && (nuevoItem.value.nombre?.trim() || nuevoItem.value.pais_id || tipoAgregar.value)) {
+      hasUnsavedChanges.value = true;
+    }
+  }, { deep: true });
+
+  // Watch para el formulario de editar
+  watch([() => itemEdit.value.nombre, () => itemEdit.value.pais_id], () => {
+    if (modalEditar.value) {
+      hasUnsavedChanges.value = true;
+    }
+  }, { deep: true });
+};
+
+// Inicializar watchers
+onMounted(() => {
+  watchFormChanges();
+});
 </script>
 
 <template>
   <Head title="Países y Provincias" />
   <AuthenticatedLayout>
-    <Toast />
-    <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-md rounded-lg">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
-        <div class="flex items-center gap-3">
-          <Link :href="route('hoteles')" class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg" title="Regresar a Hoteles">
-            <FontAwesomeIcon :icon="faArrowLeft" class="h-8" />
-          </Link>
-          <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Control de Países y Provincias</h3>
-        </div>
-        <button
-          class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="abrirModalAgregar">
-          <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" /><span>&nbsp;Agregar</span>
-        </button>                
+    <Toast class="z-[9999]" />
+
+    <div class="container mx-auto px-4 py-6">
+      <div class="mb-6">
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Países y Provincias</h1>
+        <p class="text-gray-600">Gestión de países y provincias del sistema</p>
       </div>
+
+      <div class="bg-white rounded-lg shadow-md">
+        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+          <div class="flex items-center gap-3">
+            <Link
+              :href="route('hoteles')"
+              @click="handleHotelesClick"
+              :class="{'opacity-50 cursor-not-allowed': isNavigatingToHoteles}"
+              class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+              title="Regresar a Hoteles">
+              <FontAwesomeIcon
+                :icon="isNavigatingToHoteles ? faSpinner : faArrowLeft"
+                :class="{'animate-spin': isNavigatingToHoteles, 'h-5 w-5': true}"
+              />
+            </Link>
+            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de {{ modoSeleccionado === 'País' ? 'Países' : 'Provincias' }}</h3>
+          </div>
+          <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
+            <button
+              class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2"
+              @click="abrirModalAgregar">
+              <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+              <span>Agregar {{ modoSeleccionado.toLowerCase() }}</span>
+            </button>
+          </div>
+        </div>
 
       <!-- 📊 TABLA OPTIMIZADA -->
       <DataTable
@@ -316,32 +464,32 @@ const validateNombre = (item, isEdit = false) => {
                 </div>
               </div>
               <div class="flex items-center gap-2">
-                <label for="tipo-estado" class="text-sm font-medium text-gray-700">Mostrar:</label>
+                <label for="tipo-estado" class="text-sm font-medium text-gray-700 hidden sm:block">Mostrar:</label>
                 <Select
                   id="tipo-estado"
                   v-model="modoSeleccionado"
                   :options="opcionesMostrar"
                   optionValue="value"
                   optionLabel="label"
-                  class="w-32 h-8 text-sm"
+                  class="w-28 sm:w-32 h-8 text-sm border"
                   style="background-color: white; border-color: #93c5fd;"
                 />
               </div>
             </div>
             <div class="space-y-3">
               <div>
-                <InputText 
-                  v-model="busquedaGeneral" 
-                  v-if="modoSeleccionado==='Provincia'" 
-                  placeholder="🔍 Buscar provincias..." 
-                  class="w-full h-9 text-sm"
+                <InputText
+                  v-model="busquedaGeneral"
+                  v-if="modoSeleccionado==='Provincia'"
+                  placeholder="🔍 Buscar provincias..."
+                  class="w-full h-9 text-sm rounded-md"
                   style="background-color: white; border-color: #93c5fd;"
                 />
-                <InputText 
-                  v-model="busquedaGeneral" 
-                  v-else 
-                  placeholder="🔍 Buscar países..." 
-                  class="w-full h-9 text-sm"
+                <InputText
+                  v-model="busquedaGeneral"
+                  v-else
+                  placeholder="🔍 Buscar países..."
+                  class="w-full h-9 text-sm rounded-md"
                   style="background-color: white; border-color: #93c5fd;"
                 />
               </div>
@@ -349,7 +497,7 @@ const validateNombre = (item, isEdit = false) => {
           </div>
         </template>
 
-        <Column field="nombre" header="Nombre" sortable>
+        <Column field="nombre" header="Nombre" sortable class="w-96 min-w-28">
           <template #body="slotProps">
             <div class="text-sm font-medium leading-relaxed">
               {{ slotProps.data.nombre }}
@@ -357,7 +505,7 @@ const validateNombre = (item, isEdit = false) => {
           </template>
         </Column>
 
-        <Column v-if="modoSeleccionado==='Provincia'" field="pais.nombre" header="País" sortable>
+        <Column v-if="modoSeleccionado==='Provincia'" field="pais.nombre" header="País" sortable class="w-96 min-w-20">
           <template #body="slotProps">
             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               {{ slotProps.data.pais?.nombre || 'Sin país' }}
@@ -365,25 +513,25 @@ const validateNombre = (item, isEdit = false) => {
           </template>
         </Column>
 
-        <Column :exportable="false">
+        <Column :exportable="false" class="w-52 min-w-36">
           <template #header>
             <div class="text-center w-full font-bold">
               Acciones
             </div>
           </template>
           <template #body="slotProps">
-            <div class="flex gap-1 justify-center items-center">
+            <div class="flex gap-2 justify-center items-center">
               <button
-                class="bg-orange-200/30 border py-2 px-3 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                 @click="abrirModalEditar(slotProps.data)">
-                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                &nbsp;Editar
+                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                <span class="hidden md:block text-white">Editar</span>
               </button>
               <button
-                class="bg-red-200/30 border py-2 px-3 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                 @click="confirmarEliminar(slotProps.data)">
-                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                &nbsp;Eliminar
+                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                <span class="hidden md:block text-white">Eliminar</span>
               </button>
             </div>
           </template>
@@ -391,7 +539,7 @@ const validateNombre = (item, isEdit = false) => {
       </DataTable>
 
       <!-- 📝 Modal Agregar CON VALIDACIÓN VISUAL MEJORADA -->
-      <Dialog v-model:visible="modalAgregar" header="Agregar" :modal="true" :closable="false" style="width:400px">
+      <Dialog v-model:visible="modalAgregar" header="Agregar" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
         <div class="flex flex-col gap-4">
           <div class="w-full flex flex-col">
             <label class="text-sm font-medium text-gray-700 mb-2">
@@ -418,10 +566,10 @@ const validateNombre = (item, isEdit = false) => {
             <label class="text-sm font-medium text-gray-700 mb-2">
               Nombre: <span class="text-red-500">*</span>
             </label>
-            <InputText 
-              v-model="nuevoItem.nombre" 
-              placeholder="Nombre (máximo 50 caracteres)" 
-              class="w-full" 
+            <InputText
+              v-model="nuevoItem.nombre"
+              placeholder="Nombre (máximo 50 caracteres)"
+              class="w-full"
               :class="{ 'border-red-300': !nuevoItem.nombre || nuevoItem.nombre.trim() === '' }"
               :disabled="!tipoAgregar"
               maxlength="50"
@@ -454,27 +602,30 @@ const validateNombre = (item, isEdit = false) => {
           </div>
         </div>
         <template #footer>
-          <div class="flex justify-center gap-4 w-full">
-            <button 
-              type="button" 
-              class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
-              @click="modalAgregar=false">
-              <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />
-              Cancelar
-            </button>
-            <button 
-              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+          <div class="flex justify-center gap-4 w-full mt-6">
+            <button
+              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="guardarItem"
-              :disabled="!nuevoItem.nombre?.trim() || !tipoAgregar || nuevoItem.nombre.trim().length > 50 || (tipoAgregar === 'Provincia' && !nuevoItem.pais_id)">
-              <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-              Guardar
+              :disabled="!nuevoItem.nombre?.trim() || !tipoAgregar || nuevoItem.nombre.trim().length > 50 || (tipoAgregar === 'Provincia' && !nuevoItem.pais_id) || isLoading">
+              <FontAwesomeIcon
+                :icon="isLoading ? faSpinner : faCheck"
+                :class="[
+                  'h-5 text-white',
+                  { 'animate-spin': isLoading }
+                ]"
+              />
+              <span v-if="!isLoading">Guardar</span>
+              <span v-else>Guardando...</span>
+            </button>
+            <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="() => { if (!checkForUnsavedChanges(() => { modalAgregar = false; hasUnsavedChanges = false; })) { modalAgregar = false; hasUnsavedChanges = false; } }" :disabled="isLoading">
+              <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
             </button>
           </div>
         </template>
       </Dialog>
 
       <!-- ✏️ Modal Editar CON VALIDACIÓN VISUAL MEJORADA -->
-      <Dialog v-model:visible="modalEditar" :header="`Editar ${modoSeleccionado}`" :modal="true" :closable="false" style="width:400px">
+      <Dialog v-model:visible="modalEditar" :header="`Editar ${modoSeleccionado}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
         <div class="flex flex-col gap-4">
           <div v-if="modoSeleccionado==='Provincia'" class="w-full flex flex-col">
             <label class="text-sm font-medium text-gray-700 mb-2">
@@ -498,10 +649,10 @@ const validateNombre = (item, isEdit = false) => {
             <label class="text-sm font-medium text-gray-700 mb-2">
               Nombre: <span class="text-red-500">*</span>
             </label>
-            <InputText 
-              v-model="itemEdit.nombre" 
-              placeholder="Nombre (máximo 50 caracteres)" 
-              class="w-full" 
+            <InputText
+              v-model="itemEdit.nombre"
+              placeholder="Nombre (máximo 50 caracteres)"
+              class="w-full"
               :class="{ 'border-red-300': !itemEdit.nombre || itemEdit.nombre.trim() === '' }"
               maxlength="50"
               @keypress="e => { if (!/[A-Za-zÀ-ÿ\s]/.test(e.key)) e.preventDefault() }"
@@ -515,53 +666,144 @@ const validateNombre = (item, isEdit = false) => {
           </div>
         </div>
         <template #footer>
-          <div class="flex justify-center gap-4 w-full">
-            <button 
-              type="button" 
-              class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
-              @click="modalEditar=false">
-              <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />
-              Cancelar
-            </button>
-            <button 
-              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed" 
+          <div class="flex justify-center gap-4 w-full mt-6">
+            <button
+              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="actualizarItem"
-              :disabled="!itemEdit.nombre?.trim() || itemEdit.nombre.trim().length > 50 || (modoSeleccionado === 'Provincia' && !itemEdit.pais_id)">
-              <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-              Actualizar
+              :disabled="!itemEdit.nombre?.trim() || itemEdit.nombre.trim().length > 50 || (modoSeleccionado === 'Provincia' && !itemEdit.pais_id) || isLoading">
+              <FontAwesomeIcon
+                :icon="isLoading ? faSpinner : faCheck"
+                :class="[
+                  'h-5 text-white',
+                  { 'animate-spin': isLoading }
+                ]"
+              />
+              <span v-if="!isLoading">Actualizar</span>
+              <span v-else>Actualizando...</span>
+            </button>
+            <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="() => { if (!checkForUnsavedChanges(() => { modalEditar = false; hasUnsavedChanges = false; })) { modalEditar = false; hasUnsavedChanges = false; } }" :disabled="isLoading">
+              <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
             </button>
           </div>
-        </template> 
+        </template>
       </Dialog>
 
       <!-- 🗑️ Modal Confirmar eliminar -->
-      <Dialog v-model:visible="modalEliminar" :header="`Eliminar ${modoSeleccionado}`" :modal="true" :closable="false" style="width:400px">
-        <div class="flex items-center gap-3 mb-4">
-          <FontAwesomeIcon :icon="faTrashCan" class="h-8 w-8 text-red-500" />
+      <Dialog v-model:visible="modalEliminar" :header="`Eliminar ${modoSeleccionado}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
+        <div class="flex items-center gap-3">
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
           <div class="flex flex-col">
-            <span>¿Estás seguro de eliminar <b>{{ itemEliminar?.nombre }}</b>?</span>
+            <span>¿Estás seguro de eliminar {{ modoSeleccionado.toLowerCase() }}: <b>{{ itemEliminar?.nombre }}</b>?</span>
             <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
           </div>
         </div>
         <template #footer>
           <div class="flex justify-center gap-4 w-full">
-            <button 
-              type="button" 
-              class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
-              @click="modalEliminar=false">
-              <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />
-              Cancelar
-            </button>
-            <button 
-              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+            <button
+              type="button"
+              class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               @click="eliminarItem"
-              :disabled="!itemEliminar || !itemEliminar.nombre">
-              <FontAwesomeIcon :icon="faTrashCan" class="h-5 text-white" />
-              Eliminar
+              :disabled="!itemEliminar || !itemEliminar.nombre || isDeleting">
+              <FontAwesomeIcon
+                :icon="isDeleting ? faSpinner : faCheck"
+                :class="[
+                  'h-5',
+                  { 'animate-spin': isDeleting }
+                ]"
+              />
+              <span v-if="!isDeleting">Eliminar</span>
+              <span v-else>Eliminando...</span>
+            </button>
+            <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+              @click="modalEliminar=false" :disabled="isDeleting">
+              <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
             </button>
           </div>
         </template>
       </Dialog>
+
+      <!-- Modal de Cambios sin guardar -->
+      <Dialog v-model:visible="modalCambiosSinGuardar" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+        <div class="flex items-center gap-3">
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+          <div class="flex flex-col">
+            <span>¡Tienes información sin guardar!</span>
+            <span class="text-red-600 text-sm font-medium mt-1">¿Deseas salir sin guardar?</span>
+          </div>
+        </div>
+        <template #footer>
+          <div class="flex justify-center gap-3 w-full">
+            <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+              @click="closeWithoutSaving">
+              <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
+            </button>
+            <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+              @click="continueEditing">
+              <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
+            </button>
+          </div>
+        </template>
+      </Dialog>
+      </div>
     </div>
   </AuthenticatedLayout>
 </template>
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+/* Fin de la animación para el spinner de loading */
+</style>

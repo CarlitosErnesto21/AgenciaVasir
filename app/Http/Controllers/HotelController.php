@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Hotel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class HotelController extends Controller
 {
@@ -38,8 +40,8 @@ class HotelController extends Controller
             'estado' => 'required|string|max:20',
             'provincia_id' => 'required|exists:provincias,id',
             'categoria_id' => 'required|exists:categorias_hoteles,id',
-            'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes' => 'nullable|array|max:5',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $hotel = Hotel::create($validated);
@@ -51,7 +53,9 @@ class HotelController extends Controller
                     $path = $imagen->store('hoteles', 'public');
                     $nombreArchivo = basename($path);
                     $hotel->imagenes()->create([
-                        'nombre' => $nombreArchivo
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Hotel::class,
+                        'imageable_id' => $hotel->id
                     ]);
                 }
             }
@@ -69,13 +73,29 @@ class HotelController extends Controller
         $validated = $request->validate([
             'nombre' => 'required|string|max:50',
             'direccion' => 'required|string|max:200',
-            'descripcion' => 'required|string|max:500',
+            'descripcion' => 'required|string|max:255',
             'estado' => 'required|string|max:20',
             'provincia_id' => 'required|exists:provincias,id',
             'categoria_id' => 'required|exists:categorias_hoteles,id',
             'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
+            'removed_images' => 'nullable|array',
         ]);
+
+        // Validar límite total de imágenes (existentes + nuevas - eliminadas)
+        $imagenesExistentes = $hotele->imagenes()->count();
+        $imagenesAEliminar = $request->has('removed_images') ? count($request->input('removed_images')) : 0;
+        $imagenesNuevas = $request->hasFile('imagenes') ? count($request->file('imagenes')) : 0;
+        $totalImagenesFinales = $imagenesExistentes - $imagenesAEliminar + $imagenesNuevas;
+
+        if ($totalImagenesFinales > 5) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => [
+                    'imagenes' => ['El total de imágenes no puede exceder 5. Actualmente tienes ' . $imagenesExistentes . ' imágenes, intentas agregar ' . $imagenesNuevas . ' y eliminar ' . $imagenesAEliminar . '.']
+                ]
+            ], 422);
+        }
 
         $hotele->update($validated);
 
@@ -87,7 +107,9 @@ class HotelController extends Controller
                     $path = $imagen->store('hoteles', 'public');
                     $nombreArchivo = basename($path);
                     $hotele->imagenes()->create([
-                        'nombre' => $nombreArchivo
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Hotel::class,
+                        'imageable_id' => $hotele->id
                     ]);
                 }
             }
@@ -148,5 +170,69 @@ class HotelController extends Controller
         return response()->json([
             'message' => 'Hotel eliminado exitosamente',
         ]);
+    }
+
+
+
+    /**
+     * Obtener estadísticas de un hotel
+     */
+    public function obtenerEstadisticas($id)
+    {
+        $hotel = Hotel::with(['detalleReservas.reserva'])->findOrFail($id);
+        $estadisticas = $this->obtenerEstadisticasHotel($hotel);
+
+        return response()->json([
+            'success' => true,
+            'estadisticas' => $estadisticas
+        ]);
+    }
+
+    /**
+     * Método privado para calcular estadísticas del hotel
+     */
+    private function obtenerEstadisticasHotel($hotel)
+    {
+        $reservas = $hotel->detalleReservas()
+            ->with('reserva')
+            ->whereHas('reserva')
+            ->get();
+
+        $totalReservas = $reservas->count();
+        $reservasConfirmadas = $reservas->where('reserva.estado', 'confirmado')->count();
+        $reservasPendientes = $reservas->where('reserva.estado', 'pendiente')->count();
+        $reservasCanceladas = $reservas->where('reserva.estado', 'cancelado')->count();
+
+        // Calcular ingresos totales (si existe el campo)
+        $ingresosTotales = $reservas->where('reserva.estado', 'confirmado')
+            ->sum('reserva.total') ?? 0;
+
+        // Reservas por mes (últimos 6 meses)
+        $reservasPorMes = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $fecha = Carbon::now()->subMonths($i);
+            $mes = $fecha->format('Y-m');
+            $nombreMes = $fecha->translatedFormat('F Y');
+
+            $count = $reservas->filter(function ($detalle) use ($mes) {
+                return $detalle->reserva &&
+                       Carbon::parse($detalle->reserva->created_at)->format('Y-m') === $mes;
+            })->count();
+
+            $reservasPorMes[] = [
+                'mes' => $nombreMes,
+                'cantidad' => $count
+            ];
+        }
+
+        return [
+            'total_reservas' => $totalReservas,
+            'reservas_confirmadas' => $reservasConfirmadas,
+            'reservas_pendientes' => $reservasPendientes,
+            'reservas_canceladas' => $reservasCanceladas,
+            'ingresos_totales' => $ingresosTotales,
+            'reservas_por_mes' => $reservasPorMes,
+            'tasa_confirmacion' => $totalReservas > 0 ? round(($reservasConfirmadas / $totalReservas) * 100, 2) : 0
+        ];
     }
 }

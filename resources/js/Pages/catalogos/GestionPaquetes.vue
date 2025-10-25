@@ -5,7 +5,8 @@ import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faTrashCan, faXmark, faSpinner, faListDots } from "@fortawesome/free-solid-svg-icons";
+import PaqueteModals from "./Components/GestionPaqueteComponents/Modales.vue";
 import axios from "axios";
 // --------- CONDICIONES Y RECORDATORIO LISTA
 const condicionesLista = ref([]);
@@ -80,6 +81,12 @@ const submitted = ref(false);
 const hasUnsavedChanges = ref(false);
 const originalPaqueteData = ref(null);
 
+// Variables para modales de paquetes
+const moreActionsDialog = ref(false);
+const showDetailsModal = ref(false);
+const showImageCarouselDialog = ref(false);
+const selectedPaquete = ref(null);
+
 
 // Filtros avanzados y helpers de fechas
 const filters = ref({
@@ -96,6 +103,7 @@ const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
 const url = "/api/paquetes";
+const IMAGE_PATH = "/storage/paquetes/";
 const paises = ref([]);
 const provincias = ref([]);
 const showImageDialog = ref(false);
@@ -596,6 +604,100 @@ const deletePaquete = async () => {
     }
 }
 
+// --------- FUNCIONES PARA MODALES DE PAQUETES
+const openMoreActionsModal = (paqueteData) => {
+    selectedPaquete.value = paqueteData;
+    moreActionsDialog.value = true;
+};
+
+const openDetailsModal = (paqueteData) => {
+    selectedPaquete.value = paqueteData;
+    showDetailsModal.value = true;
+};
+
+const openImageModal = (index) => {
+    carouselIndex.value = index;
+    selectedImages.value = selectedPaquete.value?.imagenes || [];
+    showImageCarouselDialog.value = true;
+};
+
+const duplicatePaquete = (paqueteItem) => {
+    // Crear un nuevo paquete basado en el seleccionado
+    paquete.value = {
+        id: null,
+        nombre: `${paqueteItem.nombre} (Copia)`,
+        descripcion: paqueteItem.descripcion,
+        precio: paqueteItem.precio,
+        duracion: paqueteItem.duracion,
+        fecha_salida: paqueteItem.fecha_salida,
+        fecha_regreso: paqueteItem.fecha_regreso,
+        pais_id: paqueteItem.pais_id,
+        provincia_id: paqueteItem.provincia_id,
+        condiciones: paqueteItem.condiciones || [],
+        recordatorio: paqueteItem.recordatorio || [],
+        imagenes: [],
+    };
+    
+    // Configurar las listas
+    condicionesLista.value = Array.isArray(paqueteItem.condiciones) ? [...paqueteItem.condiciones] : [];
+    recordatorioLista.value = Array.isArray(paqueteItem.recordatorio) ? [...paqueteItem.recordatorio] : [];
+    
+    imagenPreviewList.value = Array.isArray(paqueteItem.imagenes)
+        ? paqueteItem.imagenes.map((img) => (typeof img === "string" ? img : img.nombre))
+        : [];
+    imagenFiles.value = [];
+    removedImages.value = [];
+    submitted.value = false;
+    btnTitle.value = "Guardar";
+    hasUnsavedChanges.value = false;
+    
+    // Establecer datos originales para duplicación
+    originalPaqueteData.value = {
+        ...paqueteItem,
+        id: null,
+        nombre: `${paqueteItem.nombre} (Copia)`,
+        imagenes_originales: Array.isArray(paqueteItem.imagenes)
+            ? paqueteItem.imagenes.map((img) => (typeof img === "string" ? img : img.nombre))
+            : []
+    };
+    
+    dialog.value = true;
+
+    toast.add({
+        severity: "info",
+        summary: "Paquete duplicado",
+        detail: "Se ha creado una copia del paquete para editar",
+        life: 3000,
+    });
+};
+
+const changePaqueteStatus = (paqueteItem) => {
+    toast.add({
+        severity: "info",
+        summary: "Cambio de estado",
+        detail: `Función para cambiar estado de: ${paqueteItem.nombre}`,
+        life: 3000,
+    });
+};
+
+const generatePaqueteReport = (paqueteItem) => {
+    toast.add({
+        severity: "info",
+        summary: "Generar reporte",
+        detail: `Generando reporte para: ${paqueteItem.nombre}`,
+        life: 3000,
+    });
+};
+
+const archivePaquete = (paqueteItem) => {
+    toast.add({
+        severity: "info",
+        summary: "Archivar paquete",
+        detail: `Archivando paquete: ${paqueteItem.nombre}`,
+        life: 3000,
+    });
+};
+
 // --------- FILTERS
 const clearFilters = () => {
     selectedPais.value = null;
@@ -763,24 +865,35 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                         </div>
                     </template>
                     <template #body="slotProps">
-                        <div class="flex gap-1 justify-center items-center w-64">
+                        <div class="flex gap-2 justify-center items-center">
+                            <!-- Botón Ver Más -->
                             <button
-                                class="bg-orange-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="editPaquete(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                                &nbsp;Editar
+                                class="flex bg-green-500 hover:bg-green-600 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="openMoreActionsModal(slotProps.data)"
+                                title="Más acciones"
+                            >
+                                <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Más</span>
                             </button>
+
+                            <!-- Botón Editar -->
                             <button
-                                class="bg-blue-200/50 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="viewImages(slotProps.data.imagenes)">
-                                <FontAwesomeIcon :icon="faImages" class="h-4 w-4 text-blue-600" />
-                                &nbsp;Imgs
+                                class="flex bg-blue-500 hover:bg-blue-600 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="editPaquete(slotProps.data)"
+                                title="Editar paquete"
+                            >
+                                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Editar</span>
                             </button>
+
+                            <!-- Botón Eliminar -->
                             <button
-                                class="bg-red-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                @click="confirmDeletePaquete(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                                &nbsp;Eliminar
+                                class="flex bg-red-500 hover:bg-red-600 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="confirmDeletePaquete(slotProps.data)"
+                                title="Eliminar paquete"
+                            >
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
@@ -1001,6 +1114,32 @@ watch([paquete, incluyeLista, imagenPreviewList, removedImages], () => {
                 </template>
             </Dialog>
         </div>
+
+        <!-- 🎭 Componente de modales separado -->
+        <PaqueteModals
+            v-model:visible="moreActionsDialog"
+            v-model:detailsVisible="showDetailsModal"
+            v-model:carouselVisible="showImageCarouselDialog"
+            v-model:deleteVisible="deleteDialog"
+            v-model:unsavedChangesVisible="unsavedChangesDialog"
+            :paquete="selectedPaquete"
+            :dialogStyle="dialogStyle"
+            :selectedImages="selectedImages"
+            :carouselIndex="carouselIndex"
+            :imagePath="IMAGE_PATH"
+            :isDeleting="isDeleting"
+            @update:carouselIndex="carouselIndex = $event"
+            @duplicate="duplicatePaquete"
+            @changeStatus="changePaqueteStatus"
+            @generateReport="generatePaqueteReport"
+            @archive="archivePaquete"
+            @viewDetails="openDetailsModal"
+            @openImageModal="openImageModal"
+            @deletePaquete="deletePaquete"
+            @cancelDelete="deleteDialog = false"
+            @closeWithoutSaving="closeDialogWithoutSaving"
+            @continueEditing="continueEditing"
+        />
     </AuthenticatedLayout>
 </template>
 

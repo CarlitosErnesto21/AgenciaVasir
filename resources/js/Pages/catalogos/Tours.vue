@@ -1323,13 +1323,20 @@ const onPricePaste = (event) => {
 
 </script>
 <template>
-    <Head title="Tours" />
     <AuthenticatedLayout>
+        <Head title="Tours" />
         <Toast class="z-[9999]" />
-        <div class="px-auto md:px-2 mt-6">
-            <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4">
-                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start ml-0 sm:ml-4">Catálogo de Tours</h3>
-                <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end mr-0 sm:mr-4">
+
+        <div class="container mx-auto px-4 py-6">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours</h1>
+                <p class="text-gray-600">Gestión completa de paquetes turísticos</p>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Tours</h3>
+                    <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link
                         :href="route('transportes')"
                         @click="handleTransportesClick"
@@ -1543,22 +1550,22 @@ const onPricePaste = (event) => {
                     <template #body="slotProps">
                         <div class="flex gap-2 justify-center items-center">
                             <button
-                                class="flex bg-green-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="openMoreActionsModal(slotProps.data)"
                                 title="Más acciones">
-                                <FontAwesomeIcon :icon="faListDots" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Más</span>
                             </button>
                             <button
-                                class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editTour(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteTour(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
@@ -1859,6 +1866,7 @@ const onPricePaste = (event) => {
                 :dialog-style="dialogStyle"
                 @estado-actualizado="handleEstadoActualizado"
             />
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>

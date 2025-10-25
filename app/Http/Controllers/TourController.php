@@ -100,7 +100,11 @@ class TourController extends Controller
                         continue;
                     }
 
-                    $tour->imagenes()->create(['nombre' => $nombreArchivo]);
+                    $tour->imagenes()->create([
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Tour::class,
+                        'imageable_id' => $tour->id
+                    ]);
                 }
             }
         }
@@ -203,7 +207,11 @@ class TourController extends Controller
                         continue;
                     }
 
-                    $tour->imagenes()->create(['nombre' => $nombreArchivo]);
+                    $tour->imagenes()->create([
+                        'nombre' => $nombreArchivo,
+                        'imageable_type' => Tour::class,
+                        'imageable_id' => $tour->id
+                    ]);
                 }
             }
         }

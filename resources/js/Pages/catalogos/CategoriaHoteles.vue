@@ -1,10 +1,11 @@
 <script setup>
-import { ref, watch, onMounted, nextTick } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue'
 import { Head, Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useToast } from 'primevue/usetoast'
+import { FilterMatchMode } from "@primevue/core/api"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faArrowLeft, faCheck, faExclamationTriangle, faPencil, faPlus, faSignOut, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faCheck, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 
 const toast = useToast()
@@ -16,6 +17,25 @@ const categoria = ref({
     nombre: ""
 })
 
+// Estados de carga
+const isLoading = ref(false)
+const isDeleting = ref(false)
+const isNavigatingToHoteles = ref(false)
+
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) {
+        return { width: '95vw', maxWidth: '380px' }
+    } else if (windowWidth.value < 768) {
+        return { width: '400px' }
+    } else {
+        return { width: '450px' }
+    }
+})
+
 // 📝 Modal states
 const dialog = ref(false)
 const deleteDialog = ref(false)
@@ -24,10 +44,37 @@ const submitted = ref(false)
 const hasUnsavedChanges = ref(false)
 const originalCategoriaData = ref(null)
 
+// Filtros
+const filters = ref({
+    global: { value: null, matchMode: FilterMatchMode.CONTAINS }
+})
+
 // 📄 Paginación
 const rowsPerPage = ref(10)
 const rowsPerPageOptions = ref([5, 10, 20, 50])
 const btnTitle = ref("Guardar")
+
+// Categorías filtradas
+const categoriasFiltradas = computed(() => {
+    let filtered = categorias.value
+    if (filters.value.global.value) {
+        const searchTerm = filters.value.global.value.toLowerCase()
+        filtered = filtered.filter(categoria =>
+            categoria.nombre.toLowerCase().includes(searchTerm)
+        )
+    }
+    return filtered
+})
+
+// Validación reactiva para nombre duplicado
+const nombreDuplicado = computed(() => {
+    if (!categoria.value.nombre || categoria.value.nombre.length < 3) return false
+
+    return categorias.value.some(cat =>
+        cat.nombre.toLowerCase() === categoria.value.nombre.toLowerCase() &&
+        cat.id !== categoria.value.id // Excluir la categoría actual al editar
+    )
+})
 
 // 👀 Watcher para detectar cambios en el modal
 watch([categoria], () => {
@@ -48,9 +95,30 @@ function resetForm() {
     submitted.value = false
 }
 
+// Funciones para manejo de ventana
+const updateWindowWidth = () => {
+    if (typeof window !== 'undefined') {
+        windowWidth.value = window.innerWidth
+    }
+}
+
+// Función para manejar navegación a hoteles
+const handleHotelesClick = () => {
+    isNavigatingToHoteles.value = true
+}
+
 // 📊 Cargar datos
 onMounted(() => {
-    cargarCategorias()
+    cargarCategoriasWithToasts()
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', updateWindowWidth)
+    }
+})
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', updateWindowWidth)
+    }
 })
 
 const cargarCategorias = async () => {
@@ -61,11 +129,42 @@ const cargarCategorias = async () => {
             categoria_id: cat.id
         })).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     } catch (error) {
-        toast.add({ 
-            severity: 'error', 
-            summary: 'Error', 
-            detail: `No se pudieron cargar las categorías de hoteles.`, 
-            life: 4000 
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `No se pudieron cargar las categorías de hoteles.`,
+            life: 4000
+        })
+    }
+}
+
+const cargarCategoriasWithToasts = async () => {
+    // Mostrar toast de carga
+    toast.add({
+        severity: "info",
+        summary: "Cargando categorías...",
+        life: 2000
+    });
+
+    try {
+        const response = await axios.get(`/api/categorias-hoteles`)
+        categorias.value = (response.data.data || response.data || []).map(cat => ({
+            ...cat,
+            categoria_id: cat.id
+        })).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Categorías cargadas",
+            life: 2000
+        });
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: `No se pudieron cargar las categorías de hoteles.`,
+            life: 4000
         })
     }
 }
@@ -96,14 +195,27 @@ const editCategoria = (c) => {
 
 const saveOrUpdate = async () => {
     submitted.value = true
+    isLoading.value = true
 
     if (!categoria.value.nombre || categoria.value.nombre.length < 3 || categoria.value.nombre.length > 50) {
-        toast.add({ 
-            severity: "warn", 
-            summary: "Campos requeridos", 
-            detail: "El nombre debe tener entre 3 y 50 caracteres.", 
-            life: 4000 
+        toast.add({
+            severity: "warn",
+            summary: "Campos requeridos",
+            detail: "El nombre debe tener entre 3 y 50 caracteres.",
+            life: 4000
         })
+        isLoading.value = false
+        return
+    }
+
+    if (nombreDuplicado.value) {
+        toast.add({
+            severity: "warn",
+            summary: "Categoría duplicada",
+            detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`,
+            life: 6000
+        })
+        isLoading.value = false
         return
     }
 
@@ -126,17 +238,53 @@ const saveOrUpdate = async () => {
         originalCategoriaData.value = null
         resetForm()
     } catch (err) {
-        const mensaje = err.response?.data?.message || 'Error al procesar la categoría.'
-        toast.add({ severity: "error", summary: "Error", detail: mensaje, life: 6000 })
+        if (err.response && err.response.status === 422) {
+            // Error de validación
+            const errors = err.response.data.errors
+            if (errors && errors.nombre) {
+                // Error específico del campo nombre (duplicado u otro)
+                const errorMessage = errors.nombre[0]
+                if (errorMessage.includes('unique') || errorMessage.includes('ya existe') || errorMessage.includes('duplicado')) {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Categoría duplicada",
+                        detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`,
+                        life: 6000
+                    })
+                } else {
+                    toast.add({
+                        severity: "warn",
+                        summary: "Error de validación",
+                        detail: errorMessage,
+                        life: 5000
+                    })
+                }
+            } else {
+                // Otros errores de validación
+                toast.add({
+                    severity: "warn",
+                    summary: "Error de validación",
+                    detail: err.response.data.message || 'Por favor verifica los datos ingresados.',
+                    life: 5000
+                })
+            }
+        } else {
+            // Otros errores del servidor
+            const mensaje = err.response?.data?.message || 'Error al procesar la categoría.'
+            toast.add({ severity: "error", summary: "Error", detail: mensaje, life: 6000 })
+        }
+    } finally {
+        isLoading.value = false
     }
 }
 
-const confirmDeleteCategoria = (c) => { 
+const confirmDeleteCategoria = (c) => {
     categoria.value = { ...c }
     deleteDialog.value = true
 }
 
 const deleteCategoria = async () => {
+    isDeleting.value = true
     try {
         await axios({
             method: 'POST',
@@ -148,8 +296,15 @@ const deleteCategoria = async () => {
         toast.add({ severity: "success", summary: "¡Eliminada!", detail: "La categoría ha sido eliminada correctamente.", life: 5000 })
     } catch (err) {
         deleteDialog.value = false
-        const errorMsg = err.response?.data?.error || err.message || "Error desconocido"
-        toast.add({ severity: "error", summary: "Error", detail: `No se pudo eliminar la categoría: ${errorMsg}`, life: 6000 })
+        // 🎯 Manejar casos específicos como categorías con hoteles asociados
+        if (err.response?.status === 422) {
+            toast.add({severity:"warn", summary:"No se puede eliminar", detail: err.response.data.message, life: 5000})
+        } else {
+            const errorMsg = err.response?.data?.error || err.message || "Error desconocido"
+            toast.add({ severity: "error", summary: "Error", detail: `No se pudo eliminar la categoría: ${errorMsg}`, life: 6000 })
+        }
+    } finally {
+        isDeleting.value = false
     }
 }
 
@@ -182,26 +337,44 @@ const validateNombre = () => {
 </script>
 
 <template>
-    <Head title="Control de Categorías de Hoteles" />
     <AuthenticatedLayout>
-        <Toast class="z-[9999]" />        
-        <div class="py-4 sm:py-6 px-4 sm:px-7 mt-6 sm:mt-10 mx-auto bg-red-50 shadow-md rounded-lg h-screen-full">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2 sm:gap-0">
-                <div class="flex items-center gap-3">
-                    <Link :href="route('hoteles')" class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg" title="Regresar a Hoteles">
-                        <FontAwesomeIcon :icon="faArrowLeft" class="h-8" />
-                    </Link>
-                    <h3 class="text-lg sm:text-2xl text-blue-600 font-bold">Control de categorías de hoteles</h3>
-                </div>
-                <button
-                    class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300" @click="openNew">
-                    <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 text-white" /><span>&nbsp;Agregar categoría</span>
-                </button>                
+        <Head title="Control de Categorías de Hoteles" />
+        <Toast class="z-[9999]" />
+
+        <div class="container mx-auto px-4 py-6">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Categorías de Hoteles</h1>
+                <p class="text-gray-600">Gestión de categorías de hoteles</p>
             </div>
 
-            <!-- Tabla sin filtros -->
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                    <div class="flex items-center gap-3">
+                        <Link
+                            :href="route('hoteles')"
+                            @click="handleHotelesClick"
+                            :class="{'opacity-50 cursor-not-allowed': isNavigatingToHoteles}"
+                            class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+                            title="Regresar a Hoteles">
+                            <FontAwesomeIcon
+                                :icon="isNavigatingToHoteles ? faSpinner : faArrowLeft"
+                                :class="{'animate-spin': isNavigatingToHoteles, 'h-5 w-5': true}"
+                            />
+                        </Link>
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Categorías</h3>
+                    </div>
+                    <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
+                        <button
+                            class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2"
+                            @click="openNew">
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                            <span>Agregar categoría</span>
+                        </button>
+                    </div>
+                </div>
+
             <DataTable
-                :value="categorias"
+                :value="categoriasFiltradas"
                 dataKey="id"
                 :paginator="true"
                 :rows="rowsPerPage"
@@ -210,10 +383,28 @@ const validateNombre = () => {
                 paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
                 currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} categorías"
                 class="overflow-x-auto max-w-full"
-                style="display: block; max-width: 84vw"
                 responsiveLayout="scroll"
+                :pt="{
+                    root: { class: 'text-sm' },
+                    wrapper: { class: 'text-sm' },
+                    table: { class: 'text-sm' },
+                    thead: { class: 'text-sm' },
+                    headerRow: { class: 'text-sm' },
+                    headerCell: { class: 'text-sm font-medium py-3 px-2' },
+                    tbody: { class: 'text-sm' },
+                    bodyRow: { class: 'h-16 text-sm' },
+                    bodyCell: { class: 'py-3 px-2 text-sm' },
+                    paginator: { class: 'text-xs sm:text-sm' },
+                    paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
+                }"
             >
-                <Column field="nombre" header="Nombre" sortable class="w-96 min-w-96">
+                <template #header>
+                    <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
+                        <InputText v-model="filters['global'].value" placeholder="🔍 Buscar categorías..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                    </div>
+                </template>
+
+                <Column field="nombre" header="Nombre" sortable class="w-96 min-w-52">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed">
                             {{ slotProps.data.nombre }}
@@ -221,52 +412,57 @@ const validateNombre = () => {
                     </template>
                 </Column>
 
-                <Column :exportable="false" class="w-56 min-w-56">
+                <Column :exportable="false" class="w-52 min-w-28">
                     <template #header>
                         <div class="text-center w-full font-bold">
                             Acciones
                         </div>
                     </template>
                     <template #body="slotProps">
-                        <div class="flex gap-1 justify-center items-center w-64">
+                        <div class="flex gap-2 justify-center items-center">
                             <button
-                                class="bg-orange-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editCategoria(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-4 text-orange-600" />
-                                &nbsp;Editar
+                                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="bg-red-200/30 border py-2 px-1 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteCategoria(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-4 text-red-600" />
-                                &nbsp;Eliminar
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
                 </Column>
             </DataTable>
 
-            <!-- 📝 Modal de formulario -->
-            <Dialog v-model:visible="dialog" :header="btnTitle + ' Categoría'" :modal="true" :style="{ width: '450px' }" :closable="false">
+            <!-- Modal de formulario -->
+            <Dialog v-model:visible="dialog" :header="btnTitle + ' Categoría'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
+                    <!-- Nombre -->
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
                             <label for="nombre" class="w-24 flex items-center gap-1">
                                 Nombre: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText 
-                                v-model.trim="categoria.nombre" 
-                                id="nombre" 
-                                name="nombre" 
-                                :maxlength="50" 
-                                :class="{'p-invalid': submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)}" 
-                                class="flex-1" 
+                            <InputText
+                                v-model.trim="categoria.nombre"
+                                id="nombre"
+                                name="nombre"
+                                :maxlength="50"
+                                :class="{'p-invalid': (submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)) || nombreDuplicado}"
+                                class="flex-1"
                                 @input="validateNombre"
                                 placeholder="Nombre de la categoría"
+                                @keypress="e => { if (!/[A-Za-zÀ-ÿ\s]/.test(e.key)) e.preventDefault() }"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
                             El nombre debe tener al menos 3 caracteres. Actual: {{ categoria.nombre.length }}/3
+                        </small>
+                        <small class="text-red-500 ml-28" v-if="nombreDuplicado">
+                            Ya existe una categoría con este nombre. Por favor, elige un nombre diferente.
                         </small>
                         <small class="text-orange-500 ml-28" v-if="categoria.nombre && categoria.nombre.length >= 45 && categoria.nombre.length <= 50">
                             Caracteres restantes: {{ 50 - categoria.nombre.length }}
@@ -278,28 +474,31 @@ const validateNombre = () => {
                 </div>
 
                 <template #footer>
-                    <div class="flex justify-center gap-4 w-full">
-                        <button 
-                            type="button" 
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
-                            @click="hideDialog"
-                        >
-                            <FontAwesomeIcon :icon="faXmark" class="h-5 text-green-600" />
-                            Cancelar
-                        </button>
-                        <button 
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+                    <div class="flex justify-center gap-4 w-full mt-6">
+                        <button
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
+                            :disabled="nombreDuplicado || isLoading"
                         >
-                            <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-                            {{ btnTitle }}
+                            <FontAwesomeIcon
+                                :icon="isLoading ? faSpinner : faCheck"
+                                :class="[
+                                    'h-5 text-white',
+                                    { 'animate-spin': isLoading }
+                                ]"
+                            />
+                            <span v-if="!isLoading">{{ btnTitle }}</span>
+                            <span v-else>{{ btnTitle === 'Guardar' ? 'Guardando...' : 'Actualizando...' }}</span>
+                        </button>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
                         </button>
                     </div>
                 </template>
             </Dialog>
 
-            <!-- 🗑️ Modal de confirmación de eliminación -->
-            <Dialog v-model:visible="deleteDialog" header="Eliminar categoría" :modal="true" :style="{ width: '350px' }" :closable="false">
+            <!-- Modal de confirmación de eliminación -->
+            <Dialog v-model:visible="deleteDialog" header="Eliminar categoría" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -309,28 +508,32 @@ const validateNombre = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-4 w-full">
-                        <button 
-                            type="button" 
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="deleteDialog = false"
-                        >
-                            <FontAwesomeIcon :icon="faXmark" class="h-5" />
-                            <span>No</span>
-                        </button>
-                        <button 
-                            type="button" 
-                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        <button
+                            type="button"
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="deleteCategoria"
+                            :disabled="isDeleting"
                         >
-                            <FontAwesomeIcon :icon="faCheck" class="h-5" />
-                            <span>Sí</span>
+                            <FontAwesomeIcon
+                                :icon="isDeleting ? faSpinner : faCheck"
+                                :class="[
+                                    'h-5',
+                                    { 'animate-spin': isDeleting }
+                                ]"
+                            />
+                            <span v-if="!isDeleting">Eliminar</span>
+                            <span v-else>Eliminando...</span>
+                        </button>
+                        <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="deleteDialog = false" :disabled="isDeleting">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                         </button>
                     </div>
                 </template>
             </Dialog>
 
-            <!-- ⚠️ Modal de cambios sin guardar -->
-            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="{ width: '400px' }" :closable="false">
+            <!-- Modal de cambios sin guardar -->
+            <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -340,25 +543,86 @@ const validateNombre = () => {
                 </div>
                 <template #footer>
                     <div class="flex justify-center gap-3 w-full">
-                        <button 
-                            type="button" 
-                            class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                            @click="continueEditing"
-                        >
-                            <FontAwesomeIcon :icon="faPencil" class="h-4" />
-                            <span>Continuar</span>
-                        </button>
-                        <button 
-                            type="button" 
+                        <button
+                            type="button"
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                             @click="closeDialogWithoutSaving"
                         >
                             <FontAwesomeIcon :icon="faSignOut" class="h-4" />
                             <span>Salir sin guardar</span>
                         </button>
+                        <button
+                            type="button"
+                            class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="continueEditing"
+                        >
+                            <FontAwesomeIcon :icon="faPencil" class="h-4" />
+                            <span>Continuar</span>
+                        </button>
                     </div>
                 </template>
             </Dialog>
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+/* Fin de la animación para el spinner de loading */
+</style>

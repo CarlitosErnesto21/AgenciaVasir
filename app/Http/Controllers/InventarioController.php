@@ -23,7 +23,7 @@ class InventarioController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inventario::with(['producto.categoria', 'user', 'referenciable']);
+        $query = Inventario::with(['producto.categoria', 'user', 'venta']);
 
         // Filtros opcionales
         if ($request->has('producto_id')) {
@@ -202,7 +202,7 @@ class InventarioController extends Controller
     public function historialProducto(Producto $producto)
     {
         $movimientos = $producto->inventarios()
-            ->with(['user', 'referenciable'])
+            ->with(['user', 'venta'])
             ->orderBy('fecha_movimiento', 'desc')
             ->paginate(15);
             
@@ -217,7 +217,7 @@ class InventarioController extends Controller
      */
     public function show(Inventario $inventario)
     {
-        $inventario->load(['producto.categoria', 'user', 'referenciable']);
+        $inventario->load(['producto.categoria', 'user', 'venta']);
         return response()->json($inventario);
     }
 }

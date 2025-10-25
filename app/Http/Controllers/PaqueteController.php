@@ -54,8 +54,8 @@ class PaqueteController extends Controller
             'precio' => 'required|numeric|min:0|max:999999.99',
             'pais_id' => 'required|exists:paises,id',
             'provincia_id' => 'required|exists:provincias,id',
-            'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes' => 'nullable|array|max:5',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $paqueteData = $validated;
@@ -75,7 +75,11 @@ class PaqueteController extends Controller
                         continue;
                     }
 
-                    $paquete->imagenes()->create(['nombre' => $fileName]);
+                    $paquete->imagenes()->create([
+                        'nombre' => $fileName,
+                        'imageable_type' => Paquete::class,
+                        'imageable_id' => $paquete->id
+                    ]);
                 }
             }
         }
@@ -123,10 +127,25 @@ class PaqueteController extends Controller
             'pais_id' => 'required|exists:paises,id',
             'provincia_id' => 'required|exists:provincias,id',
             'imagenes' => 'nullable|array',
-            'imagenes.*' => 'image|max:2048',
+            'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'removed_images' => 'nullable|array',
             'removed_images.*' => 'string',
         ]);
+
+        // Validar límite total de imágenes (existentes + nuevas - eliminadas)
+        $imagenesExistentes = $paquete->imagenes()->count();
+        $imagenesAEliminar = $request->has('removed_images') ? count($request->input('removed_images')) : 0;
+        $imagenesNuevas = $request->hasFile('imagenes') ? count($request->file('imagenes')) : 0;
+        $totalImagenesFinales = $imagenesExistentes - $imagenesAEliminar + $imagenesNuevas;
+
+        if ($totalImagenesFinales > 5) {
+            return response()->json([
+                'message' => 'Error de validación',
+                'errors' => [
+                    'imagenes' => ['El total de imágenes no puede exceder 5. Actualmente tienes ' . $imagenesExistentes . ' imágenes, intentas agregar ' . $imagenesNuevas . ' y eliminar ' . $imagenesAEliminar . '.']
+                ]
+            ], 422);
+        }
 
         $paqueteData = $validated;
         unset($paqueteData['imagenes']);
@@ -146,7 +165,11 @@ class PaqueteController extends Controller
                         continue;
                     }
 
-                    $paquete->imagenes()->create(['nombre' => $fileName]);
+                    $paquete->imagenes()->create([
+                        'nombre' => $fileName,
+                        'imageable_type' => Paquete::class,
+                        'imageable_id' => $paquete->id
+                    ]);
                 }
             }
         }

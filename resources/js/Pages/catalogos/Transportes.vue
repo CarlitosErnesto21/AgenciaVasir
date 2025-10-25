@@ -134,8 +134,22 @@ onUnmounted(() => {
 
 const fetchTransportes = async () => {
     try {
+        // Mostrar toast de carga
+        toast.add({
+            severity: "info",
+            summary: "Cargando transportes...",
+            life: 2000
+        });
+
         const response = await axios.get("/api/transportes");
         transportes.value = response.data.sort((a, b) => b.id - a.id);
+
+        // Mostrar toast de éxito
+        toast.add({
+            severity: "success",
+            summary: "Transportes cargados",
+            life: 2000
+        });
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
     }

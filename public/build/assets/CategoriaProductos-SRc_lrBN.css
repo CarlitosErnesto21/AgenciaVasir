@@ -1,0 +1,1 @@
+.p-paginator-current{display:none!important}@media (min-width: 640px){.p-paginator-current{display:inline!important}.p-paginator{justify-content:center!important}}@keyframes spin{0%{transform:rotate(0)}to{transform:rotate(360deg)}}.animate-spin{animation:spin 1s linear infinite}
