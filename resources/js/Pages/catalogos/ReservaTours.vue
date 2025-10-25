@@ -504,7 +504,7 @@ onMounted(() => {
       <div class="flex flex-col xl:flex-row xl:justify-between xl:items-start mb-4 sm:mb-6 gap-4 sm:gap-6">
         <div class="flex-1">
           <h3 class="text-xl sm:text-2xl lg:text-3xl text-blue-600 font-bold">Gestión de Reservas</h3>
-          <p class="text-sm sm:text-base text-gray-600 mt-1">Administra todas las reservas de tours, hoteles y aerolíneas</p>
+          <p class="text-sm sm:text-base text-gray-600 mt-1">Administra todas las reservas de tours y hoteles</p>
         </div>
 
         <!-- Estadísticas rápidas -->
@@ -578,8 +578,7 @@ onMounted(() => {
               v-model="filtros.tipo"
               :options="[
                 { label: 'Tours', value: 'tours' },
-                { label: 'Hoteles', value: 'hoteles' },
-                { label: 'Aerolíneas', value: 'aerolineas' }
+                { label: 'Hoteles', value: 'hoteles' }
               ]"
               optionLabel="label"
               optionValue="value"

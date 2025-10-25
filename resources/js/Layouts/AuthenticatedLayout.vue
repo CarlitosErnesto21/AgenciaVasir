@@ -419,8 +419,8 @@ onBeforeUnmount(() => {
                                     @click="toggleDropdown"
                                     class="relative w-full flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-300/50 group"
                                     :class="{
-                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles', 'aerolineas', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)),
-                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles', 'aerolineas', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)))
+                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)),
+                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)))
                                     }"
                                 >
                                     <div class="flex items-center">
@@ -476,19 +476,6 @@ onBeforeUnmount(() => {
                                     >
                                         <FontAwesomeIcon :icon="faHotel" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Hoteles</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('aerolineas')"
-                                        :class="[
-                                            'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                                            route().current('aerolineas')
-                                                ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold'
-                                                : 'text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseSidebar('aerolineas')"
-                                    >
-                                        <FontAwesomeIcon :icon="faPlaneDeparture" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Aerolineas</span>
                                     </Link>
                                     <Link
                                         :href="route('gestionPaquetes')"
@@ -602,16 +589,6 @@ onBeforeUnmount(() => {
 
                                 <!-- Submenu de Configuración -->
                                 <div v-show="isConfigDropdownOpen" class="ml-6 mr-2 mt-2 flex flex-col space-y-1 bg-gray-50 rounded-lg p-2 border border-gray-200">
-                                    <template v-if="user?.roles && user.roles.some((role) => role.name === 'Administrador')">
-                                        <Link
-                                            :href="route('roles')"
-                                            @click="isSidebarOpen = false"
-                                            class="flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md"
-                                        >
-                                            <FontAwesomeIcon :icon="faUserCircle" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                            <span class="font-medium">Usuarios internos</span>
-                                        </Link>
-                                    </template>
                                     <Link
                                         :href="route('clientes')"
                                         @click="isSidebarOpen = false"
@@ -681,7 +658,7 @@ onBeforeUnmount(() => {
                                 :class="[
                                     'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300/50 w-full justify-between',
                                     [
-                                        'productos', 'tours', 'hoteles', 'aerolineas', 'gestionPaquetes', 'ventas', 'inventario'
+                                        'productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'
                                     ].some(r => route().current(r))
                                         ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
                                         : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
@@ -749,19 +726,6 @@ onBeforeUnmount(() => {
                                     >
                                         <FontAwesomeIcon :icon="faHotel" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Hoteles</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('aerolineas')"
-                                        :class="[
-                                            'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group',
-                                            route().current('aerolineas')
-                                                ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                                : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseDropdown('aerolineas')"
-                                    >
-                                        <FontAwesomeIcon :icon="faPlaneDeparture" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Aerolineas</span>
                                     </Link>
                                     <Link
                                         :href="route('gestionPaquetes')"
@@ -876,21 +840,6 @@ onBeforeUnmount(() => {
                         leave-to-class="opacity-0 -translate-y-2"
                     >
                         <div v-if="isConfigDropdownOpen" class="mt-2 ml-4 space-y-1 border-l-2 border-red-200/50 pl-4">
-                            <template v-if="user?.roles && user.roles.some((role) => role.name === 'Administrador')">
-                                <Link
-                                    :href="route('roles')"
-                                    :class="[
-                                        'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group w-full text-left',
-                                        route().current('roles')
-                                            ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                            : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                    ]"
-                                    @click.prevent="navigateAndCloseConfigDropdown('roles')"
-                                >
-                                    <FontAwesomeIcon :icon="faUserCircle" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                    <span class="font-medium text-sm">Usuarios internos</span>
-                                </Link>
-                            </template>
                             <Link
                                 :href="route('clientes')"
                                 :class="[

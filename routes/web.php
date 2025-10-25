@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\InformePDFController;
-use App\Http\Controllers\RoleController;
 use App\Http\Controllers\BackupController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\ClienteController;
@@ -25,7 +24,6 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
     Route::get('gestion-reserva-tours', fn() => Inertia::render('Catalogos/ReservaTours'))->name('reservatours');
     Route::get('tours', fn() => Inertia::render('Catalogos/Tours'))->name('tours');
-    Route::get('aerolineas', fn() => Inertia::render('Catalogos/Aerolineas'))->name('aerolineas');
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('tipo-documentos', fn() => Inertia::render('Configuracion/TiposDocumento'))->name('tipodocumentos');
     Route::get('generar-informes', fn() => Inertia::render('Informes/Informes'))->name('informes');
@@ -39,19 +37,6 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     //Rutas para informes
     Route::get('/descargar-informe', [InformePDFController::class, 'descargarInforme']);
     Route::get('/configuracion/backup', [BackupController::class, 'showBackupPage'])->name('backups')->middleware('password.confirm');
-    Route::get('/configuracion/roles', [RoleController::class, 'index'])->name('roles')->middleware('role:Administrador');
-
-    //Rutas para gestión de roles
-    Route::post('/roles/users/{user}/update-roles', [RoleController::class, 'updateUserRoles'])->middleware('role:Administrador');
-    Route::post('/roles/users/{user}/assign-role', [RoleController::class, 'assignRole'])->middleware('role:Administrador');
-    Route::post('/roles/users/{user}/remove-role', [RoleController::class, 'removeRole'])->middleware('role:Administrador');
-    Route::get('/roles/users/{user}/permissions', [RoleController::class, 'getUserPermissions'])->middleware('role:Administrador');
-    Route::post('/roles/users/{user}/assign-permission', [RoleController::class, 'assignPermission'])->middleware('role:Administrador');
-    Route::post('/roles/users/{user}/remove-permission', [RoleController::class, 'removePermission'])->middleware('role:Administrador');
-    Route::put('/roles/users/{user}/sync-permissions', [RoleController::class, 'syncPermissions'])->middleware('role:Administrador');
-    Route::post('/roles/create-user', [RoleController::class, 'createInternalUser'])->middleware('role:Administrador');
-    Route::get('/roles/users/{user}/employee', [RoleController::class, 'getEmployeeData'])->middleware('role:Administrador');
-    Route::put('/roles/users/{user}/employee', [RoleController::class, 'updateEmployeeData'])->middleware('role:Administrador');
 
     // Configuración del Sistema - Solo para Administradores
     Route::get('/configuracion/settings', [SettingsController::class, 'index'])->name('settings')->middleware('role:Administrador');

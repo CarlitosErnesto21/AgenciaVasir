@@ -183,9 +183,6 @@
                 @elseif(($reservation['tipo'] ?? '') === 'hoteles')
                 <li>Presenta tu confirmación al momento del check-in</li>
                 <li>Horario de check-in: 3:00 PM / Check-out: 12:00 PM</li>
-                @elseif(($reservation['tipo'] ?? '') === 'aerolineas')
-                <li>Llega al aeropuerto 2 horas antes para vuelos internacionales</li>
-                <li>Verifica que tu documento esté vigente</li>
                 @endif
             </ul>
         </div>

@@ -16,7 +16,6 @@ $directories = [
     storage_path('app/public/tours'),
     storage_path('app/public/productos'),
     storage_path('app/public/hoteles'),
-    storage_path('app/public/aerolineas'),
     storage_path('app/public/paquetes'),
 ];
 

@@ -256,9 +256,6 @@
                 @elseif(($reservation['tipo'] ?? '') === 'hoteles')
                 <li>🏨 Las condiciones de check-in y check-out se mantienen</li>
                 <li>📋 Presenta este email actualizado en recepción</li>
-                @elseif(($reservation['tipo'] ?? '') === 'aerolineas')
-                <li>✈️ Verifica los horarios de vuelo actualizados</li>
-                <li>📃 Asegúrate de que tu documento esté vigente</li>
                 @endif
             </ul>
         </div>

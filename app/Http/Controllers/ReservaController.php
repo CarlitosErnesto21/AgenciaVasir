@@ -34,12 +34,9 @@ class ReservaController extends Controller
                     case 'tours':
                         $query->whereHas('detallesTours');
                         break;
-                    // Para hoteles y aerolíneas se pueden agregar más adelante
+                    // Para hoteles se pueden agregar más adelante
                     case 'hoteles':
                         // $query->whereHas('detallesHoteles');
-                        break;
-                    case 'aerolineas':
-                        // $query->whereHas('detallesAerolineas');
                         break;
                 }
             }
@@ -387,7 +384,7 @@ class ReservaController extends Controller
                 ->groupBy('tours.id', 'tours.nombre')
                 ->get();
 
-            // Por ahora solo manejamos tours, pero se puede extender para hoteles y aerolíneas
+            // Por ahora solo manejamos tours, pero se puede extender para hoteles
             $resumen = $toursResumen;
 
             return response()->json([
@@ -493,11 +490,6 @@ class ReservaController extends Controller
         //     return $reserva->detallesHoteles->first()->hotel->nombre ?? 'Hotel no especificado';
         // }
 
-        // Para aerolíneas (cuando se implemente)
-        // if ($reserva->detallesAerolineas && $reserva->detallesAerolineas->count() > 0) {
-        //     return $reserva->detallesAerolineas->first()->aerolinea->nombre ?? 'Aerolínea no especificada';
-        // }
-
         return 'Servicio no especificado';
     }
 
@@ -513,10 +505,6 @@ class ReservaController extends Controller
         // Para futuras implementaciones
         // if ($reserva->detallesHoteles && $reserva->detallesHoteles->count() > 0) {
         //     return 'hoteles';
-        // }
-
-        // if ($reserva->detallesAerolineas && $reserva->detallesAerolineas->count() > 0) {
-        //     return 'aerolineas';
         // }
 
         return 'servicio';

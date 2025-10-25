@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\AerolineaController;
 use App\Http\Controllers\Auth\ApiAuthController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProductoController;
@@ -86,6 +85,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // ───────────────────────────────────────────────────────
     Route::middleware('rutas.admin')->group(function () {
 
+        
+
         // Gestión de reservas
         Route::prefix('reservas')->group(function () {
             Route::get('/', [ReservaController::class, 'index']);
@@ -104,7 +105,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         // Ruta adicional para estadísticas de hoteles
         Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
-        
+
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
 
         // Rutas adicionales para tours
@@ -113,7 +114,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
         Route::apiResource('ventas', VentaController::class);
-        Route::apiResource('aerolineas', AerolineaController::class);
         Route::apiResource('empleados', EmpleadoController::class);
         Route::apiResource('metodos-pago', MetodoPagoController::class);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
