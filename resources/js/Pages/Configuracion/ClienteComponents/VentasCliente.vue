@@ -24,68 +24,60 @@
 
                     <Link
                         :href="route('clientes')"
-                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-4 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 text-sm"
                     >
                         <FontAwesomeIcon :icon="faArrowLeft" class="h-4 w-4" />
-                        Volver a Clientes
+                        <span class="hidden sm:inline">Volver a Clientes</span>
+                        <span class="sm:hidden">Volver</span>
                     </Link>
                 </div>
             </div>
 
             <!-- Tarjetas de resumen -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-blue-100">
-                            <FontAwesomeIcon :icon="faShoppingCart" class="h-6 w-6 text-blue-600" />
+            <div class="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+                <div class="bg-white rounded-lg shadow-md p-3">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="p-1.5 rounded-full bg-blue-100 mb-2">
+                            <FontAwesomeIcon :icon="faShoppingCart" class="h-4 w-4 text-blue-600" />
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Total Ventas</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ ventas.length }}</p>
-                        </div>
+                        <p class="text-xs font-medium text-gray-500 mb-1">Total</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ventas.length }}</p>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-green-100">
-                            <FontAwesomeIcon :icon="faDollarSign" class="h-6 w-6 text-green-600" />
+                <div class="bg-white rounded-lg shadow-md p-3">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="p-1.5 rounded-full bg-green-100 mb-2">
+                            <FontAwesomeIcon :icon="faDollarSign" class="h-4 w-4 text-green-600" />
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Monto Total</p>
-                            <p class="text-2xl font-bold text-gray-900">${{ totalVentas.toFixed(2) }}</p>
-                        </div>
+                        <p class="text-xs font-medium text-gray-500 mb-1">Monto</p>
+                        <p class="text-lg font-bold text-gray-900">${{ totalVentas.toFixed(0) }}</p>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-yellow-100">
-                            <FontAwesomeIcon :icon="faClock" class="h-6 w-6 text-yellow-600" />
+                <div class="bg-white rounded-lg shadow-md p-3">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="p-1.5 rounded-full bg-yellow-100 mb-2">
+                            <FontAwesomeIcon :icon="faClock" class="h-4 w-4 text-yellow-600" />
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Pendientes</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ ventasPendientes }}</p>
-                        </div>
+                        <p class="text-xs font-medium text-gray-500 mb-1">Pendientes</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ventasPendientes }}</p>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <div class="flex items-center">
-                        <div class="p-3 rounded-full bg-green-100">
-                            <FontAwesomeIcon :icon="faCheckCircle" class="h-6 w-6 text-green-600" />
+                <div class="bg-white rounded-lg shadow-md p-3">
+                    <div class="flex flex-col items-center text-center">
+                        <div class="p-1.5 rounded-full bg-green-100 mb-2">
+                            <FontAwesomeIcon :icon="faCheckCircle" class="h-4 w-4 text-green-600" />
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Completadas</p>
-                            <p class="text-2xl font-bold text-gray-900">{{ ventasCompletadas }}</p>
-                        </div>
+                        <p class="text-xs font-medium text-gray-500 mb-1">Completadas</p>
+                        <p class="text-lg font-bold text-gray-900">{{ ventasCompletadas }}</p>
                     </div>
                 </div>
             </div>
 
             <!-- Tabla de ventas -->
             <div class="bg-white rounded-lg shadow-md">
-                <div class="p-6">
                     <h3 class="text-2xl text-blue-600 font-bold mb-4">Historial de Ventas</h3>
 
                     <DataTable
@@ -99,6 +91,7 @@
                         currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} ventas"
                         class="overflow-x-auto max-w-full"
                         responsiveLayout="scroll"
+                        @row-click="onRowClick"
                         :pt="{
                             root: { class: 'text-sm' },
                             wrapper: { class: 'text-sm' },
@@ -107,7 +100,7 @@
                             headerRow: { class: 'text-sm' },
                             headerCell: { class: 'text-sm font-medium py-3 px-2' },
                             tbody: { class: 'text-sm' },
-                            bodyRow: { class: 'h-16 text-sm hover:bg-blue-50 transition-colors duration-200' },
+                            bodyRow: { class: 'h-16 text-sm hover:bg-blue-50 transition-colors duration-200 cursor-pointer' },
                             bodyCell: { class: 'py-3 px-2 text-sm' },
                             paginator: { class: 'text-xs sm:text-sm' },
                             paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
@@ -123,11 +116,46 @@
                                         <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
                                             {{ filteredVentas.length }} resultado{{ filteredVentas.length !== 1 ? 's' : '' }}
                                         </div>
+                                        <button
+                                            class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md flex sm:hidden disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                            @click="clearFilters"
+                                            :disabled="isClearingFilters">
+                                            <FontAwesomeIcon
+                                                v-if="isClearingFilters"
+                                                :icon="faSpinner"
+                                                class="animate-spin h-3 w-3"
+                                            />
+                                            <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                        </button>
                                     </div>
+                                    <button
+                                        class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:flex disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
+                                        @click="clearFilters"
+                                        :disabled="isClearingFilters">
+                                        <FontAwesomeIcon
+                                            v-if="isClearingFilters"
+                                            :icon="faSpinner"
+                                            class="animate-spin h-3 w-3"
+                                        />
+                                        <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                    </button>
                                 </div>
                                 <div class="space-y-3">
-                                    <div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                         <InputText v-model="filters['global'].value" placeholder="🔍 Buscar ventas..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                                        <Select
+                                            v-model="estadoFilter"
+                                            :options="estadoOptions"
+                                            optionLabel="label"
+                                            optionValue="value"
+                                            placeholder="Filtrar por estado"
+                                            class="w-full text-sm border border-blue-300"
+                                            :pt="{
+                                                root: { class: 'h-9' },
+                                                input: { class: 'text-sm' },
+                                                dropdown: { class: 'text-sm' }
+                                            }"
+                                        />
                                     </div>
                                 </div>
                             </div>
@@ -153,43 +181,77 @@
                             </template>
                         </Column>
 
-                        <Column field="estado" header="Estado" class="w-28">
+                        <Column field="metodo_pago.nombre" header="Método de Pago" class="w-28 hidden sm:table-cell">
                             <template #body="slotProps">
-                                <span :class="getEstadoClass(slotProps.data.estado)" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium">
-                                    {{ getEstadoLabel(slotProps.data.estado) }}
-                                </span>
+                                <span class="text-xs">{{ slotProps.data.metodo_pago?.nombre || 'N/A' }}</span>
                             </template>
                         </Column>
 
-                        <Column field="metodo_pago.nombre" header="Método de Pago" class="w-32 hidden md:table-cell">
+                        <Column field="empleado.user.name" header="Vendedor" class="w-28 hidden md:table-cell">
                             <template #body="slotProps">
-                                <span class="text-sm">{{ slotProps.data.metodo_pago?.nombre || 'N/A' }}</span>
-                            </template>
-                        </Column>
-
-                        <Column field="empleado.user.name" header="Vendedor" class="w-32 hidden lg:table-cell">
-                            <template #body="slotProps">
-                                <span class="text-sm">{{ slotProps.data.empleado?.user?.name || 'N/A' }}</span>
-                            </template>
-                        </Column>
-
-                        <Column header="Acciones" class="w-24">
-                            <template #body="slotProps">
-                                <div class="flex gap-2 justify-center">
-                                    <button
-                                        class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-md text-xs transition-all duration-200"
-                                        @click="verDetalles(slotProps.data)"
-                                        title="Ver detalles"
-                                    >
-                                        <FontAwesomeIcon :icon="faEye" class="h-3 w-3" />
-                                    </button>
-                                </div>
+                                <span class="text-xs">{{ slotProps.data.empleado?.user?.name || 'N/A' }}</span>
                             </template>
                         </Column>
                     </DataTable>
                 </div>
             </div>
-        </div>
+
+        <!-- Dialog de detalles de la venta -->
+        <Dialog
+            v-model:visible="showDetalleDialog"
+            header="Detalles de la Venta"
+            :modal="true"
+            :style="{ width: '90vw', maxWidth: '600px' }"
+            :closable="true"
+            :draggable="false"
+        >
+            <div v-if="selectedVenta" class="space-y-4">
+                <div class="grid grid-cols-1 gap-4">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Información General</h4>
+                        <div class="space-y-2">
+                            <p><strong>ID de Venta:</strong> #{{ selectedVenta.id }}</p>
+                            <p><strong>Fecha:</strong> {{ formatDate(selectedVenta.fecha) }}</p>
+                            <p><strong>Estado:</strong>
+                                <span :class="getEstadoClass(selectedVenta.estado)" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2">
+                                    {{ getEstadoLabel(selectedVenta.estado) }}
+                                </span>
+                            </p>
+                            <p><strong>Total:</strong>
+                                <span class="text-lg font-semibold text-green-600">${{ Number(selectedVenta.total).toFixed(2) }}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Información de Pago</h4>
+                        <div class="space-y-2">
+                            <p><strong>Método de Pago:</strong> {{ selectedVenta.metodo_pago?.nombre || 'No especificado' }}</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <h4 class="font-semibold text-gray-800 mb-3">Información del Vendedor</h4>
+                        <div class="space-y-2">
+                            <p><strong>Vendedor:</strong> {{ selectedVenta.empleado?.user?.name || 'No asignado' }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-center w-full">
+                    <button
+                        type="button"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="closeDetalleDialog"
+                    >
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                        Cerrar
+                    </button>
+                </div>
+            </template>
+        </Dialog>
     </AuthenticatedLayout>
 </template>
 
@@ -208,12 +270,15 @@ import {
     faDollarSign,
     faClock,
     faCheckCircle,
-    faEye
+    faXmark,
+    faSpinner
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Toast from 'primevue/toast';
 import InputText from 'primevue/inputtext';
+import Dialog from 'primevue/dialog';
+import Select from 'primevue/select';
 
 // Props
 const props = defineProps({
@@ -232,6 +297,17 @@ const toast = useToast();
 // Estados reactivos
 const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
+const estadoFilter = ref('');
+const selectedVenta = ref(null);
+const showDetalleDialog = ref(false);
+const isClearingFilters = ref(false);
+
+const estadoOptions = ref([
+    { label: 'Todos los estados', value: '' },
+    { label: 'Pendientes', value: 'pendiente' },
+    { label: 'Completadas', value: 'completada' },
+    { label: 'Canceladas', value: 'cancelada' }
+]);
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS }
@@ -241,11 +317,16 @@ const filters = ref({
 const filteredVentas = computed(() => {
     let result = props.ventas;
 
+    // Filtro por estado
+    if (estadoFilter.value) {
+        result = result.filter(venta => venta.estado === estadoFilter.value);
+    }
+
+    // Filtro global de búsqueda
     if (filters.value.global.value) {
         const searchTerm = filters.value.global.value.toLowerCase();
         result = result.filter(venta =>
             venta.id.toString().includes(searchTerm) ||
-            venta.estado.toLowerCase().includes(searchTerm) ||
             (venta.metodo_pago?.nombre && venta.metodo_pago.nombre.toLowerCase().includes(searchTerm)) ||
             (venta.empleado?.user?.name && venta.empleado.user.name.toLowerCase().includes(searchTerm))
         );
@@ -301,12 +382,32 @@ const getEstadoLabel = (estado) => {
     }
 };
 
-const verDetalles = (venta) => {
+const onRowClick = (event) => {
+    selectedVenta.value = event.data;
+    showDetalleDialog.value = true;
+};
+
+const closeDetalleDialog = () => {
+    showDetalleDialog.value = false;
+    selectedVenta.value = null;
+};
+
+// Función para limpiar filtros
+const clearFilters = async () => {
+    isClearingFilters.value = true;
+
+    // Simular tiempo de procesamiento
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    estadoFilter.value = '';
+
+    isClearingFilters.value = false;
+
     toast.add({
-        severity: 'info',
-        summary: 'Ver Detalles',
-        detail: `Funcionalidad de detalles de venta #${venta.id} pendiente de implementar.`,
-        life: 4000
+        severity: 'success',
+        summary: 'Filtros limpiados',
+        detail: 'Los filtros han sido limpiados exitosamente',
+        life: 3000
     });
 };
 
@@ -320,3 +421,64 @@ onMounted(() => {
     });
 });
 </script>
+
+
+<style>
+/* Estilos para el dropdown del Select de PrimeVue */
+.p-select-overlay {
+    border: 2px solid #9ca3af !important;
+    border-radius: 0.375rem !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
+}
+
+.p-select-option {
+    border-bottom: 1px solid #e5e7eb !important;
+    padding: 8px 12px !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.p-select-option:last-child {
+    border-bottom: none !important;
+}
+
+.p-select-option:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.p-select-option[aria-selected="true"] {
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+}
+/* Fin de los estilos para el select */
+
+
+/* Estilos para el paginador */
+.p-paginator-current {
+  display: none !important;
+}
+
+@media (min-width: 640px) {
+  .p-paginator-current {
+    display: inline !important;
+  }
+  .p-paginator {
+    justify-content: center !important;
+  }
+}
+/* Fin de los estilos para el paginador */
+
+/* Animación para el spinner de loading */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+/* Fin de la animación para el spinner de loading */
+</style>
