@@ -142,7 +142,7 @@
               :loading="loading"
               :rowsPerPageOptions="[5, 10, 20, 50]"
               :totalRecords="ventasFiltradas.length"
-              :globalFilterFields="['cliente.nombre', 'empleado.nombre', 'metodo_pago.nombre']"
+              :globalFilterFields="['cliente.nombre', 'metodo_pago.nombre']"
               scrollable
               scrollHeight="60vh"
               class="p-datatable-sm"
@@ -186,14 +186,7 @@
                 </template>
               </Column>
 
-              <Column field="empleado.nombre" header="Empleado" sortable>
-                <template #body="{ data }">
-                  <div class="flex items-center gap-2">
-                    <i class="pi pi-user-edit text-blue-500"></i>
-                    <span>{{ data.empleado?.nombre || 'N/A' }}</span>
-                  </div>
-                </template>
-              </Column>
+
 
               <Column field="metodo_pago.nombre" header="Método Pago" sortable>
                 <template #body="{ data }">
@@ -320,10 +313,7 @@
                 </div>
               </div>
               <div class="space-y-3">
-                <div class="flex items-center gap-2">
-                  <i class="pi pi-user-edit text-gray-500"></i>
-                  <strong>Empleado:</strong> {{ ventaSeleccionada.empleado?.nombre }}
-                </div>
+
                 <div class="flex items-center gap-2">
                   <i class="pi pi-credit-card text-gray-500"></i>
                   <strong>Método Pago:</strong> {{ ventaSeleccionada.metodo_pago?.nombre }}
@@ -468,7 +458,6 @@ const ventasFiltradas = computed(() => {
     const filtroGlobal = globalFilter.value.toLowerCase()
     resultado = resultado.filter(venta =>
       venta.cliente?.nombre?.toLowerCase().includes(filtroGlobal) ||
-      venta.empleado?.nombre?.toLowerCase().includes(filtroGlobal) ||
       venta.metodo_pago?.nombre?.toLowerCase().includes(filtroGlobal) ||
       venta.id.toString().includes(filtroGlobal)
     )

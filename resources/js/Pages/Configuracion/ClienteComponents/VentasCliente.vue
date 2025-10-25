@@ -187,11 +187,7 @@
                             </template>
                         </Column>
 
-                        <Column field="empleado.user.name" header="Vendedor" class="w-28 hidden md:table-cell">
-                            <template #body="slotProps">
-                                <span class="text-xs">{{ slotProps.data.empleado?.user?.name || 'N/A' }}</span>
-                            </template>
-                        </Column>
+
                     </DataTable>
                 </div>
             </div>
@@ -230,12 +226,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-800 mb-3">Información del Vendedor</h4>
-                        <div class="space-y-2">
-                            <p><strong>Vendedor:</strong> {{ selectedVenta.empleado?.user?.name || 'No asignado' }}</p>
-                        </div>
-                    </div>
+
                 </div>
             </div>
 
@@ -327,8 +318,7 @@ const filteredVentas = computed(() => {
         const searchTerm = filters.value.global.value.toLowerCase();
         result = result.filter(venta =>
             venta.id.toString().includes(searchTerm) ||
-            (venta.metodo_pago?.nombre && venta.metodo_pago.nombre.toLowerCase().includes(searchTerm)) ||
-            (venta.empleado?.user?.name && venta.empleado.user.name.toLowerCase().includes(searchTerm))
+            (venta.metodo_pago?.nombre && venta.metodo_pago.nombre.toLowerCase().includes(searchTerm))
         );
     }
 

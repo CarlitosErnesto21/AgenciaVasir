@@ -189,38 +189,10 @@ class PagoController extends Controller
                 ]);
             }
 
-            // Obtener empleado por defecto (puede ser un empleado sistema)
-            $empleado = \App\Models\Empleado::first();
-            if (!$empleado) {
-                Log::warning('⚠️ No hay empleados en el sistema - Creando empleado por defecto');
-
-                // Crear usuario empleado por defecto
-                $userEmpleado = \App\Models\User::firstOrCreate(
-                    ['email' => 'sistema@agencia.com'],
-                    [
-                        'name' => 'Sistema Agencia',
-                        'password' => \Illuminate\Support\Facades\Hash::make('sistema123'),
-                    ]
-                );
-
-                // Crear empleado por defecto
-                $empleado = \App\Models\Empleado::create([
-                    'user_id' => $userEmpleado->id,
-                    'cargo' => 'Empleado Sistema',
-                    'telefono' => '000-000-0000'
-                ]);
-
-                Log::info('✅ Empleado por defecto creado', [
-                    'empleado_id' => $empleado->id,
-                    'user_id' => $userEmpleado->id
-                ]);
-            }
-
             // Crear la venta
             $venta = Venta::create([
                 'fecha' => now(),
                 'cliente_id' => $cliente->id,
-                'empleado_id' => $empleado->id,
                 'metodo_pago_id' => $metodoPago->id,
                 'estado' => 'pendiente',
                 'total' => 0
@@ -249,7 +221,7 @@ class PagoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'venta' => $venta->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
                 'message' => 'Venta creada exitosamente desde carrito'
             ]);
 

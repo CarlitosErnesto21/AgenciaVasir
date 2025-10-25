@@ -46,31 +46,31 @@ class EmpleadoSeeder extends Seeder
             $userIds[] = $user->id;
         }
 
-        // ✅ USAR SOLO LOS CAMPOS QUE EXISTEN EN TU MIGRACIÓN
+        // ✅ EMPLEADOS PARA GESTIÓN DE RESERVAS (NO VENTAS)
         $empleados = [
             [
-                'cargo' => 'Vendedor',          // ✅ string(25)
-                'telefono' => '55501001',       // ✅ char(8) - exactamente 8 caracteres
-                'user_id' => $userIds[0],       // ✅ FK a users
+                'cargo' => 'Agente de Viajes',      // ✅ Especializado en reservas
+                'telefono' => '55501001',           // ✅ char(8) - exactamente 8 caracteres
+                'user_id' => $userIds[0],           // ✅ FK a users
             ],
             [
-                'cargo' => 'Supervisor',        // ✅ string(25)
-                'telefono' => '55501002',       // ✅ char(8)
+                'cargo' => 'Supervisor Reservas',   // ✅ Supervisor de reservas
+                'telefono' => '55501002',           // ✅ char(8)
                 'user_id' => $userIds[1],
             ],
             [
-                'cargo' => 'Almacenero',        // ✅ string(25)
-                'telefono' => '55501003',       // ✅ char(8)
+                'cargo' => 'Agente Senior',         // ✅ Agente experimentado
+                'telefono' => '55501003',           // ✅ char(8)
                 'user_id' => $userIds[2],
             ],
             [
-                'cargo' => 'Cajero',            // ✅ string(25)
-                'telefono' => '55501004',       // ✅ char(8)
+                'cargo' => 'Coordinador Tours',     // ✅ Especialista en tours
+                'telefono' => '55501004',           // ✅ char(8)
                 'user_id' => $userIds[3],
             ],
             [
-                'cargo' => 'Gerente',           // ✅ string(25)
-                'telefono' => '55501005',       // ✅ char(8)
+                'cargo' => 'Gerente Reservas',      // ✅ Gerente del área
+                'telefono' => '55501005',           // ✅ char(8)
                 'user_id' => $userIds[4],
             ],
         ];

@@ -17,11 +17,9 @@ return new class extends Migration
             $table->decimal('total', 8, 2);
             $table->enum('estado', ['pendiente', 'completada', 'cancelada'])->default('pendiente');
             
-            // Llaves foráneas a las tablas reservas, empleados, clientes y metodos_pagos
+            // Llaves foráneas a las tablas clientes y metodos_pagos
             $table->unsignedBigInteger('cliente_id');
             $table->foreign('cliente_id')->references('id')->on('clientes')->onDelete('cascade');
-            $table->unsignedBigInteger('empleado_id');
-            $table->foreign('empleado_id')->references('id')->on('empleados')->onDelete('cascade');
             $table->unsignedBigInteger('metodo_pago_id');
             $table->foreign('metodo_pago_id')->references('id')->on('metodos_pagos')->onDelete('cascade');
             $table->timestamps();

@@ -24,9 +24,4 @@ class Empleado extends Model
     {
         return $this->hasMany(Reserva::class, 'empleado_id');
     }
-    
-    public function ventas()
-    {
-        return $this->hasMany(Venta::class, 'empleado_id');
-    }
 }

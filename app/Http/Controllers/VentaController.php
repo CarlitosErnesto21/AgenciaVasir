@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Venta;
 use App\Models\Producto;
 use App\Models\Cliente;
-use App\Models\Empleado;
 use App\Models\MetodoPago;
 use App\Services\InventarioService;
 use Illuminate\Http\Request;
@@ -27,7 +26,7 @@ class VentaController extends Controller
     public function index()
     {
         // ✅ CORREGIDO: detalleVentas (plural) y sin reserva (según tu migración)
-        $ventas = Venta::with(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto.categoria'])
+        $ventas = Venta::with(['cliente', 'metodoPago', 'detalleVentas.producto.categoria'])
             ->orderBy('fecha', 'desc')
             ->get();
         return response()->json($ventas);
@@ -40,7 +39,6 @@ class VentaController extends Controller
     {
         // Obtener datos necesarios para crear venta
         $clientes = Cliente::select('id', 'nombre', 'telefono')->orderBy('nombre')->get();
-        $empleados = Empleado::select('id', 'nombre')->orderBy('nombre')->get();
         $metodosPago = MetodoPago::select('id', 'nombre')->orderBy('nombre')->get();
         $productos = Producto::with('categoria')
             ->where('stock_actual', '>', 0)
@@ -50,7 +48,6 @@ class VentaController extends Controller
 
         return response()->json([
             'clientes' => $clientes,
-            'empleados' => $empleados,
             'metodos_pago' => $metodosPago,
             'productos' => $productos
         ]);
@@ -64,7 +61,6 @@ class VentaController extends Controller
         $validated = $request->validate([
             'fecha' => 'required|date',
             'cliente_id' => 'required|exists:clientes,id',
-            'empleado_id' => 'required|exists:empleados,id',
             'metodo_pago_id' => 'required|exists:metodos_pagos,id',
             // ✅ CORREGIDO: productos como array (no total directo)
             'productos' => 'required|array|min:1',
@@ -79,7 +75,6 @@ class VentaController extends Controller
                 $venta = Venta::create([
                     'fecha' => $validated['fecha'],
                     'cliente_id' => $validated['cliente_id'],
-                    'empleado_id' => $validated['empleado_id'],
                     'metodo_pago_id' => $validated['metodo_pago_id'],
                     'estado' => 'pendiente',  // ✅ Estado inicial
                     'total' => 0
@@ -90,7 +85,7 @@ class VentaController extends Controller
                 // Crear detalles de venta
                 foreach ($validated['productos'] as $productoData) {
                     $subtotal = $productoData['cantidad'] * $productoData['precio_unitario'];
-                    
+
                     // ✅ CORREGIDO: usar detalleVentas
                     $venta->detalleVentas()->create([
                         'producto_id' => $productoData['producto_id'],
@@ -110,7 +105,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'message' => 'Venta creada exitosamente',
-                'venta' => $venta->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
             ], 201);
 
         } catch (Exception $e) {
@@ -127,7 +122,7 @@ class VentaController extends Controller
     public function show(Venta $venta)
     {
         // ✅ CORREGIDO: detalleVentas y sin reserva
-        $venta->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto.categoria']);
+        $venta->load(['cliente', 'metodoPago', 'detalleVentas.producto.categoria']);
         return response()->json($venta);
     }
 
@@ -143,10 +138,9 @@ class VentaController extends Controller
             ], 422);
         }
 
-        $venta->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']);
-        
+        $venta->load(['cliente', 'metodoPago', 'detalleVentas.producto']);
+
         $clientes = Cliente::select('id', 'nombre')->orderBy('nombre')->get();
-        $empleados = Empleado::select('id', 'nombre')->orderBy('nombre')->get();
         $metodosPago = MetodoPago::select('id', 'nombre')->orderBy('nombre')->get();
         $productos = Producto::with('categoria')
             ->where('stock_actual', '>', 0)
@@ -157,7 +151,6 @@ class VentaController extends Controller
         return response()->json([
             'venta' => $venta,
             'clientes' => $clientes,
-            'empleados' => $empleados,
             'metodos_pago' => $metodosPago,
             'productos' => $productos
         ]);
@@ -178,7 +171,6 @@ class VentaController extends Controller
         $validated = $request->validate([
             'fecha' => 'required|date',
             'cliente_id' => 'required|exists:clientes,id',
-            'empleado_id' => 'required|exists:empleados,id',
             'metodo_pago_id' => 'required|exists:metodos_pagos,id',
             'productos' => 'required|array|min:1',
             'productos.*.producto_id' => 'required|exists:productos,id',
@@ -192,7 +184,6 @@ class VentaController extends Controller
                 $venta->update([
                     'fecha' => $validated['fecha'],
                     'cliente_id' => $validated['cliente_id'],
-                    'empleado_id' => $validated['empleado_id'],
                     'metodo_pago_id' => $validated['metodo_pago_id'],
                 ]);
 
@@ -204,7 +195,7 @@ class VentaController extends Controller
                 // Crear nuevos detalles
                 foreach ($validated['productos'] as $productoData) {
                     $subtotal = $productoData['cantidad'] * $productoData['precio_unitario'];
-                    
+
                     $venta->detalleVentas()->create([
                         'producto_id' => $productoData['producto_id'],
                         'cantidad' => $productoData['cantidad'],
@@ -221,7 +212,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'message' => 'Venta actualizada exitosamente',
-                'venta' => $venta->fresh()->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->fresh()->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
             ]);
 
         } catch (Exception $e) {
@@ -242,7 +233,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'message' => 'Venta procesada exitosamente',
-                'venta' => $venta->fresh()->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->fresh()->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
                 'success' => true
             ]);
 
@@ -264,7 +255,7 @@ class VentaController extends Controller
 
             return response()->json([
                 'message' => 'Venta cancelada exitosamente',
-                'venta' => $venta->fresh()->load(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->fresh()->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
                 'success' => true
             ]);
 
@@ -317,7 +308,7 @@ class VentaController extends Controller
      */
     public function porEstado($estado)
     {
-        $ventas = Venta::with(['cliente', 'empleado', 'metodoPago', 'detalleVentas.producto'])
+        $ventas = Venta::with(['cliente', 'metodoPago', 'detalleVentas.producto'])
             ->where('estado', $estado)
             ->orderBy('fecha', 'desc')
             ->get();

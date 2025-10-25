@@ -17,7 +17,6 @@ class Venta extends Model
         'total',
         'estado',
         'cliente_id',
-        'empleado_id',
         'metodo_pago_id',
     ];
 
@@ -29,11 +28,6 @@ class Venta extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
-    }
-    
-    public function empleado(): BelongsTo
-    {
-        return $this->belongsTo(Empleado::class, 'empleado_id');
     }
     
     public function metodoPago(): BelongsTo

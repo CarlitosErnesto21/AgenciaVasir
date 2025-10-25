@@ -294,18 +294,14 @@ class EmpleadoController extends Controller
     public function destroy(string $id)
     {
         try {
-            $empleado = Empleado::with(['user', 'reservas', 'ventas'])->findOrFail($id);
+            $empleado = Empleado::with(['user', 'reservas'])->findOrFail($id);
 
-            // Verificar si el empleado tiene reservas o ventas asociadas
-            if ($empleado->reservas()->count() > 0 || $empleado->ventas()->count() > 0) {
+            // Verificar si el empleado tiene reservas asociadas
+            if ($empleado->reservas()->count() > 0) {
                 $details = [];
 
                 if ($empleado->reservas()->count() > 0) {
                     $details[] = "Tiene {$empleado->reservas()->count()} reserva(s) asociada(s)";
-                }
-
-                if ($empleado->ventas()->count() > 0) {
-                    $details[] = "Tiene {$empleado->ventas()->count()} venta(s) asociada(s)";
                 }
 
                 return response()->json([
