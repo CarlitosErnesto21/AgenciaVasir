@@ -22,6 +22,7 @@ import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
+import Password from 'primevue/password';
 import IconField from 'primevue/iconfield';
 import InputIcon from 'primevue/inputicon';
 import FileUpload from 'primevue/fileupload';
@@ -80,6 +81,7 @@ createInertiaApp({
             app.component('Column', Column); // Componente de columna para tablas
             app.component('Dialog', Dialog); // Componente de diálogo modal
             app.component('InputText', InputText); // Componente de entrada de texto
+            app.component('Password', Password); // Componente de entrada de contraseña
             app.component('IconField', IconField); // Componente de campo de icono
             app.component('InputIcon', InputIcon);  // Componente de entrada con icono
             app.component('FileUpload', FileUpload); // Componente de carga de archivos

@@ -85,7 +85,7 @@ class RegisteredUserController extends Controller
 
         Mail::to($request->email)->send(new WelcomeUserMail($userData, $verificationUrl));
 
-        // Redirigir a la vista de verificación con el email
-        return redirect()->route('verification.notice', ['email' => $request->email]);
+        // Redirigir a la vista de verificación con el email (ruta especial sin autenticación)
+        return redirect()->route('verification.notice.pending', ['email' => $request->email]);
     }
 }

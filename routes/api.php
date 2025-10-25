@@ -85,7 +85,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // ───────────────────────────────────────────────────────
     Route::middleware('rutas.admin')->group(function () {
 
-        
+
 
         // Gestión de reservas
         Route::prefix('reservas')->group(function () {
@@ -115,6 +115,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('clientes', ClienteController::class);
         Route::apiResource('ventas', VentaController::class);
         Route::apiResource('empleados', EmpleadoController::class);
+        Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
         Route::apiResource('metodos-pago', MetodoPagoController::class);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');

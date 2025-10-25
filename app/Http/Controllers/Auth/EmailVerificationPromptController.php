@@ -18,18 +18,34 @@ class EmailVerificationPromptController extends Controller
      */
     public function __invoke(Request $request): Response|RedirectResponse
     {
-        // Si el usuario ya está logueado y verificado, redirigir
-        if ($request->user()?->hasVerifiedEmail()) {
-            return redirect()->intended(route('inicio', absolute: false));
+        // Caso 1: Usuario autenticado (empleados/admin que necesitan verificar)
+        if ($request->user()) {
+            // Si ya está verificado, redirigir según su rol
+            if ($request->user()->hasVerifiedEmail()) {
+                if ($request->user()->hasRole('Administrador') || $request->user()->hasRole('Empleado')) {
+                    return redirect()->intended(route('dashboard', absolute: false));
+                } else {
+                    return redirect()->intended(route('inicio', absolute: false));
+                }
+            }
+
+            // Usuario autenticado pero no verificado - mostrar vista de verificación
+            return Inertia::render('Auth/VerifyEmail', [
+                'status' => session('status'),
+                'email' => $request->user()->email,
+            ]);
         }
 
+        // Caso 2: Usuario NO autenticado (cliente en proceso de registro)
         // Obtener email de la query string o sesión
         $email = $request->query('email') ?: session('pending_registration.email');
 
         if (!$email) {
-            return redirect()->route('register');
+            return redirect()->route('register')
+                ->withErrors(['email' => 'No se encontraron datos de registro pendientes.']);
         }
 
+        // Mostrar vista de verificación para cliente no autenticado
         return Inertia::render('Auth/VerifyEmail', [
             'status' => session('status'),
             'email' => $email,

@@ -2,9 +2,10 @@
 import { ref, onMounted, onBeforeUnmount, watch } from "vue";
 import { usePage, Link, router } from "@inertiajs/vue3";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faRoute, faDoorOpen, faUserCircle, faChevronDown, faUser, faHotel, faPlaneDeparture, faGear, faBoxesStacked,
+import { faRoute, faDoorOpen, faChevronDown, faUser, faHotel, faGear, faBoxesStacked,
             faClipboardList, faBox, faHouseChimneyUser, faBars, faFileInvoice, faUserPen,
-            faTimes, faUsers, faCog, faStore} from "@fortawesome/free-solid-svg-icons";
+            faTimes, faUsers, faCog, faStore,
+            faIdCard} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { route } from "ziggy-js";
 
@@ -543,6 +544,45 @@ onBeforeUnmount(() => {
                             <!-- Separador visual -->
                             <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
 
+                            <!-- Clientes -->
+                            <Link
+                                :href="route('clientes')"
+                                :class="[
+                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
+                                    route().current('clientes')
+                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
+                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
+                                ]"
+                                @click.prevent="navigateAndCloseSidebar('clientes')"
+                            >
+                                <FontAwesomeIcon
+                                    :icon="faUsers"
+                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
+                                />
+                                <span class="font-semibold">Clientes</span>
+                            </Link>
+
+                            <!-- Documentos -->
+                            <Link
+                                :href="route('tipodocumentos')"
+                                :class="[
+                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
+                                    route().current('tipodocumentos')
+                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
+                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
+                                ]"
+                                @click.prevent="navigateAndCloseSidebar('tipodocumentos')"
+                            >
+                                <FontAwesomeIcon
+                                    :icon="faIdCard"
+                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
+                                />
+                                <span class="font-semibold">Documentos</span>
+                            </Link>
+
+                            <!-- Separador visual -->
+                            <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
+
                             <!-- Informes -->
                             <Link
                                 :href="route('informes')"
@@ -567,6 +607,7 @@ onBeforeUnmount(() => {
                             <!-- Configuración -->
                             <div class="relative">
                                 <button
+                                    v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
                                     @click="toggleConfigDropdown"
                                     class="relative w-full flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-300/50 group"
                                     :class="{
@@ -590,20 +631,22 @@ onBeforeUnmount(() => {
                                 <!-- Submenu de Configuración -->
                                 <div v-show="isConfigDropdownOpen" class="ml-6 mr-2 mt-2 flex flex-col space-y-1 bg-gray-50 rounded-lg p-2 border border-gray-200">
                                     <Link
-                                        :href="route('clientes')"
-                                        @click="isSidebarOpen = false"
-                                        class="flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md"
-                                    >
-                                        <FontAwesomeIcon :icon="faUsers" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Clientes</span>
-                                    </Link>
-                                    <Link
+                                        v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
                                         :href="route('settings')"
                                         @click="isSidebarOpen = false"
                                         class="flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md"
                                     >
                                         <FontAwesomeIcon :icon="faCog" class="w-4 h-4 mr-3 text-gray-600 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Sistema</span>
+                                    </Link>
+                                    <Link
+                                        v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
+                                        :href="route('gestionUsuarios')"
+                                        @click="isSidebarOpen = false"
+                                        class="flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md"
+                                    >
+                                        <FontAwesomeIcon :icon="faUsers" class="w-4 h-4 mr-3 text-gray-600 group-hover:scale-110 transition-transform duration-300" />
+                                        <span class="font-medium">Usuarios</span>
                                     </Link>
                                 </div>
                             </div>
@@ -788,6 +831,42 @@ onBeforeUnmount(() => {
                             <span class="font-semibold">Reservaciones</span>
                         </Link>
 
+                        <!-- Clientes -->
+                        <Link
+                            :href="route('clientes')"
+                            :class="[
+                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
+                                route().current('clientes')
+                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
+                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
+                            ]"
+                            title="Clientes"
+                        >
+                            <FontAwesomeIcon
+                                :icon="faUsers"
+                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <span class="font-semibold">Clientes</span>
+                        </Link>
+
+                        <!-- Documentos -->
+                        <Link
+                            :href="route('tipodocumentos')"
+                            :class="[
+                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
+                                route().current('tipodocumentos')
+                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
+                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
+                            ]"
+                            title="Documentos"
+                        >
+                            <FontAwesomeIcon
+                                :icon="faIdCard"
+                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <span class="font-semibold">Documentos</span>
+                        </Link>
+
                         <!-- Informes -->
                         <Link
                             :href="route('informes')"
@@ -811,6 +890,7 @@ onBeforeUnmount(() => {
                 <!-- Configuración en la parte inferior (dropdown siempre visible en escritorio) -->
                 <div class="mt-auto p-3 relative">
                     <button
+                        v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
                         :class="[
                             'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300/50 w-full text-white justify-between',
                             [
@@ -841,19 +921,7 @@ onBeforeUnmount(() => {
                     >
                         <div v-if="isConfigDropdownOpen" class="mt-2 ml-4 space-y-1 border-l-2 border-red-200/50 pl-4">
                             <Link
-                                :href="route('clientes')"
-                                :class="[
-                                    'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group w-full text-left',
-                                    route().current('clientes')
-                                        ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                        : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                ]"
-                                @click.prevent="navigateAndCloseConfigDropdown('clientes')"
-                            >
-                                <FontAwesomeIcon :icon="faUsers" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                <span class="font-medium text-sm">Clientes</span>
-                            </Link>
-                            <Link
+                                v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
                                 :href="route('settings')"
                                 :class="[
                                     'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group w-full text-left',
@@ -866,6 +934,21 @@ onBeforeUnmount(() => {
                                 <FontAwesomeIcon
                                     :icon="faCog" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                 <span class="font-medium text-sm">Sistema</span>
+                            </Link>
+                            <Link
+                                v-if="user && user.roles && user.roles.some(role => role.name === 'Administrador')"
+                                :href="route('gestionUsuarios')"
+                                :class="[
+                                    'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group w-full text-left',
+                                    route().current('gestionUsuarios')
+                                        ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
+                                        : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
+                                ]"
+                                @click.prevent="navigateAndCloseConfigDropdown('gestionUsuarios')"
+                            >
+                                <FontAwesomeIcon
+                                    :icon="faUsers" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
+                                <span class="font-medium text-sm">Usuarios</span>
                             </Link>
                         </div>
                     </transition>

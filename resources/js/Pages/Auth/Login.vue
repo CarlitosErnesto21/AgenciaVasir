@@ -26,6 +26,7 @@ const showPassword = ref(false);
 const form = useForm({
     email: '',
     password: '',
+    remember: false,
 });
 
 const submit = () => {
@@ -161,6 +162,23 @@ const toggleForm = () => {
                         </button>
                     </div>
                     <InputError class="mt-1 text-xs" :message="form.errors.password" />
+                </div>
+
+                <!-- Casilla Recordarme -->
+                <div class="flex items-center justify-between pt-2">
+                    <label class="flex items-center cursor-pointer group">
+                        <input 
+                            type="checkbox" 
+                            v-model="form.remember"
+                            class="w-4 h-4 text-red-600 bg-white border-2 border-gray-300 rounded focus:ring-red-500 focus:ring-2 transition-colors cursor-pointer"
+                        />
+                        <span class="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors select-none">
+                            Recordarme
+                        </span>
+                        <span class="ml-1 text-xs text-gray-500" title="Solo disponible para usuarios clientes">
+                            ⓘ
+                        </span>
+                    </label>
                 </div>
 
                 <!-- Botón de envío -->

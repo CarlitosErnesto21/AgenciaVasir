@@ -27,12 +27,16 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('tipo-documentos', fn() => Inertia::render('Configuracion/TiposDocumento'))->name('tipodocumentos');
     Route::get('generar-informes', fn() => Inertia::render('Informes/Informes'))->name('informes');
-    Route::get('clientes', fn() => Inertia::render('Configuracion/Clientes'))->name('clientes');
+    Route::get('clientes', [ClienteController::class, 'index'])->name('clientes');
+    Route::get('clientes/{cliente}/reservas', [ClienteController::class, 'reservas'])->name('clientes.reservas');
+    Route::get('clientes/{cliente}/ventas', [ClienteController::class, 'ventas'])->name('clientes.ventas');
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
     Route::get('categorias-hoteles', fn() => Inertia::render('Catalogos/CategoriaHoteles'))->name('catHoteles');
     Route::get('gestion-paquetes', fn() => Inertia::render('Catalogos/GestionPaquetes'))->name('gestionPaquetes');
     Route::get('ventas', fn() => Inertia::render('Catalogos/Ventas'))->name('ventas');
     Route::get('inventario', fn() => Inertia::render('Catalogos/Inventarios'))->name('inventario');
+    // Ruta para gestión de usuarios internos - Solo Administradores
+    Route::get('gestion-usuarios', fn() => Inertia::render('Configuracion/GestionUsuarios'))->name('gestionUsuarios')->middleware('role:Administrador');
 
     //Rutas para informes
     Route::get('/descargar-informe', [InformePDFController::class, 'descargarInforme']);

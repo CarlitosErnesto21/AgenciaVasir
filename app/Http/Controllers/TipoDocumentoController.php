@@ -42,14 +42,45 @@ class TipoDocumentoController extends Controller
      */
     public function store(Request $request)
     {
+        // Limpiar y validar el nombre
+        $nombre = trim($request->input('nombre'));
+        
+        // Validar que solo contenga letras, espacios y acentos
+        if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $nombre)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El nombre solo puede contener letras, espacios y acentos. No se permiten números ni caracteres especiales.'
+            ], 422);
+        }
+
+        // Limpiar múltiples espacios consecutivos
+        $nombre = preg_replace('/\s+/', ' ', $nombre);
+        
+        // Convertir a mayúsculas
+        $nombre = strtoupper($nombre);
+        
+        // Verificar si ya existe un tipo de documento con el mismo nombre
+        if (TipoDocumento::where('nombre', $nombre)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe un tipo de documento con el nombre "' . $nombre . '". Por favor, elige un nombre diferente.'
+            ], 422);
+        }
+
         // Validar los datos del formulario
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:20|unique:tipos_documentos,nombre',
+        $request->validate([
+            'nombre' => 'required|string|min:3|max:20',
+        ], [
+            'nombre.required' => 'El nombre del tipo de documento es obligatorio.',
+            'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.max' => 'El nombre no puede tener más de 20 caracteres.',
         ]);
 
         try {
             // Crear un nuevo tipo de documento
-            $tipoDocumento = TipoDocumento::create($validated);
+            $tipoDocumento = TipoDocumento::create([
+                'nombre' => $nombre
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -86,14 +117,45 @@ class TipoDocumentoController extends Controller
      */
     public function update(Request $request, TipoDocumento $tipoDocumento)
     {
+        // Limpiar y validar el nombre
+        $nombre = trim($request->input('nombre'));
+        
+        // Validar que solo contenga letras, espacios y acentos
+        if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $nombre)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'El nombre solo puede contener letras, espacios y acentos. No se permiten números ni caracteres especiales.'
+            ], 422);
+        }
+
+        // Limpiar múltiples espacios consecutivos
+        $nombre = preg_replace('/\s+/', ' ', $nombre);
+        
+        // Convertir a mayúsculas
+        $nombre = strtoupper($nombre);
+        
+        // Verificar si ya existe un tipo de documento con el mismo nombre (excluyendo el actual)
+        if (TipoDocumento::where('nombre', $nombre)->where('id', '!=', $tipoDocumento->id)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ya existe otro tipo de documento con el nombre "' . $nombre . '". Por favor, elige un nombre diferente.'
+            ], 422);
+        }
+
         // Validar los datos del formulario
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:20|unique:tipos_documentos,nombre,' . $tipoDocumento->id,
+        $request->validate([
+            'nombre' => 'required|string|min:3|max:20',
+        ], [
+            'nombre.required' => 'El nombre del tipo de documento es obligatorio.',
+            'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
+            'nombre.max' => 'El nombre no puede tener más de 20 caracteres.',
         ]);
 
         try {
             // Actualizar el tipo de documento
-            $tipoDocumento->update($validated);
+            $tipoDocumento->update([
+                'nombre' => $nombre
+            ]);
 
             return response()->json([
                 'success' => true,

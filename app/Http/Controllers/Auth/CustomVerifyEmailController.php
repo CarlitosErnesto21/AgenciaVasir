@@ -21,7 +21,7 @@ class CustomVerifyEmailController extends Controller
     public function verify(Request $request): RedirectResponse
     {
         // El middleware CustomSignedMiddleware ya validó la URL
-        
+
         // Obtener datos de registro pendientes de la sesión
         $pendingData = session('pending_registration');
 

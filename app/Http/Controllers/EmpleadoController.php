@@ -3,7 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Empleado;
+use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeUserMail;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use Spatie\Permission\Models\Role;
 
 class EmpleadoController extends Controller
 {
@@ -12,17 +20,37 @@ class EmpleadoController extends Controller
      */
     public function index()
     {
-        // Obtener todos los empleados con sus relaciones
-        $empleados = Empleado::with(['reservas', 'ventas'])->get();
-        return response()->json($empleados);
-    }
+        try {
+            $empleados = Empleado::with(['user.roles'])
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($empleado) {
+                    return [
+                        'id' => $empleado->id,
+                        'cargo' => $empleado->cargo,
+                        'telefono' => $empleado->telefono,
+                        'nombre' => $empleado->user->name,
+                        'email' => $empleado->user->email,
+                        'user_id' => $empleado->user_id,
+                        'email_verified_at' => $empleado->user->email_verified_at,
+                        'created_at' => $empleado->created_at,
+                        'updated_at' => $empleado->updated_at,
+                        'roles' => $empleado->user->roles->pluck('name')
+                    ];
+                });
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+            return response()->json([
+                'success' => true,
+                'data' => $empleados
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener la lista de empleados',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -30,73 +58,334 @@ class EmpleadoController extends Controller
      */
     public function store(Request $request)
     {
-        // Validar los datos del formulario
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:50',
-            'cargo' => 'required|string|max:25',
-            'telefono' => 'required|string|size:8',
-            'user_id' => 'required|exists:users,id',
+        // Validar formato básico
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|lowercase|email:rfc,dns|max:255',
+            'password' => [
+                'required',
+                'confirmed',
+                'min:8',
+                'regex:/[A-Z]/', // al menos una mayúscula
+                'regex:/[0-9]/', // al menos un número
+                'regex:/^[^\s.]*$/', // no espacios ni puntos
+            ],
+            'cargo' => 'required|string|max:100',
+            'telefono' => 'required|string|min:8|max:20',
+        ], [
+            'name.required' => 'El nombre es obligatorio.',
+            'name.max' => 'El nombre no puede exceder 255 caracteres.',
+            'email.required' => 'El correo electrónico es obligatorio.',
+            'email.email' => 'El formato del correo electrónico no es válido.',
+            'email.max' => 'El correo electrónico no puede exceder 255 caracteres.',
+            'password.required' => 'La contraseña es obligatoria.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número, y no puede contener espacios ni puntos.',
+            'password.confirmed' => 'Las contraseñas no coinciden.',
+            'cargo.required' => 'El cargo es obligatorio.',
+            'cargo.max' => 'El cargo no puede exceder 100 caracteres.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.min' => 'El teléfono debe tener al menos 8 caracteres.',
+            'telefono.max' => 'El teléfono no puede exceder 20 caracteres.',
         ]);
 
-        // Crear un nuevo empleado
-        $empleado = Empleado::create($validated);
+        // Verificar si las credenciales ya existen
+        if (User::where('name', $request->name)->exists() || User::where('email', $request->email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'Estas credenciales ya están en uso. Por favor, utiliza datos diferentes.'
+            ]);
+        }
 
-        return response()->json([
-            'message' => 'Empleado creado exitosamente',
-            'empleado' => $empleado,
-        ]);
+        try {
+            DB::beginTransaction();
+
+            // Crear el usuario
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'email_verified_at' => now(), // Los empleados se consideran verificados automáticamente
+            ]);
+
+            // Asignar rol de Empleado
+            $employeeRole = Role::where('name', 'Empleado')->first();
+            if ($employeeRole) {
+                $user->assignRole($employeeRole);
+            }
+
+            // Crear el empleado
+            $empleado = Empleado::create([
+                'cargo' => $request->cargo,
+                'telefono' => $request->telefono,
+                'user_id' => $user->id,
+            ]);
+
+            // Enviar email de bienvenida
+            try {
+                $userData = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ];
+
+                // Para empleados, no necesitamos URL de verificación ya que están verificados automáticamente
+                Mail::to($user->email)->send(new WelcomeUserMail($userData));
+            } catch (\Exception $e) {
+                // Log del error pero no interrumpir el proceso de creación
+                Log::error('Error enviando email de bienvenida a empleado: ' . $e->getMessage());
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empleado creado exitosamente',
+                'data' => [
+                    'id' => $empleado->id,
+                    'cargo' => $empleado->cargo,
+                    'telefono' => $empleado->telefono,
+                    'nombre' => $user->name,
+                    'email' => $user->email,
+                    'user_id' => $user->id,
+                    'email_verified_at' => $user->email_verified_at,
+                    'created_at' => $empleado->created_at,
+                    'updated_at' => $empleado->updated_at,
+                    'roles' => ['Empleado']
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al crear el empleado',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Empleado $empleado)
+    public function show(string $id)
     {
-        // Mostrar los detalles de un empleado específico con sus relaciones
-        $empleado->load(['reservas', 'ventas']);
-        return response()->json($empleado);
-    }
+        try {
+            $empleado = Empleado::with(['user.roles'])->findOrFail($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Empleado $empleado)
-    {
-        //
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $empleado->id,
+                    'cargo' => $empleado->cargo,
+                    'telefono' => $empleado->telefono,
+                    'nombre' => $empleado->user->name,
+                    'email' => $empleado->user->email,
+                    'user_id' => $empleado->user_id,
+                    'email_verified_at' => $empleado->user->email_verified_at,
+                    'created_at' => $empleado->created_at,
+                    'updated_at' => $empleado->updated_at,
+                    'roles' => $empleado->user->roles->pluck('name')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Empleado no encontrado',
+                'error' => $e->getMessage()
+            ], 404);
+        }
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Empleado $empleado)
+    public function update(Request $request, string $id)
     {
-        // Validar los datos del formulario
-        $validated = $request->validate([
-            'nombre' => 'required|string|max:50',
-            'cargo' => 'required|string|max:25',
-            'telefono' => 'required|string|size:8',
-            'user_id' => 'required|exists:users,id',
-        ]);
+        try {
+            $empleado = Empleado::with('user')->findOrFail($id);
 
-        // Actualizar el empleado
-        $empleado->update($validated);
+            // Validar los datos
+            $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|lowercase|email:rfc,dns|max:255',
+                'cargo' => 'required|string|max:100',
+                'telefono' => 'required|string|min:8|max:20',
+            ], [
+                'name.required' => 'El nombre es obligatorio.',
+                'name.max' => 'El nombre no puede exceder 255 caracteres.',
+                'email.required' => 'El correo electrónico es obligatorio.',
+                'email.email' => 'El formato del correo electrónico no es válido.',
+                'email.max' => 'El correo electrónico no puede exceder 255 caracteres.',
+                'cargo.required' => 'El cargo es obligatorio.',
+                'cargo.max' => 'El cargo no puede exceder 100 caracteres.',
+                'telefono.required' => 'El teléfono es obligatorio.',
+                'telefono.min' => 'El teléfono debe tener al menos 8 caracteres.',
+                'telefono.max' => 'El teléfono no puede exceder 20 caracteres.',
+            ]);
 
-        return response()->json([
-            'message' => 'Empleado actualizado exitosamente',
-            'empleado' => $empleado,
-        ]);
+            // Verificar si el email ya existe en otro usuario
+            if (User::where('email', $request->email)->where('id', '!=', $empleado->user_id)->exists()) {
+                throw ValidationException::withMessages([
+                    'email' => 'Este correo electrónico ya está en uso por otro usuario.'
+                ]);
+            }
+
+            // Verificar si el nombre ya existe en otro usuario
+            if (User::where('name', $request->name)->where('id', '!=', $empleado->user_id)->exists()) {
+                throw ValidationException::withMessages([
+                    'name' => 'Este nombre ya está en uso por otro usuario.'
+                ]);
+            }
+
+            DB::beginTransaction();
+
+            // Actualizar usuario
+            $empleado->user->update([
+                'name' => $request->name,
+                'email' => $request->email,
+            ]);
+
+            // Actualizar empleado
+            $empleado->update([
+                'cargo' => $request->cargo,
+                'telefono' => $request->telefono,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empleado actualizado exitosamente',
+                'data' => [
+                    'id' => $empleado->id,
+                    'cargo' => $empleado->cargo,
+                    'telefono' => $empleado->telefono,
+                    'nombre' => $empleado->user->name,
+                    'email' => $empleado->user->email,
+                    'user_id' => $empleado->user_id,
+                    'email_verified_at' => $empleado->user->email_verified_at,
+                    'created_at' => $empleado->created_at,
+                    'updated_at' => $empleado->updated_at,
+                    'roles' => $empleado->user->roles->pluck('name')
+                ]
+            ]);
+
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar el empleado',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Empleado $empleado)
+    public function destroy(string $id)
     {
-        // Eliminar el empleado
-        $empleado->delete();
+        try {
+            $empleado = Empleado::with(['user', 'reservas', 'ventas'])->findOrFail($id);
 
-        return response()->json([
-            'message' => 'Empleado eliminado exitosamente',
-        ]);
+            // Verificar si el empleado tiene reservas o ventas asociadas
+            if ($empleado->reservas()->count() > 0 || $empleado->ventas()->count() > 0) {
+                $details = [];
+
+                if ($empleado->reservas()->count() > 0) {
+                    $details[] = "Tiene {$empleado->reservas()->count()} reserva(s) asociada(s)";
+                }
+
+                if ($empleado->ventas()->count() > 0) {
+                    $details[] = "Tiene {$empleado->ventas()->count()} venta(s) asociada(s)";
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se puede eliminar el empleado',
+                    'error' => 'El empleado está siendo utilizado en el sistema.',
+                    'details' => $details
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Eliminar empleado y usuario
+            $user = $empleado->user;
+            $empleado->delete();
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Empleado eliminado exitosamente'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el empleado',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Actualizar contraseña de un empleado
+     */
+    public function updatePassword(Request $request, string $id)
+    {
+        try {
+            $empleado = Empleado::with('user')->findOrFail($id);
+
+            $request->validate([
+                'password' => [
+                    'required',
+                    'confirmed',
+                    'min:8',
+                    'regex:/[A-Z]/', // al menos una mayúscula
+                    'regex:/[0-9]/', // al menos un número
+                    'regex:/^[^\s.]*$/', // no espacios ni puntos
+                ],
+            ], [
+                'password.required' => 'La contraseña es obligatoria.',
+                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+                'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número, y no puede contener espacios ni puntos.',
+                'password.confirmed' => 'Las contraseñas no coinciden.',
+            ]);
+
+            $empleado->user->update([
+                'password' => Hash::make($request->password),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Contraseña actualizada exitosamente'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al actualizar la contraseña',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 }

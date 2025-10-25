@@ -34,10 +34,28 @@ class AuthenticatedSessionController extends Controller
     public function store(LoginRequest $request): RedirectResponse
     {
         try {
+            // Solo permitir "remember me" para clientes, no para staff por seguridad
+            $rememberMe = $this->shouldRememberUser($request);
+            
+            // Sobrescribir el remember en la request para control específico
+            $request->merge(['remember' => $rememberMe]);
+            
             $request->authenticate();
             $request->session()->regenerate();
 
             $user = Auth::user();
+
+            // Verificar si el email está verificado
+            if ($user && !$user->hasVerifiedEmail()) {
+                // Si es staff (creado por admin), marcar como verificado automáticamente
+                if ($user->hasRole('Administrador') || $user->hasRole('Empleado')) {
+                    $user->markEmailAsVerified();
+                } else {
+                    // Cliente sin verificar - redirigir a verificación
+                    return redirect()->route('verification.notice')
+                        ->with('status', 'Debes verificar tu email antes de continuar.');
+                }
+            }
 
             if ($user && ($user->hasRole('Administrador') || $user->hasRole('Empleado'))) {
                 // Enviar email de notificación para staff
@@ -71,6 +89,32 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
         $cookie = cookie()->forget('api_token');
         return redirect('/')->withCookie($cookie);
+    }
+
+    /**
+     * Determinar si debemos recordar al usuario
+     */
+    private function shouldRememberUser(Request $request): bool
+    {
+        // Solo permitir "remember me" si:
+        // 1. El usuario marcó la casilla
+        // 2. Y el usuario que intenta loguear es un Cliente (no staff)
+        if (!$request->boolean('remember')) {
+            return false;
+        }
+
+        // Verificar temporalmente las credenciales para obtener el usuario
+        $credentials = $request->only('email', 'password');
+        
+        // Intentar encontrar el usuario por email para verificar su rol
+        $user = \App\Models\User::where('email', $request->email)->first();
+        
+        if (!$user) {
+            return false;
+        }
+
+        // Solo permitir remember me para Clientes, no para staff
+        return $user->hasRole('Cliente');
     }
 
     /**

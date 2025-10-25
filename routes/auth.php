@@ -36,12 +36,17 @@ Route::middleware('guest')->group(function () {
         ->name('password.store');
 });
 
-// Ruta de verificación personalizada (pública para usuarios no logueados)
+// Ruta de verificación personalizada (requiere autenticación)
 Route::get('verify-email', EmailVerificationPromptController::class)
+    ->middleware('auth')
     ->name('verification.notice');
 
+// Ruta especial para clientes en proceso de registro (sin autenticación)
+Route::get('verify-email-pending', EmailVerificationPromptController::class)
+    ->name('verification.notice.pending');
+
 Route::post('verification-notification', [EmailVerificationPromptController::class, 'resend'])
-    ->middleware('throttle:6,1')
+    ->middleware(['auth', 'throttle:6,1'])
     ->name('verification.send');
 
 // Ruta personalizada de verificación (pública)

@@ -4,9 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ClienteController extends Controller
 {
+    // Vista de configuración de clientes (Inertia)
+    public function index()
+    {
+        $clientes = Cliente::with(['user', 'tipoDocumento'])->get();
+
+        return Inertia::render('Configuracion/Clientes', [
+            'clientes' => $clientes
+        ]);
+    }
+
     // API para obtener clientes (JSON)
     public function getClientes()
     {
@@ -71,7 +82,7 @@ class ClienteController extends Controller
     public function obtenerDatosAutenticado(Request $request)
     {
         $user = $request->user();
-        
+
         if (!$user) {
             return response()->json([
                 'success' => false,
@@ -94,6 +105,30 @@ class ClienteController extends Controller
         return response()->json([
             'success' => true,
             'cliente' => $cliente
+        ]);
+    }
+
+    // Mostrar reservas del cliente
+    public function reservas($id)
+    {
+        $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
+        $reservas = $cliente->reservas()->with(['empleado.user'])->orderBy('fecha', 'desc')->get();
+
+        return Inertia::render('Configuracion/ClienteComponents/ReservasCliente', [
+            'cliente' => $cliente,
+            'reservas' => $reservas
+        ]);
+    }
+
+    // Mostrar ventas del cliente
+    public function ventas($id)
+    {
+        $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
+        $ventas = $cliente->ventas()->with(['empleado.user', 'detalles.producto'])->orderBy('fecha', 'desc')->get();
+
+        return Inertia::render('Configuracion/ClienteComponents/VentasCliente', [
+            'cliente' => $cliente,
+            'ventas' => $ventas
         ]);
     }
 }
