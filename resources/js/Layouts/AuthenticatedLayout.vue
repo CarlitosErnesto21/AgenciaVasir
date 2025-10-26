@@ -499,14 +499,14 @@ onBeforeUnmount(() => {
 
                             <!-- Reservaciones -->
                             <Link
-                                :href="route('reservatours')"
+                                :href="route('reservas')"
                                 :class="[
                                     'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-                                    route().current('reservatours')
+                                    route().current('reservas')
                                         ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
                                         : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
                                 ]"
-                                @click.prevent="navigateAndCloseSidebar('reservatours')"
+                                @click.prevent="navigateAndCloseSidebar('reservas')"
                             >
                                 <FontAwesomeIcon
                                     :icon="faClipboardList"
@@ -799,10 +799,10 @@ onBeforeUnmount(() => {
 
                         <!-- Reservaciones -->
                         <Link
-                            :href="route('reservatours')"
+                            :href="route('reservas')"
                             :class="[
                                 'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
-                                route().current('reservatours')
+                                route().current('reservas')
                                     ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
                                     : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
                             ]"

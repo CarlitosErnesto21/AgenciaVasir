@@ -63,8 +63,8 @@ const isLoadingTable = ref(true);
 const paises = ref([]);
 const provincias = ref([]);
 const categoriasHoteles = ref([]);
-const selectedProvincia = ref(null);
-const selectedEstado = ref(null);
+const selectedProvincia = ref("");
+const selectedEstado = ref("");
 
 // 🔍 Filtros
 const filters = ref({
@@ -221,10 +221,30 @@ const cargarTodosLosDatos = async () => {
     }
 };
 
-// 📊 Cargar datos
+// � Función para forzar truncado en selects
+const forceSelectTruncation = () => {
+    nextTick(() => {
+        setTimeout(() => {
+            const selects = document.querySelectorAll('.p-select');
+            selects.forEach(select => {
+                const label = select.querySelector('.p-select-label, .p-placeholder');
+                if (label) {
+                    label.style.overflow = 'hidden';
+                    label.style.textOverflow = 'ellipsis';
+                    label.style.whiteSpace = 'nowrap';
+                    label.style.maxWidth = 'calc(100% - 2.5rem)';
+                    label.style.display = 'block';
+                }
+            });
+        }, 100);
+    });
+};
+
+// �📊 Cargar datos
 onMounted(() => {
     cargarTodosLosDatos();
     fetchCategorias();
+    forceSelectTruncation();
 });
 
 const fetchHoteles = async () => {
@@ -343,12 +363,19 @@ const fetchCategorias = fetchCategoriasHoteles;
 
 // 🔍 Funciones para manejar filtros
 const onProvinciaFilterChange = () => {
-    filters.value.provincia.value = selectedProvincia.value;
+    filters.value.provincia.value = selectedProvincia.value === "" ? null : selectedProvincia.value;
+    forceSelectTruncation();
 };
 
 const onEstadoFilterChange = () => {
-    filters.value.estado.value = selectedEstado.value;
+    filters.value.estado.value = selectedEstado.value === "" ? null : selectedEstado.value;
+    forceSelectTruncation();
 };
+
+// 👀 Watchers para forzar truncado cuando cambien los valores
+watch([selectedProvincia, selectedEstado], () => {
+    forceSelectTruncation();
+}, { deep: true });
 
 const clearFilters = async () => {
     isClearingFilters.value = true;
@@ -357,8 +384,8 @@ const clearFilters = async () => {
         // Simular un pequeño delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        selectedProvincia.value = null;
-        selectedEstado.value = null;
+        selectedProvincia.value = "";
+        selectedEstado.value = "";
         filters.value.global.value = null;
         filters.value.provincia.value = null;
         filters.value.estado.value = null;
@@ -895,7 +922,8 @@ function onFilterDropdown(field, event) {
                             :icon="isNavigatingToPaises ? faSpinner : faGlobe"
                             :class="{'animate-spin': isNavigatingToPaises, 'h-4': true}"
                         />
-                        <span>{{ isNavigatingToPaises ? 'Cargando...' : 'Control países' }}</span>
+                        <span class="block sm:hidden">{{ isNavigatingToPaises ? 'Car...' : 'Países' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToPaises ? 'Cargando...' : 'Control países' }}</span>
                     </Link>
                     <Link
                         :href="route('catHoteles')"
@@ -906,12 +934,15 @@ function onFilterDropdown(field, event) {
                             :icon="isNavigatingToCategorias ? faSpinner : faTags"
                             :class="{'animate-spin': isNavigatingToCategorias, 'h-4': true}"
                         />
-                        <span>{{ isNavigatingToCategorias ? 'Cargando...' : 'Gestionar categorías' }}</span>
+                        <span class="block sm:hidden">{{ isNavigatingToCategorias ? 'Cargando...' : 'Categorías' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToCategorias ? 'Cargando...' : 'Gestionar categorías' }}</span>
                     </Link>
                     <button
-                        class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                        class="bg-red-500 border flex justify-center border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                         @click="openNew">
-                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar hotel</span>
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
+                        <span class="block sm:hidden">Agregar</span>
+                        <span class="hidden sm:block">Agregar hotel</span>
                     </button>
                 </div>
             </div>
@@ -961,7 +992,7 @@ function onFilterDropdown(field, event) {
                                         :icon="faSpinner"
                                         class="animate-spin h-3 w-3"
                                     />
-                                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                    <span>{{ isClearingFilters ? 'Limp...' : 'Limpiar' }}</span>
                                 </button>
                             </div>
                             <button
@@ -982,14 +1013,38 @@ function onFilterDropdown(field, event) {
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
                                 <div>
-                                    <Select v-model="selectedProvincia" :options="provincias" optionLabel="nombre" optionValue="id" placeholder="Provincia" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onProvinciaFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedProvincia"
+                                        @change="onProvinciaFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Provincia</option>
+                                        <option
+                                            v-for="provincia in provincias"
+                                            :key="provincia.id"
+                                            :value="provincia.id"
+                                            class="truncate"
+                                        >
+                                            {{ provincia.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <Select v-model="selectedEstado" :options="estados" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onEstadoFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedEstado"
+                                        @change="onEstadoFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Estado</option>
+                                        <option
+                                            v-for="estado in estados"
+                                            :key="estado.value"
+                                            :value="estado.value"
+                                            class="truncate"
+                                        >
+                                            {{ estado.label }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1350,6 +1405,59 @@ function onFilterDropdown(field, event) {
 .p-select-option[aria-selected="true"] {
     background-color: #dbeafe !important;
     color: #1e40af !important;
+}
+
+/* Estilos para truncar texto en Select - PrimeVue específico */
+.p-select .p-select-label,
+.p-select .p-placeholder,
+.p-select-label,
+.p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+/* Contenedor principal del Select */
+.p-select {
+    overflow: hidden !important;
+    max-width: 100% !important;
+}
+
+/* Input interno del Select */
+.p-select .p-inputtext,
+.p-select input {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Forzar truncado en todos los elementos internos */
+.p-select * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Específico para el valor mostrado */
+.p-select .p-select-display-chip,
+.p-select .p-select-clear-icon ~ *,
+.p-select .p-select-trigger ~ * {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 2.5rem) !important;
+}
+
+/* Extra específico para móviles */
+@media (max-width: 768px) {
+    .p-select .p-select-label,
+    .p-select .p-placeholder {
+        font-size: 0.875rem !important;
+        max-width: calc(100% - 2rem) !important;
+    }
 }
 /* Fin de los estilos para el select */
 

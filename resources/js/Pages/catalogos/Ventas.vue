@@ -45,7 +45,7 @@
       </div>
 
       <div class="bg-white rounded-lg shadow-md">
-        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
           <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Ventas</h3>
         </div>
         <DataTable
@@ -77,35 +77,41 @@
           <template #header>
             <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
               <div class="flex flex-col sm:flex-row items-center justify-between mb-3">
-                <div class="flex items-center gap-3">
-                  <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
-                    <FontAwesomeIcon :icon="faFilter" class="text-blue-600 text-sm" />
-                    <span>Filtros</span>
-                  </h3>
-                  <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
-                    {{ ventasFiltradas.length }} resultado{{ ventasFiltradas.length !== 1 ? 's' : '' }}
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <div class="flex items-center gap-3">
+                    <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
+                      <FontAwesomeIcon :icon="faFilter" class="text-blue-600 text-sm" />
+                      <span>Filtros</span>
+                    </h3>
+                    <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
+                      {{ ventasFiltradas.length }} resultado{{ ventasFiltradas.length !== 1 ? 's' : '' }}
+                    </div>
                   </div>
-                  <button
-                    class="bg-blue-500 hover:bg-blue-600 border border-blue-500 px-2 py-1 text-sm text-white shadow-md rounded-md flex sm:hidden disabled:opacity-50 disabled:cursor-not-allowed items-center gap-1"
-                    @click="fetchVentasWithToasts"
-                    :disabled="isReloading">
-                    <FontAwesomeIcon
-                      :icon="isReloading ? faSpinner : faRefresh"
-                      :class="{ 'animate-spin': isReloading }"
-                      class="h-3 w-3"
-                    />
-                  </button>
-                  <button
-                    class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md flex sm:hidden disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
-                    @click="limpiarFiltros"
-                    :disabled="isClearingFilters">
-                    <FontAwesomeIcon
-                      v-if="isClearingFilters"
-                      :icon="faSpinner"
-                      class="animate-spin h-3 w-3"
-                    />
-                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
-                  </button>
+                  <!-- Botones para móviles en dos columnas -->
+                  <div class="grid grid-cols-2 gap-2 sm:hidden">
+                    <button
+                      class="bg-blue-500 hover:bg-blue-600 border border-blue-500 px-3 py-2 text-sm text-white shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      @click="fetchVentasWithToasts"
+                      :disabled="isReloading">
+                      <FontAwesomeIcon
+                        :icon="isReloading ? faSpinner : faRefresh"
+                        :class="{ 'animate-spin': isReloading }"
+                        class="h-3 w-3"
+                      />
+                      <span>{{ isReloading ? 'Recargando...' : 'Recargar' }}</span>
+                    </button>
+                    <button
+                      class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-2 text-sm text-white shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      @click="limpiarFiltros"
+                      :disabled="isClearingFilters">
+                      <FontAwesomeIcon
+                        v-if="isClearingFilters"
+                        :icon="faSpinner"
+                        class="animate-spin h-3 w-3"
+                      />
+                      <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar' }}</span>
+                    </button>
+                  </div>
                 </div>
                 <div class="flex gap-2">
                   <button
@@ -145,17 +151,21 @@
 
                 <!-- Estado - Full width en móviles, parte del grid en desktop -->
                 <div class="sm:hidden">
-                  <Select
+                  <select
                     v-model="selectedEstado"
-                    :options="estadosOptions"
-                    optionLabel="name"
-                    optionValue="value"
-                    placeholder="Estado"
-                    class="w-full h-9 text-sm border"
-                    style="background-color: white; border-color: #93c5fd;"
                     @change="onEstadoFilterChange"
-                    :clearable="true"
-                  />
+                    class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                  >
+                    <option value="" disabled selected hidden>Estado</option>
+                    <option
+                      v-for="estado in estadosOptions"
+                      :key="estado.value"
+                      :value="estado.value"
+                      class="truncate"
+                    >
+                      {{ estado.name }}
+                    </option>
+                  </select>
                 </div>
 
                 <!-- Fechas - 50/50 en móviles -->
@@ -191,17 +201,21 @@
                 <!-- Layout para desktop - hidden en móviles -->
                 <div class="hidden sm:grid sm:grid-cols-3 gap-3">
                   <div>
-                    <Select
+                    <select
                       v-model="selectedEstado"
-                      :options="estadosOptions"
-                      optionLabel="name"
-                      optionValue="value"
-                      placeholder="Estado"
-                      class="w-full h-9 text-sm border"
-                      style="background-color: white; border-color: #93c5fd;"
                       @change="onEstadoFilterChange"
-                      :clearable="true"
-                    />
+                      class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                    >
+                      <option value="" disabled selected hidden>Estado</option>
+                      <option
+                        v-for="estado in estadosOptions"
+                        :key="estado.value"
+                        :value="estado.value"
+                        class="truncate text-gray-900"
+                      >
+                        {{ estado.name }}
+                      </option>
+                    </select>
                   </div>
                   <div>
                     <DatePicker
@@ -282,7 +296,7 @@
               </div>
             </template>
             <template #body="slotProps">
-              <div class="flex flex-wrap gap-1 sm:gap-2 justify-center items-center">
+              <div class="flex flex-wrap gap-2 justify-center items-center">
                 <!-- Botón "Ver" eliminado - se puede hacer clic en la fila para ver detalles -->
                 <!-- Botón "Procesar" eliminado - las ventas se crean directamente como completadas -->
                 <button
@@ -290,14 +304,14 @@
                   class="flex bg-orange-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                   @click="confirmarCancelar(slotProps.data)"
                   title="Cancelar venta">
-                  <FontAwesomeIcon :icon="faXmark" class="h-3 w-4 sm:h-4 sm:w-6 text-white" />
+                  <FontAwesomeIcon :icon="faXmark" class="h-4 w-5 sm:h-4 sm:w-6 text-white" />
                   <span class="hidden lg:block text-white ml-1">Cancelar</span>
                 </button>
                 <button
                   class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                   @click="confirmarEliminacion(slotProps.data)"
                   title="Eliminar venta">
-                  <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-4 sm:h-4 sm:w-6 text-white" />
+                  <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-5 sm:h-4 sm:w-6 text-white" />
                   <span class="hidden lg:block text-white ml-1">Eliminar</span>
                 </button>
               </div>
@@ -610,7 +624,7 @@ const cancellingVentas = ref(new Set());
 
 // 🔍 Filtros
 const globalFilter = ref('');
-const selectedEstado = ref(null);
+const selectedEstado = ref("");
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
   estado: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -623,7 +637,6 @@ const filtros = ref({
 });
 
 const estadosOptions = ref([
-  { name: 'Todos', value: null },
   { name: 'Completada', value: 'completada' },
   { name: 'Cancelada', value: 'cancelada' }
 ]);
@@ -717,7 +730,7 @@ const dialogStyle = computed(() => {
 
 // 🔍 Funciones para manejar filtros
 const onEstadoFilterChange = () => {
-  filters.value.estado.value = selectedEstado.value;
+  filters.value.estado.value = selectedEstado.value === "" ? null : selectedEstado.value;
 };
 
 const limpiarFiltros = async () => {
@@ -727,7 +740,7 @@ const limpiarFiltros = async () => {
     // Simular un pequeño delay para mostrar el loading
     await new Promise(resolve => setTimeout(resolve, 300));
 
-    selectedEstado.value = null;
+    selectedEstado.value = "";
     globalFilter.value = '';
     filters.value.global.value = null;
     filters.value.estado.value = null;

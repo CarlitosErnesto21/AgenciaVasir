@@ -148,29 +148,39 @@
                 </div>
                 <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
                   <div class="col-span-1">
-                    <Select
+                    <select
                       v-model="filtros.producto_id"
-                      :options="Array.isArray(productos) ? productos : []"
-                      optionLabel="nombre"
-                      optionValue="id"
-                      placeholder="Producto"
-                      class="w-full h-9 text-sm border"
-                      style="background-color: white; border-color: #93c5fd;"
-                      showClear
-                    />
+                      @change="aplicarFiltros"
+                      class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                    >
+                      <option value="" disabled selected hidden>Producto</option>
+                      <option
+                        v-for="producto in Array.isArray(productos) ? productos : []"
+                        :key="producto.id"
+                        :value="producto.id"
+                        class="truncate"
+                      >
+                        {{ producto.nombre }}
+                      </option>
+                    </select>
                   </div>
 
                   <div class="col-span-1">
-                    <Select
+                    <select
                       v-model="filtros.tipo_movimiento"
-                      :options="tiposMovimiento"
-                      optionLabel="label"
-                      optionValue="value"
-                      placeholder="Tipo"
-                      class="w-full h-9 text-sm border"
-                      style="background-color: white; border-color: #93c5fd;"
-                      showClear
-                    />
+                      @change="aplicarFiltros"
+                      class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                    >
+                      <option value="" disabled selected hidden>Tipo</option>
+                      <option
+                        v-for="tipo in tiposMovimiento"
+                        :key="tipo.value"
+                        :value="tipo.value"
+                        class="truncate"
+                      >
+                        {{ tipo.label }}
+                      </option>
+                    </select>
                   </div>
 
                   <div class="col-span-1 hidden md:block">
@@ -471,7 +481,7 @@
               </div>
             </div>
             <div class="ml-4">
-              <span 
+              <span
                 class="px-2 py-1 rounded-full text-xs font-medium"
                 :class="{
                   'bg-green-100 text-green-800': tipoEstado === 'disponibles',
@@ -479,13 +489,13 @@
                   'bg-yellow-100 text-yellow-800': tipoEstado === 'stock_bajo'
                 }"
               >
-                {{ tipoEstado === 'disponibles' ? 'Disponible' : 
+                {{ tipoEstado === 'disponibles' ? 'Disponible' :
                    tipoEstado === 'agotados' ? 'Agotado' : 'Stock Bajo' }}
               </span>
             </div>
           </div>
         </div>
-        
+
         <div class="border-t pt-4">
           <p class="text-sm text-gray-600 mb-3">
             <strong>{{ productosModalData.length }}</strong> producto{{ productosModalData.length !== 1 ? 's' : '' }} encontrado{{ productosModalData.length !== 1 ? 's' : '' }}
@@ -495,13 +505,14 @@
 
       <template #footer>
         <div class="flex justify-center gap-4 w-full mt-6">
-          <button
-            @click="irAProductos"
+          <Link
+            href="/productos"
+            @click="mostrarModalProductos = false"
             class="bg-green-500 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
           >
             <FontAwesomeIcon :icon="faEye" class="h-5" />
             Gestionar Productos
-          </button>
+          </Link>
           <button
             type="button"
             @click="mostrarModalProductos = false"
@@ -517,7 +528,7 @@
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -561,8 +572,8 @@ const cargandoProductos = ref(false)
 
 // Filtros
 const filtros = ref({
-  producto_id: null,
-  tipo_movimiento: null,
+  producto_id: "",
+  tipo_movimiento: "",
   fecha_desde: null,
   fecha_hasta: null
 })
@@ -678,8 +689,8 @@ const limpiarFiltros = async () => {
     await new Promise(resolve => setTimeout(resolve, 300))
 
     filtros.value = {
-      producto_id: null,
-      tipo_movimiento: null,
+      producto_id: "",
+      tipo_movimiento: "",
       fecha_desde: null,
       fecha_hasta: null
     }
@@ -747,7 +758,7 @@ const verHistorialProducto = async (productoId) => {
 const abrirModalProductos = async (tipo) => {
   let cantidad = 0
   let endpoint = ''
-  
+
   switch (tipo) {
     case 'disponibles':
       cantidad = resumen.value.productos_disponibles || 0
@@ -765,7 +776,7 @@ const abrirModalProductos = async (tipo) => {
       tituloModal.value = 'Productos con Stock Bajo'
       break
   }
-  
+
   if (cantidad === 0) {
     toast.add({
       severity: 'info',
@@ -775,10 +786,10 @@ const abrirModalProductos = async (tipo) => {
     })
     return
   }
-  
+
   tipoEstado.value = tipo
   cargandoProductos.value = true
-  
+
   try {
     const response = await axios.get(endpoint)
     productosModalData.value = response.data.data || response.data || []
@@ -793,11 +804,6 @@ const abrirModalProductos = async (tipo) => {
   } finally {
     cargandoProductos.value = false
   }
-}
-
-const irAProductos = () => {
-  mostrarModalProductos.value = false
-  window.location.href = '/productos'
 }
 
 // Función para manejar el clic en la fila

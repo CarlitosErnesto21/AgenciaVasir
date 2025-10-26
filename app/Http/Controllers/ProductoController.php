@@ -531,7 +531,7 @@ class ProductoController extends Controller
             ->where('stock_actual', '>', 0)
             ->orderBy('nombre')
             ->get();
-            
+
         return response()->json($productos);
     }
 }

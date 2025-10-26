@@ -50,9 +50,9 @@ const filters = ref({
     estado: { value: null, matchMode: FilterMatchMode.EQUALS },
     fecha_salida: { value: null, matchMode: FilterMatchMode.DATE_IS },
 });
-const selectedCategoria = ref(null);
-const selectedTipoTransporte = ref(null);
-const selectedEstado = ref(null);
+const selectedCategoria = ref("");
+const selectedTipoTransporte = ref("");
+const selectedEstado = ref("");
 const selectedFechaInicio = ref(null);
 const selectedFechaFin = ref(null);
 const rowsPerPage = ref(10);
@@ -321,10 +321,30 @@ const listaATexto = (lista) => {
     return lista.join('|');
 };
 
+// 🔧 Función para forzar truncado en selects
+const forceSelectTruncation = () => {
+    nextTick(() => {
+        setTimeout(() => {
+            const selects = document.querySelectorAll('.p-select');
+            selects.forEach(select => {
+                const label = select.querySelector('.p-select-label, .p-placeholder');
+                if (label) {
+                    label.style.overflow = 'hidden';
+                    label.style.textOverflow = 'ellipsis';
+                    label.style.whiteSpace = 'nowrap';
+                    label.style.maxWidth = 'calc(100% - 2.5rem)';
+                    label.style.display = 'block';
+                }
+            });
+        }, 100);
+    });
+};
+
 // Obtener tours, categorías y tipos de transporte
 onMounted(() => {
     fetchToursWithToasts();
     fetchTipoTransportes();
+    forceSelectTruncation();
 
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', handleResize);
@@ -424,21 +444,24 @@ const fetchTipoTransportes = async () => {
 
 // Funciones para manejar filtros
 const onCategoriaFilterChange = () => {
-    filters.value.categoria.value = selectedCategoria.value;
+    filters.value.categoria.value = selectedCategoria.value === "" ? null : selectedCategoria.value;
+    forceSelectTruncation();
 };
 
 const onTipoTransporteFilterChange = () => {
-    if (selectedTipoTransporte.value) {
+    if (selectedTipoTransporte.value && selectedTipoTransporte.value !== "") {
         // Encontrar el transporte seleccionado para obtener su nombre
         const transporteSeleccionado = tipoTransportes.value.find(t => t.id === selectedTipoTransporte.value);
         filters.value['transporte.nombre'].value = transporteSeleccionado ? transporteSeleccionado.nombre : null;
     } else {
         filters.value['transporte.nombre'].value = null;
     }
+    forceSelectTruncation();
 };
 
 const onEstadoFilterChange = () => {
-    filters.value.estado.value = selectedEstado.value;
+    filters.value.estado.value = selectedEstado.value === "" ? null : selectedEstado.value;
+    forceSelectTruncation();
 };
 
 const onFechaInicioFilterChange = () => {
@@ -475,6 +498,11 @@ const onFechaFinFilterChange = () => {
     }
 };
 
+// 👀 Watchers para forzar truncado cuando cambien los valores
+watch([selectedCategoria, selectedTipoTransporte, selectedEstado], () => {
+    forceSelectTruncation();
+}, { deep: true });
+
 const clearFilters = async () => {
     isClearingFilters.value = true;
 
@@ -482,9 +510,9 @@ const clearFilters = async () => {
         // Simular un pequeño delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        selectedCategoria.value = null;
-        selectedTipoTransporte.value = null;
-        selectedEstado.value = null;
+        selectedCategoria.value = "";
+        selectedTipoTransporte.value = "";
+        selectedEstado.value = "";
         selectedFechaInicio.value = null;
         selectedFechaFin.value = null;
         filters.value.global.value = null;
@@ -1346,12 +1374,15 @@ const onPricePaste = (event) => {
                             :icon="isNavigatingToTransportes ? faSpinner : faBusSimple"
                             :class="{'animate-spin': isNavigatingToTransportes, 'h-4': true}"
                         />
-                        <span>{{ isNavigatingToTransportes ? 'Cargando...' : 'Control Transportes' }}</span>
+                        <span class="block sm:hidden">{{ isNavigatingToTransportes ? 'Cargando...' : 'Transportes' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToTransportes ? 'Cargando...' : 'Control Transportes' }}</span>
                     </Link>
                     <button
-                        class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                        class="bg-red-500 flex border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                         @click="openNew">
-                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar Tour</span>
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
+                        <span class="block sm:hidden">Agregar</span>
+                        <span class="hidden sm:block">Agregar Tour</span>
                     </button>
                 </div>
             </div>
@@ -1402,7 +1433,7 @@ const onPricePaste = (event) => {
                                         :icon="faSpinner"
                                         class="animate-spin h-3 w-3"
                                     />
-                                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                    <span>{{ isClearingFilters ? 'Limp...' : 'Limpiar' }}</span>
                                 </button>
                             </div>
                             <button
@@ -1422,21 +1453,57 @@ const onPricePaste = (event) => {
                             <div>
                                 <InputText v-model="filters['global'].value" placeholder="🔍 Buscar tours..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
-                            <div class="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 <div>
-                                    <Select v-model="selectedCategoria" :options="categoriasOptions" optionLabel="label" optionValue="value" placeholder="Categoría" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onCategoriaFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedCategoria"
+                                        @change="onCategoriaFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Categoría</option>
+                                        <option
+                                            v-for="categoria in categoriasOptions"
+                                            :key="categoria.value"
+                                            :value="categoria.value"
+                                            class="truncate text-gray-900"
+                                        >
+                                            {{ categoria.label }}
+                                        </option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <Select v-model="selectedTipoTransporte" :options="tipoTransportes" optionLabel="nombre" optionValue="id" placeholder="Transporte" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onTipoTransporteFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedTipoTransporte"
+                                        @change="onTipoTransporteFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Transporte</option>
+                                        <option
+                                            v-for="transporte in tipoTransportes"
+                                            :key="transporte.id"
+                                            :value="transporte.id"
+                                            class="truncate text-gray-900"
+                                        >
+                                            {{ transporte.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
-                                <div>
-                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onEstadoFilterChange" :clearable="true"
-                                    />
+                                <div class="col-span-2 sm:col-span-1">
+                                    <select
+                                        v-model="selectedEstado"
+                                        @change="onEstadoFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Estado</option>
+                                        <option
+                                            v-for="estado in estadosOptions"
+                                            :key="estado.value"
+                                            :value="estado.value"
+                                            class="truncate text-gray-900 text-lg"
+                                        >
+                                            {{ estado.label }}
+                                        </option>
+                                    </select>
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
                                     <DatePicker
@@ -1896,6 +1963,59 @@ const onPricePaste = (event) => {
 .p-select-option[aria-selected="true"] {
     background-color: #dbeafe !important;
     color: #1e40af !important;
+}
+
+/* Estilos para truncar texto en Select - PrimeVue específico */
+.p-select .p-select-label,
+.p-select .p-placeholder,
+.p-select-label,
+.p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+/* Contenedor principal del Select */
+.p-select {
+    overflow: hidden !important;
+    max-width: 100% !important;
+}
+
+/* Input interno del Select */
+.p-select .p-inputtext,
+.p-select input {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Forzar truncado en todos los elementos internos */
+.p-select * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Específico para el valor mostrado */
+.p-select .p-select-display-chip,
+.p-select .p-select-clear-icon ~ *,
+.p-select .p-select-trigger ~ * {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 2.5rem) !important;
+}
+
+/* Extra específico para móviles */
+@media (max-width: 768px) {
+    .p-select .p-select-label,
+    .p-select .p-placeholder {
+        font-size: 0.875rem !important;
+        max-width: calc(100% - 2rem) !important;
+    }
 }
 /* Fin de los estilos para el select */
 

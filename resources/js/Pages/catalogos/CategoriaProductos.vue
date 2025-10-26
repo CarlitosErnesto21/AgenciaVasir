@@ -245,8 +245,8 @@ const deleteCategoria = async () => {
         toast.add({ severity: "success", summary: "¡Eliminada!", detail: "La categoría ha sido eliminada correctamente.", life: 5000 })
     } catch (err) {
         deleteDialog.value = false
-        const errorMsg = err.response?.data?.error || err.message || "Error desconocido"
-        toast.add({ severity: "error", summary: "Error", detail: `No se pudo eliminar la categoría: ${errorMsg}`, life: 6000 })
+        const errorMsg = err.response?.data?.message || err.message || "Error desconocido al eliminar la categoría"
+        toast.add({ severity: "error", summary: "Error", detail: errorMsg, life: 6000 })
     } finally {
         isDeleting.value = false
     }
@@ -294,7 +294,7 @@ const onNombreInput = (event) => {
     }
 
     // Limpiar caracteres no válidos y convertir a mayúsculas
-    const cleanValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+    const cleanValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toLocaleUpperCase('es-ES');
     event.target.value = cleanValue;
     categoria.value.nombre = cleanValue;
 
@@ -311,9 +311,9 @@ const onNombrePaste = (event) => {
         .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') // Solo letras, espacios y acentos
         .replace(/\s+/g, ' ') // Múltiples espacios a uno solo
         .trim() // Eliminar espacios al inicio y final
-        .toUpperCase(); // Convertir a mayúsculas
+        .toLocaleUpperCase('es-ES'); // Convertir a mayúsculas
 
-    if (cleanPaste !== paste.toUpperCase()) {
+    if (cleanPaste !== paste.toLocaleUpperCase('es-ES')) {
         toast.add({
             severity: 'info',
             summary: 'Texto limpiado',
