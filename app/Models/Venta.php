@@ -17,7 +17,6 @@ class Venta extends Model
         'total',
         'estado',
         'cliente_id',
-        'metodo_pago_id',
     ];
 
     protected $casts = [
@@ -28,11 +27,6 @@ class Venta extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
-    }
-    
-    public function metodoPago(): BelongsTo
-    {
-        return $this->belongsTo(MetodoPago::class, 'metodo_pago_id');
     }
     
     public function detalleVentas(): HasMany

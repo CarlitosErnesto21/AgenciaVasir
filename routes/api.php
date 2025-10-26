@@ -5,7 +5,6 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\EmpleadoController;
 use App\Http\Controllers\HotelController;
-use App\Http\Controllers\MetodoPagoController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\VentaController;
@@ -116,7 +115,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('ventas', VentaController::class);
         Route::apiResource('empleados', EmpleadoController::class);
         Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
-        Route::apiResource('metodos-pago', MetodoPagoController::class);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');
         Route::apiResource('provincias', ProvinciaController::class)->parameter('provincias', 'provincia');

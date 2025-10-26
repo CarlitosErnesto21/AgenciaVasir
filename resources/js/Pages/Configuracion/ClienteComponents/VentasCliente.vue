@@ -181,11 +181,6 @@
                             </template>
                         </Column>
 
-                        <Column field="metodo_pago.nombre" header="Método de Pago" class="w-28 hidden sm:table-cell">
-                            <template #body="slotProps">
-                                <span class="text-xs">{{ slotProps.data.metodo_pago?.nombre || 'N/A' }}</span>
-                            </template>
-                        </Column>
 
 
                     </DataTable>
@@ -219,12 +214,7 @@
                         </div>
                     </div>
 
-                    <div class="bg-gray-50 p-4 rounded-lg">
-                        <h4 class="font-semibold text-gray-800 mb-3">Información de Pago</h4>
-                        <div class="space-y-2">
-                            <p><strong>Método de Pago:</strong> {{ selectedVenta.metodo_pago?.nombre || 'No especificado' }}</p>
-                        </div>
-                    </div>
+
 
 
                 </div>
@@ -317,8 +307,7 @@ const filteredVentas = computed(() => {
     if (filters.value.global.value) {
         const searchTerm = filters.value.global.value.toLowerCase();
         result = result.filter(venta =>
-            venta.id.toString().includes(searchTerm) ||
-            (venta.metodo_pago?.nombre && venta.metodo_pago.nombre.toLowerCase().includes(searchTerm))
+            venta.id.toString().includes(searchTerm)
         );
     }
 

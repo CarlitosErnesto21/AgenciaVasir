@@ -176,24 +176,10 @@ class PagoController extends Controller
                 }
             }
 
-            // Obtener método de pago por defecto (tarjeta de crédito/Wompi)
-            $metodoPago = \App\Models\MetodoPago::where('metodo_pago', 'like', '%tarjeta%')
-                ->orWhere('metodo_pago', 'like', '%wompi%')
-                ->orWhere('metodo_pago', 'like', '%credito%')
-                ->first();
-
-            if (!$metodoPago) {
-                // Crear método de pago si no existe
-                $metodoPago = \App\Models\MetodoPago::create([
-                    'metodo_pago' => 'Tarjeta de Crédito - Wompi'
-                ]);
-            }
-
-            // Crear la venta
+            // Crear la venta (Wompi se encarga del método de pago)
             $venta = Venta::create([
                 'fecha' => now(),
                 'cliente_id' => $cliente->id,
-                'metodo_pago_id' => $metodoPago->id,
                 'estado' => 'pendiente',
                 'total' => 0
             ]);
@@ -221,7 +207,7 @@ class PagoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'venta' => $venta->load(['cliente', 'metodoPago', 'detalleVentas.producto']),
+                'venta' => $venta->load(['cliente', 'detalleVentas.producto']),
                 'message' => 'Venta creada exitosamente desde carrito'
             ]);
 
