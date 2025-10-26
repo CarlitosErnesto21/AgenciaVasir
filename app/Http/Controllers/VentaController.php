@@ -52,7 +52,7 @@ class VentaController extends Controller
             $venta->tiene_pago_aprobado = $venta->tienePagoAprobado();
         });
 
-        // ✅ COMPATIBILIDAD: Si es una llamada desde el dashboard (con parámetro 'desde'), 
+        // ✅ COMPATIBILIDAD: Si es una llamada desde el dashboard (con parámetro 'desde'),
         // devolver solo el array de ventas para mantener compatibilidad
         if ($request->has('desde') && !$request->has('formato_completo')) {
             return response()->json($ventas);
@@ -68,6 +68,42 @@ class VentaController extends Controller
                 'canceladas' => $ventas->where('estado', 'cancelada')->count(),
                 'inconsistentes' => $ventas->where('es_consistente', false)->count()
             ]
+        ]);
+    }
+
+    /**
+     * ✅ VISTA WEB: Renderizar página de ventas con Inertia
+     */
+    public function indexWeb(Request $request)
+    {
+        $query = Venta::with(['cliente.user', 'detalleVentas.producto.categoria', 'pagos']);
+
+        // Filtros opcionales
+        if ($request->has('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        $ventas = $query->orderBy('fecha', 'desc')->get();
+
+        // Agregar información de integridad
+        $ventas->each(function ($venta) {
+            $venta->es_consistente = $venta->validarConsistenciaConPagos();
+            $venta->tiene_pago_aprobado = $venta->tienePagoAprobado();
+        });
+
+        // Debug: Verificar que los clientes se estén cargando
+        \Log::info('Ventas cargadas para vista web:', [
+            'total_ventas' => $ventas->count(),
+            'primer_venta' => $ventas->first() ? [
+                'id' => $ventas->first()->id,
+                'cliente_id' => $ventas->first()->cliente_id,
+                'cliente_cargado' => $ventas->first()->cliente ? 'SÍ' : 'NO',
+                'cliente_nombre' => $ventas->first()->cliente?->nombre ?? 'NULL'
+            ] : null
+        ]);
+
+        return inertia('Catalogos/Ventas', [
+            'ventas' => $ventas
         ]);
     }
 
@@ -204,6 +240,27 @@ class VentaController extends Controller
     }
 
     /**
+     * ✅ NUEVO: Eliminar venta (restaura stock y elimina registro)
+     */
+    public function eliminar(Venta $venta)
+    {
+        try {
+            $this->inventarioService->eliminarVenta($venta);
+
+            return response()->json([
+                'message' => 'Venta eliminada exitosamente',
+                'success' => true
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Error al eliminar venta: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+    }
+
+    /**
      * ❌ BLOQUEADO: No se permiten eliminaciones directas por integridad del sistema
      */
     public function destroy(Venta $venta)
@@ -221,7 +278,7 @@ class VentaController extends Controller
     public function porEstado($estado)
     {
         $estadosValidos = ['pendiente', 'completada', 'cancelada'];
-        
+
         if (!in_array($estado, $estadosValidos)) {
             return response()->json([
                 'error' => 'Estado inválido',

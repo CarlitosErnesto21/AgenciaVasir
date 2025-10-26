@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Venta extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'fecha',
         'total',
@@ -23,12 +23,12 @@ class Venta extends Model
         'fecha' => 'date',
     ];
 
-    // Relaciones existentes    
+    // Relaciones existentes
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
-    
+
     public function detalleVentas(): HasMany
     {
         return $this->hasMany(DetalleVenta::class, 'venta_id');
@@ -139,5 +139,20 @@ class Venta extends Model
         }
 
         return true;
+    }
+
+    /**
+     * ✅ COMPATIBILIDAD: Transformar relaciones para frontend
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Asegurar compatibilidad con frontend (snake_case)
+        if (isset($array['detalleVentas'])) {
+            $array['detalle_ventas'] = $array['detalleVentas'];
+        }
+
+        return $array;
     }
 }

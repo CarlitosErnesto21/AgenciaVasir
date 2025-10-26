@@ -93,6 +93,11 @@ const onValidate = (phoneObject) => {
             telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode };
             telefonoValidation.value.formattedNumber = phoneObject.formatted || '';
 
+            // Actualizar el teléfono con el formato correcto cuando es válido
+            if (phoneObject.valid === true && phoneObject.formatted) {
+                empleado.value.telefono = phoneObject.formatted;
+            }
+
             if (empleado.value.telefono && phoneObject.valid === false) {
                 telefonoValidation.value.mensaje = '✗ Número de teléfono inválido para ' + phoneObject.country;
             } else if (phoneObject.valid === true) {

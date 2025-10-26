@@ -310,9 +310,14 @@ class PagoController extends Controller
                 'response_data' => json_encode($wompiData)
             ]);
 
-            // Si el pago fue aprobado, actualizar la venta
+            // ❌ DESHABILITADO: No cambiar estado automáticamente
+            // La venta permanece "pendiente" para cambio manual desde la vista
             if (strtolower($wompiData['status']) === 'approved') {
-                $venta->update(['estado' => 'completada']);
+                // $venta->update(['estado' => 'completada']); // COMENTADO
+                Log::info('Pago aprobado - Venta permanece pendiente para cambio manual', [
+                    'venta_id' => $venta->id,
+                    'pago_status' => $wompiData['status']
+                ]);
             }
 
             DB::commit();
@@ -473,13 +478,18 @@ class PagoController extends Controller
                             'response_data' => json_encode($wompiData)
                         ]);
 
-                        // Actualizar estado de venta/reserva si es necesario
+                        // ❌ DESHABILITADO: No cambiar estado automáticamente
+                        // Las ventas permanecen "pendiente" para cambio manual
                         if (strtolower($wompiData['status']) === 'approved') {
                             if ($pago->venta_id) {
-                                $pago->venta->update(['estado' => 'completada']);
+                                // $pago->venta->update(['estado' => 'completada']); // COMENTADO
+                                Log::info('Pago aprobado - Venta permanece pendiente', [
+                                    'venta_id' => $pago->venta_id,
+                                    'pago_id' => $pago->id
+                                ]);
                             }
                             if ($pago->reserva_id) {
-                                $pago->reserva->update(['estado' => 'confirmada']);
+                                $pago->reserva->update(['estado' => 'confirmada']); // Reservas sí se confirman
                             }
                         }
                     }
@@ -705,9 +715,10 @@ class PagoController extends Controller
                 if ($pago->venta_id) {
                     $venta = $pago->venta;
                     if ($venta->estaPendiente()) {
-                        $venta->update(['estado' => 'completada']);
+                        // ❌ DESHABILITADO: No cambiar estado automáticamente
+                        // $venta->update(['estado' => 'completada']); // COMENTADO
 
-                        Log::info('Venta completada por pago aprobado', [
+                        Log::info('Pago aprobado - Venta permanece pendiente para cambio manual', [
                             'request_id' => $requestId,
                             'venta_id' => $venta->id,
                             'pago_id' => $pago->id

@@ -164,8 +164,10 @@ Route::middleware('auth:sanctum')->group(function () {
         // Ruta específica para actualizar stock de productos
         Route::patch('productos/{id}/actualizar-stock', [ProductoController::class, 'actualizarStock']);
 
-        // ❌ RUTAS ELIMINADAS: procesar y cancelar no son seguras
-        // Las ventas se procesan automáticamente via webhook de Wompi
+        // ✅ RUTAS PARA CAMBIO MANUAL DE ESTADO DE VENTAS
+        Route::post('ventas/{venta}/procesar', [VentaController::class, 'procesar'])->name('ventas.procesar');
+        Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar'])->name('ventas.cancelar');
+        Route::delete('ventas/{venta}/eliminar', [VentaController::class, 'eliminar'])->name('ventas.eliminar');
 
         // ═══════════════════════════════════════════════════════════
         // RUTAS DE PAGOS WOMPI (PROTEGIDAS)

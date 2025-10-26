@@ -296,6 +296,8 @@ class EmpleadoController extends Controller
         try {
             $empleado = Empleado::with(['user', 'reservas'])->findOrFail($id);
 
+            Log::info("Intentando eliminar empleado ID: {$id}, Usuario ID: {$empleado->user_id}");
+
             // Verificar si el empleado tiene reservas asociadas
             if ($empleado->reservas()->count() > 0) {
                 $details = [];
@@ -303,6 +305,8 @@ class EmpleadoController extends Controller
                 if ($empleado->reservas()->count() > 0) {
                     $details[] = "Tiene {$empleado->reservas()->count()} reserva(s) asociada(s)";
                 }
+
+                Log::warning("No se puede eliminar empleado ID: {$id} - Tiene reservas asociadas");
 
                 return response()->json([
                     'success' => false,
@@ -316,18 +320,28 @@ class EmpleadoController extends Controller
 
             // Eliminar empleado y usuario
             $user = $empleado->user;
+            $userId = $user->id;
+            $userName = $user->name;
+
+            Log::info("Eliminando empleado ID: {$empleado->id}");
             $empleado->delete();
+
+            Log::info("Eliminando usuario ID: {$userId}, Nombre: {$userName}");
             $user->delete();
+
+            Log::info("Empleado y usuario eliminados exitosamente - Empleado ID: {$id}, Usuario ID: {$userId}");
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Empleado eliminado exitosamente'
+                'message' => 'Empleado y usuario eliminados exitosamente'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error("Error al eliminar empleado ID: {$id} - " . $e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al eliminar el empleado',

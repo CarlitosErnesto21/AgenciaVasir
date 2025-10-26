@@ -62,6 +62,33 @@ class InventarioService
     }
 
     /**
+     * Eliminar venta - Restaura stock y elimina el registro
+     */
+    public function eliminarVenta(Venta $venta): void
+    {
+        DB::transaction(function () use ($venta) {
+            // Restaurar stock si la venta estaba completada
+            if ($venta->estaCompletada()) {
+                foreach ($venta->detalleVentas as $detalle) {
+                    $this->registrarEntradaPorEliminacion($detalle->producto, $detalle->cantidad, $venta);
+                }
+            }
+
+            // Eliminar movimientos de inventario relacionados
+            Inventario::where('venta_id', $venta->id)->delete();
+
+            // Eliminar detalles de venta
+            $venta->detalleVentas()->delete();
+
+            // Eliminar pagos relacionados
+            $venta->pagos()->delete();
+
+            // Eliminar la venta
+            $venta->delete();
+        });
+    }
+
+    /**
      * Agregar stock manualmente
      */
     public function agregarStock(int $productoId, int $cantidad, string $motivo = 'entrada_manual', ?string $observacion = null): Inventario
@@ -159,6 +186,25 @@ class InventarioService
             'motivo' => 'cancelacion_venta',
             'observacion' => "Cancelación de venta #{$venta->id}",
             'venta_id' => $venta->id
+        ]);
+    }
+
+    /**
+     * Registrar entrada por eliminación (método privado)
+     */
+    private function registrarEntradaPorEliminacion(Producto $producto, int $cantidad, Venta $venta): void
+    {
+        // Restaurar stock
+        $producto->increment('stock_actual', $cantidad);
+
+        // Registrar movimiento antes de eliminar la venta
+        $this->crearMovimiento([
+            'producto_id' => $producto->id,
+            'cantidad' => $cantidad,
+            'tipo_movimiento' => 'ENTRADA',
+            'motivo' => 'eliminacion_venta',
+            'observacion' => "Eliminación de venta #{$venta->id}",
+            'venta_id' => null // Se pone null porque la venta será eliminada
         ]);
     }
 

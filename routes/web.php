@@ -8,6 +8,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\SobreNosotrosController;
+use App\Http\Controllers\VentaController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Middleware\RutasAdmin;
@@ -33,7 +34,7 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
     Route::get('categorias-hoteles', fn() => Inertia::render('Catalogos/CategoriaHoteles'))->name('catHoteles');
     Route::get('gestion-paquetes', fn() => Inertia::render('Catalogos/GestionPaquetes'))->name('gestionPaquetes');
-    Route::get('ventas', fn() => Inertia::render('Catalogos/Ventas'))->name('ventas');
+    Route::get('ventas', [VentaController::class, 'indexWeb'])->name('ventas');
     Route::get('inventario', fn() => Inertia::render('Catalogos/Inventarios'))->name('inventario');
     // Ruta para gestión de usuarios internos - Solo Administradores
     Route::get('gestion-usuarios', fn() => Inertia::render('Configuracion/GestionUsuarios'))->name('gestionUsuarios')->middleware('role:Administrador');

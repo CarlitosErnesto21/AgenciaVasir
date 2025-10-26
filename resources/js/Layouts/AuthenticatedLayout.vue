@@ -420,8 +420,8 @@ onBeforeUnmount(() => {
                                     @click="toggleDropdown"
                                     class="relative w-full flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-300/50 group"
                                     :class="{
-                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)),
-                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'].some(r => route().current(r)))
+                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes'].some(r => route().current(r)),
+                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes'].some(r => route().current(r)))
                                     }"
                                 >
                                     <div class="flex items-center">
@@ -491,32 +491,6 @@ onBeforeUnmount(() => {
                                         <FontAwesomeIcon :icon="faBoxesStacked" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Paquetes</span>
                                     </Link>
-                                    <Link
-                                        :href="route('ventas')"
-                                        :class="[
-                                            'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                                            route().current('ventas')
-                                                ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold'
-                                                : 'text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseSidebar('ventas')"
-                                    >
-                                        <FontAwesomeIcon :icon="faFileInvoice" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Ventas</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('inventario')"
-                                        :class="[
-                                            'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                                            route().current('inventario')
-                                                ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold'
-                                                : 'text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseSidebar('inventario')"
-                                    >
-                                        <FontAwesomeIcon :icon="faClipboardList" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Inventario</span>
-                                    </Link>
                                 </div>
                             </div>
 
@@ -539,6 +513,42 @@ onBeforeUnmount(() => {
                                     class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <span class="font-semibold">Reservaciones</span>
+                            </Link>
+
+                            <!-- Ventas -->
+                            <Link
+                                :href="route('ventas')"
+                                :class="[
+                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
+                                    route().current('ventas')
+                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
+                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
+                                ]"
+                                @click.prevent="navigateAndCloseSidebar('ventas')"
+                            >
+                                <FontAwesomeIcon
+                                    :icon="faFileInvoice"
+                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
+                                />
+                                <span class="font-semibold">Ventas</span>
+                            </Link>
+
+                            <!-- Inventario -->
+                            <Link
+                                :href="route('inventario')"
+                                :class="[
+                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
+                                    route().current('inventario')
+                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
+                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
+                                ]"
+                                @click.prevent="navigateAndCloseSidebar('inventario')"
+                            >
+                                <FontAwesomeIcon
+                                    :icon="faClipboardList"
+                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
+                                />
+                                <span class="font-semibold">Inventario</span>
                             </Link>
 
                             <!-- Separador visual -->
@@ -701,7 +711,7 @@ onBeforeUnmount(() => {
                                 :class="[
                                     'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300/50 w-full justify-between',
                                     [
-                                        'productos', 'tours', 'hoteles', 'gestionPaquetes', 'ventas', 'inventario'
+                                        'productos', 'tours', 'hoteles', 'gestionPaquetes'
                                     ].some(r => route().current(r))
                                         ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
                                         : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
@@ -783,32 +793,6 @@ onBeforeUnmount(() => {
                                         <FontAwesomeIcon :icon="faBoxesStacked" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Paquetes</span>
                                     </Link>
-                                    <Link
-                                        :href="route('ventas')"
-                                        :class="[
-                                            'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group',
-                                            route().current('ventas')
-                                                ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                                : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseDropdown('ventas')"
-                                    >
-                                        <FontAwesomeIcon :icon="faFileInvoice" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Ventas</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('inventario')"
-                                        :class="[
-                                            'flex items-center px-4 py-2 rounded-lg transition-all duration-300 group',
-                                            route().current('inventario')
-                                                ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                                : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseDropdown('inventario')"
-                                    >
-                                        <FontAwesomeIcon :icon="faClipboardList" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Inventario</span>
-                                    </Link>
                                 </div>
                             </transition>
                         </div>
@@ -829,6 +813,42 @@ onBeforeUnmount(() => {
                                 class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
                             />
                             <span class="font-semibold">Reservaciones</span>
+                        </Link>
+
+                        <!-- Ventas -->
+                        <Link
+                            :href="route('ventas')"
+                            :class="[
+                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
+                                route().current('ventas')
+                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
+                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
+                            ]"
+                            title="Ventas"
+                        >
+                            <FontAwesomeIcon
+                                :icon="faFileInvoice"
+                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <span class="font-semibold">Ventas</span>
+                        </Link>
+
+                        <!-- Inventario -->
+                        <Link
+                            :href="route('inventario')"
+                            :class="[
+                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
+                                route().current('inventario')
+                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
+                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
+                            ]"
+                            title="Inventario"
+                        >
+                            <FontAwesomeIcon
+                                :icon="faClipboardList"
+                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
+                            />
+                            <span class="font-semibold">Inventario</span>
                         </Link>
 
                         <!-- Clientes -->
