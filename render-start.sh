@@ -14,13 +14,9 @@ done
 
 echo "✅ Base de datos conectada!"
 
-# Ejecutar migraciones
-echo "🔄 Ejecutando migraciones..."
-php artisan migrate --force
-
-# Ejecutar seeders (datos iniciales)
-echo "🌱 Ejecutando seeders..."
-php artisan db:seed --force
+# Ejecutar migraciones (fresh para recrear la base de datos completamente)
+echo "🔄 Recreando base de datos con migraciones frescas..."
+php artisan migrate:fresh --force --seed
 
 # Configurar sistema de almacenamiento
 echo "📁 Configurando almacenamiento..."
