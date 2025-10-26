@@ -21,6 +21,9 @@ const page = usePage()
 // Estado del modal de checkout
 const showCheckoutModal = ref(false)
 
+// Estado para controlar la animación de cierre
+const isClosing = ref(false)
+
 // Verificar si el usuario está autenticado
 const isAuthenticated = computed(() => !!page.props.auth?.user)
 
@@ -50,8 +53,14 @@ const procederAlCheckout = () => {
     return
   }
 
-  // Abrir modal de checkout
-  showCheckoutModal.value = true
+  // ✅ Cerrar el carrito con animación antes de abrir el modal de checkout
+  cerrarCarritoConAnimacion()
+
+  // Esperar a que termine la animación del carrito
+  setTimeout(() => {
+    // Abrir modal de checkout
+    showCheckoutModal.value = true
+  }, 350) // Aumentamos el tiempo para que termine la animación
 }
 
 // Manejar cierre del modal
@@ -65,6 +74,17 @@ const handlePaymentCompleted = (paymentData) => {
 
   // Aquí podrías mostrar un mensaje de éxito o redirigir
   // Por ejemplo, mostrar un toast de éxito
+}
+
+// Función para cerrar carrito con animación suave
+const cerrarCarritoConAnimacion = () => {
+  isClosing.value = true
+
+  // Esperar a que termine la animación antes de ocultar realmente
+  setTimeout(() => {
+    carritoStore.ocultarCarrito()
+    isClosing.value = false
+  }, 300) // 300ms es la duración de la animación
 }
 
 // Helper para construir URL de imagen
@@ -84,21 +104,29 @@ const getImageUrl = (producto) => {
 </script>
 
 <template>
-  <!-- Overlay del carrito -->
-  <div
-    v-if="carritoStore.isVisible"
-    class="fixed inset-0 z-[10000] overflow-hidden carrito-overlay"
-    @click.self="carritoStore.ocultarCarrito()"
-  >
-    <!-- Fondo oscuro clickeable -->
+  <!-- Overlay del carrito con Transition -->
+  <Transition name="carrito-fade" appear>
     <div
-      class="absolute inset-0 bg-black bg-opacity-50 transition-opacity cursor-pointer fondo-clickeable"
-      @click="carritoStore.ocultarCarrito()"
-    ></div>
+      v-if="carritoStore.isVisible"
+      class="fixed inset-0 z-[10000] overflow-hidden carrito-overlay"
+      @click.self="cerrarCarritoConAnimacion"
+    >
+      <!-- Fondo oscuro clickeable -->
+      <Transition name="backdrop-fade" appear>
+        <div
+          v-if="!isClosing"
+          class="absolute inset-0 bg-black bg-opacity-50 transition-opacity cursor-pointer fondo-clickeable"
+          @click="cerrarCarritoConAnimacion"
+        ></div>
+      </Transition>
 
-    <!-- Panel del carrito -->
-    <div class="absolute right-0 top-0 h-full w-full max-w-md transform transition-transform carrito-panel">
-      <div class="flex h-full flex-col bg-white shadow-xl">
+      <!-- Panel del carrito -->
+      <Transition name="carrito-slide" appear>
+        <div
+          v-if="!isClosing"
+          class="absolute right-0 top-0 h-full w-full max-w-md transform carrito-panel"
+        >
+          <div class="flex h-full flex-col bg-white shadow-xl">
         <!-- Header del carrito -->
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
           <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
@@ -106,7 +134,7 @@ const getImageUrl = (producto) => {
             Carrito de Compras
           </h2>
           <button
-            @click="carritoStore.ocultarCarrito()"
+            @click="cerrarCarritoConAnimacion"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <FontAwesomeIcon :icon="faXmark" class="w-6 h-6" />
@@ -128,7 +156,7 @@ const getImageUrl = (producto) => {
             <h3 class="text-lg font-medium text-gray-900 mb-2">Tu carrito está vacío</h3>
             <p class="text-gray-500 mb-6">Agrega algunos productos para comenzar</p>
             <button
-              @click="carritoStore.ocultarCarrito()"
+              @click="cerrarCarritoConAnimacion"
               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-colors"
             >
               Continuar Comprando
@@ -233,16 +261,18 @@ const getImageUrl = (producto) => {
             </button>
 
             <button
-              @click="carritoStore.ocultarCarrito()"
+              @click="cerrarCarritoConAnimacion"
               class="w-full text-white py-2 px-4 rounded-md transition-colors btn-continuar"
             >
               Continuar Comprando
             </button>
           </div>
         </div>
-      </div>
+          </div>
+        </div>
+      </Transition>
     </div>
-  </div>
+  </Transition>
 
   <!-- Modal de Checkout -->
   <CarritoCheckoutModal
@@ -253,34 +283,63 @@ const getImageUrl = (producto) => {
 </template>
 
 <style scoped>
-/* Animaciones de entrada y salida */
+/* ✨ Transiciones de Vue para el carrito */
+.carrito-fade-enter-active,
+.carrito-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.carrito-fade-enter-from,
+.carrito-fade-leave-to {
+  opacity: 0;
+}
+
+.backdrop-fade-enter-active,
+.backdrop-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.backdrop-fade-enter-from,
+.backdrop-fade-leave-to {
+  opacity: 0;
+}
+
+.carrito-slide-enter-active {
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+.carrito-slide-leave-active {
+  transition: transform 0.35s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+}
+
+.carrito-slide-enter-from {
+  transform: translateX(100%);
+}
+
+.carrito-slide-leave-to {
+  transform: translateX(100%);
+}
+
+/* Estilos base del carrito */
 .carrito-overlay {
   backdrop-filter: blur(4px);
-  animation: fadeIn 0.3s ease-out;
   cursor: pointer;
 }
 
 .carrito-panel {
-  animation: slideIn 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   cursor: default;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+/* Animación suave cuando está cerrando */
+.carrito-panel.closing {
+  transition: transform 0.35s cubic-bezier(0.55, 0.055, 0.675, 0.19);
+  transform: translateX(100%);
 }
 
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-  }
-  to {
-    transform: translateX(0);
-  }
+/* Efecto de desvanecimiento para elementos internos */
+.carrito-overlay.closing .carrito-panel > div {
+  transition: opacity 0.2s ease-out;
+  opacity: 0.7;
 }
 
 /* Mejorar la experiencia de clic fuera del panel */

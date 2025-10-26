@@ -71,10 +71,7 @@ const props = defineProps({
 const emit = defineEmits([
     // Modal Más Acciones
     'update:visible',
-    'duplicate',
     'updateStock',
-    'generateReport',
-    'archive',
     'viewDetails',
     // Modal Detalles del Producto
     'update:detailsVisible',
@@ -168,24 +165,9 @@ const getEstadoStock = (producto) => {
 };
 
 // Funciones para las acciones
-const duplicateProduct = () => {
-    emit('update:visible', false);
-    emit('duplicate', props.producto);
-};
-
 const updateStock = () => {
     emit('update:visible', false);
     emit('updateStock', props.producto);
-};
-
-const generateReport = () => {
-    emit('update:visible', false);
-    emit('generateReport', props.producto);
-};
-
-const archiveProduct = () => {
-    emit('update:visible', false);
-    emit('archive', props.producto);
 };
 
 const viewDetails = () => {
@@ -294,18 +276,6 @@ defineOptions({
                     </div>
                 </button>
 
-                <!-- Botón para duplicar producto -->
-                <button
-                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="duplicateProduct"
-                >
-                    <FontAwesomeIcon :icon="faPlus" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Duplicar Producto</div>
-                        <div class="text-xs opacity-90">Crear una copia de este producto</div>
-                    </div>
-                </button>
-
                 <!-- Botón para actualizar stock -->
                 <button
                     class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
@@ -315,30 +285,6 @@ defineOptions({
                     <div class="text-left flex-1">
                         <div class="font-medium">Actualizar Stock</div>
                         <div class="text-xs opacity-90">Modificar inventario del producto</div>
-                    </div>
-                </button>
-
-                <!-- Botón para generar reporte -->
-                <button
-                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="generateReport"
-                >
-                    <FontAwesomeIcon :icon="faCheck" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Generar Reporte</div>
-                        <div class="text-xs opacity-90">Reporte de ventas y movimientos</div>
-                    </div>
-                </button>
-
-                <!-- Botón para archivar -->
-                <button
-                    class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="archiveProduct"
-                >
-                    <FontAwesomeIcon :icon="faTrashCan" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Archivar Producto</div>
-                        <div class="text-xs opacity-90">Mover a productos archivados</div>
                     </div>
                 </button>
 

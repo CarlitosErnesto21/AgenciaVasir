@@ -135,23 +135,6 @@ class ValidateVentaPagoIntegrity extends Command
                 'severidad' => 'alta'
             ];
         }
-
-        // 4. Ventas pendientes muy antiguas (más de 24 horas)
-        $ventasPendientesAntiguas = Venta::where('estado', 'pendiente')
-            ->where('created_at', '<', now()->subHours(24))
-            ->get();
-
-        foreach ($ventasPendientesAntiguas as $venta) {
-            $horasAntigua = now()->diffInHours($venta->created_at);
-            $inconsistencias[] = [
-                'tipo' => 'venta_pendiente_antigua',
-                'descripcion' => "Venta pendiente desde hace {$horasAntigua} horas",
-                'venta_id' => $venta->id,
-                'horas_pendiente' => $horasAntigua,
-                'severidad' => 'media'
-            ];
-        }
-
         return $inconsistencias;
     }
 
@@ -194,23 +177,8 @@ class ValidateVentaPagoIntegrity extends Command
             try {
                 switch ($inconsistencia['tipo']) {
                     case 'pago_aprobado_sin_venta_completada':
-                        // Completar la venta si el pago está aprobado
                         $venta = Venta::find($inconsistencia['venta_id']);
-                        if ($venta && $venta->estado === 'pendiente') {
-                            $venta->update(['estado' => 'completada']);
-                            $this->info("   ✅ Venta {$venta->id} marcada como completada");
-                            $corregidas++;
-                        }
-                        break;
-
-                    case 'venta_pendiente_antigua':
-                        // Cancelar ventas pendientes muy antiguas sin pago
-                        $venta = Venta::find($inconsistencia['venta_id']);
-                        if ($venta && !$venta->tienePagoAprobado() && $inconsistencia['horas_pendiente'] > 48) {
-                            $venta->update(['estado' => 'cancelada']);
-                            $this->info("   ✅ Venta antigua {$venta->id} cancelada automáticamente");
-                            $corregidas++;
-                        }
+                        $this->info("   ℹ️  Las ventas ahora se crean como completadas automáticamente");
                         break;
                 }
             } catch (\Exception $e) {
@@ -236,7 +204,6 @@ class ValidateVentaPagoIntegrity extends Command
             'inconsistencias_encontradas' => count($inconsistencias),
             'inconsistencias' => $inconsistencias,
             'estadisticas' => [
-                'ventas_pendientes' => Venta::where('estado', 'pendiente')->count(),
                 'ventas_completadas' => Venta::where('estado', 'completada')->count(),
                 'ventas_canceladas' => Venta::where('estado', 'cancelada')->count(),
                 'pagos_approved' => Pago::where('estado', 'approved')->count(),

@@ -11,36 +11,39 @@
 
       <!-- Tarjetas de Resumen -->
       <div class="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-8">
-        <Card class="bg-gradient-to-r from-green-500 to-green-600">
+        <Card class="bg-gradient-to-r from-green-500 to-green-600 cursor-pointer hover:shadow-lg transition-shadow duration-200" @click="abrirModalProductos('disponibles')">
           <template #content>
             <div class="flex items-center justify-between text-white p-2 sm:p-4">
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Productos Disponibles</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_disponibles || 0 }}</p>
+                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
               </div>
               <FontAwesomeIcon :icon="faCheckCircle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
           </template>
         </Card>
 
-        <Card class="bg-gradient-to-r from-red-500 to-red-600">
+        <Card class="bg-gradient-to-r from-red-500 to-red-600 cursor-pointer hover:shadow-lg transition-shadow duration-200" @click="abrirModalProductos('agotados')">
           <template #content>
             <div class="flex items-center justify-between text-white p-2 sm:p-4">
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Productos Agotados</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_agotados || 0 }}</p>
+                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
               </div>
               <FontAwesomeIcon :icon="faTimesCircle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
           </template>
         </Card>
 
-        <Card class="bg-gradient-to-r from-yellow-500 to-yellow-600">
+        <Card class="bg-gradient-to-r from-yellow-500 to-yellow-600 cursor-pointer hover:shadow-lg transition-shadow duration-200" @click="abrirModalProductos('stock_bajo')">
           <template #content>
             <div class="flex items-center justify-between text-white p-2 sm:p-4">
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Stock Bajo</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_stock_bajo || 0 }}</p>
+                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
               </div>
               <FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
@@ -69,16 +72,6 @@
               📊 Vista de solo lectura - Para gestionar stock, ve a
               <span class="text-blue-600 font-medium">Productos > Más Acciones > Actualizar Stock</span>
             </p>
-          </div>
-          <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
-            <button
-              @click="exportarReporte"
-              class="bg-green-500 border border-green-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2"
-              :disabled="cargando"
-            >
-              <FontAwesomeIcon :icon="cargando ? faSpinner : faDownload" :class="{ 'animate-spin': cargando, 'h-4 w-4': true }" />
-              <span>{{ cargando ? 'Exportando...' : 'Exportar Reporte' }}</span>
-            </button>
           </div>
         </div>
 
@@ -250,7 +243,8 @@
             <template #body="{ data }">
               <Tag
                 :value="data.tipo_movimiento"
-                :severity="data.tipo_movimiento === 'ENTRADA' ? 'success' : 'danger'"
+                :severity="data.tipo_movimiento === 'ENTRADA' ? 'success' :
+                          data.tipo_movimiento === 'SALIDA' ? 'danger' : 'warning'"
                 class="text-xs"
               />
             </template>
@@ -259,10 +253,12 @@
           <Column field="cantidad" header="Cantidad" sortable class="w-20 hidden sm:table-cell">
             <template #body="{ data }">
               <span
-                :class="data.tipo_movimiento === 'ENTRADA' ? 'text-green-600' : 'text-red-600'"
+                :class="data.tipo_movimiento === 'ENTRADA' ? 'text-green-600' :
+                       data.tipo_movimiento === 'SALIDA' ? 'text-red-600' : 'text-orange-600'"
                 class="text-sm font-medium"
               >
-                {{ data.tipo_movimiento === 'ENTRADA' ? '+' : '-' }}{{ data.cantidad }}
+                {{ data.tipo_movimiento === 'ENTRADA' ? '+' :
+                   data.tipo_movimiento === 'SALIDA' ? '-' : '±' }}{{ data.cantidad }}
               </span>
             </template>
           </Column>
@@ -272,9 +268,9 @@
               <div
                 class="text-sm leading-relaxed overflow-hidden"
                 style="max-width: 120px; text-overflow: ellipsis; white-space: nowrap;"
-                :title="data.motivo || 'Sin especificar'"
+                :title="obtenerMotivoLegible(data.motivo)"
               >
-                {{ data.motivo || 'Sin especificar' }}
+                {{ obtenerMotivoLegible(data.motivo) }}
               </div>
             </template>
           </Column>
@@ -287,45 +283,7 @@
             </template>
           </Column>
 
-          <Column :exportable="false" class="w-32 min-w-24">
-            <template #header>
-              <div class="text-center w-full font-bold">
-                Acciones
-              </div>
-            </template>
-            <template #body="{ data }">
-              <div class="flex gap-1 justify-center items-center">
-                <button
-                  class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  @click="verDetalle(data)"
-                  :disabled="isViewingDetail"
-                  title="Ver detalle"
-                >
-                  <FontAwesomeIcon
-                    v-if="isViewingDetail"
-                    :icon="faSpinner"
-                    class="animate-spin text-white text-xs"
-                  />
-                  <FontAwesomeIcon v-else :icon="faEye" class="text-white text-xs" />
-                  <span class="hidden md:block text-white ml-1">{{ isViewingDetail ? 'Cargando...' : 'Ver' }}</span>
-                </button>
-                <button
-                  class="flex bg-green-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  @click="verHistorialProducto(data.producto_id)"
-                  :disabled="isViewingHistory"
-                  title="Historial del producto"
-                >
-                  <FontAwesomeIcon
-                    v-if="isViewingHistory"
-                    :icon="faSpinner"
-                    class="animate-spin text-white text-xs"
-                  />
-                  <FontAwesomeIcon v-else :icon="faHistory" class="text-white text-xs" />
-                  <span class="hidden lg:block text-white ml-1">{{ isViewingHistory ? 'Cargando...' : 'Hist' }}</span>
-                </button>
-              </div>
-            </template>
-          </Column>
+
         </DataTable>
       </div>
     </div>
@@ -418,6 +376,8 @@
       modal
       header="Detalle del Movimiento"
       :style="dialogStyle"
+      :closable="false"
+      :draggable="false"
     >
       <div v-if="movimientoSeleccionado" class="space-y-4">
         <div class="grid grid-cols-2 gap-4">
@@ -427,9 +387,11 @@
           <div>
             <strong>Tipo:</strong>
             <Tag
-              :value="movimientoSeleccionado.tipo_movimiento"
-              :severity="movimientoSeleccionado.tipo_movimiento === 'ENTRADA' ? 'success' : 'danger'"
-            />
+              :value="obtenerTipoMovimiento(movimientoSeleccionado)"
+              :severity="obtenerSeveridadTipo(movimientoSeleccionado)"
+            >
+              {{ obtenerTipoMovimiento(movimientoSeleccionado) }}
+            </Tag>
           </div>
           <div>
             <strong>Producto:</strong> {{ movimientoSeleccionado.producto?.nombre }}
@@ -440,11 +402,17 @@
               {{ movimientoSeleccionado.tipo_movimiento === 'ENTRADA' ? '+' : '-' }}{{ movimientoSeleccionado.cantidad }}
             </span>
           </div>
-          <div>
+          <div class="col-span-2">
             <strong>Usuario:</strong> {{ movimientoSeleccionado.user?.name || 'Sistema' }}
+            <div v-if="movimientoSeleccionado.user" class="text-sm text-gray-600 mt-1">
+              <div><strong>Email:</strong> {{ movimientoSeleccionado.user.email }}</div>
+              <div v-if="movimientoSeleccionado.user.roles && movimientoSeleccionado.user.roles.length > 0">
+                <strong>Rol:</strong> {{ movimientoSeleccionado.user.roles[0].name }}
+              </div>
+            </div>
           </div>
           <div>
-            <strong>Motivo:</strong> {{ movimientoSeleccionado.motivo || 'Sin especificar' }}
+            <strong>Motivo:</strong> {{ obtenerMotivoLegible(movimientoSeleccionado.motivo) }}
           </div>
         </div>
 
@@ -463,6 +431,80 @@
           <button
             type="button"
             @click="mostrarModalDetalle = false"
+            class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          >
+            <FontAwesomeIcon :icon="faTimes" class="h-5" />Cerrar
+          </button>
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Modal de Productos por Estado -->
+    <Dialog
+      v-model:visible="mostrarModalProductos"
+      modal
+      :header="tituloModal"
+      :style="dialogStyle"
+      :closable="false"
+      :draggable="false"
+    >
+      <div v-if="cargandoProductos" class="text-center py-8">
+        <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-8 w-8 text-blue-600 mb-3" />
+        <p class="text-gray-600">Cargando productos...</p>
+      </div>
+
+      <div v-else-if="productosModalData.length === 0" class="text-center py-8">
+        <FontAwesomeIcon :icon="faExclamationTriangle" class="h-12 w-12 text-gray-400 mb-3" />
+        <p class="text-gray-600">No se encontraron productos en este estado.</p>
+      </div>
+
+      <div v-else class="space-y-4">
+        <div class="max-h-96 overflow-y-auto">
+          <div v-for="producto in productosModalData" :key="producto.id" class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+            <div class="flex-1">
+              <h4 class="font-semibold text-gray-800">{{ producto.nombre }}</h4>
+              <p class="text-sm text-gray-500">{{ producto.categoria?.nombre || 'Sin categoría' }}</p>
+              <div class="flex gap-4 text-xs text-gray-600 mt-1">
+                <span>Stock: <strong>{{ producto.stock_actual || 0 }}</strong></span>
+                <span>Mínimo: <strong>{{ producto.stock_minimo || 1 }}</strong></span>
+                <span v-if="producto.precio">Precio: <strong>${{ formatearPrecio(producto.precio) }}</strong></span>
+              </div>
+            </div>
+            <div class="ml-4">
+              <span 
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                :class="{
+                  'bg-green-100 text-green-800': tipoEstado === 'disponibles',
+                  'bg-red-100 text-red-800': tipoEstado === 'agotados',
+                  'bg-yellow-100 text-yellow-800': tipoEstado === 'stock_bajo'
+                }"
+              >
+                {{ tipoEstado === 'disponibles' ? 'Disponible' : 
+                   tipoEstado === 'agotados' ? 'Agotado' : 'Stock Bajo' }}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border-t pt-4">
+          <p class="text-sm text-gray-600 mb-3">
+            <strong>{{ productosModalData.length }}</strong> producto{{ productosModalData.length !== 1 ? 's' : '' }} encontrado{{ productosModalData.length !== 1 ? 's' : '' }}
+          </p>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-center gap-4 w-full mt-6">
+          <button
+            @click="irAProductos"
+            class="bg-green-500 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          >
+            <FontAwesomeIcon :icon="faEye" class="h-5" />
+            Gestionar Productos
+          </button>
+          <button
+            type="button"
+            @click="mostrarModalProductos = false"
             class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
           >
             <FontAwesomeIcon :icon="faTimes" class="h-5" />Cerrar
@@ -490,8 +532,7 @@ import {
   faPencil,
   faEye,
   faHistory,
-  faTimes,
-  faDownload
+  faTimes
 } from "@fortawesome/free-solid-svg-icons"
 import axios from 'axios'
 
@@ -512,6 +553,11 @@ const isViewingHistory = ref(false)
 // Modales
 const mostrarModalDetalle = ref(false)
 const movimientoSeleccionado = ref(null)
+const mostrarModalProductos = ref(false)
+const productosModalData = ref([])
+const tituloModal = ref('')
+const tipoEstado = ref('')
+const cargandoProductos = ref(false)
 
 // Filtros
 const filtros = ref({
@@ -527,7 +573,8 @@ const errores = ref({})
 // Opciones para dropdowns
 const tiposMovimiento = [
   { label: 'Entrada', value: 'ENTRADA' },
-  { label: 'Salida', value: 'SALIDA' }
+  { label: 'Salida', value: 'SALIDA' },
+  { label: 'Ajuste', value: 'AJUSTE' }
 ]
 
 // Variable reactiva para el ancho de ventana
@@ -649,41 +696,7 @@ const limpiarFiltros = async () => {
   }
 }
 
-// Función para exportar reportes
-const exportarReporte = async () => {
-  cargando.value = true
 
-  try {
-    const response = await axios.get('/api/inventario/exportar', {
-      responseType: 'blob',
-      params: filtros.value
-    })
-
-    const url = window.URL.createObjectURL(new Blob([response.data]))
-    const link = document.createElement('a')
-    link.href = url
-    link.setAttribute('download', `inventario_${new Date().toISOString().split('T')[0]}.pdf`)
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-
-    toast.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Reporte exportado correctamente',
-      life: 3000
-    })
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'Error al exportar el reporte',
-      life: 4000
-    })
-  } finally {
-    cargando.value = false
-  }
-}
 
 const actualizarStockActual = () => {
   if (formAjustar.value.producto_id && Array.isArray(productos.value)) {
@@ -730,6 +743,63 @@ const verHistorialProducto = async (productoId) => {
   }
 }
 
+// Funciones para manejar clicks en las tarjetas
+const abrirModalProductos = async (tipo) => {
+  let cantidad = 0
+  let endpoint = ''
+  
+  switch (tipo) {
+    case 'disponibles':
+      cantidad = resumen.value.productos_disponibles || 0
+      endpoint = '/api/admin/productos/disponibles'
+      tituloModal.value = 'Productos Disponibles'
+      break
+    case 'agotados':
+      cantidad = resumen.value.productos_agotados || 0
+      endpoint = '/api/inventario/agotados'
+      tituloModal.value = 'Productos Agotados'
+      break
+    case 'stock_bajo':
+      cantidad = resumen.value.productos_stock_bajo || 0
+      endpoint = '/api/inventario/stock-bajo'
+      tituloModal.value = 'Productos con Stock Bajo'
+      break
+  }
+  
+  if (cantidad === 0) {
+    toast.add({
+      severity: 'info',
+      summary: 'Sin registros',
+      detail: `No hay productos en estado: ${tituloModal.value.toLowerCase()}`,
+      life: 3000
+    })
+    return
+  }
+  
+  tipoEstado.value = tipo
+  cargandoProductos.value = true
+  
+  try {
+    const response = await axios.get(endpoint)
+    productosModalData.value = response.data.data || response.data || []
+    mostrarModalProductos.value = true
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'Error al cargar los productos',
+      life: 4000
+    })
+  } finally {
+    cargandoProductos.value = false
+  }
+}
+
+const irAProductos = () => {
+  mostrarModalProductos.value = false
+  window.location.href = '/productos'
+}
+
 // Función para manejar el clic en la fila
 const onRowClick = (event) => {
   // Verificar si el clic fue en un botón para evitar abrir el modal
@@ -771,6 +841,43 @@ const formatearPrecio = (precio) => {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
   }).format(precio || 0)
+}
+
+const obtenerMotivoLegible = (motivo) => {
+  const motivosLegibles = {
+    // Motivos actualmente utilizados en el sistema
+    'venta': 'Venta',
+    'ajuste_aumento': 'Ajuste (Aumento)',
+    'ajuste_reduccion': 'Ajuste (Reducción)',
+    'entrada_manual': 'Entrada Manual',
+    'cancelacion_venta': 'Cancelación de Venta',
+    'eliminacion_venta': 'Eliminación de Venta',
+    // Fallback para valores que pueden venir en diferentes formatos
+    '': 'Sin especificar',
+    null: 'Sin especificar',
+    undefined: 'Sin especificar'
+  }
+
+  // Si el motivo no está mapeado, intentamos mostrarlo tal como viene
+  // pero capitalizado de manera amigable
+  if (!motivosLegibles[motivo] && motivo) {
+    // Capitalizar primera letra y reemplazar guiones bajos con espacios
+    return motivo.charAt(0).toUpperCase() + motivo.slice(1).replace(/_/g, ' ')
+  }
+
+  return motivosLegibles[motivo] || 'Sin especificar'
+}
+
+const obtenerTipoMovimiento = (movimiento) => {
+  return movimiento.tipo_movimiento || 'Sin definir'
+}
+
+const obtenerSeveridadTipo = (movimiento) => {
+  const tipo = movimiento.tipo_movimiento
+  if (tipo === 'ENTRADA') return 'success'
+  if (tipo === 'SALIDA') return 'danger'
+  if (tipo === 'AJUSTE') return 'warning'
+  return 'secondary'
 }
 
 // Watchers

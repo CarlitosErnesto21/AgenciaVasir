@@ -21,15 +21,7 @@
           </div>
         </div>
 
-        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-lg p-4 shadow-md">
-          <div class="flex items-center justify-between">
-            <div>
-              <div class="text-yellow-100 text-sm">Ventas Pendientes</div>
-              <div class="text-2xl font-bold">{{ estadisticas.pendientes }}</div>
-            </div>
-            <FontAwesomeIcon :icon="faSpinner" class="text-3xl text-yellow-200" />
-          </div>
-        </div>
+
 
         <div class="bg-gradient-to-r from-red-400 to-red-600 text-white rounded-lg p-4 shadow-md">
           <div class="flex items-center justify-between">
@@ -291,21 +283,8 @@
             </template>
             <template #body="slotProps">
               <div class="flex flex-wrap gap-1 sm:gap-2 justify-center items-center">
-                <button
-                  class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                  @click="verDetalles(slotProps.data)"
-                  title="Ver detalles">
-                  <FontAwesomeIcon :icon="faEye" class="h-3 w-4 sm:h-4 sm:w-6 text-white" />
-                  <span class="hidden lg:block text-white ml-1">Ver</span>
-                </button>
-                <button
-                  v-if="slotProps.data.estado === 'pendiente'"
-                  class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                  @click="confirmarProcesar(slotProps.data)"
-                  title="Procesar venta">
-                  <FontAwesomeIcon :icon="faCheck" class="h-3 w-4 sm:h-4 sm:w-6 text-white" />
-                  <span class="hidden lg:block text-white ml-1">Procesar</span>
-                </button>
+                <!-- Botón "Ver" eliminado - se puede hacer clic en la fila para ver detalles -->
+                <!-- Botón "Procesar" eliminado - las ventas se crean directamente como completadas -->
                 <button
                   v-if="slotProps.data.estado === 'completada'"
                   class="flex bg-orange-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
@@ -360,14 +339,9 @@
                 <FontAwesomeIcon :icon="faUser" class="text-gray-500 text-sm" />
                 <strong>Cliente:</strong> {{ ventaSeleccionada.cliente?.user?.name || 'N/A' }}
               </div>
-            </div>
-            <div class="space-y-3">
               <div class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="faDollarSign" class="text-gray-500 text-sm" />
-                <strong>Total:</strong>
-                <span class="text-green-600 font-bold text-lg">
-                  ${{ formatCurrency(ventaSeleccionada.total) }}
-                </span>
+                <FontAwesomeIcon :icon="faEnvelope" class="text-gray-500 text-sm" />
+                <strong>Email:</strong> {{ ventaSeleccionada.cliente?.user?.email || 'N/A' }}
               </div>
             </div>
           </div>
@@ -408,7 +382,7 @@
                 <span>${{ formatCurrency(data.precio_unitario) }}</span>
               </template>
             </Column>
-            <Column field="subtotal" header="Subtotal" style="width: 120px">
+            <Column field="subtotal" header="Subtotal" style="width: 120px; font-size: 17px">
               <template #body="{ data }">
                 <span class="font-bold text-green-600">
                   ${{ formatCurrency(data.subtotal) }}
@@ -435,7 +409,7 @@
     <!-- Modal de Confirmación Unificado -->
     <Dialog
       v-model:visible="modalConfirmacion"
-      :style="{ width: '450px' }"
+      :style="dialogStyle"
       :header="accionConfirmacion.titulo"
       :modal="true"
       :closable="false"
@@ -481,6 +455,7 @@
           <div class="space-y-2 text-sm">
             <div><strong>ID:</strong> #{{ accionConfirmacion.venta.id }}</div>
             <div><strong>Cliente:</strong> {{ accionConfirmacion.venta.cliente?.user?.name || 'N/A' }}</div>
+            <div><strong>Email:</strong> {{ accionConfirmacion.venta.cliente?.user?.email || 'N/A' }}</div>
             <div><strong>Total:</strong> ${{ formatCurrency(accionConfirmacion.venta.total) }}</div>
             <div><strong>Estado:</strong>
               <span :class="'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-1 ' + getEstadoClass(accionConfirmacion.venta.estado)">
@@ -569,7 +544,6 @@ import {
   faCheck,
   faExclamationTriangle,
   faFilter,
-  faEye,
   faPencil,
   faSpinner,
   faTrashCan,
@@ -579,7 +553,8 @@ import {
   faCalendar,
   faDollarSign,
   faBox,
-  faRefresh
+  faRefresh,
+  faEnvelope
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
@@ -649,7 +624,6 @@ const filtros = ref({
 
 const estadosOptions = ref([
   { name: 'Todos', value: null },
-  { name: 'Pendiente', value: 'pendiente' },
   { name: 'Completada', value: 'completada' },
   { name: 'Cancelada', value: 'cancelada' }
 ]);
@@ -689,28 +663,25 @@ const ventasFiltradas = computed(() => {
     filtered = filtered.filter(venta => new Date(venta.fecha) <= fechaHasta);
   }
 
-  // 📋 Ordenamiento: Pendientes primero, luego por fecha más reciente
+  // 📋 Ordenamiento: Completadas primero, luego por fecha más reciente
   return filtered.sort((a, b) => {
-    // Prioridad 1: Estado (pendientes primero)
-    const estadoPrioridad = { 'pendiente': 1, 'completada': 2, 'cancelada': 3 };
+    // Prioridad 1: Estado (completadas primero)
+    const estadoPrioridad = { 'completada': 1, 'cancelada': 2 };
     const prioridadA = estadoPrioridad[a.estado.toLowerCase()] || 4;
     const prioridadB = estadoPrioridad[b.estado.toLowerCase()] || 4;
 
     if (prioridadA !== prioridadB) {
       return prioridadA - prioridadB;
     }
-
-    // Prioridad 2: Fecha más reciente primero (descendente)
     const fechaA = new Date(a.fecha);
     const fechaB = new Date(b.fecha);
-    return fechaB - fechaA; // Orden descendente (más reciente primero)
+    return fechaB - fechaA;
   });
 });
 
 const estadisticas = computed(() => {
   const stats = {
     completadas: 0,
-    pendientes: 0,
     canceladas: 0,
     totalVendido: 0
   };
@@ -720,9 +691,6 @@ const estadisticas = computed(() => {
       case 'completada':
         stats.completadas++;
         stats.totalVendido += parseFloat(venta.total || 0);
-        break;
-      case 'pendiente':
-        stats.pendientes++;
         break;
       case 'cancelada':
         stats.canceladas++;
@@ -829,55 +797,32 @@ const fetchVentasWithToasts = async () => {
 };
 
 // 📝 Funciones principales
-const verDetalles = (venta) => {
-  ventaSeleccionada.value = venta;
-  modalDetalles.value = true;
-};
+// ❌ELIMINADO: verDetalles - Se puede hacer clic en la fila para ver detalles
 
+// ❌ELIMINADO: confirmarProcesar - Las ventas se crean directamente como completadas
 const confirmarProcesar = (venta) => {
-  accionConfirmacion.value = {
-    tipo: 'procesar',
-    venta: venta,
-    titulo: '¿Procesar esta venta?',
-    mensaje: 'Esta acción completará la venta y reducirá el stock de los productos.',
-    color: 'green',
-    icono: faCheck,
-    textoBoton: 'Sí, Procesar',
-    importante: 'Se reducirá automáticamente el stock de todos los productos de esta venta.'
-  };
-  modalConfirmacion.value = true;
+  // Función deshabilitada - las ventas ya no requieren procesamiento manual
+  console.warn('confirmarProcesar() - Función deshabilitada: las ventas se crean como completadas');
 };
 
+// ❌ELIMINADO: procesarVenta - Las ventas se crean directamente como completadas
 const procesarVenta = async () => {
   const venta = accionConfirmacion.value.venta;
   if (!venta) return;
 
-  processingVentas.value.add(venta.id);
   try {
-    const response = await axios.post(`/api/ventas/${venta.id}/procesar`);
-
-    // Actualizar la venta en la lista local sin recargar
-    const index = ventas.value.findIndex(v => v.id === venta.id);
-    if (index !== -1) {
-      ventas.value[index] = { ...ventas.value[index], estado: 'completada' };
-    }
+    // Función deshabilitada - las ventas ya no requieren procesamiento manual
+    console.warn('procesarVenta() - Función deshabilitada: las ventas se crean como completadas');
 
     toast.add({
-      severity: 'success',
-      summary: 'Éxito',
-      detail: 'Venta procesada correctamente',
+      severity: 'info',
+      summary: 'Información',
+      detail: 'Las ventas se procesan automáticamente al crear el pago',
       life: 3000
     });
 
     modalConfirmacion.value = false;
     accionConfirmacion.value = { tipo: null, venta: null };
-  } catch (error) {
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'Error al procesar la venta',
-      life: 3000
-    });
   } finally {
     processingVentas.value.delete(venta.id);
   }
@@ -1039,8 +984,6 @@ const getEstadoClass = (estado) => {
   switch (estado) {
     case 'completada':
       return 'bg-green-100 text-green-800';
-    case 'pendiente':
-      return 'bg-yellow-100 text-yellow-800';
     case 'cancelada':
       return 'bg-red-100 text-red-800';
     default:
@@ -1052,8 +995,6 @@ const getEstadoLabel = (estado) => {
   switch (estado) {
     case 'completada':
       return 'Completada';
-    case 'pendiente':
-      return 'Pendiente';
     case 'cancelada':
       return 'Cancelada';
     default:

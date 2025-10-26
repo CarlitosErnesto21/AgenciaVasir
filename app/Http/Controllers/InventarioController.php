@@ -23,7 +23,7 @@ class InventarioController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Inventario::with(['producto.categoria', 'user', 'venta']);
+        $query = Inventario::with(['producto.categoria', 'user.roles', 'venta']);
 
         // Filtros opcionales
         if ($request->has('producto_id')) {
@@ -217,7 +217,7 @@ class InventarioController extends Controller
      */
     public function show(Inventario $inventario)
     {
-        $inventario->load(['producto.categoria', 'user', 'venta']);
+        $inventario->load(['producto.categoria', 'user.roles', 'venta']);
         return response()->json($inventario);
     }
 }

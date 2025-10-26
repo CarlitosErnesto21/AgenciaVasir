@@ -120,6 +120,16 @@ const canAddMoreImages = computed(() => {
     return imagenPreviewList.value.length < 5;
 });
 
+// Computed para categorías con texto truncado (para móviles)
+const categoriasConTextoTruncado = computed(() => {
+    return categorias.value.map(categoria => ({
+        ...categoria,
+        nombreTruncado: categoria.nombre.length > 20 
+            ? categoria.nombre.substring(0, 17) + '...' 
+            : categoria.nombre
+    }));
+});
+
 // Computed para el texto del botón de imágenes
 const imageButtonText = computed(() => {
     if (isUploadingImages.value) return 'Cargando...';
@@ -599,40 +609,10 @@ const openMoreActionsModal = (productData) => {
     moreActionsDialog.value = true;
 };
 
-const handleDuplicateProduct = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Duplicar Producto",
-        detail: `Funcionalidad de duplicar producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
-};
-
 const handleUpdateStock = (product) => {
     moreActionsDialog.value = false;
     selectedProduct.value = product;
     updateStockDialog.value = true;
-};
-
-const handleGenerateReport = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Generar Reporte",
-        detail: `Funcionalidad de generar reporte del producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
-};
-
-const handleArchiveProduct = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Archivar Producto",
-        detail: `Funcionalidad de archivar producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
 };
 
 const handleViewDetails = (product) => {
@@ -1307,8 +1287,8 @@ const onStockMinimoPaste = (event) => {
                             </label>
                             <Select
                                 v-model="producto.categoria_id"
-                                :options="categorias"
-                                optionLabel="nombre"
+                                :options="categoriasConTextoTruncado"
+                                :optionLabel="(option) => windowWidth.value < 640 ? option.nombreTruncado : option.nombre"
                                 optionValue="id"
                                 id="categoria_id"
                                 name="categoria_id"
@@ -1486,10 +1466,7 @@ const onStockMinimoPaste = (event) => {
                 :selected-images="selectedImages"
                 :image-path="IMAGE_PATH"
                 :is-deleting="isDeleting"
-                @duplicate="handleDuplicateProduct"
                 @update-stock="handleUpdateStock"
-                @generate-report="handleGenerateReport"
-                @archive="handleArchiveProduct"
                 @delete-product="deleteProduct"
                 @cancel-delete="() => deleteDialog = false"
                 @close-without-saving="closeDialogWithoutSaving"
@@ -1561,4 +1538,32 @@ const onStockMinimoPaste = (event) => {
   animation: spin 1s linear infinite;
 }
 /* Fin de la animación para el spinner de loading */
+
+/* Estilos para truncar texto en selects (especialmente en móviles) */
+.p-select .p-select-label {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Asegurar que el select mantenga su ancho en móviles */
+@media (max-width: 640px) {
+  .p-select {
+    min-width: 200px !important;
+  }
+  
+  .p-select .p-select-label {
+    max-width: 180px !important;
+  }
+}
+
+/* Para tablets */
+@media (min-width: 641px) and (max-width: 768px) {
+  .p-select .p-select-label {
+    max-width: 220px !important;
+  }
+}
+/* Fin de estilos para truncar texto en selects */
 </style>

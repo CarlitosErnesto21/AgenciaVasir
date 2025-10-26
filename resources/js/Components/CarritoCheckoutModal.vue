@@ -29,18 +29,21 @@
       </div>
 
       <!-- Payment Form -->
-      <div v-else-if="ventaCreada" class="payment-form">
+      <div v-else class="payment-form">
         <!-- Resumen de la compra -->
         <div class="purchase-summary">
           <h4>Resumen de tu compra</h4>
           <div class="summary-details">
+            <div class="cart-items">
+              <div v-for="item in carritoStore.items" :key="item.id" class="cart-item">
+                <span class="item-name">{{ item.nombre }}</span>
+                <span class="item-quantity">{{ item.cantidad }}x</span>
+                <span class="item-price">${{ formatPrice(item.precio * item.cantidad) }}</span>
+              </div>
+            </div>
             <div class="total-amount">
               <span>Total a pagar:</span>
-              <span class="amount">${{ formatPrice(ventaCreada.total) }}</span>
-            </div>
-            <div class="order-reference">
-              <span>Número de orden:</span>
-              <span class="reference">#{{ ventaCreada.id }}</span>
+              <span class="amount">${{ formatPrice(carritoStore.totalPrice) }}</span>
             </div>
           </div>
         </div>
@@ -77,13 +80,13 @@
       </div>
 
       <!-- Success State -->
-      <div v-else-if="paymentSuccess" class="success-state">
+      <div v-if="paymentSuccess" class="success-state">
         <FontAwesomeIcon :icon="faCheckCircle" class="success-icon" />
         <h4>¡Enlace de pago creado!</h4>
         <p>Se abrió una nueva ventana con tu enlace de pago seguro.</p>
         <div class="success-details">
-          <p><strong>Número de orden:</strong> #{{ ventaCreada?.id }}</p>
-          <p><strong>Total a pagar:</strong> ${{ formatPrice(ventaCreada?.total) }}</p>
+          <p v-if="ventaCreada"><strong>Número de orden:</strong> #{{ ventaCreada.id }}</p>
+          <p><strong>Total pagado:</strong> ${{ formatPrice(carritoStore.totalPrice) }}</p>
           <p class="cart-cleared-notice">
             <FontAwesomeIcon :icon="faShoppingCart" class="cart-icon" />
             Tu carrito se ha limpiado automáticamente
@@ -151,10 +154,10 @@ const formatPrice = (price) => {
   }).format(price)
 }
 
-// Crear venta cuando se abre el modal
-watch(() => props.isVisible, async (newValue) => {
-  if (newValue && !ventaCreada.value && !paymentSuccess.value) {
-    await createVenta()
+// Resetear estado cuando se abre el modal
+watch(() => props.isVisible, (newValue) => {
+  if (newValue) {
+    resetModal()
   }
 })
 
@@ -207,13 +210,28 @@ const handlePaymentError = (error) => {
 
 // Procesar pago con Wompi El Salvador
 const procesarPagoWompi = async () => {
-  if (!ventaCreada.value) {
-    error.value = 'No hay venta creada'
-    return
-  }
-
   procesandoPago.value = true
   error.value = null
+
+  // ✅ PASO 1: Crear la venta primero
+  if (!ventaCreada.value) {
+    console.log('🛒 Creando venta antes del pago...')
+    isCreatingVenta.value = true
+    
+    try {
+      await createVenta()
+      
+      // Si hubo error creando la venta, detener
+      if (error.value || !ventaCreada.value) {
+        procesandoPago.value = false
+        return
+      }
+    } finally {
+      isCreatingVenta.value = false
+    }
+  }
+
+  console.log('💳 Procesando pago para venta:', ventaCreada.value?.id)
 
   try {
     // Obtener token CSRF actual
@@ -292,7 +310,7 @@ const procesarPagoWompi = async () => {
 
       // Mostrar mensaje de éxito temporal
       paymentSuccess.value = true
-      
+
       // Cerrar modal automáticamente después de 3 segundos
       setTimeout(() => {
         closeModal()
@@ -360,7 +378,7 @@ const retry = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
+  z-index: 10001;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -498,6 +516,46 @@ const retry = () => {
   background: #e5e7eb;
   padding: 4px 8px;
   border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+.cart-items {
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.cart-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.cart-item:last-child {
+  border-bottom: none;
+}
+
+.item-name {
+  flex: 1;
+  font-weight: 500;
+  color: #374151;
+  font-size: 0.875rem;
+}
+
+.item-quantity {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin: 0 12px;
+}
+
+.item-price {
+  font-weight: 600;
+  color: #059669;
   font-size: 0.875rem;
 }
 

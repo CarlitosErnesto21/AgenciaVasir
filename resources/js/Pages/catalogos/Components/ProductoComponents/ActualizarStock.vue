@@ -32,7 +32,7 @@ const emit = defineEmits([
 
 // Estados reactivos
 const isLoading = ref(false);
-const tipoMovimiento = ref('ajuste'); // 'entrada', 'salida', 'ajuste'
+const tipoMovimiento = ref('entrada'); // 'entrada', 'salida', 'ajuste'
 const cantidad = ref(null);
 const motivo = ref('');
 const submitted = ref(false);
@@ -93,7 +93,7 @@ watch(tipoMovimiento, () => {
 
 // Función para resetear el formulario
 const resetForm = () => {
-    tipoMovimiento.value = 'ajuste';
+    tipoMovimiento.value = 'entrada';
     cantidad.value = null;
     motivo.value = '';
     submitted.value = false;

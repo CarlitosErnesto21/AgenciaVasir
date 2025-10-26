@@ -243,7 +243,7 @@ class ValidateVentaPagoIntegrity
      */
     private function validateAfterOperation(Request $request, $response, string $requestId): void
     {
-        // Si se creó una venta, verificar que se creó en estado pendiente
+        // Si se creó una venta, verificar que se creó en estado completada
         if ($request->method() === 'POST' && 
             str_contains($request->path(), 'carrito/create-venta') && 
             $response->getStatusCode() === 201) {
@@ -251,12 +251,13 @@ class ValidateVentaPagoIntegrity
             $responseData = json_decode($response->getContent(), true);
             
             if (isset($responseData['venta']['estado']) && 
-                $responseData['venta']['estado'] !== 'pendiente') {
+                $responseData['venta']['estado'] !== 'completada') {
                 
                 Log::error('Venta creada con estado incorrecto', [
                     'request_id' => $requestId,
                     'venta_id' => $responseData['venta']['id'] ?? null,
-                    'estado_actual' => $responseData['venta']['estado']
+                    'estado_actual' => $responseData['venta']['estado'],
+                    'estado_esperado' => 'completada'
                 ]);
             }
         }

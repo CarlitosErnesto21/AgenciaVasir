@@ -45,11 +45,6 @@ class Venta extends Model
     }
 
     // ⭐ MÉTODOS DE ESTADO
-    public function estaPendiente(): bool
-    {
-        return $this->estado === 'pendiente';
-    }
-
     public function estaCompletada(): bool
     {
         return $this->estado === 'completada';
@@ -71,14 +66,9 @@ class Venta extends Model
         return $this->pagos()->where('estado', 'pending')->exists();
     }
 
-    public function esValidaParaCompletarse(): bool
-    {
-        return $this->estaPendiente() && $this->tienePagoAprobado();
-    }
-
     public function puedeSerCancelada(): bool
     {
-        return $this->estaPendiente() && !$this->tienePagoAprobado();
+        return $this->estaCompletada() && !$this->tienePagoAprobado();
     }
 
     // ⭐ SCOPES PARA CONSULTAS SEGURAS
@@ -89,13 +79,7 @@ class Venta extends Model
         });
     }
 
-    public function scopePendientesConPago($query)
-    {
-        return $query->where('estado', 'pendiente')
-                    ->whereHas('pagos', function($q) {
-                        $q->where('estado', 'pending');
-                    });
-    }
+
 
     public function scopeCompletadasValidas($query)
     {
@@ -119,7 +103,6 @@ class Venta extends Model
     public function getEstadoLegibleAttribute(): string
     {
         $estados = [
-            'pendiente' => 'Pendiente de Pago',
             'completada' => 'Completada',
             'cancelada' => 'Cancelada'
         ];
