@@ -30,7 +30,7 @@ export default defineConfig({
         host: '0.0.0.0',
         port: 5173,
         hmr: {
-            host: '10.246.161.144'
+            host: '192.168.1.34'
         }
     },
 

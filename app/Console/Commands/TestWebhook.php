@@ -28,7 +28,7 @@ class TestWebhook extends Command
     public function handle()
     {
         $this->info('=== PRUEBA WEBHOOK WOMPI ===');
-        
+
         // Buscar pagos pendientes
         $pagos = Pago::where('estado', 'pending')->get();
         $this->info("Pagos pendientes encontrados: " . $pagos->count());
@@ -39,19 +39,19 @@ class TestWebhook extends Command
 
         if ($pagos->count() > 0) {
             $primerPago = $pagos->first();
-            
+
             $this->info("\n=== ACTUALIZANDO PRIMER PAGO ===");
             $this->line("Pago ID: {$primerPago->id}");
             $this->line("Estado actual: {$primerPago->estado}");
-            
+
             // Simular actualización del webhook
             $primerPago->wompi_transaction_id = 'transaction-id-test-' . time();
             $primerPago->wompi_reference = 'REF-TEST-' . $primerPago->id;
             $primerPago->estado = 'completed';
             $primerPago->save();
-            
+
             $this->info("Pago actualizado exitosamente!");
-            
+
             // Actualizar venta asociada
             if ($primerPago->venta_id) {
                 $venta = Venta::find($primerPago->venta_id);
@@ -61,11 +61,11 @@ class TestWebhook extends Command
                     $this->info("Venta ID {$venta->id} actualizada a 'completada'");
                 }
             }
-            
+
             $this->info("\n=== VERIFICACIÓN FINAL ===");
             $pagoActualizado = Pago::find($primerPago->id);
             $ventaActualizada = $venta ?? null;
-            
+
             $this->line("Pago estado: {$pagoActualizado->estado}");
             $this->line("Venta estado: " . ($ventaActualizada ? $ventaActualizada->estado : 'N/A'));
         } else {
@@ -73,7 +73,7 @@ class TestWebhook extends Command
         }
 
         $this->info("\n=== PRUEBA COMPLETADA ===");
-        
+
         return Command::SUCCESS;
     }
 }
