@@ -1162,7 +1162,7 @@ const onStockMinimoPaste = (event) => {
                                             v-for="categoria in categorias"
                                             :key="categoria.id"
                                             :value="categoria.id"
-                                            class="truncate text-gray-900"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ categoria.nombre }}
                                         </option>
@@ -1180,7 +1180,7 @@ const onStockMinimoPaste = (event) => {
                                             v-for="estado in estadosOptions"
                                             :key="estado.value"
                                             :value="estado.value"
-                                            class="text-gray-900 truncate"
+                                            class="text-gray-900 truncate text-lg"
                                         >
                                             {{ estado.label }}
                                         </option>

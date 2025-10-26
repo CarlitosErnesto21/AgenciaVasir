@@ -1016,14 +1016,14 @@ function onFilterDropdown(field, event) {
                                     <select
                                         v-model="selectedProvincia"
                                         @change="onProvinciaFilterChange"
-                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                     >
                                         <option value="" disabled selected hidden>Provincia</option>
                                         <option
                                             v-for="provincia in provincias"
                                             :key="provincia.id"
                                             :value="provincia.id"
-                                            class="truncate"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ provincia.nombre }}
                                         </option>
@@ -1033,14 +1033,14 @@ function onFilterDropdown(field, event) {
                                     <select
                                         v-model="selectedEstado"
                                         @change="onEstadoFilterChange"
-                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                     >
                                         <option value="" disabled selected hidden>Estado</option>
                                         <option
                                             v-for="estado in estados"
                                             :key="estado.value"
                                             :value="estado.value"
-                                            class="truncate"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ estado.label }}
                                         </option>

@@ -1465,7 +1465,7 @@ const onPricePaste = (event) => {
                                             v-for="categoria in categoriasOptions"
                                             :key="categoria.value"
                                             :value="categoria.value"
-                                            class="truncate text-gray-900"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ categoria.label }}
                                         </option>
@@ -1482,7 +1482,7 @@ const onPricePaste = (event) => {
                                             v-for="transporte in tipoTransportes"
                                             :key="transporte.id"
                                             :value="transporte.id"
-                                            class="truncate text-gray-900"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ transporte.nombre }}
                                         </option>

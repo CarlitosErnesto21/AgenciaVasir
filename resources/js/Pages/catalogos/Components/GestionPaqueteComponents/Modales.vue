@@ -1,9 +1,9 @@
 <script setup>
-import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
+import { computed, ref, watch } from 'vue';
 import Dialog from 'primevue/dialog';
 import Carousel from 'primevue/carousel';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faCheck, faEye, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faClipboardList, faListDots, faCopy, faFileExport, faArchive } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faEye, faExclamationTriangle, faPencil, faSignOut, faSpinner, faXmark, faCopy, faFileAlt, faArchive, faPowerOff } from '@fortawesome/free-solid-svg-icons';
 
 // Props
 const props = defineProps({
@@ -118,9 +118,6 @@ const isUnsavedChangesVisible = computed({
 // Variable reactiva para el índice actual del carrusel
 const currentPageIndex = ref(0);
 
-// Variable para responsividad
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
-
 // Watcher para sincronizar el índice cuando cambie el prop
 watch(() => props.carouselIndex, (newIndex) => {
     currentPageIndex.value = newIndex;
@@ -132,7 +129,7 @@ watch(currentPageIndex, (newIndex) => {
 });
 
 // Funciones para las acciones
-const duplicatePaquete = () => {
+const duplicate = () => {
     emit('update:visible', false);
     emit('duplicate', props.paquete);
 };
@@ -147,7 +144,7 @@ const generateReport = () => {
     emit('generateReport', props.paquete);
 };
 
-const archivePaquete = () => {
+const archive = () => {
     emit('update:visible', false);
     emit('archive', props.paquete);
 };
@@ -166,261 +163,374 @@ const openImageModal = (index) => {
     emit('openImageModal', index);
 };
 
-// Función para formatear precio
-const formatPrice = (price) => {
-    return new Intl.NumberFormat('es-CR', {
-        style: 'currency',
-        currency: 'CRC'
-    }).format(price);
+// Función para cerrar el modal de detalles
+const closeDetailsModal = () => {
+    emit('update:detailsVisible', false);
 };
 
-// Función para formatear fecha
-const formatDate = (dateString) => {
-    if (!dateString) return 'No definida';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-        day: '2-digit',
-        month: '2-digit',
-        year: 'numeric'
-    });
+// Función para cerrar el modal de carrusel
+const closeCarouselModal = () => {
+    emit('update:carouselVisible', false);
 };
 
-// 🔄 Funciones de ciclo de vida para responsividad
-onMounted(() => {
-    if (typeof window !== 'undefined') {
-        window.addEventListener('resize', updateWindowWidth);
+// Funciones de navegación del carrusel personalizado
+const previousImage = () => {
+    if (props.selectedImages.length > 1) {
+        const newIndex = currentPageIndex.value === 0 ? props.selectedImages.length - 1 : currentPageIndex.value - 1;
+        currentPageIndex.value = newIndex;
     }
+};
+
+const nextImage = () => {
+    if (props.selectedImages.length > 1) {
+        const newIndex = currentPageIndex.value === props.selectedImages.length - 1 ? 0 : currentPageIndex.value + 1;
+        currentPageIndex.value = newIndex;
+    }
+};
+
+const goToImage = (index) => {
+    if (index >= 0 && index < props.selectedImages.length) {
+        currentPageIndex.value = index;
+    }
+};
+
+// Funciones para el modal de eliminar
+const confirmDelete = () => {
+    emit('deletePaquete', props.paquete);
+};
+
+const cancelDelete = () => {
+    emit('cancelDelete');
+    emit('update:deleteVisible', false);
+};
+
+// Funciones para el modal de cambios sin guardar
+const closeWithoutSaving = () => {
+    emit('closeWithoutSaving');
+};
+
+const continueEditing = () => {
+    emit('continueEditing');
+};
+
+// Función para formatear texto a lista
+const textoALista = (texto) => {
+    return texto ? texto.split('|').filter(item => item.trim()).map(item => item.trim()) : [];
+};
+
+// Exportar el componente con un nombre específico
+defineOptions({
+    name: 'PaqueteModals'
 });
-
-onUnmounted(() => {
-    if (typeof window !== 'undefined') {
-        window.removeEventListener('resize', updateWindowWidth);
-    }
-});
-
-// 📱 Función de responsividad
-const updateWindowWidth = () => {
-    if (typeof window !== 'undefined') {
-        windowWidth.value = window.innerWidth;
-    }
-};
 </script>
 
 <template>
-    <!-- 🎭 Modal de Más Acciones -->
+    <!-- Modal de Más Acciones -->
     <Dialog
         v-model:visible="isVisible"
         header="Más Acciones"
         :modal="true"
         :style="dialogStyle"
-        :closable="true"
+        :closable="false"
         :draggable="false"
     >
         <div class="space-y-4">
             <div class="text-center mb-4">
-                <h3 class="text-lg font-semibold text-gray-800">{{ paquete?.nombre }}</h3>
-                <p class="text-sm text-gray-600">Selecciona una acción para este paquete</p>
+                <h4 class="text-lg font-semibold text-gray-800">
+                   Paquete: <span class="text-blue-600">{{ paquete.nombre || 'Paquete' }}</span>
+                </h4>
+                <p class="text-sm text-gray-600 mt-1">Selecciona una acción a realizar</p>
             </div>
-            
+
             <div class="grid grid-cols-1 gap-3">
-                <!-- Ver Detalles -->
+                <!-- Botón para ver detalles -->
                 <button
+                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="viewDetails"
-                    class="flex items-center gap-3 w-full p-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors duration-200"
                 >
-                    <FontAwesomeIcon :icon="faEye" class="text-blue-600 text-lg" />
-                    <div class="text-left">
-                        <div class="font-medium text-blue-800">Ver Detalles</div>
-                        <div class="text-sm text-blue-600">Información completa del paquete</div>
+                    <FontAwesomeIcon :icon="faEye" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Ver Detalles</div>
+                        <div class="text-xs opacity-90">Información completa del paquete</div>
                     </div>
                 </button>
 
-                <!-- Duplicar -->
+                <!-- Botón para duplicar paquete -->
                 <button
-                    @click="duplicatePaquete"
-                    class="flex items-center gap-3 w-full p-3 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-colors duration-200"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    @click="duplicate"
                 >
-                    <FontAwesomeIcon :icon="faCopy" class="text-green-600 text-lg" />
-                    <div class="text-left">
-                        <div class="font-medium text-green-800">Duplicar Paquete</div>
-                        <div class="text-sm text-green-600">Crear una copia para editar</div>
+                    <FontAwesomeIcon :icon="faCopy" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Duplicar Paquete</div>
+                        <div class="text-xs opacity-90">Crear copia para editar</div>
                     </div>
                 </button>
 
-                <!-- Cambiar Estado -->
+                <!-- Botón para cambiar estado -->
                 <button
+                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="changeStatus"
-                    class="flex items-center gap-3 w-full p-3 bg-yellow-50 hover:bg-yellow-100 border border-yellow-200 rounded-lg transition-colors duration-200"
                 >
-                    <FontAwesomeIcon :icon="faClipboardList" class="text-yellow-600 text-lg" />
-                    <div class="text-left">
-                        <div class="font-medium text-yellow-800">Cambiar Estado</div>
-                        <div class="text-sm text-yellow-600">Modificar disponibilidad</div>
+                    <FontAwesomeIcon :icon="faPowerOff" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Cambiar Estado</div>
+                        <div class="text-xs opacity-90">Activar/Desactivar paquete</div>
                     </div>
                 </button>
 
-                <!-- Generar Reporte -->
+                <!-- Botón para generar reporte -->
                 <button
+                    class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="generateReport"
-                    class="flex items-center gap-3 w-full p-3 bg-purple-50 hover:bg-purple-100 border border-purple-200 rounded-lg transition-colors duration-200"
                 >
-                    <FontAwesomeIcon :icon="faFileExport" class="text-purple-600 text-lg" />
-                    <div class="text-left">
-                        <div class="font-medium text-purple-800">Generar Reporte</div>
-                        <div class="text-sm text-purple-600">Exportar información del paquete</div>
+                    <FontAwesomeIcon :icon="faFileAlt" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Generar Reporte</div>
+                        <div class="text-xs opacity-90">Descargar información del paquete</div>
                     </div>
                 </button>
 
-                <!-- Archivar -->
+                <!-- Botón para archivar -->
                 <button
-                    @click="archivePaquete"
-                    class="flex items-center gap-3 w-full p-3 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg transition-colors duration-200"
+                    class="w-full bg-orange-500 hover:bg-orange-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    @click="archive"
                 >
-                    <FontAwesomeIcon :icon="faArchive" class="text-gray-600 text-lg" />
-                    <div class="text-left">
-                        <div class="font-medium text-gray-800">Archivar Paquete</div>
-                        <div class="text-sm text-gray-600">Mover a archivo</div>
+                    <FontAwesomeIcon :icon="faArchive" class="h-5 w-5" />
+                    <div class="text-left flex-1">
+                        <div class="font-medium">Archivar Paquete</div>
+                        <div class="text-xs opacity-90">Mover a archivo histórico</div>
                     </div>
                 </button>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-200 text-center">
+                <p class="text-xs text-gray-500">
+                    💡 Selecciona una acción para continuar.
+                </p>
             </div>
         </div>
 
         <template #footer>
-            <div class="flex justify-center">
+            <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-gray-500 hover:bg-gray-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeModal"
                 >
-                    <FontAwesomeIcon :icon="faXmark" class="h-4" />
-                    <span>Cerrar</span>
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                    Cerrar
                 </button>
             </div>
         </template>
     </Dialog>
 
-    <!-- 📋 Modal de Detalles del Paquete -->
+    <!-- Modal de Detalles del Paquete -->
     <Dialog
         v-model:visible="isDetailsVisible"
         header="Detalles del Paquete"
         :modal="true"
-        :style="{ width: windowWidth < 768 ? '95vw' : '600px' }"
-        :closable="true"
+        :closable="false"
+        :style="dialogStyle"
         :draggable="false"
     >
-        <div class="space-y-6" v-if="paquete">
-            <!-- Información básica -->
-            <div class="bg-blue-50 p-4 rounded-lg">
-                <h3 class="text-lg font-bold text-blue-800 mb-3">{{ paquete.nombre }}</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span class="font-medium text-gray-700">Precio:</span>
-                        <span class="ml-2 text-green-600 font-bold">{{ formatPrice(paquete.precio) }}</span>
-                    </div>
-                    <div>
-                        <span class="font-medium text-gray-700">Duración:</span>
-                        <span class="ml-2">{{ paquete.duracion }} días</span>
-                    </div>
-                    <div>
-                        <span class="font-medium text-gray-700">Fecha de salida:</span>
-                        <span class="ml-2">{{ formatDate(paquete.fecha_salida) }}</span>
-                    </div>
-                    <div>
-                        <span class="font-medium text-gray-700">Fecha de regreso:</span>
-                        <span class="ml-2">{{ formatDate(paquete.fecha_regreso) }}</span>
-                    </div>
+        <div v-if="paquete" class="space-y-4">
+            <!-- Información básica del paquete -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">Nombre:</label>
+                    <p class="text-sm text-gray-900 mt-1">{{ paquete.nombre || 'Sin nombre' }}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">País:</label>
+                    <p class="text-sm text-gray-900 mt-1">{{ paquete.pais?.nombre || 'Sin país' }}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">Provincia:</label>
+                    <p class="text-sm text-gray-900 mt-1">{{ paquete.provincia?.nombre || 'Sin provincia' }}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">Precio:</label>
+                    <p class="text-sm text-gray-900 mt-1 font-semibold">
+                        {{ paquete.precio ? `$${Number(paquete.precio).toFixed(2)}` : 'No definido' }}
+                    </p>
                 </div>
             </div>
 
-            <!-- Descripción -->
-            <div v-if="paquete.descripcion">
-                <h4 class="font-semibold text-gray-800 mb-2">Descripción:</h4>
-                <p class="text-gray-600 text-sm leading-relaxed bg-gray-50 p-3 rounded">
-                    {{ paquete.descripcion }}
-                </p>
+            <!-- Información de fechas -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">Fecha de Salida:</label>
+                    <p class="text-sm text-gray-900 mt-1">{{ paquete.fecha_salida || 'Sin fecha' }}</p>
+                </div>
+                <div class="bg-gray-50 p-3 rounded-lg">
+                    <label class="text-sm font-semibold text-gray-700">Fecha de Regreso:</label>
+                    <p class="text-sm text-gray-900 mt-1">{{ paquete.fecha_regreso || 'Sin fecha' }}</p>
+                </div>
             </div>
 
-            <!-- Imágenes -->
-            <div v-if="paquete.imagenes && paquete.imagenes.length > 0">
-                <h4 class="font-semibold text-gray-800 mb-3">Imágenes del Paquete:</h4>
-                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <!-- Incluye -->
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <label class="text-sm font-semibold text-gray-700">Incluye:</label>
+                <div class="mt-2">
+                    <ul class="text-sm text-gray-900 list-disc list-inside space-y-1">
+                        <li v-for="item in textoALista(paquete.incluye)" :key="item">{{ item }}</li>
+                    </ul>
+                    <p v-if="!paquete.incluye || textoALista(paquete.incluye).length === 0" class="text-sm text-gray-500">Sin información disponible</p>
+                </div>
+            </div>
+
+            <!-- Condiciones -->
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <label class="text-sm font-semibold text-gray-700">Condiciones:</label>
+                <div class="mt-2">
+                    <ul class="text-sm text-gray-900 list-disc list-inside space-y-1">
+                        <li v-for="item in textoALista(paquete.condiciones)" :key="item">{{ item }}</li>
+                    </ul>
+                    <p v-if="!paquete.condiciones || textoALista(paquete.condiciones).length === 0" class="text-sm text-gray-500">Sin condiciones disponibles</p>
+                </div>
+            </div>
+
+            <!-- Recordatorio -->
+            <div class="bg-gray-50 p-3 rounded-lg">
+                <label class="text-sm font-semibold text-gray-700">Recordatorio:</label>
+                <div class="mt-2">
+                    <ul class="text-sm text-gray-900 list-disc list-inside space-y-1">
+                        <li v-for="item in textoALista(paquete.recordatorio)" :key="item">{{ item }}</li>
+                    </ul>
+                    <p v-if="!paquete.recordatorio || textoALista(paquete.recordatorio).length === 0" class="text-sm text-gray-500">Sin recordatorios disponibles</p>
+                </div>
+            </div>
+
+            <!-- Imágenes del paquete -->
+            <div v-if="paquete.imagenes && paquete.imagenes.length > 0" class="bg-gray-50 p-3 rounded-lg">
+                <label class="text-sm font-semibold text-gray-700 mb-3 block">Imágenes del Paquete:</label>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div
                         v-for="(imagen, index) in paquete.imagenes"
                         :key="index"
-                        class="relative group cursor-pointer"
+                        class="relative cursor-pointer group"
                         @click="openImageModal(index)"
                     >
                         <img
-                            :src="imagePath + imagen"
-                            :alt="'Imagen ' + (index + 1)"
-                            class="w-full h-24 object-cover rounded-lg border group-hover:opacity-75 transition-opacity"
+                            :src="imagePath + (typeof imagen === 'string' ? imagen : imagen.nombre)"
+                            :alt="`Imagen ${index + 1} del paquete`"
+                            class="w-full h-20 object-cover rounded-lg border group-hover:opacity-75 transition-opacity"
                         />
-                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg transition-all duration-200 flex items-center justify-center">
-                            <FontAwesomeIcon :icon="faEye" class="text-white opacity-0 group-hover:opacity-100 text-xl transition-opacity" />
+                        <div class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 rounded-lg">
+                            <FontAwesomeIcon :icon="faEye" class="h-6 w-6 text-white" />
                         </div>
                     </div>
                 </div>
             </div>
+
+            <div v-else class="bg-gray-50 p-3 rounded-lg text-center">
+                <p class="text-gray-500">No hay imágenes disponibles para este paquete.</p>
+            </div>
         </div>
+        <template #footer>
+            <div class="flex justify-center w-full mt-6">
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeDetailsModal"
+                >
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                    Cerrar
+                </button>
+            </div>
+        </template>
     </Dialog>
 
-    <!-- 🖼️ Modal Carrusel de Imágenes -->
+    <!-- Modal del carrusel de imágenes -->
     <Dialog
         v-model:visible="isCarouselVisible"
         header="Galería de Imágenes"
         :modal="true"
-        :style="{ width: windowWidth < 768 ? '95vw' : '80vw', maxWidth: '900px' }"
-        :closable="true"
+        :closable="false"
+        :style="dialogStyle"
         :draggable="false"
     >
-        <div v-if="selectedImages && selectedImages.length > 0">
-            <Carousel
-                :value="selectedImages"
-                :numVisible="1"
-                :numScroll="1"
-                :circular="true"
-                :showNavigators="true"
-                :showIndicators="true"
-                v-model:page="currentPageIndex"
-            >
-                <template #item="slotProps">
-                    <div class="text-center">
-                        <img
-                            :src="imagePath + slotProps.data"
-                            :alt="'Imagen ' + (slotProps.index + 1)"
-                            class="max-w-full max-h-96 mx-auto rounded-lg shadow-lg"
-                        />
-                    </div>
+        <div v-if="props.selectedImages.length" class="flex flex-col items-center justify-center">
+            <!-- Info de imagen actual -->
+            <div class="mb-4 text-sm text-gray-600 text-center">
+                Imagen {{ currentPageIndex + 1 }} de {{ props.selectedImages.length }}
+            </div>
+
+            <!-- Carrusel personalizado con navegación manual -->
+            <div class="relative w-full" style="max-width: 610px">
+                <!-- Imagen actual -->
+                <div class="flex justify-center items-center w-full h-96 bg-gray-50 rounded-lg">
+                    <img
+                        :src="props.selectedImages[currentPageIndex]"
+                        alt="Imagen del paquete"
+                        class="w-auto h-full max-h-96 object-contain rounded shadow"
+                    />
+                </div>
+
+                <!-- Navegadores -->
+                <template v-if="props.selectedImages.length > 1">
+                    <!-- Botón anterior -->
+                    <button
+                        @click="previousImage"
+                        class="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full transition-all"
+                    >
+                        <i class="pi pi-chevron-left"></i>
+                    </button>
+
+                    <!-- Botón siguiente -->
+                    <button
+                        @click="nextImage"
+                        class="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-50 hover:bg-opacity-75 text-white p-2 rounded-full transition-all"
+                    >
+                        <i class="pi pi-chevron-right"></i>
+                    </button>
                 </template>
-            </Carousel>
+
+                <!-- Indicadores -->
+                <div v-if="props.selectedImages.length > 1" class="flex justify-center mt-4 space-x-2">
+                    <button
+                        v-for="(image, index) in props.selectedImages"
+                        :key="index"
+                        @click="goToImage(index)"
+                        :class="[
+                            'w-3 h-3 rounded-full transition-all',
+                            index === currentPageIndex ? 'bg-blue-500' : 'bg-gray-300 hover:bg-gray-400'
+                        ]"
+                    ></button>
+                </div>
+            </div>
         </div>
-        <div v-else class="text-center py-8">
-            <p class="text-gray-500">No hay imágenes disponibles</p>
-        </div>
+        <div v-else class="text-center text-gray-500 py-8">No hay imágenes para este paquete.</div>
+        <template #footer>
+            <div class="flex justify-center w-full mt-6">
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeCarouselModal"
+                >
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                    Cerrar
+                </button>
+            </div>
+        </template>
     </Dialog>
 
-    <!-- 🗑️ Modal de Eliminar Paquete -->
-    <Dialog
-        v-model:visible="isDeleteVisible"
-        header="Eliminar Paquete"
-        :modal="true"
-        :style="dialogStyle"
-        :closable="false"
-        :draggable="false"
-    >
+    <!-- Modal de Eliminar Paquete -->
+    <Dialog v-model:visible="isDeleteVisible" header="Eliminar paquete" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
         <div class="flex items-center gap-3">
             <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
             <div class="flex flex-col">
-                <span>¿Estás seguro de eliminar el paquete: <b>{{ paquete?.nombre }}</b>?</span>
+                <span>¿Estás seguro de eliminar el paquete: <b>{{ paquete.nombre }}</b>?</span>
                 <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
             </div>
         </div>
-        
         <template #footer>
             <div class="flex justify-center gap-4 w-full">
                 <button
                     type="button"
                     class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    @click="$emit('deletePaquete')"
+                    @click="confirmDelete"
                     :disabled="isDeleting"
                 >
                     <FontAwesomeIcon
@@ -433,88 +543,36 @@ const updateWindowWidth = () => {
                     <span v-if="!isDeleting">Eliminar</span>
                     <span v-else>Eliminando...</span>
                 </button>
-                <button
-                    type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="$emit('cancelDelete')"
-                    :disabled="isDeleting"
-                >
-                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
-                    <span>Cancelar</span>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="cancelDelete" :disabled="isDeleting">
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                 </button>
             </div>
         </template>
     </Dialog>
 
-    <!-- ⚠️ Modal de Cambios sin Guardar -->
-    <Dialog
-        v-model:visible="isUnsavedChangesVisible"
-        header="Cambios sin guardar"
-        :modal="true"
-        :style="dialogStyle"
-        :closable="false"
-        :draggable="false"
-    >
+    <!-- Modal de Cambios sin guardar -->
+    <Dialog v-model:visible="isUnsavedChangesVisible" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
         <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-yellow-500" />
-            <div>
-                <p class="text-gray-800 font-medium">Tienes cambios sin guardar</p>
-                <p class="text-sm text-gray-600 mt-1">¿Qué deseas hacer con los cambios?</p>
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+            <div class="flex flex-col">
+                <span>¡Tienes información sin guardar!</span>
+                <span class="text-red-600 text-sm font-medium mt-1">¿Deseas salir sin guardar?</span>
             </div>
         </div>
-        
         <template #footer>
-            <div class="flex justify-center gap-4 w-full">
-                <button
-                    type="button"
-                    class="bg-red-500 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="$emit('closeWithoutSaving')"
-                >
-                    <FontAwesomeIcon :icon="faSignOut" class="h-4" />
-                    <span>Salir sin guardar</span>
+            <div class="flex justify-center gap-3 w-full">
+                <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeWithoutSaving">
+                    <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
                 </button>
-                <button
-                    type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="$emit('continueEditing')"
-                >
-                    <FontAwesomeIcon :icon="faPencil" class="h-4" />
-                    <span>Continuar</span>
+                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="continueEditing">
+                    <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                 </button>
             </div>
         </template>
     </Dialog>
 </template>
 
-<style scoped>
-/* Animación para el spinner de loading */
-@keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
-}
 
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-
-/* Estilos para el carrusel */
-:deep(.p-carousel-content) {
-    background: transparent;
-}
-
-:deep(.p-carousel-item) {
-    text-align: center;
-}
-
-:deep(.p-carousel-indicator) {
-    background-color: rgba(255, 255, 255, 0.5);
-}
-
-:deep(.p-carousel-indicator.p-highlight) {
-    background-color: #3b82f6;
-}
-</style>
