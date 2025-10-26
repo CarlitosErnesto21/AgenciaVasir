@@ -124,7 +124,7 @@ class ClienteController extends Controller
     public function ventas($id)
     {
         $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
-        $ventas = $cliente->ventas()->with(['detalles.producto'])->orderBy('fecha', 'desc')->get();
+        $ventas = $cliente->ventas()->with(['detalleVentas.producto'])->orderBy('fecha', 'desc')->get();
 
         return Inertia::render('Configuracion/ClienteComponents/VentasCliente', [
             'cliente' => $cliente,

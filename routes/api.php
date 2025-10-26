@@ -100,7 +100,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Recursos CRUD principales
         Route::apiResource('productos', ProductoController::class)->except(['index']);
-        Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         // Ruta adicional para estadísticas de hoteles
         Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
@@ -112,10 +111,22 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
-        Route::apiResource('ventas', VentaController::class);
+        // ✅ PROTEGIDO: Rutas de ventas con validación de integridad
+        Route::apiResource('ventas', VentaController::class)
+            ->middleware('venta.integrity')
+            ->only(['index', 'show']); // Solo permitir consultas
+
+        // ✅ RUTAS ADICIONALES SEGURAS PARA VENTAS
+        Route::prefix('ventas')->middleware('venta.integrity')->group(function () {
+            Route::get('/por-estado/{estado}', [VentaController::class, 'porEstado']);
+            Route::get('/completadas-validas', [VentaController::class, 'index'])->defaults('solo_validas', true);
+            Route::get('/pendientes-con-pago', [VentaController::class, 'index'])->defaults('con_pago_aprobado', false);
+            Route::get('/resumen', [VentaController::class, 'resumen']);
+        });
         Route::apiResource('empleados', EmpleadoController::class);
         Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
+        Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');
         Route::apiResource('provincias', ProvinciaController::class)->parameter('provincias', 'provincia');
         Route::apiResource('transportes', TransporteController::class);
@@ -130,15 +141,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::delete('/{cliente}', [ClienteController::class, 'destroy']);
             Route::patch('/{cliente}/toggle-status', [ClienteController::class, 'toggleStatus']);
             Route::get('/tipos-documento-options', [ClienteController::class, 'getTiposDocumento']);
-        });
-
-        // Rutas de Categorías de Productos
-        Route::prefix('admin/categorias-productos')->name('admin.categorias-productos.')->group(function () {
-            Route::get('/', [CategoriaProductoController::class, 'index'])->name('index');
-            Route::post('/', [CategoriaProductoController::class, 'store'])->name('store');
-            Route::get('/{categoriaProducto}', [CategoriaProductoController::class, 'show'])->name('show');
-            Route::put('/{categoriaProducto}', [CategoriaProductoController::class, 'update'])->name('update');
-            Route::delete('/{categoriaProducto}', [CategoriaProductoController::class, 'destroy'])->name('destroy');
         });
 
         // Rutas de Inventario
@@ -162,12 +164,8 @@ Route::middleware('auth:sanctum')->group(function () {
         // Ruta específica para actualizar stock de productos
         Route::patch('productos/{id}/actualizar-stock', [ProductoController::class, 'actualizarStock']);
 
-        // Rutas adicionales específicas para ventas (sin conflicto)
-        Route::prefix('ventas')->group(function () {
-            Route::get('/estado/{estado}', [VentaController::class, 'porEstado']);
-            Route::post('/{venta}/procesar', [VentaController::class, 'procesar']);
-            Route::post('/{venta}/cancelar', [VentaController::class, 'cancelar']);
-        });
+        // ❌ RUTAS ELIMINADAS: procesar y cancelar no son seguras
+        // Las ventas se procesan automáticamente via webhook de Wompi
 
         // ═══════════════════════════════════════════════════════════
         // RUTAS DE PAGOS WOMPI (PROTEGIDAS)

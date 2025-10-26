@@ -28,6 +28,8 @@ return new class extends Migration
             $table->string('referencia_wompi', 100)->unique(); // Referencia que enviamos a Wompi
             $table->string('wompi_transaction_id', 100)->nullable(); // ID de transacción de Wompi
             $table->string('wompi_reference', 100)->nullable(); // Referencia que nos devuelve Wompi
+            $table->string('wompi_payment_link_id', 100)->nullable(); // ID del payment link de Wompi
+            $table->text('wompi_payment_link')->nullable(); // URL del payment link de Wompi
 
             // Estado del pago
             $table->enum('estado', [
@@ -37,6 +39,7 @@ return new class extends Migration
             // Datos adicionales
             $table->text('mensaje_error')->nullable();
             $table->json('response_data')->nullable(); // Respuesta completa de Wompi
+            $table->json('productos_detalle')->nullable(); // Detalle de productos para payment links
 
             // Timestamps
             $table->timestamps();
@@ -49,6 +52,7 @@ return new class extends Migration
             $table->index(['estado', 'created_at']);
             $table->index('wompi_transaction_id');
             $table->index('referencia_wompi');
+            $table->index('wompi_payment_link_id');
         });
     }
 

@@ -66,15 +66,7 @@ const categoriasFiltradas = computed(() => {
     return filtered
 })
 
-// Validación reactiva para nombre duplicado
-const nombreDuplicado = computed(() => {
-    if (!categoria.value.nombre || categoria.value.nombre.length < 3) return false;
 
-    return categorias.value.some(cat =>
-        cat.nombre.toLowerCase() === categoria.value.nombre.toLowerCase() &&
-        cat.id !== categoria.value.id // Excluir la categoría actual al editar
-    );
-});
 
 // Watcher para detectar cambios en el modal
 watch([categoria], () => {
@@ -208,26 +200,15 @@ const saveOrUpdate = async () => {
         return
     }
 
-    if (nombreDuplicado.value) {
-        toast.add({
-            severity: "warn",
-            summary: "Categoría duplicada",
-            detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`,
-            life: 6000
-        })
-        isLoading.value = false
-        return
-    }
+
 
     try {
         if (!categoria.value.id) {
             await axios.post(`/api/categorias-productos`, { nombre: categoria.value.nombre })
             toast.add({ severity: "success", summary: "¡Éxito!", detail: "La categoría ha sido creada correctamente.", life: 5000 })
         } else {
-            await axios({
-                method: 'POST',
-                url: `/api/categorias-productos/${categoria.value.id}`,
-                data: { _method: 'PUT', nombre: categoria.value.nombre }
+            await axios.put(`/api/categorias-productos/${categoria.value.id}`, {
+                nombre: categoria.value.nombre
             })
             toast.add({ severity: "success", summary: "¡Éxito!", detail: "La categoría ha sido actualizada correctamente.", life: 5000 })
         }
@@ -237,42 +218,14 @@ const saveOrUpdate = async () => {
         hasUnsavedChanges.value = false
         originalCategoriaData.value = null
         resetForm()
-    } catch (err) {
-        if (err.response && err.response.status === 422) {
-            // Error de validación
-            const errors = err.response.data.errors;
-            if (errors && errors.nombre) {
-                // Error específico del campo nombre (duplicado u otro)
-                const errorMessage = errors.nombre[0];
-                if (errorMessage.includes('unique') || errorMessage.includes('ya existe') || errorMessage.includes('duplicado')) {
-                    toast.add({
-                        severity: "warn",
-                        summary: "Categoría duplicada",
-                        detail: `Ya existe una categoría con el nombre "${categoria.value.nombre}". Por favor, elige un nombre diferente.`,
-                        life: 6000
-                    });
-                } else {
-                    toast.add({
-                        severity: "warn",
-                        summary: "Error de validación",
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                }
-            } else {
-                // Otros errores de validación
-                toast.add({
-                    severity: "warn",
-                    summary: "Error de validación",
-                    detail: err.response.data.message || 'Por favor verifica los datos ingresados.',
-                    life: 5000
-                });
-            }
-        } else {
-            // Otros errores del servidor
-            const mensaje = err.response?.data?.message || 'Error al procesar la categoría.';
-            toast.add({ severity: "error", summary: "Error", detail: mensaje, life: 6000 });
-        }
+    } catch (error) {
+        console.error('Error al procesar categoría:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Error al procesar la categoría',
+            life: 3000
+        });
     } finally {
         isLoading.value = false
     }
@@ -286,11 +239,7 @@ const confirmDeleteCategoria = (c) => {
 const deleteCategoria = async () => {
     isDeleting.value = true
     try {
-        await axios({
-            method: 'POST',
-            url: `/api/categorias-productos/${categoria.value.id}`,
-            data: { _method: 'DELETE' }
-        })
+        await axios.delete(`/api/categorias-productos/${categoria.value.id}`)
         await cargarCategorias()
         deleteDialog.value = false
         toast.add({ severity: "success", summary: "¡Eliminada!", detail: "La categoría ha sido eliminada correctamente.", life: 5000 })
@@ -329,6 +278,57 @@ const validateNombre = () => {
         categoria.value.nombre = categoria.value.nombre.substring(0, 50)
     }
 }
+
+// Función para manejar input en tiempo real con toast informativo
+const onNombreInput = (event) => {
+    const value = event.target.value;
+    const invalidChars = value.match(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g);
+
+    if (invalidChars && invalidChars.length > 0) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Caracteres no permitidos',
+            detail: 'Solo se permiten letras, espacios y acentos. Se han removido los caracteres no válidos.',
+            life: 3000
+        });
+    }
+
+    // Limpiar caracteres no válidos y convertir a mayúsculas
+    const cleanValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+    event.target.value = cleanValue;
+    categoria.value.nombre = cleanValue;
+
+    validateNombre();
+};
+
+// Función para manejar paste
+const onNombrePaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+
+    // Limpiar el texto pegado y convertir a mayúsculas
+    const cleanPaste = paste
+        .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') // Solo letras, espacios y acentos
+        .replace(/\s+/g, ' ') // Múltiples espacios a uno solo
+        .trim() // Eliminar espacios al inicio y final
+        .toUpperCase(); // Convertir a mayúsculas
+
+    if (cleanPaste !== paste.toUpperCase()) {
+        toast.add({
+            severity: 'info',
+            summary: 'Texto limpiado',
+            detail: 'Se han removido números y caracteres especiales del texto pegado y convertido a mayúsculas.',
+            life: 3000
+        });
+    }
+
+    // Limitar a 50 caracteres
+    const limitedPaste = cleanPaste.length > 50 ? cleanPaste.substring(0, 50) : cleanPaste;
+
+    // Actualizar el modelo
+    categoria.value.nombre = limitedPaste;
+    event.target.value = limitedPaste;
+};
 </script>
 
 <template>
@@ -433,18 +433,17 @@ const validateNombre = () => {
                                 id="nombre"
                                 name="nombre"
                                 :maxlength="50"
-                                :class="{'p-invalid': (submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)) || nombreDuplicado}"
-                                class="flex-1"
-                                @input="validateNombre"
+                                :class="{'p-invalid': submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)}"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                @input="onNombreInput"
+                                @paste="onNombrePaste"
                                 placeholder="Nombre de la categoría"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
                             El nombre debe tener al menos 3 caracteres. Actual: {{ categoria.nombre.length }}/3
                         </small>
-                        <small class="text-red-500 ml-28" v-if="nombreDuplicado">
-                            Ya existe una categoría con este nombre. Por favor, elige un nombre diferente.
-                        </small>
+
                         <small class="text-orange-500 ml-28" v-if="categoria.nombre && categoria.nombre.length >= 45 && categoria.nombre.length <= 50">
                             Caracteres restantes: {{ 50 - categoria.nombre.length }}
                         </small>
@@ -459,7 +458,7 @@ const validateNombre = () => {
                         <button
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
-                            :disabled="nombreDuplicado || isLoading"
+                            :disabled="isLoading"
                         >
                             <FontAwesomeIcon
                                 :icon="isLoading ? faSpinner : faCheck"

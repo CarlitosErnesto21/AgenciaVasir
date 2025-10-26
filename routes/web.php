@@ -58,11 +58,13 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Rutas de carrito y pagos (requieren autenticación web)
-    Route::post('/carrito/create-venta', [\App\Http\Controllers\PagoController::class, 'createVentaFromCarrito']);
-    Route::post('/wompi/payment-link', [\App\Http\Controllers\PagoController::class, 'createPaymentLinkFromCart']);
-    Route::post('/pagos/venta', [\App\Http\Controllers\PagoController::class, 'procesarPagoVenta']);
-    Route::get('/pagos/{pago}/estado', [\App\Http\Controllers\PagoController::class, 'consultarEstadoPago']);
+    // ✅ PROTEGIDO: Rutas de carrito y pagos con validación de integridad
+    Route::middleware('venta.integrity')->group(function () {
+        Route::post('/carrito/create-venta', [\App\Http\Controllers\PagoController::class, 'createVentaFromCarrito']);
+        Route::post('/wompi/payment-link', [\App\Http\Controllers\PagoController::class, 'createPaymentLinkFromCart']);
+        Route::post('/pagos/venta', [\App\Http\Controllers\PagoController::class, 'procesarPagoVenta']);
+        Route::get('/pagos/{pago}/estado', [\App\Http\Controllers\PagoController::class, 'consultarEstadoPago']);
+    });
 });
 
 //Rutas de clientes

@@ -79,15 +79,22 @@
       <!-- Success State -->
       <div v-else-if="paymentSuccess" class="success-state">
         <FontAwesomeIcon :icon="faCheckCircle" class="success-icon" />
-        <h4>¡Pago exitoso!</h4>
-        <p>Tu compra ha sido procesada correctamente.</p>
+        <h4>¡Enlace de pago creado!</h4>
+        <p>Se abrió una nueva ventana con tu enlace de pago seguro.</p>
         <div class="success-details">
           <p><strong>Número de orden:</strong> #{{ ventaCreada?.id }}</p>
-          <p><strong>Total pagado:</strong> ${{ formatPrice(ventaCreada?.total) }}</p>
+          <p><strong>Total a pagar:</strong> ${{ formatPrice(ventaCreada?.total) }}</p>
+          <p class="cart-cleared-notice">
+            <FontAwesomeIcon :icon="faShoppingCart" class="cart-icon" />
+            Tu carrito se ha limpiado automáticamente
+          </p>
         </div>
-        <button @click="closeAndClearCart" class="success-button">
-          Finalizar
-        </button>
+        <div class="success-actions">
+          <p class="auto-close-notice">Esta ventana se cerrará automáticamente en unos segundos</p>
+          <button @click="closeModal" class="success-button">
+            Cerrar ahora
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -102,7 +109,8 @@ import {
   faExclamationTriangle,
   faShieldAlt,
   faClock,
-  faCheckCircle
+  faCheckCircle,
+  faShoppingCart
 } from '@fortawesome/free-solid-svg-icons'
 import { useCarrito } from '@/composables/useCarrito'
 import { useCarritoStore } from '@/stores/carrito'
@@ -229,6 +237,8 @@ const procesarPagoWompi = async () => {
           description: `Compra de ${carritoStore.items.length} producto(s) - ${customerName.value}`,
           reference: `CART-${Date.now()}`,
           customer_name: customerName.value,
+          // ✅ NUEVO: Enviar venta_id si hay una venta creada
+          venta_id: ventaCreada.value?.id || null,
           productos: carritoStore.items.map(item => ({
             id: item.id,
             nombre: item.nombre,
@@ -277,13 +287,23 @@ const procesarPagoWompi = async () => {
       // Redirigir al enlace de pago de Wompi
       window.open(data.payment_link, '_blank')
 
+      // ✅ NUEVO: Limpiar carrito inmediatamente después de crear el enlace de pago
+      carritoStore.limpiarCarrito()
+
       // Mostrar mensaje de éxito temporal
       paymentSuccess.value = true
+      
+      // Cerrar modal automáticamente después de 3 segundos
+      setTimeout(() => {
+        closeModal()
+      }, 3000)
+
       emit('payment-completed', {
         success: true,
         venta: ventaCreada.value,
         payment_link: data.payment_link,
-        reference: data.reference
+        reference: data.reference,
+        cart_cleared: true
       })
     } else {
       error.value = data.message || 'Error creando enlace de pago'
@@ -581,6 +601,36 @@ const retry = () => {
 @keyframes spin {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Estilos para carrito limpiado */
+.cart-cleared-notice {
+  color: #10B981;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 8px 12px;
+  background: #F0FDF4;
+  border-radius: 6px;
+  border: 1px solid #BBF7D0;
+}
+
+.cart-icon {
+  color: #10B981;
+}
+
+.success-actions {
+  margin-top: 20px;
+}
+
+.auto-close-notice {
+  color: #6B7280;
+  font-size: 12px;
+  margin-bottom: 12px;
+  font-style: italic;
 }
 
 /* Responsive */

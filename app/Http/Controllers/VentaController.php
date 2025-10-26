@@ -20,198 +20,143 @@ class VentaController extends Controller
     }
 
     /**
-     * Display a listing of the resource.
+     * ✅ SEGURO: Listar ventas con validaciones de integridad
      */
-    public function index()
+    public function index(Request $request)
     {
-        // ✅ CORREGIDO: detalleVentas (plural) y sin reserva (según tu migración)
-        $ventas = Venta::with(['cliente', 'detalleVentas.producto.categoria'])
-            ->orderBy('fecha', 'desc')
-            ->get();
-        return response()->json($ventas);
+        $query = Venta::with(['cliente', 'detalleVentas.producto.categoria', 'pagos']);
+
+        // Filtros opcionales
+        if ($request->has('estado')) {
+            $query->where('estado', $request->estado);
+        }
+
+        if ($request->has('con_pago_aprobado')) {
+            $query->conPagoAprobado();
+        }
+
+        if ($request->has('solo_validas')) {
+            $query->completadasValidas();
+        }
+
+        // Filtro de fecha para optimizar dashboard
+        if ($request->has('desde')) {
+            $query->where('fecha', '>=', $request->desde);
+        }
+
+        $ventas = $query->orderBy('fecha', 'desc')->get();
+
+        // Agregar información de integridad
+        $ventas->each(function ($venta) {
+            $venta->es_consistente = $venta->validarConsistenciaConPagos();
+            $venta->tiene_pago_aprobado = $venta->tienePagoAprobado();
+        });
+
+        // ✅ COMPATIBILIDAD: Si es una llamada desde el dashboard (con parámetro 'desde'), 
+        // devolver solo el array de ventas para mantener compatibilidad
+        if ($request->has('desde') && !$request->has('formato_completo')) {
+            return response()->json($ventas);
+        }
+
+        // ✅ FORMATO COMPLETO: Para llamadas de API administrativa
+        return response()->json([
+            'ventas' => $ventas,
+            'resumen' => [
+                'total' => $ventas->count(),
+                'pendientes' => $ventas->where('estado', 'pendiente')->count(),
+                'completadas' => $ventas->where('estado', 'completada')->count(),
+                'canceladas' => $ventas->where('estado', 'cancelada')->count(),
+                'inconsistentes' => $ventas->where('es_consistente', false)->count()
+            ]
+        ]);
     }
 
     /**
-     * Show the form for creating a new resource.
+     * ❌ INFORMATIVO: Las ventas se crean a través del carrito y Wompi
      */
     public function create()
     {
-        // Obtener datos necesarios para crear venta
-        $clientes = Cliente::select('id', 'nombre', 'telefono')->orderBy('nombre')->get();
-        $productos = Producto::with('categoria')
-            ->where('stock_actual', '>', 0)
-            ->select('id', 'nombre', 'precio', 'stock_actual', 'categoria_id')
-            ->orderBy('nombre')
-            ->get();
-
         return response()->json([
-            'clientes' => $clientes,
-            'productos' => $productos
+            'message' => 'Las ventas se crean a través del proceso de carrito y pago con Wompi',
+            'flujo_correcto' => [
+                '1. Cliente agrega productos al carrito (frontend)',
+                '2. Cliente inicia proceso de pago: POST /carrito/create-venta',
+                '3. Sistema crea venta pendiente y genera link de Wompi',
+                '4. Cliente paga en Wompi',
+                '5. Webhook confirma pago y completa la venta'
+            ],
+            'endpoints_disponibles' => [
+                'GET /api/ventas - Consultar ventas',
+                'GET /api/ventas/{id} - Ver detalle de venta',
+                'POST /carrito/create-venta - Crear venta desde carrito'
+            ]
         ]);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * ❌ BLOQUEADO: Las ventas solo se crean a través del proceso de pago con Wompi
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'fecha' => 'required|date',
-            'cliente_id' => 'required|exists:clientes,id',
-            // ✅ CORREGIDO: productos como array (no total directo)
-            'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'required|exists:productos,id',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'productos.*.precio_unitario' => 'required|numeric|min:0',
-        ]);
-
-        try {
-            $venta = DB::transaction(function () use ($validated) {
-                // ✅ CORREGIDO: estado inicial pendiente, sin reserva_id
-                $venta = Venta::create([
-                    'fecha' => $validated['fecha'],
-                    'cliente_id' => $validated['cliente_id'],
-                    'estado' => 'pendiente',  // ✅ Estado inicial
-                    'total' => 0
-                ]);
-
-                $total = 0;
-
-                // Crear detalles de venta
-                foreach ($validated['productos'] as $productoData) {
-                    $subtotal = $productoData['cantidad'] * $productoData['precio_unitario'];
-
-                    // ✅ CORREGIDO: usar detalleVentas
-                    $venta->detalleVentas()->create([
-                        'producto_id' => $productoData['producto_id'],
-                        'cantidad' => $productoData['cantidad'],
-                        'precio_unitario' => $productoData['precio_unitario'],
-                        'subtotal' => $subtotal
-                    ]);
-
-                    $total += $subtotal;
-                }
-
-                // Actualizar total de la venta
-                $venta->update(['total' => $total]);
-
-                return $venta;
-            });
-
-            return response()->json([
-                'message' => 'Venta creada exitosamente',
-                'venta' => $venta->load(['cliente', 'detalleVentas.producto']),
-            ], 201);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Error al crear venta: ' . $e->getMessage(),
-                'error' => true
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Las ventas se crean únicamente a través del proceso de pago con Wompi',
+            'error' => 'OPERACION_NO_PERMITIDA',
+            'flujo_correcto' => [
+                '1. Agregar productos al carrito',
+                '2. Procesar pago con Wompi: POST /carrito/create-venta',
+                '3. El webhook de Wompi confirmará la venta automáticamente'
+            ]
+        ], 403);
     }
 
     /**
-     * Display the specified resource.
+     * ✅ SEGURO: Mostrar venta con información completa de pagos
      */
     public function show(Venta $venta)
     {
-        // ✅ CORREGIDO: detalleVentas y sin reserva
-        $venta->load(['cliente', 'detalleVentas.producto.categoria']);
+        $venta->load([
+            'cliente',
+            'detalleVentas.producto.categoria',
+            'pagos' => function($query) {
+                $query->orderBy('created_at', 'desc');
+            }
+        ]);
+
+        // Agregar información de integridad
+        $venta->es_consistente = $venta->validarConsistenciaConPagos();
+        $venta->tiene_pago_aprobado = $venta->tienePagoAprobado();
+        $venta->pago_aprobado = $venta->getPagoAprobado();
+
         return response()->json($venta);
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * ❌ BLOQUEADO: No se permite editar ventas por integridad con pagos
      */
     public function edit(Venta $venta)
     {
-        // Solo permitir editar ventas pendientes
-        if ($venta->estado !== 'pendiente') {
-            return response()->json([
-                'error' => 'Solo se pueden editar ventas pendientes'
-            ], 422);
-        }
-
-        $venta->load(['cliente', 'detalleVentas.producto']);
-
-        $clientes = Cliente::select('id', 'nombre')->orderBy('nombre')->get();
-        $productos = Producto::with('categoria')
-            ->where('stock_actual', '>', 0)
-            ->select('id', 'nombre', 'precio', 'stock_actual', 'categoria_id')
-            ->orderBy('nombre')
-            ->get();
-
         return response()->json([
-            'venta' => $venta,
-            'clientes' => $clientes,
-            'productos' => $productos
-        ]);
+            'message' => 'No se permite editar ventas por integridad del sistema de pagos',
+            'info' => 'Una vez creada la venta a través de Wompi, no se puede modificar',
+            'venta_actual' => [
+                'id' => $venta->id,
+                'estado' => $venta->estado,
+                'total' => $venta->total,
+                'tiene_pago_aprobado' => $venta->tienePagoAprobado()
+            ]
+        ], 403);
     }
 
     /**
-     * Update the specified resource in storage.
+     * ❌ BLOQUEADO: Solo el sistema de pagos de Wompi puede actualizar estados de ventas
      */
     public function update(Request $request, Venta $venta)
     {
-        // Solo permitir actualizar ventas pendientes
-        if ($venta->estado !== 'pendiente') {
-            return response()->json([
-                'error' => 'Solo se pueden actualizar ventas pendientes'
-            ], 422);
-        }
-
-        $validated = $request->validate([
-            'fecha' => 'required|date',
-            'cliente_id' => 'required|exists:clientes,id',
-            'productos' => 'required|array|min:1',
-            'productos.*.producto_id' => 'required|exists:productos,id',
-            'productos.*.cantidad' => 'required|integer|min:1',
-            'productos.*.precio_unitario' => 'required|numeric|min:0',
-        ]);
-
-        try {
-            DB::transaction(function () use ($validated, $venta) {
-                // Actualizar datos de la venta
-                $venta->update([
-                    'fecha' => $validated['fecha'],
-                    'cliente_id' => $validated['cliente_id'],
-                ]);
-
-                // Eliminar detalles existentes
-                $venta->detalleVentas()->delete();
-
-                $total = 0;
-
-                // Crear nuevos detalles
-                foreach ($validated['productos'] as $productoData) {
-                    $subtotal = $productoData['cantidad'] * $productoData['precio_unitario'];
-
-                    $venta->detalleVentas()->create([
-                        'producto_id' => $productoData['producto_id'],
-                        'cantidad' => $productoData['cantidad'],
-                        'precio_unitario' => $productoData['precio_unitario'],
-                        'subtotal' => $subtotal
-                    ]);
-
-                    $total += $subtotal;
-                }
-
-                // Actualizar total
-                $venta->update(['total' => $total]);
-            });
-
-            return response()->json([
-                'message' => 'Venta actualizada exitosamente',
-                'venta' => $venta->fresh()->load(['cliente', 'detalleVentas.producto']),
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Error al actualizar venta: ' . $e->getMessage(),
-                'error' => true
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'Solo el sistema de pagos puede actualizar el estado de las ventas',
+            'error' => 'OPERACION_NO_PERMITIDA',
+            'info' => 'Los estados de venta se actualizan automáticamente a través del webhook de Wompi'
+        ], 403);
     }
 
     /**
@@ -259,51 +204,102 @@ class VentaController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * ❌ BLOQUEADO: No se permiten eliminaciones directas por integridad del sistema
      */
     public function destroy(Venta $venta)
     {
-        try {
-            // Solo permitir eliminar ventas pendientes o canceladas
-            if ($venta->estado === 'completada') {
-                return response()->json([
-                    'error' => 'No se pueden eliminar ventas completadas. Debe cancelarla primero.'
-                ], 422);
-            }
-
-            // Si está cancelada pero tenía stock procesado, verificar integridad
-            if ($venta->estado === 'cancelada') {
-                // Eliminar directamente ya que el stock ya fue restaurado
-                $venta->detalleVentas()->delete();
-                $venta->delete();
-            } else {
-                // Es pendiente, eliminar sin afectar stock
-                $venta->detalleVentas()->delete();
-                $venta->delete();
-            }
-
-            return response()->json([
-                'message' => 'Venta eliminada exitosamente',
-            ]);
-
-        } catch (Exception $e) {
-            return response()->json([
-                'message' => 'Error al eliminar venta: ' . $e->getMessage(),
-                'error' => true
-            ], 500);
-        }
+        return response()->json([
+            'message' => 'No se permite eliminar ventas directamente por seguridad',
+            'error' => 'OPERACION_NO_PERMITIDA',
+            'info' => 'Las ventas se cancelan automáticamente si el pago falla o es rechazado por Wompi'
+        ], 403);
     }
 
     /**
-     * ✅ NUEVO: Obtener ventas por estado
+     * ✅ SEGURO: Obtener ventas por estado con validaciones
      */
     public function porEstado($estado)
     {
-        $ventas = Venta::with(['cliente', 'detalleVentas.producto'])
+        $estadosValidos = ['pendiente', 'completada', 'cancelada'];
+        
+        if (!in_array($estado, $estadosValidos)) {
+            return response()->json([
+                'error' => 'Estado inválido',
+                'estados_validos' => $estadosValidos
+            ], 400);
+        }
+
+        $ventas = Venta::with(['cliente', 'detalleVentas.producto', 'pagos'])
             ->where('estado', $estado)
             ->orderBy('fecha', 'desc')
             ->get();
 
-        return response()->json($ventas);
+        // Agregar información de integridad
+        $ventas->each(function ($venta) {
+            $venta->es_consistente = $venta->validarConsistenciaConPagos();
+            $venta->tiene_pago_aprobado = $venta->tienePagoAprobado();
+        });
+
+        return response()->json([
+            'ventas' => $ventas,
+            'estado_filtrado' => $estado,
+            'total' => $ventas->count(),
+            'inconsistentes' => $ventas->where('es_consistente', false)->count()
+        ]);
+    }
+
+    /**
+     * ✅ NUEVO: Resumen general del sistema de ventas
+     */
+    public function resumen()
+    {
+        $estadisticas = [
+            'total_ventas' => Venta::count(),
+            'pendientes' => Venta::where('estado', 'pendiente')->count(),
+            'completadas' => Venta::where('estado', 'completada')->count(),
+            'canceladas' => Venta::where('estado', 'cancelada')->count(),
+            'con_pago_aprobado' => Venta::conPagoAprobado()->count(),
+            'completadas_validas' => Venta::completadasValidas()->count(),
+            'total_facturado' => Venta::where('estado', 'completada')->sum('total'),
+            'ventas_hoy' => Venta::whereDate('created_at', today())->count(),
+            'ventas_mes' => Venta::whereMonth('created_at', now()->month)
+                              ->whereYear('created_at', now()->year)
+                              ->count()
+        ];
+
+        // Detectar inconsistencias
+        $ventasInconsistentes = Venta::with('pagos')
+            ->get()
+            ->filter(function ($venta) {
+                return !$venta->validarConsistenciaConPagos();
+            });
+
+        $estadisticas['inconsistencias'] = [
+            'total' => $ventasInconsistentes->count(),
+            'ventas_ids' => $ventasInconsistentes->pluck('id')->toArray()
+        ];
+
+        // Últimas ventas
+        $ultimasVentas = Venta::with(['cliente', 'pagos'])
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get()
+            ->map(function ($venta) {
+                return [
+                    'id' => $venta->id,
+                    'cliente' => $venta->cliente->nombre ?? 'N/A',
+                    'total' => $venta->total,
+                    'estado' => $venta->estado,
+                    'fecha' => $venta->created_at->format('d/m/Y H:i'),
+                    'tiene_pago_aprobado' => $venta->tienePagoAprobado()
+                ];
+            });
+
+        return response()->json([
+            'estadisticas' => $estadisticas,
+            'ultimas_ventas' => $ultimasVentas,
+            'sistema_integro' => $ventasInconsistentes->isEmpty(),
+            'generado_en' => now()->format('d/m/Y H:i:s')
+        ]);
     }
 }

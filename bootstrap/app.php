@@ -4,6 +4,7 @@ use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\RutasAdmin;
 use App\Http\Middleware\CustomSignedMiddleware;
 use App\Http\Middleware\TrustedProxies;
+use App\Http\Middleware\ValidateVentaPagoIntegrity;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -41,7 +42,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
-            'custom.signed' => CustomSignedMiddleware::class
+            'custom.signed' => CustomSignedMiddleware::class,
+            'venta.integrity' => ValidateVentaPagoIntegrity::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

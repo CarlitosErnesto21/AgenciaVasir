@@ -500,74 +500,295 @@ class PagoController extends Controller
     }
 
     /**
-     * Webhook de Wompi para recibir notificaciones de estado
+     * ✅ MEJORADO: Webhook de Wompi con validación robusta y sincronización segura
      */
     public function webhook(Request $request)
     {
+        $startTime = microtime(true);
+        $requestId = uniqid('webhook_', true);
+
         try {
+            Log::info("Iniciando procesamiento de webhook", [
+                'request_id' => $requestId,
+                'ip' => $request->ip(),
+                'user_agent' => $request->header('User-Agent')
+            ]);
+
             $payload = $request->getContent();
+            $wompiHash = $request->header('wompi_hash');
             $signature = $request->header('wompi-signature');
             $timestamp = $request->header('wompi-timestamp');
 
-            // Validar signature del webhook
-            if (!$this->wompiService->validateWebhookSignature($payload, $signature, $timestamp)) {
-                Log::warning('Webhook de Wompi con signature inválida');
+            // ✅ VALIDACIÓN HMAC MEJORADA
+            if (!$this->validateWompiWebhookSignature($payload, $wompiHash, $signature, $timestamp)) {
+                Log::warning('Webhook rechazado por signature inválida', [
+                    'request_id' => $requestId,
+                    'provided_hash' => $wompiHash,
+                    'provided_signature' => $signature
+                ]);
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
             $data = json_decode($payload, true);
 
-            Log::info('Webhook recibido de Wompi', $data);
+            if (!$data || !isset($data['data']['transaction'])) {
+                Log::error('Webhook con payload inválido', [
+                    'request_id' => $requestId,
+                    'payload' => $payload
+                ]);
+                return response()->json(['error' => 'Invalid payload'], 400);
+            }
 
-            // Buscar el pago por wompi_transaction_id
-            $pago = Pago::where('wompi_transaction_id', $data['data']['transaction']['id'])->first();
+            $transactionData = $data['data']['transaction'];
+            $transactionId = $transactionData['id'];
+            $newStatus = strtolower($transactionData['status']);
+
+            Log::info('Procesando webhook válido', [
+                'request_id' => $requestId,
+                'transaction_id' => $transactionId,
+                'status' => $newStatus,
+                'amount' => $transactionData['amount'] ?? null
+            ]);
+
+            // ✅ BUSCAR PAGO CON VALIDACIONES MEJORADAS
+            $pago = Pago::where('wompi_transaction_id', $transactionId)->first();
+
+            // Si no se encuentra por transaction_id, buscar por referencia (para payment links)
+            if (!$pago && !empty($transactionData['reference'])) {
+                $reference = $transactionData['reference'];
+                $pago = Pago::where('referencia_wompi', $reference)->first();
+
+                Log::info('Búsqueda por referencia', [
+                    'request_id' => $requestId,
+                    'reference' => $reference,
+                    'pago_encontrado' => !!$pago
+                ]);
+
+                // Si encontramos el pago por referencia, actualizar transaction_id
+                if ($pago) {
+                    $pago->update(['wompi_transaction_id' => $transactionId]);
+
+                    Log::info('Transaction ID actualizado desde referencia', [
+                        'request_id' => $requestId,
+                        'pago_id' => $pago->id,
+                        'transaction_id' => $transactionId,
+                        'reference' => $reference
+                    ]);
+                }
+            }
 
             if (!$pago) {
-                Log::warning('Webhook para transacción desconocida', ['transaction_id' => $data['data']['transaction']['id']]);
+                Log::warning('Webhook para transacción no encontrada (ni por ID ni por referencia)', [
+                    'request_id' => $requestId,
+                    'transaction_id' => $transactionId,
+                    'reference' => $transactionData['reference'] ?? 'N/A'
+                ]);
                 return response()->json(['error' => 'Transaction not found'], 404);
             }
 
-            // Actualizar estado del pago
-            $newStatus = strtolower($data['data']['transaction']['status']);
-            $pago->update([
-                'estado' => $newStatus,
-                'response_data' => json_encode($data['data']['transaction'])
-            ]);
-
-            // Actualizar estado de venta/reserva según el resultado
-            if ($newStatus === 'approved') {
-                if ($pago->venta_id) {
-                    $pago->venta->update(['estado' => 'completada']);
-                }
-                if ($pago->reserva_id) {
-                    $pago->reserva->update(['estado' => 'confirmada']);
-                }
-            } elseif ($newStatus === 'declined' || $newStatus === 'error') {
-                if ($pago->venta_id) {
-                    $pago->venta->update(['estado' => 'cancelada']);
-                }
-                if ($pago->reserva_id) {
-                    $pago->reserva->update(['estado' => 'cancelada']);
-                }
+            // ✅ VALIDAR ESTADOS ANTES DE ACTUALIZAR
+            if ($pago->estado === $newStatus) {
+                Log::info('Webhook duplicado - estado ya actualizado', [
+                    'request_id' => $requestId,
+                    'pago_id' => $pago->id,
+                    'estado_actual' => $pago->estado
+                ]);
+                return response()->json(['status' => 'already_processed']);
             }
 
-            return response()->json(['status' => 'success']);
+            // ✅ PROCESAR EN TRANSACCIÓN PARA CONSISTENCIA
+            DB::transaction(function () use ($pago, $newStatus, $transactionData, $requestId) {
+                $oldStatus = $pago->estado;
 
-        } catch (Exception $e) {
-            Log::error('Error procesando webhook de Wompi', [
-                'error' => $e->getMessage(),
-                'payload' => $request->getContent()
+                // Actualizar el pago
+                $pago->update([
+                    'estado' => $newStatus,
+                    'response_data' => $transactionData,
+                    'updated_at' => now()
+                ]);
+
+                Log::info('Pago actualizado', [
+                    'request_id' => $requestId,
+                    'pago_id' => $pago->id,
+                    'estado_anterior' => $oldStatus,
+                    'estado_nuevo' => $newStatus
+                ]);
+
+                // ✅ SINCRONIZACIÓN SEGURA DE ESTADOS
+                $this->sincronizarEstadosConPago($pago, $newStatus, $requestId);
+            });
+
+            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            Log::info('Webhook procesado exitosamente', [
+                'request_id' => $requestId,
+                'pago_id' => $pago->id,
+                'processing_time_ms' => $processingTime
             ]);
 
-            return response()->json(['error' => 'Internal server error'], 500);
+            return response()->json([
+                'status' => 'success',
+                'request_id' => $requestId,
+                'processing_time_ms' => $processingTime
+            ]);
+
+        } catch (Exception $e) {
+            $processingTime = round((microtime(true) - $startTime) * 1000, 2);
+
+            Log::error('Error crítico procesando webhook', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'payload' => $request->getContent(),
+                'processing_time_ms' => $processingTime
+            ]);
+
+            return response()->json([
+                'error' => 'Internal server error',
+                'request_id' => $requestId
+            ], 500);
         }
     }
 
     /**
-     * Crear enlace de pago directamente desde el carrito
+     * ✅ NUEVO: Validación robusta de signature de Wompi
+     */
+    private function validateWompiWebhookSignature($payload, $wompiHash, $signature, $timestamp)
+    {
+        try {
+            // Validar que tenemos los headers necesarios
+            if (!$wompiHash && !$signature) {
+                return false;
+            }
+
+            // Obtener el API Secret de Wompi
+            $apiSecret = config('services.wompi.private_key'); // Ajustar según tu config
+
+            if (!$apiSecret) {
+                Log::error('API Secret de Wompi no configurado');
+                return false;
+            }
+
+            // Método 1: Validar con wompi_hash (HMAC SHA256)
+            if ($wompiHash) {
+                $expectedHash = hash_hmac('sha256', $payload, $apiSecret);
+                if (hash_equals($expectedHash, $wompiHash)) {
+                    return true;
+                }
+            }
+
+            // Método 2: Validar con wompi-signature (si está disponible)
+            if ($signature && $timestamp) {
+                // Implementar validación adicional si Wompi usa este método
+                // Por ahora, usar el método de hash HMAC
+                return false;
+            }
+
+            return false;
+
+        } catch (Exception $e) {
+            Log::error('Error validando signature de webhook', [
+                'error' => $e->getMessage()
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Sincronización segura de estados entre pago y venta/reserva
+     */
+    private function sincronizarEstadosConPago($pago, $newStatus, $requestId)
+    {
+        try {
+            if ($newStatus === 'approved') {
+                // ✅ PAGO APROBADO
+                if ($pago->venta_id) {
+                    $venta = $pago->venta;
+                    if ($venta->estaPendiente()) {
+                        $venta->update(['estado' => 'completada']);
+
+                        Log::info('Venta completada por pago aprobado', [
+                            'request_id' => $requestId,
+                            'venta_id' => $venta->id,
+                            'pago_id' => $pago->id
+                        ]);
+
+                        // TODO: Procesar inventario si es necesario
+                        // $this->inventarioService->procesarVenta($venta);
+                    }
+                }
+
+                if ($pago->reserva_id) {
+                    $reserva = $pago->reserva;
+                    if ($reserva->estado === 'pendiente') {
+                        $reserva->update(['estado' => 'confirmada']);
+
+                        Log::info('Reserva confirmada por pago aprobado', [
+                            'request_id' => $requestId,
+                            'reserva_id' => $reserva->id,
+                            'pago_id' => $pago->id
+                        ]);
+                    }
+                }
+
+            } elseif (in_array($newStatus, ['declined', 'error', 'failed', 'voided'])) {
+                // ✅ PAGO RECHAZADO/FALLIDO
+                if ($pago->venta_id) {
+                    $venta = $pago->venta;
+                    if (!$venta->estaCancelada()) {
+                        $venta->update(['estado' => 'cancelada']);
+
+                        Log::info('Venta cancelada por pago rechazado', [
+                            'request_id' => $requestId,
+                            'venta_id' => $venta->id,
+                            'pago_id' => $pago->id,
+                            'razon' => $newStatus
+                        ]);
+
+                        // TODO: Restaurar inventario si se había procesado
+                        // $this->inventarioService->cancelarVenta($venta);
+                    }
+                }
+
+                if ($pago->reserva_id) {
+                    $reserva = $pago->reserva;
+                    if ($reserva->estado !== 'cancelada') {
+                        $reserva->update(['estado' => 'cancelada']);
+
+                        Log::info('Reserva cancelada por pago rechazado', [
+                            'request_id' => $requestId,
+                            'reserva_id' => $reserva->id,
+                            'pago_id' => $pago->id,
+                            'razon' => $newStatus
+                        ]);
+                    }
+                }
+            }
+
+        } catch (Exception $e) {
+            Log::error('Error sincronizando estados', [
+                'request_id' => $requestId,
+                'pago_id' => $pago->id,
+                'new_status' => $newStatus,
+                'error' => $e->getMessage()
+            ]);
+
+            // Re-lanzar la excepción para que la transacción falle
+            throw $e;
+        }
+    }
+
+    /**
+     * ✅ ARREGLADO: Crear enlace de pago directamente desde el carrito CON registro de pago
      */
     public function createPaymentLinkFromCart(Request $request)
     {
+        Log::info('🔗 Iniciando createPaymentLinkFromCart', [
+            'request_data' => $request->all(),
+            'user_id' => Auth::id(),
+            'is_authenticated' => Auth::check()
+        ]);
+
         try {
             $validated = $request->validate([
                 'customer_email' => 'required|email',
@@ -579,7 +800,9 @@ class PagoController extends Controller
                 'productos.*.nombre' => 'required|string',
                 'productos.*.precio' => 'required|numeric|min:0',
                 'productos.*.cantidad' => 'required|integer|min:1',
-                'productos.*.subtotal' => 'required|numeric|min:0'
+                'productos.*.subtotal' => 'required|numeric|min:0',
+                // ✅ NUEVO: Parámetro opcional para vincular con venta existente
+                'venta_id' => 'nullable|integer|exists:ventas,id'
             ]);
 
             // Calcular total de items para descripción
@@ -633,21 +856,87 @@ class PagoController extends Controller
                 'productos_detalle' => $validated['productos']
             ];
 
+            // ✅ BUSCAR VENTA EXISTENTE (si se proporciona venta_id)
+            $venta = null;
+            if (!empty($validated['venta_id'])) {
+                $venta = Venta::find($validated['venta_id']);
+
+                if (!$venta || $venta->estado !== 'pendiente') {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Venta no encontrada o ya procesada'
+                    ], 400);
+                }
+
+                Log::info('🔗 Venta existente encontrada', [
+                    'venta_id' => $venta->id,
+                    'venta_total' => $venta->total,
+                    'venta_estado' => $venta->estado
+                ]);
+            }
+
+            // ✅ CREAR ENLACE DE PAGO CON WOMPI
             $result = $this->wompiService->createPaymentLink($paymentData);
 
-            if ($result['success']) {
+            if (!$result['success']) {
+                Log::error('❌ Error creando enlace de pago con Wompi', [
+                    'error' => $result['error'],
+                    'payment_data' => $paymentData
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error']
+                ], 400);
+            }
+
+            // ✅ CREAR REGISTRO DE PAGO EN BASE DE DATOS
+            try {
+                DB::beginTransaction();
+
+                $pago = Pago::create([
+                    'venta_id' => $venta ? $venta->id : null,
+                    'monto' => $validated['amount'],
+                    'moneda' => 'COP',
+                    'referencia_wompi' => $paymentData['reference'],
+                    'estado' => 'pending',
+                    'metodo_pago' => 'payment_link',
+                    'email_cliente' => $validated['customer_email'],
+                    'wompi_payment_link_id' => $result['link_id'] ?? null,
+                    'wompi_payment_link' => $result['payment_link'],
+                    'productos_detalle' => json_encode($validated['productos'])
+                ]);
+
+                Log::info('✅ Registro de pago creado', [
+                    'pago_id' => $pago->id,
+                    'referencia_wompi' => $pago->referencia_wompi,
+                    'venta_id' => $pago->venta_id,
+                    'wompi_link_id' => $result['link_id']
+                ]);
+
+                DB::commit();
+
                 return response()->json([
                     'success' => true,
                     'payment_link' => $result['payment_link'],
                     'link_id' => $result['link_id'],
-                    'reference' => $result['reference']
+                    'reference' => $result['reference'],
+                    'pago_id' => $pago->id
                 ]);
-            }
 
-            return response()->json([
-                'success' => false,
-                'message' => $result['error']
-            ], 400);
+            } catch (Exception $e) {
+                DB::rollBack();
+
+                Log::error('❌ Error creando registro de pago', [
+                    'error' => $e->getMessage(),
+                    'reference' => $paymentData['reference']
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error creando registro de pago: ' . $e->getMessage()
+                ], 500);
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

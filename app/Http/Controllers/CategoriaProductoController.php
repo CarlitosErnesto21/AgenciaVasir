@@ -29,11 +29,43 @@ class CategoriaProductoController extends Controller
     public function store(Request $request)
     {
         try {
-            $validated = $request->validate([
-                'nombre' => 'required|string|min:3|max:50|unique:categorias_productos,nombre',
+            // Limpiar y validar el nombre
+            $nombre = trim($request->input('nombre'));
+
+            // Validar que solo contenga letras, espacios y acentos
+            if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $nombre)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El nombre solo puede contener letras, espacios y acentos. No se permiten números ni caracteres especiales.'
+                ], 422);
+            }
+
+            // Limpiar múltiples espacios consecutivos
+            $nombre = preg_replace('/\s+/', ' ', $nombre);
+
+            // Convertir a mayúsculas
+            $nombre = strtoupper($nombre);
+
+            // Verificar si ya existe una categoría con el mismo nombre
+            if (CategoriaProducto::where('nombre', $nombre)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe una categoría con el nombre "' . $nombre . '". Por favor, elige un nombre diferente.'
+                ], 422);
+            }
+
+            // Validar los datos del formulario
+            $request->validate([
+                'nombre' => 'required|string|min:3|max:50',
+            ], [
+                'nombre.required' => 'El nombre de la categoría es obligatorio.',
+                'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
+                'nombre.max' => 'El nombre no puede tener más de 50 caracteres.',
             ]);
 
-            $categoria = CategoriaProducto::create($validated);
+            $categoria = CategoriaProducto::create([
+                'nombre' => $nombre
+            ]);
 
             return response()->json([
                 'message' => 'Categoría de producto creada exitosamente',
@@ -65,12 +97,43 @@ class CategoriaProductoController extends Controller
         try {
             $categoriaProducto = CategoriaProducto::findOrFail($id);
 
-            $validated = $request->validate([
-                'nombre' => 'required|string|min:3|max:50|unique:categorias_productos,nombre,' . $id,
+            // Limpiar y validar el nombre
+            $nombre = trim($request->input('nombre'));
+
+            // Validar que solo contenga letras, espacios y acentos
+            if (!preg_match('/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/', $nombre)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El nombre solo puede contener letras, espacios y acentos. No se permiten números ni caracteres especiales.'
+                ], 422);
+            }
+
+            // Limpiar múltiples espacios consecutivos
+            $nombre = preg_replace('/\s+/', ' ', $nombre);
+
+            // Convertir a mayúsculas
+            $nombre = strtoupper($nombre);
+
+            // Verificar si ya existe una categoría con el mismo nombre (excluyendo el registro actual)
+            if (CategoriaProducto::where('nombre', $nombre)->where('id', '!=', $id)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ya existe otra categoría con el nombre "' . $nombre . '". Por favor, elige un nombre diferente.'
+                ], 422);
+            }
+
+            // Validar los datos del formulario
+            $request->validate([
+                'nombre' => 'required|string|min:3|max:50',
+            ], [
+                'nombre.required' => 'El nombre de la categoría es obligatorio.',
+                'nombre.min' => 'El nombre debe tener al menos 3 caracteres.',
+                'nombre.max' => 'El nombre no puede tener más de 50 caracteres.',
             ]);
 
-            $categoriaProducto->nombre = $validated['nombre'];
-            $categoriaProducto->save();
+            $categoriaProducto->update([
+                'nombre' => $nombre
+            ]);
 
             return response()->json([
                 'message' => 'Categoría de producto actualizada exitosamente',
