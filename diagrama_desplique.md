@@ -1,3 +1,4 @@
+```mermaid
 graph TB
     %% CAPA DE USUARIO
     subgraph "👥 USUARIOS / USERS"
@@ -93,3 +94,4 @@ graph TB
     class MYSQL,BACKUP,REPLICA database
     class RENDER_LOGS,RAILWAY_METRICS,UPTIME monitoring
     class FIREWALL,ENCRYPT security
+```
