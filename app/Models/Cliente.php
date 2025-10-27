@@ -14,7 +14,7 @@ class Cliente extends Model
         'genero',
         'direccion',
         'telefono',
-        'user_id', 
+        'user_id',
         'tipo_documento_id'
     ];
 
@@ -30,7 +30,13 @@ class Cliente extends Model
     {
         return $this->hasMany(Venta::class, 'cliente_id');
     }
-    
+
+    // ✅ ACCESSOR: Obtener el nombre del usuario relacionado
+    public function getNombreAttribute()
+    {
+        return $this->user ? $this->user->name : 'Cliente Sin Nombre';
+    }
+
     public function reservas()
     {
         return $this->hasMany(Reserva::class, 'cliente_id');

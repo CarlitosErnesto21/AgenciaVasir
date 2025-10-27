@@ -419,10 +419,10 @@ const deleteTipo = async () => {
             }
 
             toast.add({
-                severity: 'success',
-                summary: 'Tipo eliminado',
-                detail: 'El tipo de documento ha sido eliminado correctamente',
-                life: 3000
+                severity: "success",
+                summary: "¡Eliminado!",
+                detail: "El tipo de documento ha sido eliminado correctamente.",
+                life: 5000
             });
 
             deleteDialog.value = false;
@@ -430,11 +430,13 @@ const deleteTipo = async () => {
         }
     } catch (error) {
         console.error('Error al eliminar tipo:', error);
+        deleteDialog.value = false;
+        const errorMsg = error.response?.data?.message || error.message || "Error desconocido al eliminar el tipo de documento";
         toast.add({
-            severity: 'error',
-            summary: 'Error',
-            detail: error.response?.data?.message || 'Error al eliminar el tipo de documento',
-            life: 3000
+            severity: "error",
+            summary: "Error",
+            detail: errorMsg,
+            life: 6000
         });
     } finally {
         isDeleting.value = false;
@@ -477,7 +479,7 @@ const createTipo = async () => {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
-            detail: "Por favor verifica que el nombre esté completo y cumpla los requisitos.",
+            detail: "El nombre debe tener entre 3 y 20 caracteres.",
             life: 4000
         });
         return;
@@ -491,24 +493,26 @@ const createTipo = async () => {
         });
 
         if (response.data.success) {
-            tipos.value.push(response.data.tipo_documento);
+            await loadTipos();
+            showCreateModal.value = false;
             hasUnsavedChanges.value = false;
             originalTipoData.value = null;
-            closeModals();
             toast.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Tipo de documento creado exitosamente',
-                life: 3000
+                severity: "success",
+                summary: "¡Éxito!",
+                detail: "El tipo de documento ha sido creado correctamente.",
+                life: 5000
             });
+            Object.assign(tipoDocumento, { id: null, nombre: '' });
         }
     } catch (error) {
         console.error('Error al crear tipo:', error);
+        const errorMessage = error.response?.data?.message || 'Error al crear el tipo de documento';
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: error.response?.data?.message || 'Error al crear el tipo de documento',
-            life: 3000
+            detail: errorMessage,
+            life: 4000
         });
     } finally {
         isLoading.value = false;
@@ -523,7 +527,7 @@ const updateTipo = async () => {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
-            detail: "Por favor verifica que el nombre esté completo y cumpla los requisitos.",
+            detail: "El nombre debe tener entre 3 y 20 caracteres.",
             life: 4000
         });
         return;
@@ -537,27 +541,27 @@ const updateTipo = async () => {
         });
 
         if (response.data.success) {
-            const index = tipos.value.findIndex(t => t.id === editingTipo.value.id);
-            if (index !== -1) {
-                tipos.value[index] = response.data.tipo_documento;
-            }
+            await loadTipos();
+            showEditModal.value = false;
             hasUnsavedChanges.value = false;
             originalTipoData.value = null;
-            closeModals();
+            editingTipo.value = null;
             toast.add({
-                severity: 'success',
-                summary: 'Éxito',
-                detail: 'Tipo de documento actualizado exitosamente',
-                life: 3000
+                severity: "success",
+                summary: "¡Éxito!",
+                detail: "El tipo de documento ha sido actualizado correctamente.",
+                life: 5000
             });
+            Object.assign(tipoDocumento, { id: null, nombre: '' });
         }
     } catch (error) {
         console.error('Error al actualizar tipo:', error);
+        const errorMessage = error.response?.data?.message || 'Error al actualizar el tipo de documento';
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: error.response?.data?.message || 'Error al actualizar el tipo de documento',
-            life: 3000
+            detail: errorMessage,
+            life: 4000
         });
     } finally {
         isLoading.value = false;
@@ -630,7 +634,7 @@ const onNombreInput = (event) => {
     }
 
     // Limpiar caracteres no válidos y convertir a mayúsculas
-    const cleanValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toUpperCase();
+    const cleanValue = value.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '').toLocaleUpperCase('es-ES');
     event.target.value = cleanValue;
     tipoDocumento.nombre = cleanValue;
 
@@ -647,9 +651,9 @@ const onNombrePaste = (event) => {
         .replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑ\s]/g, '') // Solo letras, espacios y acentos
         .replace(/\s+/g, ' ') // Múltiples espacios a uno solo
         .trim() // Eliminar espacios al inicio y final
-        .toUpperCase(); // Convertir a mayúsculas
+        .toLocaleUpperCase('es-ES'); // Convertir a mayúsculas
 
-    if (cleanPaste !== paste.toUpperCase()) {
+    if (cleanPaste !== paste.toLocaleUpperCase('es-ES')) {
         toast.add({
             severity: 'info',
             summary: 'Texto limpiado',
@@ -717,7 +721,7 @@ const loadTiposWithToasts = async () => {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Error al cargar los tipos de documento',
+            detail: 'No se pudieron cargar los tipos de documento.',
             life: 4000
         });
     } finally {

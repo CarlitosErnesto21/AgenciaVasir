@@ -137,10 +137,11 @@ const datosFiltrados = computed(() => {
 });
 
 // Métodos
-const tipoAgregar = ref(null);
+const selectedPaisAgregar = ref('');
+const tipoAgregar = ref('');
 
 function abrirModalAgregar(){
-  tipoAgregar.value = null;
+  tipoAgregar.value = '';
   nuevoItem.value={id:null,nombre:"",pais_id:null};
   hasUnsavedChanges.value = false;
   modalAgregar.value=true;
@@ -188,7 +189,7 @@ async function guardarItem(){
 
     modalAgregar.value=false;
     nuevoItem.value = { id:null, nombre:"", pais_id:null };
-    tipoAgregar.value = null;
+    tipoAgregar.value = '';
     hasUnsavedChanges.value = false;
   } catch(error) {
     if (error.response?.status === 422) {
@@ -465,15 +466,21 @@ onMounted(() => {
               </div>
               <div class="flex items-center gap-2">
                 <label for="tipo-estado" class="text-sm font-medium text-gray-700 hidden sm:block">Mostrar:</label>
-                <Select
+                <select
                   id="tipo-estado"
                   v-model="modoSeleccionado"
-                  :options="opcionesMostrar"
-                  optionValue="value"
-                  optionLabel="label"
-                  class="w-28 sm:w-32 h-8 text-sm border"
-                  style="background-color: white; border-color: #93c5fd;"
-                />
+                  class="w-28 sm:w-32 h-8 text-sm border border-blue-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                >
+                  <option value="" disabled selected hidden>Mostrar</option>
+                  <option
+                    v-for="opcion in opcionesMostrar"
+                    :key="opcion.value"
+                    :value="opcion.value"
+                    class="truncate"
+                  >
+                    {{ opcion.label }}
+                  </option>
+                </select>
               </div>
             </div>
             <div class="space-y-3">
@@ -545,18 +552,15 @@ onMounted(() => {
             <label class="text-sm font-medium text-gray-700 mb-2">
               Tipo: <span class="text-red-500">*</span>
             </label>
-            <Select
+            <select
               v-model="tipoAgregar"
-              :options="[
-                { label: 'País', value: 'País' },
-                { label: 'Provincia', value: 'Provincia' }
-              ]"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Seleccione qué desea agregar"
-              class="w-full"
+              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
               :class="{ 'border-red-300': !tipoAgregar }"
-            />
+            >
+              <option value="" disabled selected hidden>Seleccione qué desea agregar</option>
+              <option value="País" class="truncate">País</option>
+              <option value="Provincia" class="truncate">Provincia</option>
+            </select>
             <small class="text-red-500 mt-1" v-if="!tipoAgregar">
               ⚠️ Debe seleccionar el tipo
             </small>
@@ -587,15 +591,21 @@ onMounted(() => {
             <label class="text-sm font-medium text-gray-700 mb-2">
               País: <span class="text-red-500">*</span>
             </label>
-            <Select
+            <select
               v-model="nuevoItem.pais_id"
-              :options="paises"
-              optionLabel="nombre"
-              optionValue="id"
-              placeholder="Seleccione un país"
-              class="w-full"
+              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
               :class="{ 'border-red-300': tipoAgregar === 'Provincia' && !nuevoItem.pais_id }"
-            />
+            >
+              <option value="" disabled selected hidden>Seleccione un país</option>
+              <option
+                v-for="pais in paises"
+                :key="pais.id"
+                :value="pais.id"
+                class="truncate"
+              >
+                {{ pais.nombre }}
+              </option>
+            </select>
             <small class="text-red-500 mt-1" v-if="tipoAgregar === 'Provincia' && !nuevoItem.pais_id">
               ⚠️ Debe seleccionar un país
             </small>
@@ -631,15 +641,21 @@ onMounted(() => {
             <label class="text-sm font-medium text-gray-700 mb-2">
               País: <span class="text-red-500">*</span>
             </label>
-            <Select
+            <select
               v-model="itemEdit.pais_id"
-              :options="paises"
-              optionLabel="nombre"
-              optionValue="id"
-              placeholder="Seleccione un país"
-              class="w-full"
+              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
               :class="{ 'border-red-300': modoSeleccionado === 'Provincia' && !itemEdit.pais_id }"
-            />
+            >
+              <option value="" disabled selected hidden>Seleccione un país</option>
+              <option
+                v-for="pais in paises"
+                :key="pais.id"
+                :value="pais.id"
+                class="truncate"
+              >
+                {{ pais.nombre }}
+              </option>
+            </select>
             <small class="text-red-500 mt-1" v-if="modoSeleccionado === 'Provincia' && !itemEdit.pais_id">
               ⚠️ Debe seleccionar un país
             </small>

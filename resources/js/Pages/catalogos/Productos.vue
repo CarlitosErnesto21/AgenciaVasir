@@ -56,8 +56,8 @@ const isLoadingTable = ref(true);
 
 // 📂 Datos de apoyo
 const categorias = ref([]);
-const selectedCategoria = ref(null);
-const selectedEstado = ref(null);
+const selectedCategoria = ref("");
+const selectedEstado = ref("");
 
 // 🔍 Filtros
 const filters = ref({
@@ -118,6 +118,16 @@ const filteredProductos = computed(() => {
 // Computed para verificar si se puede agregar más imágenes
 const canAddMoreImages = computed(() => {
     return imagenPreviewList.value.length < 5;
+});
+
+// Computed para categorías con texto truncado (para móviles)
+const categoriasConTextoTruncado = computed(() => {
+    return categorias.value.map(categoria => ({
+        ...categoria,
+        nombreTruncado: categoria.nombre.length > 20
+            ? categoria.nombre.substring(0, 17) + '...'
+            : categoria.nombre
+    }));
 });
 
 // Computed para el texto del botón de imágenes
@@ -194,10 +204,30 @@ function resetForm() {
     submitted.value = false;
 }
 
-// 📊 Cargar datos
+// � Función para forzar truncado en selects
+const forceSelectTruncation = () => {
+    nextTick(() => {
+        setTimeout(() => {
+            const selects = document.querySelectorAll('.p-select');
+            selects.forEach(select => {
+                const label = select.querySelector('.p-select-label, .p-placeholder');
+                if (label) {
+                    label.style.overflow = 'hidden';
+                    label.style.textOverflow = 'ellipsis';
+                    label.style.whiteSpace = 'nowrap';
+                    label.style.maxWidth = 'calc(100% - 2.5rem)';
+                    label.style.display = 'block';
+                }
+            });
+        }, 100);
+    });
+};
+
+// �📊 Cargar datos
 onMounted(() => {
     fetchProductosWithToasts();
     fetchCategorias();
+    forceSelectTruncation();
 });
 
 const fetchProductos = async () => {
@@ -282,11 +312,11 @@ const fetchCategorias = async () => {
 
 // 🔍 Funciones para manejar filtros
 const onCategoriaFilterChange = () => {
-    filters.value.categoria.value = selectedCategoria.value;
+    filters.value.categoria.value = selectedCategoria.value === "" ? null : selectedCategoria.value;
 };
 
 const onEstadoFilterChange = () => {
-    filters.value.estado.value = selectedEstado.value;
+    filters.value.estado.value = selectedEstado.value === "" ? null : selectedEstado.value;
 };
 
 const clearFilters = async () => {
@@ -296,8 +326,8 @@ const clearFilters = async () => {
         // Simular un pequeño delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
 
-        selectedCategoria.value = null;
-        selectedEstado.value = null;
+        selectedCategoria.value = "";
+        selectedEstado.value = "";
         filters.value.global.value = null;
         filters.value.categoria.value = null;
         filters.value.estado.value = null;
@@ -599,40 +629,10 @@ const openMoreActionsModal = (productData) => {
     moreActionsDialog.value = true;
 };
 
-const handleDuplicateProduct = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Duplicar Producto",
-        detail: `Funcionalidad de duplicar producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
-};
-
 const handleUpdateStock = (product) => {
     moreActionsDialog.value = false;
     selectedProduct.value = product;
     updateStockDialog.value = true;
-};
-
-const handleGenerateReport = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Generar Reporte",
-        detail: `Funcionalidad de generar reporte del producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
-};
-
-const handleArchiveProduct = (product) => {
-    toast.add({
-        severity: "info",
-        summary: "Archivar Producto",
-        detail: `Funcionalidad de archivar producto "${product.nombre}" en desarrollo.`,
-        life: 5000
-    });
-    moreActionsDialog.value = false;
 };
 
 const handleViewDetails = (product) => {
@@ -1072,12 +1072,15 @@ const onStockMinimoPaste = (event) => {
                             :icon="isNavigatingToCategorias ? faSpinner : faTags"
                             :class="{'animate-spin': isNavigatingToCategorias, 'h-4': true}"
                         />
-                        <span>{{ isNavigatingToCategorias ? 'Cargando...' : 'Gestionar categorías' }}</span>
+                        <span class="block sm:hidden">{{ isNavigatingToCategorias ? 'Cargando...' : 'Categorías' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToCategorias ? 'Cargando...' : 'Gestionar categorías' }}</span>
                     </Link>
                     <button
-                        class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                        class="bg-red-500 border flex border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                         @click="openNew">
-                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar producto</span>
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
+                        <span class="block sm:hidden">Agregar</span>
+                        <span class="hidden sm:block">Agregar producto</span>
                     </button>
                 </div>
             </div>
@@ -1127,7 +1130,7 @@ const onStockMinimoPaste = (event) => {
                                         :icon="faSpinner"
                                         class="animate-spin h-3 w-3"
                                     />
-                                    <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
+                                    <span>{{ isClearingFilters ? 'Limp...' : 'Limpiar' }}</span>
                                 </button>
                             </div>
                             <button
@@ -1148,14 +1151,40 @@ const onStockMinimoPaste = (event) => {
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
                                 <div>
-                                    <Select v-model="selectedCategoria" :options="categorias" optionLabel="nombre" optionValue="id" placeholder="Categoría" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onCategoriaFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedCategoria"
+                                        @change="onCategoriaFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                        :class="selectedCategoria === '' || selectedCategoria === null ? 'text-gray-400' : 'text-gray-900'"
+                                    >
+                                        <option value="" disabled selected hidden>Categoría</option>
+                                        <option
+                                            v-for="categoria in categorias"
+                                            :key="categoria.id"
+                                            :value="categoria.id"
+                                            class="truncate text-gray-900"
+                                        >
+                                            {{ categoria.nombre }}
+                                        </option>
+                                    </select>
                                 </div>
                                 <div>
-                                    <Select v-model="selectedEstado" :options="estadosOptions" optionLabel="label" optionValue="value" placeholder="Estado" class="w-full h-9 text-sm border" style="background-color: white; border-color: #93c5fd;"
-                                        @change="onEstadoFilterChange" :clearable="true"
-                                    />
+                                    <select
+                                        v-model="selectedEstado"
+                                        @change="onEstadoFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                        :class="selectedEstado === '' || selectedEstado === null ? 'text-gray-400' : 'text-gray-900'"
+                                    >
+                                        <option value="" disabled selected hidden>Estado</option>
+                                        <option
+                                            v-for="estado in estadosOptions"
+                                            :key="estado.value"
+                                            :value="estado.value"
+                                            class="text-gray-900 truncate"
+                                        >
+                                            {{ estado.label }}
+                                        </option>
+                                    </select>
                                 </div>
                             </div>
                         </div>
@@ -1307,8 +1336,8 @@ const onStockMinimoPaste = (event) => {
                             </label>
                             <Select
                                 v-model="producto.categoria_id"
-                                :options="categorias"
-                                optionLabel="nombre"
+                                :options="categoriasConTextoTruncado"
+                                :optionLabel="(option) => windowWidth.value < 640 ? option.nombreTruncado : option.nombre"
                                 optionValue="id"
                                 id="categoria_id"
                                 name="categoria_id"
@@ -1486,10 +1515,7 @@ const onStockMinimoPaste = (event) => {
                 :selected-images="selectedImages"
                 :image-path="IMAGE_PATH"
                 :is-deleting="isDeleting"
-                @duplicate="handleDuplicateProduct"
                 @update-stock="handleUpdateStock"
-                @generate-report="handleGenerateReport"
-                @archive="handleArchiveProduct"
                 @delete-product="deleteProduct"
                 @cancel-delete="() => deleteDialog = false"
                 @close-without-saving="closeDialogWithoutSaving"
@@ -1529,6 +1555,59 @@ const onStockMinimoPaste = (event) => {
     background-color: #dbeafe !important;
     color: #1e40af !important;
 }
+
+/* Estilos para truncar texto en Select - PrimeVue específico */
+.p-select .p-select-label,
+.p-select .p-placeholder,
+.p-select-label,
+.p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    display: block !important;
+}
+
+/* Contenedor principal del Select */
+.p-select {
+    overflow: hidden !important;
+    max-width: 100% !important;
+}
+
+/* Input interno del Select */
+.p-select .p-inputtext,
+.p-select input {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+/* Forzar truncado en todos los elementos internos */
+.p-select * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+/* Específico para el valor mostrado */
+.p-select .p-select-display-chip,
+.p-select .p-select-clear-icon ~ *,
+.p-select .p-select-trigger ~ * {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 2.5rem) !important;
+}
+
+/* Extra específico para móviles */
+@media (max-width: 768px) {
+    .p-select .p-select-label,
+    .p-select .p-placeholder {
+        font-size: 0.875rem !important;
+        max-width: calc(100% - 2rem) !important;
+    }
+}
 /* Fin de los estilos para el select */
 
 
@@ -1561,4 +1640,57 @@ const onStockMinimoPaste = (event) => {
   animation: spin 1s linear infinite;
 }
 /* Fin de la animación para el spinner de loading */
+
+/* Estilos para truncar texto en selects (especialmente en móviles) */
+.p-select .p-select-label {
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Asegurar que el select mantenga su ancho en móviles */
+@media (max-width: 640px) {
+  .p-select {
+    min-width: 200px !important;
+  }
+
+  .p-select .p-select-label {
+    max-width: 180px !important;
+  }
+}
+
+/* Para tablets */
+@media (min-width: 641px) and (max-width: 768px) {
+  .p-select .p-select-label {
+    max-width: 220px !important;
+  }
+}
+/* Fin de estilos para truncar texto en selects */
+
+/* Estilos para select nativo con placeholder */
+select:invalid {
+    color: #9ca3af !important; /* Color gris para placeholder */
+}
+
+select option {
+    color: #111827 !important; /* Color normal para opciones */
+}
+
+select option:disabled {
+    color: #9ca3af !important;
+}
+
+/* Mejorar apariencia general del select nativo */
+select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e") !important;
+    background-position: right 0.5rem center !important;
+    background-repeat: no-repeat !important;
+    background-size: 1.5em 1.5em !important;
+    padding-right: 2.5rem !important;
+    -webkit-appearance: none !important;
+    -moz-appearance: none !important;
+    appearance: none !important;
+}
 </style>

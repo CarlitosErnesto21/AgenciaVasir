@@ -173,9 +173,8 @@ class CategoriaProductoController extends Controller
 
             if ($productosCount > 0) {
                 return response()->json([
-                    'message' => 'No se puede eliminar la categoría',
-                    'error' => "La categoría '{$categoriaProducto->nombre}' no puede ser eliminada porque tiene {$productosCount} producto(s) asociado(s).",
-                    'details' => ["Tiene {$productosCount} producto(s) asociado(s)"]
+                    'success' => false,
+                    'message' => "La categoría '{$categoriaProducto->nombre}' no puede ser eliminada porque tiene {$productosCount} producto(s) asociado(s)."
                 ], 422);
             }
 
@@ -190,14 +189,12 @@ class CategoriaProductoController extends Controller
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Categoría no encontrada',
-                'error' => 'La categoría que intentas eliminar no existe'
+                'message' => 'La categoría que intentas eliminar no existe'
             ], 404);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al eliminar la categoría',
-                'error' => 'Error interno del servidor: ' . $e->getMessage()
+                'message' => 'Error interno del servidor: ' . $e->getMessage()
             ], 500);
         }
     }

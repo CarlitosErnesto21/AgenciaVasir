@@ -180,21 +180,47 @@ class PagoController extends Controller
             $venta = Venta::create([
                 'fecha' => now(),
                 'cliente_id' => $cliente->id,
-                'estado' => 'pendiente',
+                'estado' => 'completada',
                 'total' => 0
             ]);
 
             $total = 0;
 
-            // Crear detalles de venta
+            // Crear detalles de venta Y procesar inventario
             foreach ($request->productos as $item) {
+                $producto = \App\Models\Producto::find($item['id']);
                 $subtotal = $item['cantidad'] * $item['precio'];
 
+                // Crear detalle de venta
                 $venta->detalleVentas()->create([
                     'producto_id' => $item['id'],
                     'cantidad' => $item['cantidad'],
                     'precio_unitario' => $item['precio'],
                     'subtotal' => $subtotal
+                ]);
+
+                // ✅ REDUCIR STOCK AUTOMÁTICAMENTE
+                $producto->decrement('stock_actual', $item['cantidad']);
+
+                // ✅ REGISTRAR MOVIMIENTO DE INVENTARIO
+                \App\Models\Inventario::create([
+                    'fecha_movimiento' => now(),
+                    'cantidad' => $item['cantidad'],
+                    'tipo_movimiento' => 'SALIDA',
+                    'motivo' => 'venta',
+                    'observacion' => "Venta #{$venta->id} - {$producto->nombre}",
+                    'user_id' => Auth::id() ?: 1,
+                    'producto_id' => $producto->id,
+                    'venta_id' => $venta->id
+                ]);
+
+                Log::info('✅ Stock actualizado', [
+                    'producto_id' => $producto->id,
+                    'producto_nombre' => $producto->nombre,
+                    'cantidad_vendida' => $item['cantidad'],
+                    'stock_anterior' => $producto->stock_actual + $item['cantidad'],
+                    'stock_actual' => $producto->stock_actual,
+                    'venta_id' => $venta->id
                 ]);
 
                 $total += $subtotal;
@@ -250,11 +276,11 @@ class PagoController extends Controller
             // Obtener la venta
             $venta = Venta::with(['cliente', 'detalleVentas'])->findOrFail($request->venta_id);
 
-            // Verificar que la venta esté pendiente
-            if ($venta->estado !== 'pendiente') {
+            // Verificar que la venta esté completada (estado único ahora)
+            if ($venta->estaCancelada()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'La venta ya fue procesada o cancelada'
+                    'message' => 'La venta fue cancelada'
                 ], 400);
             }
 
@@ -310,9 +336,13 @@ class PagoController extends Controller
                 'response_data' => json_encode($wompiData)
             ]);
 
-            // Si el pago fue aprobado, actualizar la venta
+            // ✅ Las ventas ya se crean como 'completada', no necesitan cambio de estado
             if (strtolower($wompiData['status']) === 'approved') {
-                $venta->update(['estado' => 'completada']);
+                Log::info('Pago aprobado - Venta ya está completada', [
+                    'venta_id' => $venta->id,
+                    'pago_status' => $wompiData['status'],
+                    'venta_estado' => $venta->estado
+                ]);
             }
 
             DB::commit();
@@ -473,13 +503,17 @@ class PagoController extends Controller
                             'response_data' => json_encode($wompiData)
                         ]);
 
-                        // Actualizar estado de venta/reserva si es necesario
+                        // ✅ Las ventas ya se crean como 'completada'
                         if (strtolower($wompiData['status']) === 'approved') {
                             if ($pago->venta_id) {
-                                $pago->venta->update(['estado' => 'completada']);
+                                Log::info('Pago aprobado - Venta ya está completada', [
+                                    'venta_id' => $pago->venta_id,
+                                    'pago_id' => $pago->id,
+                                    'venta_estado' => $pago->venta->estado
+                                ]);
                             }
                             if ($pago->reserva_id) {
-                                $pago->reserva->update(['estado' => 'confirmada']);
+                                $pago->reserva->update(['estado' => 'confirmada']); // Reservas sí se confirman
                             }
                         }
                     }
@@ -704,18 +738,13 @@ class PagoController extends Controller
                 // ✅ PAGO APROBADO
                 if ($pago->venta_id) {
                     $venta = $pago->venta;
-                    if ($venta->estaPendiente()) {
-                        $venta->update(['estado' => 'completada']);
-
-                        Log::info('Venta completada por pago aprobado', [
-                            'request_id' => $requestId,
-                            'venta_id' => $venta->id,
-                            'pago_id' => $pago->id
-                        ]);
-
-                        // TODO: Procesar inventario si es necesario
-                        // $this->inventarioService->procesarVenta($venta);
-                    }
+                    // ✅ Las ventas ya se crean como 'completada', solo loggeamos
+                    Log::info('Pago aprobado - Venta ya completada', [
+                        'request_id' => $requestId,
+                        'venta_id' => $venta->id,
+                        'pago_id' => $pago->id,
+                        'venta_estado' => $venta->estado
+                    ]);
                 }
 
                 if ($pago->reserva_id) {
@@ -861,10 +890,10 @@ class PagoController extends Controller
             if (!empty($validated['venta_id'])) {
                 $venta = Venta::find($validated['venta_id']);
 
-                if (!$venta || $venta->estado !== 'pendiente') {
+                if (!$venta || $venta->estaCancelada()) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Venta no encontrada o ya procesada'
+                        'message' => 'Venta no encontrada o fue cancelada'
                     ], 400);
                 }
 

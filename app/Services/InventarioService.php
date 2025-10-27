@@ -11,33 +11,7 @@ use Exception;
 
 class InventarioService
 {
-    /**
-     * Procesar venta completa - Reduce stock y registra movimientos
-     */
-    public function procesarVenta(Venta $venta): void
-    {
-        if (!$venta->estaPendiente()) {
-            throw new Exception("Solo se pueden procesar ventas pendientes");
-        }
 
-        DB::transaction(function () use ($venta) {
-            // Verificar stock de todos los productos ANTES de procesar
-            foreach ($venta->detalleVentas as $detalle) {
-                $producto = $detalle->producto;
-                if (!$producto->estaDisponible($detalle->cantidad)) {
-                    throw new Exception("Stock insuficiente para {$producto->nombre}. Disponible: {$producto->stock_actual}, Requerido: {$detalle->cantidad}");
-                }
-            }
-
-            // Procesar cada producto
-            foreach ($venta->detalleVentas as $detalle) {
-                $this->registrarSalidaPorVenta($detalle->producto, $detalle->cantidad, $venta);
-            }
-
-            // Marcar venta como completada
-            $venta->update(['estado' => 'completada']);
-        });
-    }
 
     /**
      * Cancelar venta - Restaura stock
@@ -58,6 +32,33 @@ class InventarioService
 
             // Marcar como cancelada
             $venta->update(['estado' => 'cancelada']);
+        });
+    }
+
+    /**
+     * Eliminar venta - Restaura stock y elimina el registro
+     */
+    public function eliminarVenta(Venta $venta): void
+    {
+        DB::transaction(function () use ($venta) {
+            // Restaurar stock si la venta estaba completada
+            if ($venta->estaCompletada()) {
+                foreach ($venta->detalleVentas as $detalle) {
+                    $this->registrarEntradaPorEliminacion($detalle->producto, $detalle->cantidad, $venta);
+                }
+            }
+
+            // Eliminar movimientos de inventario relacionados
+            Inventario::where('venta_id', $venta->id)->delete();
+
+            // Eliminar detalles de venta
+            $venta->detalleVentas()->delete();
+
+            // Eliminar pagos relacionados
+            $venta->pagos()->delete();
+
+            // Eliminar la venta
+            $venta->delete();
         });
     }
 
@@ -98,25 +99,25 @@ class InventarioService
 
         DB::transaction(function () use ($producto, $diferencia, $observacion) {
             if ($diferencia > 0) {
-                // Ajuste positivo (entrada)
+                // Ajuste positivo (aumento)
                 $producto->increment('stock_actual', $diferencia);
                 $this->crearMovimiento([
                     'producto_id' => $producto->id,
                     'cantidad' => $diferencia,
-                    'tipo_movimiento' => 'ENTRADA',
-                    'motivo' => 'ajuste_entrada',
+                    'tipo_movimiento' => 'AJUSTE',
+                    'motivo' => 'ajuste_aumento',
                     'observacion' => $observacion,
                     'venta_id' => null
                 ]);
             } else {
-                // Ajuste negativo (salida)
+                // Ajuste negativo (reducción)
                 $cantidadSalida = abs($diferencia);
                 $producto->decrement('stock_actual', $cantidadSalida);
                 $this->crearMovimiento([
                     'producto_id' => $producto->id,
                     'cantidad' => $cantidadSalida,
-                    'tipo_movimiento' => 'SALIDA',
-                    'motivo' => 'ajuste_salida',
+                    'tipo_movimiento' => 'AJUSTE',
+                    'motivo' => 'ajuste_reduccion',
                     'observacion' => $observacion,
                     'venta_id' => null
                 ]);
@@ -159,6 +160,25 @@ class InventarioService
             'motivo' => 'cancelacion_venta',
             'observacion' => "Cancelación de venta #{$venta->id}",
             'venta_id' => $venta->id
+        ]);
+    }
+
+    /**
+     * Registrar entrada por eliminación (método privado)
+     */
+    private function registrarEntradaPorEliminacion(Producto $producto, int $cantidad, Venta $venta): void
+    {
+        // Restaurar stock
+        $producto->increment('stock_actual', $cantidad);
+
+        // Registrar movimiento antes de eliminar la venta
+        $this->crearMovimiento([
+            'producto_id' => $producto->id,
+            'cantidad' => $cantidad,
+            'tipo_movimiento' => 'ENTRADA',
+            'motivo' => 'eliminacion_venta',
+            'observacion' => "Eliminación de venta #{$venta->id}",
+            'venta_id' => null // Se pone null porque la venta será eliminada
         ]);
     }
 

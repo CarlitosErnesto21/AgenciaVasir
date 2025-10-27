@@ -16,9 +16,11 @@ use App\Http\Controllers\TransporteController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\InventarioController;
+use App\Http\Controllers\PagoController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
+
 
 // ═══════════════════════════════════════════════════════════
 // RUTAS PÚBLICAS (sin autenticación)
@@ -39,9 +41,6 @@ Route::get('/tipo-documentos', [TipoDocumentoController::class, 'index']);
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
 // ═══════════════════════════════════════════════════════════
-use App\Http\Controllers\PagoController;
-
-// Rutas públicas para configuración de Wompi
 Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
 Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
 Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLinkFromCart']);
@@ -57,19 +56,13 @@ Route::post('/wompi/webhook', [PagoController::class, 'webhook']);
 // ═══════════════════════════════════════════════════════════
 Route::middleware('auth:sanctum')->group(function () {
 
-    // ───────────────────────────────────────────────────────
     // RUTAS BÁSICAS DE USUARIO
-    // ───────────────────────────────────────────────────────
     Route::post('/logout', [ApiAuthController::class, 'logout']);
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
 
-
-
-    // ───────────────────────────────────────────────────────
     // RUTAS DE TESTING (temporal)
-    // ───────────────────────────────────────────────────────
     Route::get('/test-auth', function(Request $request) {
         return response()->json([
             'authenticated' => Auth::check(),
@@ -83,8 +76,6 @@ Route::middleware('auth:sanctum')->group(function () {
     // RUTAS ADMINISTRATIVAS (requieren rol admin/empleado)
     // ───────────────────────────────────────────────────────
     Route::middleware('rutas.admin')->group(function () {
-
-
 
         // Gestión de reservas
         Route::prefix('reservas')->group(function () {
@@ -101,28 +92,27 @@ Route::middleware('auth:sanctum')->group(function () {
         // Recursos CRUD principales
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
+        Route::apiResource('tours', TourController::class)->except(['index', 'show']);
+        Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
+        Route::apiResource('clientes', ClienteController::class);
+        Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
         // Ruta adicional para estadísticas de hoteles
         Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
 
-        Route::apiResource('tours', TourController::class)->except(['index', 'show']);
-
-        // Rutas adicionales para tours
-        Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
-
-        Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
-        Route::apiResource('clientes', ClienteController::class);
-        // ✅ PROTEGIDO: Rutas de ventas con validación de integridad
+        //PROTEGIDO: Rutas de ventas con validación de integridad
         Route::apiResource('ventas', VentaController::class)
             ->middleware('venta.integrity')
-            ->only(['index', 'show']); // Solo permitir consultas
-
-        // ✅ RUTAS ADICIONALES SEGURAS PARA VENTAS
+            ->only(['index', 'show']);
+        //RUTAS ADICIONALES SEGURAS PARA VENTAS
         Route::prefix('ventas')->middleware('venta.integrity')->group(function () {
             Route::get('/por-estado/{estado}', [VentaController::class, 'porEstado']);
             Route::get('/completadas-validas', [VentaController::class, 'index'])->defaults('solo_validas', true);
-            Route::get('/pendientes-con-pago', [VentaController::class, 'index'])->defaults('con_pago_aprobado', false);
             Route::get('/resumen', [VentaController::class, 'resumen']);
         });
+        // RUTAS PARA GESTIÓN DE VENTAS
+        Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar'])->name('ventas.cancelar');
+        Route::delete('ventas/{venta}/eliminar', [VentaController::class, 'eliminar'])->name('ventas.eliminar');
+
         Route::apiResource('empleados', EmpleadoController::class);
         Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
@@ -157,15 +147,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Rutas adicionales específicas para productos (sin conflicto)
         Route::prefix('admin/productos')->group(function () {
+            Route::get('/disponibles', [ProductoController::class, 'disponibles']);
             Route::get('/stock-bajo', [ProductoController::class, 'stockBajo']);
             Route::get('/agotados', [ProductoController::class, 'agotados']);
         });
 
         // Ruta específica para actualizar stock de productos
         Route::patch('productos/{id}/actualizar-stock', [ProductoController::class, 'actualizarStock']);
-
-        // ❌ RUTAS ELIMINADAS: procesar y cancelar no son seguras
-        // Las ventas se procesan automáticamente via webhook de Wompi
 
         // ═══════════════════════════════════════════════════════════
         // RUTAS DE PAGOS WOMPI (PROTEGIDAS)

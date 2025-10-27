@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 class Venta extends Model
 {
     use HasFactory;
-    
+
     protected $fillable = [
         'fecha',
         'total',
@@ -23,12 +23,12 @@ class Venta extends Model
         'fecha' => 'date',
     ];
 
-    // Relaciones existentes    
+    // Relaciones existentes
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
-    
+
     public function detalleVentas(): HasMany
     {
         return $this->hasMany(DetalleVenta::class, 'venta_id');
@@ -45,11 +45,6 @@ class Venta extends Model
     }
 
     // ⭐ MÉTODOS DE ESTADO
-    public function estaPendiente(): bool
-    {
-        return $this->estado === 'pendiente';
-    }
-
     public function estaCompletada(): bool
     {
         return $this->estado === 'completada';
@@ -71,14 +66,9 @@ class Venta extends Model
         return $this->pagos()->where('estado', 'pending')->exists();
     }
 
-    public function esValidaParaCompletarse(): bool
-    {
-        return $this->estaPendiente() && $this->tienePagoAprobado();
-    }
-
     public function puedeSerCancelada(): bool
     {
-        return $this->estaPendiente() && !$this->tienePagoAprobado();
+        return $this->estaCompletada() && !$this->tienePagoAprobado();
     }
 
     // ⭐ SCOPES PARA CONSULTAS SEGURAS
@@ -89,13 +79,7 @@ class Venta extends Model
         });
     }
 
-    public function scopePendientesConPago($query)
-    {
-        return $query->where('estado', 'pendiente')
-                    ->whereHas('pagos', function($q) {
-                        $q->where('estado', 'pending');
-                    });
-    }
+
 
     public function scopeCompletadasValidas($query)
     {
@@ -119,7 +103,6 @@ class Venta extends Model
     public function getEstadoLegibleAttribute(): string
     {
         $estados = [
-            'pendiente' => 'Pendiente de Pago',
             'completada' => 'Completada',
             'cancelada' => 'Cancelada'
         ];
@@ -139,5 +122,20 @@ class Venta extends Model
         }
 
         return true;
+    }
+
+    /**
+     * ✅ COMPATIBILIDAD: Transformar relaciones para frontend
+     */
+    public function toArray()
+    {
+        $array = parent::toArray();
+
+        // Asegurar compatibilidad con frontend (snake_case)
+        if (isset($array['detalleVentas'])) {
+            $array['detalle_ventas'] = $array['detalleVentas'];
+        }
+
+        return $array;
     }
 }

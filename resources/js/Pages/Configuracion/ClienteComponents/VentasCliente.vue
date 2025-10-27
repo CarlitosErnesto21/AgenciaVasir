@@ -55,15 +55,7 @@
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow-md p-3">
-                    <div class="flex flex-col items-center text-center">
-                        <div class="p-1.5 rounded-full bg-yellow-100 mb-2">
-                            <FontAwesomeIcon :icon="faClock" class="h-4 w-4 text-yellow-600" />
-                        </div>
-                        <p class="text-xs font-medium text-gray-500 mb-1">Pendientes</p>
-                        <p class="text-lg font-bold text-gray-900">{{ ventasPendientes }}</p>
-                    </div>
-                </div>
+
 
                 <div class="bg-white rounded-lg shadow-md p-3">
                     <div class="flex flex-col items-center text-center">
@@ -284,8 +276,7 @@ const showDetalleDialog = ref(false);
 const isClearingFilters = ref(false);
 
 const estadoOptions = ref([
-    { label: 'Todos los estados', value: '' },
-    { label: 'Pendientes', value: 'pendiente' },
+    { label: 'Todos', value: null },
     { label: 'Completadas', value: 'completada' },
     { label: 'Canceladas', value: 'cancelada' }
 ]);
@@ -318,9 +309,6 @@ const totalVentas = computed(() => {
     return props.ventas.reduce((sum, venta) => sum + parseFloat(venta.total), 0);
 });
 
-const ventasPendientes = computed(() => {
-    return props.ventas.filter(venta => venta.estado === 'pendiente').length;
-});
 
 const ventasCompletadas = computed(() => {
     return props.ventas.filter(venta => venta.estado === 'completada').length;
@@ -339,8 +327,6 @@ const getEstadoClass = (estado) => {
     switch (estado) {
         case 'completada':
             return 'bg-green-100 text-green-800';
-        case 'pendiente':
-            return 'bg-yellow-100 text-yellow-800';
         case 'cancelada':
             return 'bg-red-100 text-red-800';
         default:
@@ -352,8 +338,6 @@ const getEstadoLabel = (estado) => {
     switch (estado) {
         case 'completada':
             return 'Completada';
-        case 'pendiente':
-            return 'Pendiente';
         case 'cancelada':
             return 'Cancelada';
         default:

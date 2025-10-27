@@ -506,19 +506,32 @@ class ProductoController extends Controller
         switch ($tipo) {
             case 'entrada':
                 $cantidad = $stockNuevo - $stockAnterior;
-                return "Entrada de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+                return "Entrada de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}.";
 
             case 'salida':
                 $cantidad = $stockAnterior - $stockNuevo;
-                return "Salida de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+                return "Salida de {$cantidad} unidades. Stock: {$stockAnterior} → {$stockNuevo}.";
 
             case 'ajuste':
                 $diferencia = $stockNuevo - $stockAnterior;
                 $tipoDiferencia = $diferencia > 0 ? 'aumento' : ($diferencia < 0 ? 'reducción' : 'sin cambio');
-                return "Ajuste de inventario ({$tipoDiferencia}). Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+                return "Ajuste de inventario ({$tipoDiferencia}). Stock: {$stockAnterior} → {$stockNuevo}.";
 
             default:
-                return "Movimiento de stock. Stock: {$stockAnterior} → {$stockNuevo}. Motivo: {$motivo}. Usuario: {$usuario} ({$fecha})";
+                return "Movimiento de stock. Stock: {$stockAnterior} → {$stockNuevo}.";
         }
+    }
+
+    /**
+     * Obtener productos disponibles (con stock > 0)
+     */
+    public function disponibles()
+    {
+        $productos = Producto::with('categoria')
+            ->where('stock_actual', '>', 0)
+            ->orderBy('nombre')
+            ->get();
+
+        return response()->json($productos);
     }
 }

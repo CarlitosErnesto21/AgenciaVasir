@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->datetime('fecha_movimiento');
             $table->integer('cantidad');
-            $table->enum('tipo_movimiento', ['ENTRADA', 'SALIDA']);
+            $table->enum('tipo_movimiento', ['ENTRADA', 'SALIDA', 'AJUSTE']);
             $table->string('motivo', 100)->nullable();
             $table->text('observacion')->nullable();
 
