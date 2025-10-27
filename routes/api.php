@@ -14,9 +14,9 @@ use App\Http\Controllers\PaisController;
 use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\TransporteController;
 use App\Http\Controllers\TipoDocumentoController;
-use App\Http\Controllers\PaqueteController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\BackupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -35,8 +35,16 @@ Route::get('/categorias-productos', [CategoriaProductoController::class, 'index'
 Route::get('/tours', [TourController::class, 'index']);
 Route::get('/tours/{id}', [TourController::class, 'show']);
 Route::get('/hoteles', [HotelController::class, 'index']);
-Route::get('/paquetes', [PaqueteController::class, 'index']);
 Route::get('/tipo-documentos', [TipoDocumentoController::class, 'index']);
+
+// Ruta para que usuarios autenticados puedan crear su perfil de cliente
+Route::middleware('auth:sanctum')->post('/registro-cliente', [ClienteController::class, 'registroCliente']);
+
+// Ruta para verificar si el usuario tiene datos de cliente completos
+Route::middleware('auth:sanctum')->get('/verificar-datos-cliente', [ClienteController::class, 'verificarDatosCompletos']);
+
+// Ruta para obtener datos del cliente autenticado
+Route::middleware('auth:sanctum')->get('/clientes/mi-perfil', [ClienteController::class, 'miPerfil']);
 
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
@@ -72,6 +80,10 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
+        // RUTAS DE RESERVAS DE CLIENTES (requieren autenticación)
+    Route::post('/reservas/tour', [ReservaController::class, 'crearReservaTour']);
+    Route::post('/reservas/hotel', [ReservaController::class, 'crearReservaHotel']);
+
     // ───────────────────────────────────────────────────────
     // RUTAS ADMINISTRATIVAS (requieren rol admin/empleado)
     // ───────────────────────────────────────────────────────
@@ -89,11 +101,16 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id}/historial', [ReservaController::class, 'historial']);
         });
 
+        // Gestión específica de reservas de hoteles
+        Route::prefix('reservas-hoteles')->group(function () {
+            Route::get('/', [ReservaController::class, 'indexHoteles']);
+            Route::get('/{id}', [ReservaController::class, 'showHotel']);
+        });
+
         // Recursos CRUD principales
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
-        Route::apiResource('paquetes', PaqueteController::class)->except(['index']);
         Route::apiResource('clientes', ClienteController::class);
         Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
         // Ruta adicional para estadísticas de hoteles
@@ -169,5 +186,22 @@ Route::middleware('auth:sanctum')->group(function () {
             // Administración de pagos (solo para admin)
             Route::get('/', [PagoController::class, 'index'])->name('index');
         });
+
+        // ═══════════════════════════════════════════════════════════
+        // RUTAS DE BACKUPS (PROTEGIDAS - SOLO ADMIN)
+        // ═══════════════════════════════════════════════════════════
+        Route::prefix('backups')->name('backups.')->group(function () {
+            Route::get('/', [BackupController::class, 'index'])->name('index');
+            Route::post('/generate', [BackupController::class, 'generate'])->name('generate');
+            Route::delete('/{id}', [BackupController::class, 'delete'])->name('delete');
+            Route::post('/cleanup', [BackupController::class, 'cleanup'])->name('cleanup');
+        });
     });
+
 });
+
+// ═══════════════════════════════════════════════════════════
+// RUTA DE DESCARGA DE BACKUPS (SIN MIDDLEWARE RESTRICTIVO)
+// Permite descargas directas para usuarios autenticados en el frontend
+// ═══════════════════════════════════════════════════════════
+Route::get('/backups/{id}/download', [BackupController::class, 'download'])->name('backups.download');

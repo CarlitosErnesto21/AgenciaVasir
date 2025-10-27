@@ -77,6 +77,13 @@ class PagoController extends Controller
             'productos.*.imagen' => 'nullable|string', // Campo opcional para compatibilidad
             'productos.*.subtotal' => 'nullable|numeric|min:0', // Campo opcional para compatibilidad
             'customer_email' => 'required|email',
+            // Validaciones para datos del cliente (opcionales)
+            'cliente_data' => 'nullable|array',
+            'cliente_data.id' => 'nullable|exists:clientes,id',
+            'cliente_data.numero_identificacion' => 'nullable|string|max:25',
+            'cliente_data.telefono' => 'nullable|string|max:30',
+            'cliente_data.direccion' => 'nullable|string|max:200',
+            'cliente_data.tipo_documento_id' => 'nullable|exists:tipos_documentos,id',
         ]);
 
         if ($validator->fails()) {
@@ -105,14 +112,47 @@ class PagoController extends Controller
 
             // Obtener o crear cliente asociado al usuario
             $cliente = \App\Models\Cliente::where('user_id', $user->id)->first();
+            $clienteDataRequest = $request->input('cliente_data');
 
             Log::info('🧑‍💼 Verificando cliente', [
                 'user_id' => $user->id,
                 'user_email' => $user->email,
                 'user_name' => $user->name,
                 'cliente_exists' => !!$cliente,
+                'cliente_data_received' => !!$clienteDataRequest,
                 'cliente_data' => $cliente ? $cliente->toArray() : null
             ]);
+
+            // Si se proporcionan datos de cliente y ya existe un cliente, actualizar datos
+            if ($cliente && $clienteDataRequest && isset($clienteDataRequest['id']) && $clienteDataRequest['id'] == $cliente->id) {
+                Log::info('📝 Actualizando datos del cliente existente', [
+                    'cliente_id' => $cliente->id,
+                    'nuevos_datos' => $clienteDataRequest
+                ]);
+
+                // Actualizar solo los campos que no sean por defecto o vacíos
+                $datosActualizacion = [];
+                if (!empty($clienteDataRequest['numero_identificacion']) && $clienteDataRequest['numero_identificacion'] !== $user->email) {
+                    $datosActualizacion['numero_identificacion'] = $clienteDataRequest['numero_identificacion'];
+                }
+                if (!empty($clienteDataRequest['telefono']) && $clienteDataRequest['telefono'] !== 'No especificado') {
+                    $datosActualizacion['telefono'] = $clienteDataRequest['telefono'];
+                }
+                if (!empty($clienteDataRequest['direccion']) && $clienteDataRequest['direccion'] !== 'No especificada') {
+                    $datosActualizacion['direccion'] = $clienteDataRequest['direccion'];
+                }
+                if (!empty($clienteDataRequest['tipo_documento_id'])) {
+                    $datosActualizacion['tipo_documento_id'] = $clienteDataRequest['tipo_documento_id'];
+                }
+
+                if (!empty($datosActualizacion)) {
+                    $cliente->update($datosActualizacion);
+                    Log::info('✅ Cliente actualizado correctamente', [
+                        'cliente_id' => $cliente->id,
+                        'datos_actualizados' => $datosActualizacion
+                    ]);
+                }
+            }
 
             if (!$cliente) {
                 Log::warning('❌ Usuario sin cliente asociado - Creando automáticamente', [

@@ -36,4 +36,9 @@ class Reserva extends Model
     {
         return $this->hasMany(DetalleReservaTour::class, 'reserva_id');
     }
+    
+    public function detallesHoteles()
+    {
+        return $this->hasMany(DetalleReservaHotel::class, 'reserva_id');
+    }
 }

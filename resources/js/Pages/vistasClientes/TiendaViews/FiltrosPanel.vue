@@ -80,10 +80,10 @@ const toggleMobileFilters = () => {
 
 <template>
   <!-- Panel de Filtros - Colapsable en móvil -->
-  <div class="lg:hidden mb-4">
-    <button 
+  <div class="lg:hidden">
+    <button
       @click="toggleMobileFilters"
-      class="w-full bg-gradient-to-r from-red-600 to-blue-600 text-white py-2 px-4 rounded-xl font-bold text-sm shadow-lg flex items-center justify-between"
+      class="w-full bg-gradient-to-r from-red-600 to-blue-600 text-white py-2 -mt-3 px-4 font-bold text-sm shadow-lg flex items-center justify-between"
     >
       <span class="flex items-center">
         <span class="text-lg mr-2">🔧</span>
@@ -91,17 +91,17 @@ const toggleMobileFilters = () => {
       </span>
       <i :class="showMobileFilters ? 'pi pi-chevron-up' : 'pi pi-chevron-down'"></i>
     </button>
-    
+
     <div v-show="showMobileFilters" class="mt-4 bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl shadow-xl p-4 border border-gray-200">
       <div class="flex justify-end mb-4">
-        <button 
+        <button
           @click="clearFilters"
           class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md"
         >
           Limpiar filtros
         </button>
       </div>
-      
+
       <!-- Filtro de Precio Móvil -->
       <div class="mb-4">
         <h4 class="font-bold text-gray-800 mb-3 text-sm flex items-center">
@@ -111,7 +111,7 @@ const toggleMobileFilters = () => {
         <div class="flex gap-2 items-end mb-3">
           <div class="flex-1">
             <label class="text-xs text-gray-600 font-medium mb-1 block">Mínimo</label>
-            <InputNumber 
+            <InputNumber
               :modelValue="minPrice"
               @update:modelValue="updateMinPrice"
               :inputStyle="{ width: '100%' }"
@@ -126,7 +126,7 @@ const toggleMobileFilters = () => {
           </div>
           <div class="flex-1">
             <label class="text-xs text-gray-600 font-medium mb-1 block">Máximo</label>
-            <InputNumber 
+            <InputNumber
               :modelValue="maxPrice"
               @update:modelValue="updateMaxPrice"
               :inputStyle="{ width: '100%' }"
@@ -139,7 +139,7 @@ const toggleMobileFilters = () => {
               class="w-full"
             />
           </div>
-          <button 
+          <button
             @click="applyPriceFilter"
             class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md"
           >
@@ -147,7 +147,7 @@ const toggleMobileFilters = () => {
           </button>
         </div>
       </div>
-      
+
       <!-- Filtro de Categorías Móvil -->
       <div>
         <h4 class="font-bold text-gray-800 mb-3 text-sm flex items-center">
@@ -155,12 +155,12 @@ const toggleMobileFilters = () => {
           Categorías
         </h4>
         <div class="grid grid-cols-2 gap-2">
-          <label 
-            v-for="category in categoriasConConteo" 
+          <label
+            v-for="category in categoriasConConteo"
             :key="category.id"
             class="flex items-center cursor-pointer hover:bg-white/60 p-2 rounded-lg transition-all duration-300 text-xs"
           >
-            <input 
+            <input
               type="checkbox"
               :checked="selectedCategories.includes(category.nombre)"
               @change="toggleCategory(category.nombre)"
@@ -184,9 +184,9 @@ const toggleMobileFilters = () => {
         Filtros de búsqueda
       </h3>
     </div>
-    
+
     <div class="flex justify-end mb-4">
-      <button 
+      <button
         @click="clearFilters"
         class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
       >
@@ -217,7 +217,7 @@ const toggleMobileFilters = () => {
         </div>
       </div>
     </div>
-    
+
     <!-- Filtro de Precio -->
     <div class="mb-6 sm:mb-8">
       <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-4 sm:p-5 shadow-lg">
@@ -228,7 +228,7 @@ const toggleMobileFilters = () => {
         <div class="flex gap-2 items-end mb-3">
           <div class="flex-1">
             <label class="text-xs sm:text-sm text-gray-600 font-medium mb-1 block">Mínimo</label>
-            <InputNumber 
+            <InputNumber
               :modelValue="minPrice"
               @update:modelValue="updateMinPrice"
               :inputStyle="{ width: '100%' }"
@@ -243,7 +243,7 @@ const toggleMobileFilters = () => {
           </div>
           <div class="flex-1">
             <label class="text-xs sm:text-sm text-gray-600 font-medium mb-1 block">Máximo</label>
-            <InputNumber 
+            <InputNumber
               :modelValue="maxPrice"
               @update:modelValue="updateMaxPrice"
               :inputStyle="{ width: '100%' }"
@@ -256,7 +256,7 @@ const toggleMobileFilters = () => {
               class="w-full"
             />
           </div>
-          <button 
+          <button
             @click="applyPriceFilter"
             class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
           >
@@ -265,29 +265,29 @@ const toggleMobileFilters = () => {
         </div>
       </div>
     </div>
-    
+
     <!-- Filtro de Categorías -->
     <div>
       <div class="bg-gradient-to-br from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl p-4 sm:p-5 shadow-lg">
         <h4 class="font-bold text-gray-800 mb-4 text-sm sm:text-base flex items-center">
           <span class="mr-2">🏷️</span>
-          Categorías 
+          Categorías
           <span v-if="loadingCategories" class="text-xs text-gray-500 ml-2">(cargando...)</span>
         </h4>
-        
+
         <div v-if="loadingCategories" class="space-y-3">
           <div v-for="i in 3" :key="i" class="animate-pulse">
             <div class="h-10 bg-gray-200 rounded-lg"></div>
           </div>
         </div>
-        
+
         <div v-else class="space-y-3">
-          <label 
-            v-for="category in categoriasConConteo" 
+          <label
+            v-for="category in categoriasConConteo"
             :key="category.id"
             class="flex items-center cursor-pointer hover:bg-white/60 p-3 rounded-lg transition-all duration-300 group shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
           >
-            <input 
+            <input
               type="checkbox"
               :checked="selectedCategories.includes(category.nombre)"
               @change="toggleCategory(category.nombre)"
@@ -298,7 +298,7 @@ const toggleMobileFilters = () => {
               {{ category.cantidad }}
             </span>
           </label>
-          
+
           <div v-if="categoriasConConteo.length === 0" class="text-center py-6 text-gray-500 text-sm bg-white rounded-lg shadow-sm">
             <div class="text-2xl mb-2">📦</div>
             No hay categorías disponibles

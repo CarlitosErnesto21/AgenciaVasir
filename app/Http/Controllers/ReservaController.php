@@ -26,7 +26,7 @@ class ReservaController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Reserva::with(['cliente.user', 'detallesTours.tour']);
+            $query = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour']);
 
             // Aplicar filtros por tipo (solo tours por ahora)
             if ($request->filled('tipo')) {
@@ -65,7 +65,7 @@ class ReservaController extends Controller
 
             // Si no hay filtros, devolver formato simple (compatibilidad hacia atrás)
             if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page'])) {
-                $reservas = Reserva::with(['cliente.user', 'empleado'])->get();
+                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado'])->get();
                 return response()->json($reservas);
             }
 
@@ -74,18 +74,24 @@ class ReservaController extends Controller
 
             // Transformar los datos para la respuesta
             $transformedData = $reservas->getCollection()->map(function ($reserva) {
-                $tourNombre = $reserva->detallesTours->first() ? 
+                $tourNombre = $reserva->detallesTours->first() ?
                              $reserva->detallesTours->first()->tour->nombre : 'N/A';
-                
+
                 return [
                     'id' => $reserva->id,
                     'fecha_reserva' => $reserva->fecha,
                     'estado' => $reserva->estado,
                     'cliente' => [
-                        'nombres' => $reserva->cliente && $reserva->cliente->user ? 
+                        'nombres' => $reserva->cliente && $reserva->cliente->user ?
                                    $reserva->cliente->user->name : 'Cliente no asignado',
-                        'correo' => $reserva->cliente && $reserva->cliente->user ? 
-                                  $reserva->cliente->user->email : 'Sin correo'
+                        'correo' => $reserva->cliente && $reserva->cliente->user ?
+                                  $reserva->cliente->user->email : 'Sin correo',
+                        'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
+                        'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
+                        'user' => $reserva->cliente && $reserva->cliente->user ? [
+                            'name' => $reserva->cliente->user->name,
+                            'email' => $reserva->cliente->user->email
+                        ] : null
                     ],
                     'entidad_nombre' => $tourNombre,
                     'tipo' => 'Tour',
@@ -141,6 +147,138 @@ class ReservaController extends Controller
     }
 
     /**
+     * Crear reserva de hotel desde el modal del cliente
+     */
+    public function crearReservaHotel(Request $request)
+    {
+        try {
+            // Verificar que el usuario esté autenticado
+            if (!Auth::check()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Debe iniciar sesión para realizar una reserva.'
+                ], 401);
+            }
+
+            $user = Auth::user();
+
+            // Verificar que el usuario tenga rol de cliente usando consulta directa
+            $hasClienteRole = DB::table('model_has_roles')
+                ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
+                ->where('model_has_roles.model_type', 'App\\Models\\User')
+                ->where('model_has_roles.model_id', $user->id)
+                ->where('roles.name', 'cliente')
+                ->exists();
+
+            if (!$hasClienteRole) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo los usuarios con rol de cliente pueden generar reservas. Su rol actual no permite esta acción.'
+                ], 403);
+            }
+
+            // Validar los datos de entrada
+            $validated = $request->validate([
+                'hotel_id' => 'required|exists:hoteles,id',
+                'fecha_entrada' => 'required|date|after:today',
+                'fecha_salida' => 'required|date|after:fecha_entrada',
+                'cantidad_personas' => 'required|integer|min:1|max:10',
+                'cantidad_habitaciones' => 'required|integer|min:1|max:5',
+                'cliente_data' => 'required|array',
+                'cliente_data.numero_identificacion' => 'required|string|max:25',
+                'cliente_data.fecha_nacimiento' => 'required|date|before:today',
+                'cliente_data.genero' => 'required|in:MASCULINO,FEMENINO',
+                'cliente_data.direccion' => 'required|string|max:200',
+                'cliente_data.telefono' => 'required|string|max:30',
+                'cliente_data.tipo_documento_id' => 'required|integer|exists:tipos_documentos,id'
+            ]);
+
+            DB::beginTransaction();
+
+            // 1. Verificar si ya existe un cliente para este usuario
+            $cliente = Cliente::where('user_id', $user->id)->first();
+
+            if (!$cliente) {
+                // 2. Crear el cliente si no existe
+                $cliente = Cliente::create([
+                    'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
+                    'fecha_nacimiento' => $validated['cliente_data']['fecha_nacimiento'],
+                    'genero' => strtoupper($validated['cliente_data']['genero']),
+                    'direccion' => $validated['cliente_data']['direccion'],
+                    'telefono' => $validated['cliente_data']['telefono'],
+                    'user_id' => $user->id,
+                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                ]);
+            } else {
+                // Actualizar datos del cliente existente
+                $cliente->update([
+                    'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
+                    'fecha_nacimiento' => $validated['cliente_data']['fecha_nacimiento'],
+                    'genero' => strtoupper($validated['cliente_data']['genero']),
+                    'direccion' => $validated['cliente_data']['direccion'],
+                    'telefono' => $validated['cliente_data']['telefono'],
+                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                ]);
+            }
+
+            // 3. Obtener información del hotel
+            $hotel = \App\Models\Hotel::findOrFail($validated['hotel_id']);
+
+            // 4. Calcular precio estimado (por ahora será 0, se puede ajustar según lógica de negocio)
+            $precio_estimado = 0; // Se puede calcular según días * habitaciones * tarifa del hotel
+
+            // 5. Crear la reserva (sin empleado asignado inicialmente)
+            $reserva = Reserva::create([
+                'fecha' => $validated['fecha_entrada'],
+                'estado' => 'PENDIENTE',
+                'mayores_edad' => $validated['cantidad_personas'],
+                'menores_edad' => 0, // Para hoteles no manejamos menores por separado
+                'total' => $precio_estimado,
+                'cliente_id' => $cliente->id,
+                'empleado_id' => null // El empleado será asignado posteriormente
+            ]);
+
+            // 6. Crear el detalle de reserva de hotel
+            $detalleReserva = \App\Models\DetalleReservaHotel::create([
+                'fecha_entrada' => $validated['fecha_entrada'],
+                'fecha_salida' => $validated['fecha_salida'],
+                'cantidad_persona' => $validated['cantidad_personas'],
+                'cantidad_habitacion' => $validated['cantidad_habitaciones'],
+                'subtotal' => $precio_estimado,
+                'reserva_id' => $reserva->id,
+                'hotel_id' => $hotel->id
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Reserva de hotel creada exitosamente',
+                'data' => [
+                    'reserva' => $reserva,
+                    'cliente' => $cliente,
+                    'detalle' => $detalleReserva,
+                    'hotel' => $hotel
+                ]
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error de validación',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Crear reserva de tour desde el modal del cliente
      */
     public function crearReservaTour(Request $request)
@@ -163,7 +301,7 @@ class ReservaController extends Controller
                 ->where('model_has_roles.model_id', $user->id)
                 ->where('roles.name', 'cliente')
                 ->exists();
-            
+
             if (!$hasClienteRole) {
                 return response()->json([
                     'success' => false,
@@ -237,7 +375,7 @@ class ReservaController extends Controller
 
             // 4. Calcular totales
             $cupos_totales = $validated['cupos_adultos'] + ($validated['cupos_menores'] ?? 0);
-            
+
             // 5. Verificar cupos disponibles
             $cuposDisponibles = $tour->cupos_disponibles;
             if ($cupos_totales > $cuposDisponibles) {
@@ -246,7 +384,7 @@ class ReservaController extends Controller
                     'message' => "Solo hay {$cuposDisponibles} cupos disponibles para este tour. Usted está intentando reservar {$cupos_totales} cupos."
                 ], 422);
             }
-            
+
             $precio_total = $cupos_totales * $tour->precio;
 
             // 6. Crear la reserva (sin empleado asignado inicialmente)
@@ -274,16 +412,16 @@ class ReservaController extends Controller
 
             // Refrescar el tour para obtener los cupos actualizados
             $tour->refresh();
-            
+
             // Recalcular cupos disponibles después de la reserva
             $cuposReservadosTotal = $tour->detalleReservas()
                 ->whereHas('reserva', function($query) {
                     $query->where('estado', '!=', 'cancelada');
                 })
                 ->sum('cupos_reservados');
-            
+
             $cuposDisponiblesActualizados = max(0, $tour->cupo_max - $cuposReservadosTotal);
-            
+
             // Debug log
             Log::info("Después de reserva - Tour {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservadosTotal}, disponibles={$cuposDisponiblesActualizados}");
 
@@ -321,7 +459,7 @@ class ReservaController extends Controller
     public function show(Reserva $reserva)
     {
         // Mostrar los detalles de una reserva específica con sus relaciones
-        $reserva->load(['cliente.user', 'empleado']);
+        $reserva->load(['cliente', 'cliente.user', 'empleado']);
         return response()->json($reserva);
     }
 
@@ -408,7 +546,7 @@ class ReservaController extends Controller
     {
         try {
             $reserva = Reserva::findOrFail($id);
-            
+
             // Validar que se pueda confirmar
             $estadosPermitidos = ['PENDIENTE', 'Pendiente', 'pendiente'];
             if (!in_array($reserva->estado, $estadosPermitidos)) {
@@ -417,7 +555,7 @@ class ReservaController extends Controller
                     'message' => "Solo se pueden confirmar reservas pendientes. Estado actual: {$reserva->estado}"
                 ], 400);
             }
-            
+
             $reserva->update([
                 'estado' => 'CONFIRMADA'
             ]);
@@ -466,7 +604,7 @@ class ReservaController extends Controller
                 'id' => $id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al confirmar la reserva',
@@ -517,7 +655,7 @@ class ReservaController extends Controller
     {
         try {
             $reserva = Reserva::findOrFail($id);
-            
+
             // Verificar que el motivo esté presente
             if (!$request->has('motivo') || empty(trim($request->input('motivo')))) {
                 return response()->json([
@@ -525,13 +663,13 @@ class ReservaController extends Controller
                     'message' => 'El motivo del rechazo es requerido'
                 ], 400);
             }
-            
+
             // Ser más flexible con los estados
             $estadosPermitidos = [
-                'PENDIENTE', 'Pendiente', 'pendiente', 
+                'PENDIENTE', 'Pendiente', 'pendiente',
                 'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
             ];
-            
+
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -589,7 +727,7 @@ class ReservaController extends Controller
                 'id' => $id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al rechazar la reserva',
@@ -605,13 +743,13 @@ class ReservaController extends Controller
     {
         try {
             $reserva = Reserva::findOrFail($id);
-            
+
             // Ser más flexible con los estados
             $estadosPermitidos = [
-                'PENDIENTE', 'Pendiente', 'pendiente', 
+                'PENDIENTE', 'Pendiente', 'pendiente',
                 'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
             ];
-            
+
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -629,7 +767,7 @@ class ReservaController extends Controller
             $fechaNueva = $request->fecha_nueva;
             $motivo = $request->motivo;
             $observaciones = $request->observaciones;
-            
+
             $reserva->update([
                 'fecha' => $fechaNueva,
                 'estado' => 'REPROGRAMADA'
@@ -658,13 +796,13 @@ class ReservaController extends Controller
                 try {
                     Mail::to($clientData['email'])
                         ->send(new ReservationRescheduledMail(
-                            $reservationData, 
-                            $clientData, 
-                            $motivo, 
-                            $fechaNueva, 
+                            $reservationData,
+                            $clientData,
+                            $motivo,
+                            $fechaNueva,
                             $observaciones
                         ));
-                    
+
                     Log::info('Email de reprogramación enviado exitosamente', [
                         'reserva_id' => $id,
                         'email' => $clientData['email'],
@@ -692,7 +830,7 @@ class ReservaController extends Controller
                 'id' => $id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al reprogramar la reserva',
@@ -708,13 +846,13 @@ class ReservaController extends Controller
     {
         try {
             $reserva = Reserva::findOrFail($id);
-            
+
             // Ser más flexible con los estados
             $estadosPermitidos = [
                 'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado',
                 'REPROGRAMADA', 'Reprogramada', 'reprogramada'
             ];
-            
+
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -770,7 +908,7 @@ class ReservaController extends Controller
                 'id' => $id,
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al finalizar la reserva',
@@ -786,11 +924,11 @@ class ReservaController extends Controller
     {
         try {
             $now = now();
-            
+
             // Buscar reservas confirmadas o reprogramadas cuya fecha ya ha pasado
             $reservas = Reserva::whereIn('estado', ['CONFIRMADA', 'REPROGRAMADA'])
                 ->where('fecha', '<=', $now->toDateString())
-                ->with(['cliente.user', 'detallesTours.tour'])
+                ->with(['cliente', 'cliente.user', 'detallesTours.tour'])
                 ->get();
 
             $reservasFinalizadas = 0;
@@ -800,10 +938,10 @@ class ReservaController extends Controller
                 try {
                     // Lógica simplificada: finalizar reservas con fecha anterior o igual a hoy
                     $debeFinalizarse = $reserva->fecha <= $now->toDateString();
-                    
+
                     if ($debeFinalizarse) {
                         $reserva->update(['estado' => 'FINALIZADA']);
-                        
+
                         // Enviar email de finalización
                         $reservationData = [
                             'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
@@ -831,9 +969,9 @@ class ReservaController extends Controller
                                 ]);
                             }
                         }
-                        
+
                         $reservasFinalizadas++;
-                        
+
                         Log::info('Reserva finalizada automáticamente', [
                             'reserva_id' => $reserva->id,
                             'fecha_reserva' => $reserva->fecha,
@@ -845,7 +983,7 @@ class ReservaController extends Controller
                         'reserva_id' => $reserva->id,
                         'error' => $e->getMessage()
                     ];
-                    
+
                     Log::error('Error al finalizar automáticamente reserva', [
                         'reserva_id' => $reserva->id,
                         'error' => $e->getMessage()
@@ -869,7 +1007,7 @@ class ReservaController extends Controller
             Log::error('Error en finalización automática', [
                 'error' => $e->getMessage()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error en el proceso de finalización automática',
@@ -884,8 +1022,8 @@ class ReservaController extends Controller
     public function historial($id): JsonResponse
     {
         try {
-            $reserva = Reserva::with(['cliente.user', 'detallesTours.tour'])->findOrFail($id);
-            
+            $reserva = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour'])->findOrFail($id);
+
             // Simulamos el historial básico con la información disponible
             $historial = [
                 [
@@ -936,6 +1074,155 @@ class ReservaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener el historial',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener listado específico de reservas de hoteles para la vista administrativa
+     */
+    public function indexHoteles(Request $request): JsonResponse
+    {
+        try {
+            $query = Reserva::with(['cliente', 'cliente.user', 'detallesHoteles.hotel'])
+                ->whereHas('detallesHoteles'); // Solo reservas que tienen detalles de hotel
+
+            // Aplicar filtros
+            if ($request->filled('estado')) {
+                $query->where('estado', $request->estado);
+            }
+
+            if ($request->filled('fecha_inicio')) {
+                $query->whereDate('fecha', '>=', $request->fecha_inicio);
+            }
+
+            if ($request->filled('fecha_fin')) {
+                $query->whereDate('fecha', '<=', $request->fecha_fin);
+            }
+
+            if ($request->filled('busqueda')) {
+                $busqueda = $request->busqueda;
+                $query->whereHas('cliente.user', function ($q) use ($busqueda) {
+                    $q->where('name', 'like', "%{$busqueda}%")
+                      ->orWhere('email', 'like', "%{$busqueda}%");
+                })->orWhereHas('detallesHoteles.hotel', function ($q) use ($busqueda) {
+                    $q->where('nombre', 'like', "%{$busqueda}%");
+                });
+            }
+
+            $reservas = $query->orderBy('fecha', 'desc')->get();
+
+            // Transformar los datos para la respuesta
+            $transformedData = $reservas->map(function ($reserva) {
+                $detalleHotel = $reserva->detallesHoteles->first();
+                $hotel = $detalleHotel ? $detalleHotel->hotel : null;
+
+                return [
+                    'id' => $reserva->id,
+                    'fecha_reserva' => $reserva->fecha,
+                    'fecha_entrada' => $detalleHotel ? $detalleHotel->fecha_entrada : null,
+                    'fecha_salida' => $detalleHotel ? $detalleHotel->fecha_salida : null,
+                    'estado' => $reserva->estado,
+                    'cliente' => [
+                        'nombres' => $reserva->cliente && $reserva->cliente->user ?
+                                   $reserva->cliente->user->name : 'Cliente no asignado',
+                        'correo' => $reserva->cliente && $reserva->cliente->user ?
+                                  $reserva->cliente->user->email : 'Sin correo',
+                        'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
+                        'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
+                    ],
+                    'hotel' => [
+                        'nombre' => $hotel ? $hotel->nombre : 'Hotel no especificado',
+                        'direccion' => $hotel ? $hotel->direccion : null,
+                        'telefono' => $hotel ? $hotel->telefono : null,
+                    ],
+                    'detalles' => [
+                        'cantidad_personas' => $detalleHotel ? $detalleHotel->cantidad_persona : $reserva->mayores_edad,
+                        'cantidad_habitaciones' => $detalleHotel ? $detalleHotel->cantidad_habitacion : null,
+                    ],
+                    'total' => $reserva->total,
+                    'mayores_edad' => $reserva->mayores_edad,
+                    'menores_edad' => $reserva->menores_edad
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $transformedData
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las reservas de hoteles',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Mostrar detalles específicos de una reserva de hotel
+     */
+    public function showHotel($id): JsonResponse
+    {
+        try {
+            $reserva = Reserva::with(['cliente', 'cliente.user', 'detallesHoteles.hotel', 'empleado'])
+                ->whereHas('detallesHoteles') // Solo si tiene detalles de hotel
+                ->findOrFail($id);
+
+            $detalleHotel = $reserva->detallesHoteles->first();
+            $hotel = $detalleHotel ? $detalleHotel->hotel : null;
+
+            $response = [
+                'id' => $reserva->id,
+                'fecha_reserva' => $reserva->fecha,
+                'fecha_entrada' => $detalleHotel ? $detalleHotel->fecha_entrada : null,
+                'fecha_salida' => $detalleHotel ? $detalleHotel->fecha_salida : null,
+                'estado' => $reserva->estado,
+                'cliente' => [
+                    'nombres' => $reserva->cliente && $reserva->cliente->user ?
+                               $reserva->cliente->user->name : 'Cliente no asignado',
+                    'correo' => $reserva->cliente && $reserva->cliente->user ?
+                              $reserva->cliente->user->email : 'Sin correo',
+                    'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
+                    'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
+                    'direccion' => $reserva->cliente ? $reserva->cliente->direccion : null,
+                    'fecha_nacimiento' => $reserva->cliente ? $reserva->cliente->fecha_nacimiento : null,
+                    'genero' => $reserva->cliente ? $reserva->cliente->genero : null,
+                ],
+                'hotel' => [
+                    'nombre' => $hotel ? $hotel->nombre : 'Hotel no especificado',
+                    'direccion' => $hotel ? $hotel->direccion : null,
+                    'telefono' => $hotel ? $hotel->telefono : null,
+                    'estrellas' => $hotel ? $hotel->estrellas : null,
+                    'descripcion' => $hotel ? $hotel->descripcion : null,
+                ],
+                'detalles' => [
+                    'cantidad_personas' => $detalleHotel ? $detalleHotel->cantidad_persona : $reserva->mayores_edad,
+                    'cantidad_habitaciones' => $detalleHotel ? $detalleHotel->cantidad_habitacion : null,
+                    'subtotal' => $detalleHotel ? $detalleHotel->subtotal : null,
+                ],
+                'total' => $reserva->total,
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'empleado' => $reserva->empleado ? [
+                    'nombres' => $reserva->empleado->nombres,
+                    'apellidos' => $reserva->empleado->apellidos,
+                ] : null,
+                'created_at' => $reserva->created_at,
+                'updated_at' => $reserva->updated_at,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => $response
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener los detalles de la reserva de hotel',
                 'error' => $e->getMessage()
             ], 500);
         }

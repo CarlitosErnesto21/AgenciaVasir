@@ -13,12 +13,10 @@ return new class extends Migration
     {
         Schema::create('detalles_reservas_hoteles', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre', 50);
             $table->dateTime('fecha_entrada');
             $table->dateTime('fecha_salida');
             $table->integer('cantidad_persona');
             $table->integer('cantidad_habitacion');
-            $table->integer('numero_habitacion');
             $table->decimal('subtotal', 8, 2);
             // llaves foraneeas a reservas y hoteles
             $table->unsignedBigInteger('reserva_id');

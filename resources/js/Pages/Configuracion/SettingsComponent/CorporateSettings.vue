@@ -1,20 +1,20 @@
 <template>
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4">
+        <div class="bg-gradient-to-r from-red-600 to-red-700 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4">
             <h1 class="text-sm sm:text-lg lg:text-2xl font-bold text-white flex items-center">
                 <span class="text-sm sm:text-lg lg:text-2xl mr-1 sm:mr-2 lg:mr-3">🏢</span>
                 <span class="hidden sm:inline">Información Corporativa</span>
                 <span class="sm:hidden">Info Corporativa</span>
             </h1>
-            <p class="text-blue-100 mt-0.5 sm:mt-1 lg:mt-2 text-xs sm:text-sm lg:text-base hidden sm:block">Configure el contenido que aparece en la página "Sobre Nosotros"</p>
+            <p class="text-red-100 mt-0.5 sm:mt-1 lg:mt-2 text-xs sm:text-sm lg:text-base hidden sm:block">Configure el contenido que aparece en la página "Sobre Nosotros"</p>
         </div>
 
         <!-- Content -->
         <div class="p-3 sm:p-4 lg:p-5">
             <div class="space-y-4">
                 <!-- Información Básica (Descripción, Misión, Visión) -->
-                <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <div class="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
                     <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
                         <span class="text-base sm:text-lg mr-2">📝</span>
                         Información Básica
@@ -66,16 +66,16 @@
                 </div>
 
                 <!-- Valores Corporativos -->
-                <div class="bg-purple-50 rounded-lg p-3 sm:p-4 border border-purple-200">
+                <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
                     <div class="flex items-center justify-between mb-3">
                         <h3 class="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
-                            <span class="text-base sm:text-lg mr-2">💎</span>
+                            <span class="text-base sm:text-lg mr-2">⭐</span>
                             Valores Corporativos
                         </h3>
                         <button
                             @click="showAddValueForm = !showAddValueForm"
                             type="button"
-                            class="px-3 py-1.5 text-xs sm:text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors duration-200 flex items-center"
+                            class="px-3 py-1.5 text-xs sm:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center"
                         >
                             <span class="mr-1">+</span>
                             <span class="hidden sm:inline">Agregar</span>
@@ -84,14 +84,14 @@
                     </div>
 
                     <!-- Formulario compacto para agregar nuevo valor -->
-                    <div v-if="showAddValueForm" class="bg-white rounded-lg p-3 mb-3 border border-purple-300">
+                    <div v-if="showAddValueForm" class="bg-white rounded-lg p-3 mb-3 border border-red-300">
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
                                 <input
                                     v-model="newValue.titulo"
                                     type="text"
                                     maxlength="100"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                     placeholder="Título del valor (ej: Integridad)"
                                 />
                             </div>
@@ -100,7 +100,7 @@
                                     v-model="newValue.descripcion"
                                     rows="1"
                                     maxlength="500"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                                     placeholder="Descripción del valor..."
                                 ></textarea>
                             </div>
@@ -110,7 +110,7 @@
                                 @click="addValue"
                                 :disabled="!newValue.titulo || !newValue.descripcion"
                                 type="button"
-                                class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
+                                class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
                             >
                                 Agregar
                             </button>
@@ -176,14 +176,14 @@
                                     v-model="editingValue.titulo"
                                     type="text"
                                     maxlength="100"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
                                     placeholder="Título"
                                 />
                                 <textarea
                                     v-model="editingValue.descripcion"
                                     rows="2"
                                     maxlength="500"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                                     placeholder="Descripción"
                                 ></textarea>
                                 <div class="flex gap-2" :class="`edit-buttons-${value.id}`">
@@ -191,7 +191,7 @@
                                         @click="saveEditValue"
                                         :disabled="!editingValue.titulo || !editingValue.descripcion"
                                         type="button"
-                                        class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
+                                        class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
                                     >
                                         Guardar
                                     </button>

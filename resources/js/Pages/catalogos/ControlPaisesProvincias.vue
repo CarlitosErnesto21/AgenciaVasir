@@ -457,7 +457,7 @@ onMounted(() => {
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-3">
                 <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
-                  <FontAwesomeIcon :icon="faFilter" class="text-blue-600 text-sm" />
+                  <i class="pi pi-filter text-blue-600 text-sm"></i>
                   <span>Filtros</span>
                 </h3>
                 <div class="bg-blue-100 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
@@ -469,14 +469,14 @@ onMounted(() => {
                 <select
                   id="tipo-estado"
                   v-model="modoSeleccionado"
-                  class="w-28 sm:w-32 h-8 text-sm border border-blue-300 rounded-md px-2 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                  class="w-28 sm:w-32 h-8 text-sm border border-blue-300 rounded-md px-2 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                 >
                   <option value="" disabled selected hidden>Mostrar</option>
                   <option
                     v-for="opcion in opcionesMostrar"
                     :key="opcion.value"
                     :value="opcion.value"
-                    class="truncate"
+                    class="truncate text-gray-900 text-lg"
                   >
                     {{ opcion.label }}
                   </option>

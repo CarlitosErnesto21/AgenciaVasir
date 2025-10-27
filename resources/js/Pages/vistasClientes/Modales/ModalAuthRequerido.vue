@@ -31,75 +31,28 @@ const cerrarModal = () => {
 
 // Función para ir al login
 const irALogin = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del login
-  if (props.tourInfo) {
-    const tourData = {
-      tourId: props.tourInfo.id,
-      tourNombre: props.tourInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
-    sessionStorage.setItem('reserva_session_activa', 'true')
-  }
-  
-  // Guardar información del producto en sessionStorage para recuperarla después del login
-  if (props.productoInfo) {
-    const productoData = {
-      productoId: props.productoInfo.id,
-      productoNombre: props.productoInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('producto_compra_pendiente', JSON.stringify(productoData))
-    sessionStorage.setItem('compra_session_activa', 'true')
-  }
-  
   router.visit('/login')
 }
 
 // Función para ir al registro
 const irARegistro = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del registro
-  if (props.tourInfo) {
-    const tourData = {
-      tourId: props.tourInfo.id,
-      tourNombre: props.tourInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
-    sessionStorage.setItem('reserva_session_activa', 'true')
-  }
-  
-  // Guardar información del producto en sessionStorage para recuperarla después del registro
-  if (props.productoInfo) {
-    const productoData = {
-      productoId: props.productoInfo.id,
-      productoNombre: props.productoInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('producto_compra_pendiente', JSON.stringify(productoData))
-    sessionStorage.setItem('compra_session_activa', 'true')
-  }
-  
   router.visit('/register')
 }
 </script>
 
 <template>
-  <Dialog 
-    :visible="visible" 
+  <Dialog
+    :visible="visible"
     @update:visible="emit('update:visible', $event)"
-    modal 
-    :closable="false" 
-    class="max-w-md w-full mx-4" 
+    modal
+    :closable="false"
+    class="max-w-md w-full mx-4"
     :draggable="false"
   >
     <template #header>
       <h3 class="text-lg font-bold text-red-700">
-        <span v-if="tourInfo">🔐 Inicia Sesión para Reservar</span>
+        <span v-if="tourInfo && tourInfo.tipo === 'hotel'">🔐 Inicia Sesión para Reservar Hotel</span>
+        <span v-else-if="tourInfo">🔐 Inicia Sesión para Reservar</span>
         <span v-else-if="productoInfo">🔐 Inicia Sesión para Comprar</span>
         <span v-else>🔐 Inicia Sesión para Continuar</span>
       </h3>
@@ -119,19 +72,29 @@ const irARegistro = () => {
       <h3 class="text-xl font-semibold text-gray-900 mb-2">
         ¡Inicia sesión para continuar!
       </h3>
-      
+
       <p class="text-gray-600 mb-2">
-        <span v-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
+        <span v-if="tourInfo && tourInfo.tipo === 'hotel'">Para realizar una reserva de hotel necesitas tener una cuenta en nuestra plataforma.</span>
+        <span v-else-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else-if="productoInfo">Para realizar una compra necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else>Para continuar necesitas tener una cuenta en nuestra plataforma.</span>
       </p>
 
-      <div v-if="tourInfo" class="bg-blue-50 rounded-lg p-3 mb-6 text-left">
+      <div v-if="tourInfo && tourInfo.tipo === 'hotel'" class="bg-orange-50 rounded-lg p-3 mb-6 text-left">
+        <p class="text-sm text-orange-800">
+          <strong>Hotel seleccionado:</strong> {{ tourInfo.nombre }}
+        </p>
+        <p class="text-xs text-orange-600 mt-1">
+          Después del login podrás regresar a realizar tu reserva.
+        </p>
+      </div>
+
+      <div v-else-if="tourInfo" class="bg-blue-50 rounded-lg p-3 mb-6 text-left">
         <p class="text-sm text-blue-800">
           <strong>Tour seleccionado:</strong> {{ tourInfo.nombre }}
         </p>
         <p class="text-xs text-blue-600 mt-1">
-          Te redirigiremos automáticamente a la reserva después del login.
+          Después del login podrás regresar a realizar tu reserva.
         </p>
       </div>
 
@@ -140,27 +103,27 @@ const irARegistro = () => {
           <strong>Producto seleccionado:</strong> {{ productoInfo.nombre }}
         </p>
         <p class="text-xs text-green-600 mt-1">
-          Te redirigiremos automáticamente a la compra después del login.
+          Después del login podrás regresar a realizar tu compra.
         </p>
       </div>
 
       <!-- Botones -->
       <div class="space-y-3">
-        <button 
-            type="button" 
-            class="bg-red-600 hover:bg-red-700 text-white border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+        <button
+            type="button"
+            class="bg-red-600 hover:bg-red-700 text-white border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
             @click="irALogin">
             <FontAwesomeIcon :icon="faSignInAlt" class="h-4 text-white" />
             Iniciar Sesión
         </button>
-        
+
         <div class="text-sm text-gray-500">
           ¿No tienes cuenta?
         </div>
-        
-        <button 
-            type="button" 
-            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+
+        <button
+            type="button"
+            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
             @click="irARegistro">
             <FontAwesomeIcon :icon="faUserPlus" class="h-4 text-red-600" />
             Crear Cuenta Nueva
@@ -170,9 +133,9 @@ const irARegistro = () => {
 
     <template #footer>
       <div class="flex justify-center items-center w-full">
-        <button 
-            type="button" 
-            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 mx-auto" 
+        <button
+            type="button"
+            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 mx-auto"
             @click="cerrarModal">
             <FontAwesomeIcon :icon="faXmark" class="h-5 text-red-600" />
             Cerrar

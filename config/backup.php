@@ -69,6 +69,16 @@ return [
          */
         'database_dump_file_extension' => '',
 
+        /*
+         * Here you can specify the path to the binary of mysqldump and other db dump commands.
+         * For Windows, you might need to specify the full path to the executable.
+         */
+        'database_dump_command_path' => [
+            'mysql' => env('DB_DUMP_PATH_MYSQL', 'mysqldump'),
+            'pgsql' => env('DB_DUMP_PATH_PGSQL', 'pg_dump'),
+            'mongodb' => env('DB_DUMP_PATH_MONGODB', 'mongodump'),
+        ],
+
         'destination' => [
             /*
              * The filename prefix used for the backup zip file.

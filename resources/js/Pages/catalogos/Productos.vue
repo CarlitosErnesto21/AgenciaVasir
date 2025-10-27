@@ -1157,12 +1157,12 @@ const onStockMinimoPaste = (event) => {
                                         class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                         :class="selectedCategoria === '' || selectedCategoria === null ? 'text-gray-400' : 'text-gray-900'"
                                     >
-                                        <option value="" disabled selected hidden>Categoría</option>
+                                        <option value="" disabled select hiddene hiddend hidden>Categoría</option>
                                         <option
                                             v-for="categoria in categorias"
                                             :key="categoria.id"
                                             :value="categoria.id"
-                                            class="truncate text-gray-900"
+                                            class="truncate text-gray-900 text-lg"
                                         >
                                             {{ categoria.nombre }}
                                         </option>
@@ -1175,12 +1175,12 @@ const onStockMinimoPaste = (event) => {
                                         class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                         :class="selectedEstado === '' || selectedEstado === null ? 'text-gray-400' : 'text-gray-900'"
                                     >
-                                        <option value="" disabled selected hidden>Estado</option>
+                                        <option value="" disabled select hiddene hiddend hidden>Estado</option>
                                         <option
                                             v-for="estado in estadosOptions"
                                             :key="estado.value"
                                             :value="estado.value"
-                                            class="text-gray-900 truncate"
+                                            class="text-gray-900 truncate text-lg"
                                         >
                                             {{ estado.label }}
                                         </option>

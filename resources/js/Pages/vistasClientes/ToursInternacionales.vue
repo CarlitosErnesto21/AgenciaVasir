@@ -469,61 +469,61 @@ const verMasInfo = (tour) => {
 <template>
   <Catalogo>
     <Toast />
-    <div class="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen pt-20 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-28">
-      <div class="w-full px-1 sm:px-1 lg:px-2">
-        <!-- Header Profesional con Stats Integradas -->
-        <div class="mb-3 sm:mb-4">
-          <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-            <!-- Header con gradiente -->
-            <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 text-white text-center py-4 sm:py-6">
-              <div class="flex items-center justify-center gap-3 mb-1">
-                <img src="/images/world.png" alt="Tours Internacionales" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-                  Tours Internacionales
-                </h1>
+
+    <!-- Header Profesional - Ancho completo de la pantalla -->
+    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32">
+      <!-- Header con gradiente -->
+      <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 text-white text-center py-4 sm:py-6">
+        <div class="flex items-center justify-center gap-3 mb-1">
+          <img src="/images/world.png" alt="Tours Internacionales" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            Tours Internacionales
+          </h1>
+        </div>
+        <p class="hidden md:block text-base sm:text-lg text-red-100 px-4">Explora destinos increíbles alrededor del mundo.</p>
+        <p class="block md:hidden text-base sm:text-lg text-red-100 px-4">Explora alrededor del mundo.</p>
+      </div>
+
+      <!-- Stats integradas en el header -->
+      <div v-if="tours.length > 0" class="bg-white py-3 px-3">
+        <div class="max-w-4xl mx-auto">
+          <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
+
+            <!-- Stat 1: Tours Disponibles -->
+            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                {{ estadisticas.totalDestinos }}
               </div>
-              <p class="hidden md:block text-base sm:text-lg text-red-100 px-4">Explora destinos increíbles alrededor del mundo.</p>
-              <p class="block md:hidden text-base sm:text-lg text-red-100 px-4">Explora alrededor del mundo.</p>
+              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Tours Disponibles</div>
+              <div class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</div>
             </div>
 
-            <!-- Stats integradas en el header -->
-            <div v-if="tours.length > 0" class="bg-white py-3 px-3">
-              <div class="max-w-4xl mx-auto">
-                <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
-
-                  <!-- Stat 1: Tours Disponibles -->
-                  <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-                    <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                      {{ estadisticas.totalDestinos }}
-                    </div>
-                    <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Tours Disponibles</div>
-                    <div class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</div>
-                  </div>
-
-                  <!-- Stat 2: Precio Mínimo -->
-                  <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-red-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-                    <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                      {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo}` : 'Consultar' }}
-                    </div>
-                    <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</div>
-                    <div class="hidden md:block text-gray-500 text-xs mt-1">Todo incluido</div>
-                  </div>
-
-                  <!-- Stat 3: Ubicaciones -->
-                  <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-                    <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                      {{ estadisticas.totalPaises }}
-                    </div>
-                    <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</div>
-                    <div class="hidden md:block text-gray-500 text-xs mt-1">Países diferentes</div>
-                  </div>
-
-
-                </div>
+            <!-- Stat 2: Precio Mínimo -->
+            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-red-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
+                {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo}` : 'Consultar' }}
               </div>
+              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</div>
+              <div class="hidden md:block text-gray-500 text-xs mt-1">Todo incluido</div>
             </div>
+
+            <!-- Stat 3: Ubicaciones -->
+            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
+              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                {{ estadisticas.totalPaises }}
+              </div>
+              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</div>
+              <div class="hidden md:block text-gray-500 text-xs mt-1">Países diferentes</div>
+            </div>
+
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Contenido principal con padding -->
+    <div class="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen px-4 sm:px-6 lg:px-8 pb-8">
+      <div class="w-full max-w-7xl mx-auto">
 
         <!-- Estado de carga -->
         <div v-if="loading && tours.length === 0" class="text-center py-12">
@@ -770,7 +770,7 @@ const verMasInfo = (tour) => {
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center border border-blue-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                   <div class="text-4xl mb-3">✈️</div>
                   <h3 class="font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2 text-lg">Vuelos Incluidos</h3>
-                  <p class="text-gray-600 text-sm leading-relaxed">Boletos aéreos y traslados incluidos en la mayoría de paquetes</p>
+                  <p class="text-gray-600 text-sm leading-relaxed">Boletos aéreos y traslados incluidos en la mayoría de tours</p>
                 </div>
                 <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 text-center border border-green-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                   <div class="text-4xl mb-3">🏨</div>

@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser } from '@fortawesome/free-solid-svg-icons'
 import { faFacebook, faInstagram, faTiktok, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useCarritoStore } from '@/stores/carrito'
+import Toast from 'primevue/toast'
 
 const carrito = useCarritoStore()
 const page = usePage()
 const isSidebarOpen = ref(false)
-const paquetesOpen = ref(false)
 const toursOpen = ref(false)
 const toursOpenAside = ref(false)
 const userMenuOpen = ref(false)
@@ -85,6 +85,7 @@ const logout = () => {
 
 // Computed properties para autenticación segura
 const auth = computed(() => page.props.auth || {})
+const config = computed(() => page.props.config || {})
 const user = computed(() => auth.value.user || null)
 const isAuthenticated = computed(() => !!user.value)
 
@@ -162,32 +163,16 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 <div class="w-px h-6 bg-red-200/40"></div>
 
                 <Link
-                    :href="route('paquetes')"
-                    :class=" [
-                        'px-1 py-1 xl:px-3 xl:py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300/50 tracking-wide hover:scale-105 transition-all duration-300 font-medium text-xs md:text-sm lg:text-sm xl:text-lg flex items-center group',
-                        route().current('paquetes')
-                            ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold scale-105 shadow-lg'
-                            : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
-                    ]"
-                >
-                    <FontAwesomeIcon :icon="faBus" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Paquetes</span>
-                </Link>
-
-                <!-- Separador visual -->
-                <div class="w-px h-6 bg-red-200/40"></div>
-
-                <Link
-                    :href="route('reservaciones')"
+                    :href="route('hoteles-clientes')"
                     :class=" [
                         'px-1 py-1 xl:px-3 xl:py-1.5 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-300/50 tracking-wide hover:scale-105 transition-all duration-300 font-medium text-sm lg:text-sm xl:text-lg flex items-center justify-center group',
-                        route().current('reservaciones')
+                        route().current('hoteles-clientes')
                             ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold scale-105 shadow-lg'
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
                     <FontAwesomeIcon :icon="faHotel" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Reservaciones</span>
+                    <span class="text-center">Hoteles</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -399,7 +384,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
                               <span class="text-xs text-gray-500 mt-0.5">Serás redirigido al dashboard administrativo.</span>
                             </div>
                           </Link>
-                          
+
                           <div class="relative my-3 mx-6">
                             <div class="absolute inset-0 flex items-center">
                               <div class="w-full border-t border-red-100"></div>
@@ -497,35 +482,19 @@ watch(isAuthenticated, (newValue, oldValue) => {
           </Link>
           <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
 
-          <!-- Paquetes -->
+          <!-- Hoteles -->
           <Link
-            :href="route('paquetes')"
+            :href="route('hoteles-clientes')"
             :class=" [
               'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('paquetes')
-                ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
-                : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
-            ]"
-            @click="isSidebarOpen = false"
-          >
-            <FontAwesomeIcon :icon="faBus" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
-            <span class="font-semibold">Paquetes</span>
-          </Link>
-          <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
-
-          <!-- Reservaciones -->
-          <Link
-            :href="route('reservaciones')"
-            :class=" [
-              'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-              route().current('reservaciones')
+              route().current('hoteles-clientes')
                 ? 'bg-gradient-to-r from-red-600 to-red-400 text-white font-bold shadow-lg'
                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
             ]"
             @click="isSidebarOpen = false"
           >
             <FontAwesomeIcon :icon="faHotel" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
-            <span class="font-semibold">Reservaciones</span>
+            <span class="font-semibold">Hoteles</span>
           </Link>
           <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
 
@@ -637,7 +606,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
     </transition>
 
     <!-- AQUÍ VA EL CONTENIDO DINÁMICO -->
-    <main class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 min-h-screen">
+    <main class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 ">
       <slot />
     </main>
 
@@ -660,12 +629,11 @@ watch(isAuthenticated, (newValue, oldValue) => {
               Turismo cultural, sostenible y creativo para viajeros de todas las edades<br><br>
               <span class="font-bold text-white">Ofrecemos:</span><br>
               <span class="text-red-100">
-                - Paquetes vacacionales<br>
-                - Boletos aéreos y traslados<br>
-                - Estadías en hoteles<br>
-                - Trámite de visas
+                - Tours nacionales e internacionales<br>
+                - Reservaciones en Hoteles<br>
+                - Venta de artículos turísticos
               </span><br><br>
-              <span class="font-bold text-yellow-300 text-lg">¡Viajá con propósito!</span>
+              <span class="font-bold text-yellow-300 text-lg">¡Viajes y Turismo!</span>
             </p>
           </div>
         </div>
@@ -697,10 +665,10 @@ watch(isAuthenticated, (newValue, oldValue) => {
               <FontAwesomeIcon :icon="faEnvelope" class="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
               <div class="flex-1 min-w-0">
                 <span class="text-red-200 text-sm">Email:</span>
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=vasirtours19@gmail.com"
+                <a :href="`https://mail.google.com/mail/?view=cm&fs=1&to=${config.mail_from_address || 'vasirtours19@gmail.com'}`"
                    class="block text-red-100 hover:text-white underline decoration-dotted transition-colors break-words"
                    target="_blank" rel="noopener">
-                  vasirtours19@gmail.com
+                  {{ config.mail_from_address || 'vasirtours19@gmail.com' }}
                 </a>
               </div>
             </div>
@@ -771,6 +739,9 @@ watch(isAuthenticated, (newValue, oldValue) => {
         </p>
       </div>
     </footer>
+
+    <!-- Toast notifications con z-index máximo para aparecer sobre modales de pago -->
+    <Toast />
 </template>
 <style>
 .fade-enter-active {
@@ -786,3 +757,105 @@ watch(isAuthenticated, (newValue, oldValue) => {
   opacity: 1;
 }
 </style>
+
+<style>
+/*//////// Estilos responsivos para Toast notifications GLOBALES /////////*/
+.p-toast {
+  z-index: 999999 !important;
+  position: fixed !important;
+}
+
+.p-toast .p-toast-message {
+  margin: 0.5rem !important;
+  min-width: 250px !important;
+  max-width: 90vw !important;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+
+/* Mobile styles */
+@media (max-width: 639px) {
+  .p-toast {
+    width: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 1rem !important;
+  }
+
+  .p-toast .p-toast-message {
+    margin: 0.25rem !important;
+    min-width: unset !important;
+    max-width: calc(100vw - 1rem) !important;
+    border-radius: 0.5rem !important;
+  }
+
+  .p-toast .p-toast-message .p-toast-message-content {
+    padding: 0.75rem !important;
+  }
+
+  .p-toast .p-toast-message .p-toast-summary {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.25rem !important;
+  }
+
+  .p-toast .p-toast-message .p-toast-detail {
+    font-size: 0.8125rem !important;
+    line-height: 1.4 !important;
+  }
+
+  .p-toast .p-toast-icon-close {
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    top: 0.5rem !important;
+    right: 0.5rem !important;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 640px) and (max-width: 1024px) {
+  .p-toast .p-toast-message {
+    max-width: 400px !important;
+    margin: 0.75rem !important;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1025px) {
+  .p-toast .p-toast-message {
+    max-width: 450px !important;
+    margin: 1rem !important;
+  }
+}
+
+/* Mejoras generales para mejor UX */
+.p-toast .p-toast-message {
+  border-radius: 0.5rem !important;
+  border: none !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-success {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #22c55e !important;
+  color: #15803d !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-error {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+  color: #dc2626 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-warn {
+  background-color: #fffbeb !important;
+  border-left: 4px solid #f59e0b !important;
+  color: #d97706 !important;
+}
+
+.p-toast .p-toast-message.p-toast-message-info {
+  background-color: #eff6ff !important;
+  border-left: 4px solid #3b82f6 !important;
+  color: #2563eb !important;
+}
+/*///////// Fin de los estilos para Toast GLOBALES ////////*/
+</style>
+

@@ -433,11 +433,11 @@ const cerrarModalReprogramar = () => {
           </div>
           <div>
             <span class="font-medium text-gray-700">Teléfono:</span>
-            <span class="ml-2">{{ reserva.cliente?.telefono || 'N/A' }}</span>
+            <span class="ml-2">{{ reserva.cliente?.telefono || 'Sin teléfono registrado' }}</span>
           </div>
           <div>
             <span class="font-medium text-gray-700">Documento:</span>
-            <span class="ml-2">{{ reserva.cliente?.numero_identificacion || 'N/A' }}</span>
+            <span class="ml-2">{{ reserva.cliente?.numero_identificacion || 'Sin documento registrado' }}</span>
           </div>
         </div>
       </div>

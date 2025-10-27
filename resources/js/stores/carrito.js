@@ -37,16 +37,12 @@ export const useCarritoStore = defineStore('carrito', () => {
         cantidad: 1
       })
     }
-
-    // Guardar en localStorage para persistencia
-    guardarEnStorage()
   }
 
   const eliminarProducto = (productoId) => {
     const index = items.value.findIndex(item => item.id === productoId)
     if (index > -1) {
       items.value.splice(index, 1)
-      guardarEnStorage()
     }
   }
 
@@ -57,7 +53,6 @@ export const useCarritoStore = defineStore('carrito', () => {
         eliminarProducto(productoId)
       } else if (nuevaCantidad <= item.stock_actual) {
         item.cantidad = nuevaCantidad
-        guardarEnStorage()
       }
     }
   }
@@ -66,7 +61,6 @@ export const useCarritoStore = defineStore('carrito', () => {
     const item = items.value.find(item => item.id === productoId)
     if (item && item.cantidad < item.stock_actual) {
       item.cantidad += 1
-      guardarEnStorage()
     }
   }
 
@@ -77,20 +71,17 @@ export const useCarritoStore = defineStore('carrito', () => {
         eliminarProducto(productoId)
       } else {
         item.cantidad -= 1
-        guardarEnStorage()
       }
     }
   }
 
   const limpiarCarrito = () => {
     items.value = []
-    guardarEnStorage()
   }
 
   const limpiarCarritoAlCerrarSesion = () => {
     items.value = []
     isVisible.value = false
-    localStorage.removeItem('carrito_agencia_vasir')
   }
 
   const verificarEstadoAutenticacion = () => {
@@ -115,24 +106,9 @@ export const useCarritoStore = defineStore('carrito', () => {
     isVisible.value = false
   }
 
-  // 💾 Persistencia en localStorage
-  const guardarEnStorage = () => {
-    localStorage.setItem('carrito_agencia_vasir', JSON.stringify(items.value))
-  }
-
-  const cargarDesdeStorage = () => {
-    const savedCart = localStorage.getItem('carrito_agencia_vasir')
-    if (savedCart) {
-      try {
-        items.value = JSON.parse(savedCart)
-        // Verificar estado de autenticación después de cargar
-        verificarEstadoAutenticacion()
-      } catch (error) {
-        console.error('Error al cargar carrito desde localStorage:', error)
-        items.value = []
-      }
-    }
-  }
+  // � Estado temporal del carrito (sin persistencia)
+  // El carrito ahora solo existe durante la sesión activa del navegador
+  // Se limpia automáticamente al refrescar la página o cambiar de ruta
 
   // 🔍 Utilidades
   const getItem = (productoId) => {
@@ -148,8 +124,7 @@ export const useCarritoStore = defineStore('carrito', () => {
     return item ? item.cantidad : 0
   }
 
-  // Cargar datos al inicializar el store
-  cargarDesdeStorage()
+  // El carrito ahora se inicializa vacío siempre
 
   return {
     // Estado
@@ -177,8 +152,6 @@ export const useCarritoStore = defineStore('carrito', () => {
     getItem,
     hasItem,
     getItemQuantity,
-    cargarDesdeStorage,
-    guardarEnStorage,
     verificarEstadoAutenticacion
   }
 })

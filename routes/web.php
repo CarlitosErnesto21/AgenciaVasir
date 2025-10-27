@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('productos', fn() => Inertia::render('Catalogos/Productos'))->name('productos');
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
     Route::get('reservas', fn() => Inertia::render('Catalogos/Reservas'))->name('reservas');
+    Route::get('reservas-hoteles', fn() => Inertia::render('Catalogos/ReservasHoteles'))->name('reservasHoteles');
     Route::get('tours', fn() => Inertia::render('Catalogos/Tours'))->name('tours');
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('tipo-documentos', fn() => Inertia::render('Configuracion/TiposDocumento'))->name('tipodocumentos');
@@ -33,7 +34,6 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('clientes/{cliente}/ventas', [ClienteController::class, 'ventas'])->name('clientes.ventas');
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
     Route::get('categorias-hoteles', fn() => Inertia::render('Catalogos/CategoriaHoteles'))->name('catHoteles');
-    Route::get('gestion-paquetes', fn() => Inertia::render('Catalogos/GestionPaquetes'))->name('gestionPaquetes');
     Route::get('ventas', [VentaController::class, 'indexWeb'])->name('ventas');
     Route::get('inventario', fn() => Inertia::render('Catalogos/Inventarios'))->name('inventario');
     // Ruta para gestión de usuarios internos - Solo Administradores
@@ -41,6 +41,7 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
 
     //Rutas para informes
     Route::get('/descargar-informe', [InformePDFController::class, 'descargarInforme']);
+    Route::get('/descargar-informe-inventario', [InformePDFController::class, 'descargarInformeInventario']);
     Route::get('/configuracion/backup', [BackupController::class, 'showBackupPage'])->name('backups')->middleware('password.confirm');
 
     // Configuración del Sistema - Solo para Administradores
@@ -69,8 +70,7 @@ Route::middleware('auth')->group(function () {
 });
 
 //Rutas de clientes
-Route::get('paquetes', fn() => Inertia::render('VistasClientes/Paquetes'))->name('paquetes');
-Route::get('reservaciones', fn() => Inertia::render('VistasClientes/Reservaciones'))->name('reservaciones');
+Route::get('reservaciones', fn() => Inertia::render('VistasClientes/Reservaciones'))->name('hoteles-clientes');
 Route::get('tours-nacionales', fn() => Inertia::render('VistasClientes/ToursNacionales'))->name('tours-nacionales');
 Route::get('tours-internacionales', fn() => Inertia::render('VistasClientes/ToursInternacionales'))->name('tours-internacionales');
 Route::get('tienda', fn() => Inertia::render('VistasClientes/Tienda'))->name('tienda');

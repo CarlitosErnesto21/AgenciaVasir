@@ -298,87 +298,7 @@
       </div>
     </div>
 
-    <!-- Modal Agregar Stock -->
-    <!-- Modal Detalle -->    <!-- Modal Ajustar Stock -->
-    <Dialog
-      v-model:visible="mostrarModalAjustar"
-      modal
-      header="Ajustar Stock"
-      :style="dialogStyle"
-    >
-      <div class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Producto</label>
-          <Select
-            v-model="formAjustar.producto_id"
-            :options="Array.isArray(productos) ? productos : []"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Seleccionar producto"
-            class="w-full"
-            :class="{ 'p-invalid': errores.producto_id }"
-            @change="actualizarStockActual"
-          />
-          <small v-if="errores.producto_id" class="p-error">{{ errores.producto_id[0] }}</small>
-        </div>
-
-        <div v-if="stockActual !== null" class="p-4 bg-blue-50 rounded-lg">
-          <p class="text-sm text-blue-700">
-            <strong>Stock actual:</strong> {{ stockActual }} unidades
-          </p>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Nuevo Stock</label>
-          <InputText
-            v-model="formAjustar.nuevo_stock"
-            placeholder="Nuevo stock"
-            type="number"
-            min="0"
-            class="w-full"
-            :class="{ 'p-invalid': errores.nuevo_stock }"
-          />
-          <small v-if="errores.nuevo_stock" class="p-error">{{ errores.nuevo_stock[0] }}</small>
-        </div>
-
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
-          <Textarea
-            v-model="formAjustar.observacion"
-            placeholder="Motivo del ajuste"
-            rows="3"
-            class="w-full"
-          />
-        </div>
-      </div>
-
-      <template #footer>
-        <div class="flex justify-center gap-4 w-full mt-6">
-          <button
-            @click="ajustarStock"
-            :disabled="procesando"
-            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <FontAwesomeIcon
-              v-if="procesando"
-              :icon="faSpinner"
-              class="animate-spin h-5 text-white"
-            />
-            <FontAwesomeIcon v-else :icon="faPencil" class="h-5" />
-            <span v-if="!procesando">Ajustar Stock</span>
-            <span v-else>Ajustando...</span>
-          </button>
-          <button
-            type="button"
-            @click="mostrarModalAjustar = false"
-            :disabled="procesando"
-            class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-          >
-            <FontAwesomeIcon :icon="faTimes" class="h-5" />Cancelar
-          </button>
-        </div>
-      </template>
-    </Dialog>
+    <!-- Modal Detalle -->
 
     <!-- Modal Detalle -->
     <Dialog
@@ -556,7 +476,6 @@ const resumen = ref({})
 const cargando = ref(false)
 const procesando = ref(false)
 const busqueda = ref('')
-const stockActual = ref(null)
 const isClearingFilters = ref(false)
 const isViewingDetail = ref(false)
 const isViewingHistory = ref(false)
@@ -595,6 +514,37 @@ const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024
 const movimientosFiltrados = computed(() => {
   let resultado = movimientos.value
 
+  // Filtro por producto
+  if (filtros.value.producto_id && filtros.value.producto_id !== "") {
+    resultado = resultado.filter(movimiento =>
+      movimiento.producto_id == filtros.value.producto_id
+    )
+  }  // Filtro por tipo de movimiento
+  if (filtros.value.tipo_movimiento && filtros.value.tipo_movimiento !== "") {
+    resultado = resultado.filter(movimiento =>
+      movimiento.tipo_movimiento === filtros.value.tipo_movimiento
+    )
+  }
+
+  // Filtro por fecha desde
+  if (filtros.value.fecha_desde) {
+    resultado = resultado.filter(movimiento => {
+      const fechaMovimiento = new Date(movimiento.fecha_movimiento)
+      const fechaDesde = new Date(filtros.value.fecha_desde)
+      return fechaMovimiento >= fechaDesde
+    })
+  }
+
+  // Filtro por fecha hasta
+  if (filtros.value.fecha_hasta) {
+    resultado = resultado.filter(movimiento => {
+      const fechaMovimiento = new Date(movimiento.fecha_movimiento)
+      const fechaHasta = new Date(filtros.value.fecha_hasta)
+      return fechaMovimiento <= fechaHasta
+    })
+  }
+
+  // Filtro por búsqueda de texto
   if (busqueda.value) {
     const termino = busqueda.value.toLowerCase()
     resultado = resultado.filter(movimiento =>
@@ -621,8 +571,23 @@ const dialogStyle = computed(() => {
 // Métodos
 const cargarDatos = async () => {
   try {
+    // Filtrar solo los parámetros que tienen valores válidos
+    const params = {}
+    if (filtros.value.producto_id && filtros.value.producto_id !== "") {
+      params.producto_id = filtros.value.producto_id
+    }
+    if (filtros.value.tipo_movimiento && filtros.value.tipo_movimiento !== "") {
+      params.tipo_movimiento = filtros.value.tipo_movimiento
+    }
+    if (filtros.value.fecha_desde) {
+      params.fecha_desde = filtros.value.fecha_desde
+    }
+    if (filtros.value.fecha_hasta) {
+      params.fecha_hasta = filtros.value.fecha_hasta
+    }
+
     const [movimientosRes, productosRes, resumenRes] = await Promise.all([
-      axios.get('/api/inventario', { params: filtros.value }),
+      axios.get('/api/inventario', { params }),
       axios.get('/api/productos'),
       axios.get('/api/inventario/resumen')
     ])
@@ -709,14 +674,7 @@ const limpiarFiltros = async () => {
 
 
 
-const actualizarStockActual = () => {
-  if (formAjustar.value.producto_id && Array.isArray(productos.value)) {
-    const producto = productos.value.find(p => p.id === formAjustar.value.producto_id)
-    stockActual.value = producto?.stock_actual || 0
-  } else {
-    stockActual.value = null
-  }
-}
+
 
 const verDetalle = async (movimiento) => {
   isViewingDetail.value = true

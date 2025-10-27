@@ -8,13 +8,14 @@ use Illuminate\Database\Eloquent\Model;
 class DetalleReservaHotel extends Model
 {
     use HasFactory;
+    
+    protected $table = 'detalles_reservas_hoteles';
+    
     protected $fillable = [
-        'nombre',
         'fecha_entrada',
         'fecha_salida',
-        'cantidad_personas',
+        'cantidad_persona',
         'cantidad_habitacion',
-        'numero_habitacion',
         'subtotal',
         'reserva_id',
         'hotel_id'

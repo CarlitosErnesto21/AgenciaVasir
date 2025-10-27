@@ -466,60 +466,59 @@ const verMasInfo = (tour) => {
 <template>
   <Catalogo>
     <Toast />
-    <div class="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen pt-20 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-28">
-      <div class="w-full px-1 sm:px-1 lg:px-2">
-        <!-- Header Profesional con Stats Integradas -->
-        <div class="mb-3 sm:mb-4">
-          <div class="bg-gradient-to-br from-white to-gray-50 rounded-2xl shadow-xl overflow-hidden border border-gray-200">
-            <!-- Header con gradiente -->
-            <div class="bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white text-center py-4 sm:py-6">
-              <div class="flex items-center justify-center gap-3 mb-1">
-                <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
-                <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-                  Tours Nacionales
-                </h1>
-              </div>
-              <p class="text-base sm:text-lg text-red-100 px-4">Descubre las maravillas de El Salvador.</p>
+    <!-- Header Profesional con Stats Integradas - Ancho completo de la pantalla -->
+    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32">
+      <!-- Header con gradiente -->
+      <div class="bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white text-center py-4 sm:py-6">
+        <div class="flex items-center justify-center gap-3 mb-1">
+          <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            Tours Nacionales
+          </h1>
+        </div>
+        <p class="text-base sm:text-lg text-red-100 px-4">Descubre las maravillas de El Salvador.</p>
+      </div>
+
+      <!-- Stats integradas en el header -->
+      <div v-if="tours.length > 0" class="bg-white py-3 px-3">
+        <div class="max-w-4xl mx-auto">
+          <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
+
+            <!-- Stat 1: Tours Disponibles -->
+            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
+                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
+                  {{ estadisticas.totalDestinos }}
+                </h3>
+                <p class="text-gray-700 font-semibold text-sm md:text-sm md:uppercase tracking-wide">Tours Disponibles</p>
+                <p class="hidden md:block text-gray-500 text-xs mt-1">Experiencias únicas</p>
             </div>
 
-            <!-- Stats integradas en el header -->
-            <div v-if="tours.length > 0" class="bg-white py-3 px-3">
-              <div class="max-w-4xl mx-auto">
-                <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
-
-                  <!-- Stat 1: Tours Disponibles -->
-                  <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
-                      <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                        {{ estadisticas.totalDestinos }}
-                      </h3>
-                      <p class="text-gray-700 font-semibold text-sm md:text-sm md:uppercase tracking-wide">Tours Disponibles</p>
-                      <p class="hidden md:block text-gray-500 text-xs mt-1">Experiencias únicas</p>
-                  </div>
-
-                  <!-- Stat 2: Precios -->
-                  <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-200">
-                      <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                        {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo.toFixed(2)}` : 'Consultar' }}
-                      </h3>
-                      <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</p>
-                      <p class="hidden md:block text-gray-500 text-xs mt-1">Para todos los presupuestos</p>
-                  </div>
-
-                  <!-- Stat 3: Ubicaciones -->
-                  <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
-                      <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                        {{ estadisticas.totalPaises }}
-                      </h3>
-                      <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</p>
-                      <p class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</p>
-                  </div>
-
-
-                </div>
-              </div>
+            <!-- Stat 2: Precios -->
+            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-200">
+                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
+                  {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo.toFixed(2)}` : 'Consultar' }}
+                </h3>
+                <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</p>
+                <p class="hidden md:block text-gray-500 text-xs mt-1">Para todos los presupuestos</p>
             </div>
+
+            <!-- Stat 3: Ubicaciones -->
+            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
+                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
+                  {{ estadisticas.totalPaises }}
+                </h3>
+                <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</p>
+                <p class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</p>
+            </div>
+
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Contenido principal con padding -->
+    <div class="bg-gradient-to-br from-gray-50 via-white to-gray-100 min-h-screen px-4 sm:px-6 lg:px-8 pb-8">
+      <div class="w-full max-w-7xl mx-auto">
 
         <!-- Estado de carga -->
         <div v-if="loading && tours.length === 0" class="text-center py-12">
@@ -744,7 +743,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Info adicional profesional -->
-        <div class="max-w-7xl mx-auto">
+        <div class="w-full">
           <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
           <!-- Header con gradiente -->
             <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-6">
@@ -777,6 +776,7 @@ const verMasInfo = (tour) => {
           </div>
         </div>
       </div>
+    </div>
 
     <!-- Diálogo profesional para mostrar galería de imágenes -->
       <Dialog
@@ -891,7 +891,6 @@ const verMasInfo = (tour) => {
         v-model:visible="showAuthDialog"
         :tour-info="tourSeleccionado"
       />
-    </div>
   </Catalogo>
 </template>
 

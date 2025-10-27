@@ -33,7 +33,7 @@ export function useCarrito() {
     /**
      * Crear una venta desde el carrito actual
      */
-    const createVentaFromCarrito = async (customerEmail) => {
+    const createVentaFromCarrito = async (customerEmail, clienteData = null) => {
         loading.value = true
         error.value = null
 
@@ -50,7 +50,8 @@ export function useCarrito() {
 
             const payload = {
                 productos,
-                customer_email: customerEmail
+                customer_email: customerEmail,
+                cliente_data: clienteData
             }
 
             let response

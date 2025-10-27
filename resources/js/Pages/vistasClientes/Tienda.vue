@@ -49,44 +49,9 @@ onMounted(async () => {
 
   // Verificar estado de autenticación para el carrito
   carrito.verificarEstadoAutenticacion()
-
-  // Verificar si hay un producto pendiente de compra después del login
-  verificarProductoPendiente()
 })
 
-// 🔍 Verificar producto pendiente después del login
-const verificarProductoPendiente = () => {
-  const user = page.props.auth?.user
-  if (!user) return
 
-  const productoData = sessionStorage.getItem('producto_compra_pendiente')
-  const sessionActiva = sessionStorage.getItem('compra_session_activa')
-
-  if (productoData && sessionActiva) {
-    try {
-      const datosProducto = JSON.parse(productoData)
-
-      // Buscar el producto en la lista actual
-      const producto = products.value.find(p => p.id === datosProducto.productoId)
-
-      if (producto) {
-        // Limpiar el storage
-        sessionStorage.removeItem('producto_compra_pendiente')
-        sessionStorage.removeItem('compra_session_activa')
-
-        // Proceder con la compra automáticamente
-        setTimeout(() => {
-          comprarProducto(producto)
-        }, 1000) // Pequeño delay para que se cargue todo
-      }
-    } catch (error) {
-      console.error('Error al procesar producto pendiente:', error)
-      // Limpiar storage si hay error
-      sessionStorage.removeItem('producto_compra_pendiente')
-      sessionStorage.removeItem('compra_session_activa')
-    }
-  }
-}
 
 // 🚀 Función para cargar productos desde la API
 const cargarProductos = async () => {
@@ -349,22 +314,22 @@ const recargarDatos = async () => {
     <!-- Toast para notificaciones -->
     <Toast class="z-[9999]" />
 
-    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen pt-20 sm:pt-20 md:pt-28 lg:pt-32 xl:pt-32">
-      <div class="w-full px-1 sm:px-2 lg:px-2 pb-4 sm:pb-4 lg:pb-4">
-        <!-- Header Professional -->
-        <div class="mb-3 sm:mb-4">
-          <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-4 sm:py-6 relative">
-              <!-- Botón del carrito en la esquina superior derecha -->
-              <div class="absolute top-4 right-4">
-                <CarritoButton />
-              </div>
-
-              <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🛍️ Productos</h1>
-              <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
-            </div>
+    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 w-full pt-20 md:pt-28 lg:pt-32 xl:pt-36">
+      <!-- Header Professional - Full Width -->
+      <div class="w-full mb-4 -mt-0 md:-mt-3">
+        <div class="bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-4 sm:py-6 relative shadow-xl">
+          <!-- Botón del carrito en la esquina superior derecha -->
+          <div class="absolute top-4 right-4">
+            <CarritoButton />
           </div>
+
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🛍️ Productos</h1>
+          <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
         </div>
+      </div>
+
+      <!-- Content Container -->
+      <div class="w-full px-2 sm:px-4 pb-4 sm:pb-4 lg:pb-4">
 
         <div class="flex flex-col lg:flex-row gap-4 lg:gap-8">
           <!-- Panel de Filtros -->
@@ -428,8 +393,8 @@ const recargarDatos = async () => {
             />
           </div>
         </div>
-      </div>
-    </div>
+      </div> <!-- End Content Container -->
+    </div> <!-- End Main Background -->
 
     <!-- Modal de autenticación requerida -->
     <ModalAuthRequerido
