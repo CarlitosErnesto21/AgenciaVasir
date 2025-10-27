@@ -4,7 +4,9 @@ import { useCarritoStore } from '@/stores/carrito'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import ImageWithFallback from '@/Components/ImageWithFallback.vue'
 import CarritoCheckoutModal from '@/Components/CarritoCheckoutModal.vue'
+import ModalDatosCliente from '../Modales/ModalDatosCliente.vue'
 import { usePage } from '@inertiajs/vue3'
+import axios from 'axios'
 import {
   faShoppingCart,
   faTrash,
@@ -21,8 +23,16 @@ const page = usePage()
 // Estado del modal de checkout
 const showCheckoutModal = ref(false)
 
+// Estado del modal de datos de cliente
+const showDatosClienteModal = ref(false)
+
 // Estado para controlar la animación de cierre
 const isClosing = ref(false)
+
+// Estado del cliente
+const clienteData = ref(null)
+const loadingCliente = ref(false)
+const loadingCheckout = ref(false)
 
 // Verificar si el usuario está autenticado
 const isAuthenticated = computed(() => !!page.props.auth?.user)
@@ -37,35 +47,100 @@ const formatPrice = (price) => {
   }).format(price)
 }
 
-// Función para proceder al checkout
-const procederAlCheckout = () => {
-  // Verificar que el usuario esté autenticado
+// Verificar si el cliente ya existe y tiene datos completos
+const verificarCliente = async () => {
   if (!isAuthenticated.value) {
-    // Mostrar modal de autenticación requerida o redirigir al login
-    // Aquí podrías emitir un evento o mostrar un toast
-    alert('Debes iniciar sesión para continuar con la compra')
-    return
+    // Usuario no autenticado, siempre mostrar modal de datos
+    return { tieneCliente: false, cliente: null }
   }
 
+  try {
+    loadingCliente.value = true
+    const response = await axios.get('/api/verificar-datos-cliente')
+
+    if (response.data.success && response.data.tiene_datos_completos) {
+      // Usuario tiene datos completos, obtener los datos del cliente
+      clienteData.value = response.data.cliente
+      return { tieneCliente: true, cliente: response.data.cliente }
+    } else {
+      // Usuario no tiene datos completos o no existe cliente
+      return { tieneCliente: false, cliente: null }
+    }
+  } catch (error) {
+    console.error('Error al verificar cliente:', error)
+    // En caso de error, asumir que no tiene datos completos
+    return { tieneCliente: false, cliente: null }
+  } finally {
+    loadingCliente.value = false
+  }
+}
+
+// Función para proceder al checkout
+const procederAlCheckout = async () => {
   // Verificar que el carrito no esté vacío
   if (carritoStore.isEmpty) {
     alert('Tu carrito está vacío')
     return
   }
 
-  // ✅ Cerrar el carrito con animación antes de abrir el modal de checkout
-  cerrarCarritoConAnimacion()
+  // Verificar si el usuario está autenticado
+  if (!isAuthenticated.value) {
+    alert('Debes iniciar sesión para proceder con la compra')
+    return
+  }
 
-  // Esperar a que termine la animación del carrito
-  setTimeout(() => {
-    // Abrir modal de checkout
-    showCheckoutModal.value = true
-  }, 350) // Aumentamos el tiempo para que termine la animación
+  try {
+    loadingCheckout.value = true
+
+    // ✅ Cerrar el carrito con animación antes de verificar cliente
+    cerrarCarritoConAnimacion()
+
+    // Esperar a que termine la animación del carrito y verificar cliente
+    setTimeout(async () => {
+      try {
+        const { tieneCliente, cliente } = await verificarCliente()
+
+        if (tieneCliente) {
+          // Usuario ya tiene datos completos, ir directamente al checkout
+          clienteData.value = cliente
+          showCheckoutModal.value = true
+        } else {
+          // Usuario no tiene datos completos, mostrar modal para completar información
+          showDatosClienteModal.value = true
+        }
+      } catch (error) {
+        console.error('Error en proceso de checkout:', error)
+        alert('Ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente.')
+      } finally {
+        loadingCheckout.value = false
+      }
+    }, 350)
+  } catch (error) {
+    console.error('Error inicial en checkout:', error)
+    loadingCheckout.value = false
+    alert('Ocurrió un error al procesar tu solicitud. Por favor intenta nuevamente.')
+  }
 }
 
-// Manejar cierre del modal
+// Manejar cierre del modal de checkout
 const closeCheckoutModal = () => {
   showCheckoutModal.value = false
+}
+
+// Manejar cierre del modal de datos cliente
+const closeDatosClienteModal = () => {
+  showDatosClienteModal.value = false
+}
+
+// Manejar cuando se guarda el cliente
+const onClienteGuardado = (cliente) => {
+  clienteData.value = cliente
+  showDatosClienteModal.value = false
+
+  // Mostrar el modal de checkout después de guardar el cliente
+  setTimeout(() => {
+    showCheckoutModal.value = true
+  }, 300)
 }
 
 // Manejar pago completado
@@ -254,10 +329,14 @@ const getImageUrl = (producto) => {
           <div class="space-y-2">
             <button
               @click="procederAlCheckout"
-              class="w-full text-white py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2 font-medium btn-checkout"
+              :disabled="loadingCheckout"
+              :class="[
+                'w-full text-white py-3 px-4 rounded-md transition-colors flex items-center justify-center gap-2 font-medium btn-checkout',
+                { 'loading': loadingCheckout }
+              ]"
             >
-              <FontAwesomeIcon :icon="faCreditCard" />
-              Proceder al Checkout
+              <FontAwesomeIcon v-if="!loadingCheckout" :icon="faCreditCard" />
+              {{ loadingCheckout ? 'Procesando...' : 'Proceder al Checkout' }}
             </button>
 
             <button
@@ -274,9 +353,16 @@ const getImageUrl = (producto) => {
     </div>
   </Transition>
 
+  <!-- Modal de Datos de Cliente -->
+  <ModalDatosCliente
+    v-model:visible="showDatosClienteModal"
+    @cliente-guardado="onClienteGuardado"
+  />
+
   <!-- Modal de Checkout -->
   <CarritoCheckoutModal
     :is-visible="showCheckoutModal"
+    :cliente-data="clienteData"
     @close="closeCheckoutModal"
     @payment-completed="handlePaymentCompleted"
   />

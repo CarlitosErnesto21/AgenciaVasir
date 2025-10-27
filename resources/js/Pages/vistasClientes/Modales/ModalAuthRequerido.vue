@@ -31,70 +31,46 @@ const cerrarModal = () => {
 
 // Función para ir al login
 const irALogin = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del login
+  // Guardar información del tour en sessionStorage para recuperarla después del login (solo para tours)
   if (props.tourInfo) {
     const tourData = {
       tourId: props.tourInfo.id,
       tourNombre: props.tourInfo.nombre,
       returnUrl: window.location.pathname
     }
-    
+
     sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
     sessionStorage.setItem('reserva_session_activa', 'true')
   }
-  
-  // Guardar información del producto en sessionStorage para recuperarla después del login
-  if (props.productoInfo) {
-    const productoData = {
-      productoId: props.productoInfo.id,
-      productoNombre: props.productoInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('producto_compra_pendiente', JSON.stringify(productoData))
-    sessionStorage.setItem('compra_session_activa', 'true')
-  }
-  
+
   router.visit('/login')
 }
 
 // Función para ir al registro
 const irARegistro = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del registro
+  // Guardar información del tour en sessionStorage para recuperarla después del registro (solo para tours)
   if (props.tourInfo) {
     const tourData = {
       tourId: props.tourInfo.id,
       tourNombre: props.tourInfo.nombre,
       returnUrl: window.location.pathname
     }
-    
+
     sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
     sessionStorage.setItem('reserva_session_activa', 'true')
   }
-  
-  // Guardar información del producto en sessionStorage para recuperarla después del registro
-  if (props.productoInfo) {
-    const productoData = {
-      productoId: props.productoInfo.id,
-      productoNombre: props.productoInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-    
-    sessionStorage.setItem('producto_compra_pendiente', JSON.stringify(productoData))
-    sessionStorage.setItem('compra_session_activa', 'true')
-  }
-  
+
   router.visit('/register')
 }
 </script>
 
 <template>
-  <Dialog 
-    :visible="visible" 
+  <Dialog
+    :visible="visible"
     @update:visible="emit('update:visible', $event)"
-    modal 
-    :closable="false" 
-    class="max-w-md w-full mx-4" 
+    modal
+    :closable="false"
+    class="max-w-md w-full mx-4"
     :draggable="false"
   >
     <template #header>
@@ -119,7 +95,7 @@ const irARegistro = () => {
       <h3 class="text-xl font-semibold text-gray-900 mb-2">
         ¡Inicia sesión para continuar!
       </h3>
-      
+
       <p class="text-gray-600 mb-2">
         <span v-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else-if="productoInfo">Para realizar una compra necesitas tener una cuenta en nuestra plataforma.</span>
@@ -146,21 +122,21 @@ const irARegistro = () => {
 
       <!-- Botones -->
       <div class="space-y-3">
-        <button 
-            type="button" 
-            class="bg-red-600 hover:bg-red-700 text-white border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+        <button
+            type="button"
+            class="bg-red-600 hover:bg-red-700 text-white border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
             @click="irALogin">
             <FontAwesomeIcon :icon="faSignInAlt" class="h-4 text-white" />
             Iniciar Sesión
         </button>
-        
+
         <div class="text-sm text-gray-500">
           ¿No tienes cuenta?
         </div>
-        
-        <button 
-            type="button" 
-            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" 
+
+        <button
+            type="button"
+            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 w-full py-3 px-6 justify-center rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
             @click="irARegistro">
             <FontAwesomeIcon :icon="faUserPlus" class="h-4 text-red-600" />
             Crear Cuenta Nueva
@@ -170,9 +146,9 @@ const irARegistro = () => {
 
     <template #footer>
       <div class="flex justify-center items-center w-full">
-        <button 
-            type="button" 
-            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 mx-auto" 
+        <button
+            type="button"
+            class="bg-white hover:bg-red-50 text-red-600 border border-red-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 mx-auto"
             @click="cerrarModal">
             <FontAwesomeIcon :icon="faXmark" class="h-5 text-red-600" />
             Cerrar

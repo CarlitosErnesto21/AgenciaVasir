@@ -148,18 +148,85 @@
             margin-left: auto;
             margin-right: auto;
         }
+        /* Resumen mensual (3 columnas horizontales) */
+        .resumen-mes {
+            width: 92%;
+            max-width: 920px;
+            margin: 8px auto 14px auto;
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 8px;
+            border: 1px solid #e6eef9;
+            box-shadow: 0 1px 4px rgba(14, 31, 66, 0.04);
+        }
+        .resumen-mes-header {
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+        .resumen-mes-stats {
+            text-align: center;
+            font-size: 0; /* Remove whitespace between inline-block elements */
+        }
+        .resumen-stat {
+            display: inline-block;
+            width: 30%;
+            margin: 0 1.5%;
+            text-align: center;
+            padding: 10px 8px;
+            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
+            border-radius: 6px;
+            border: 1px solid #e6eef9;
+            vertical-align: top;
+            font-size: 12px; /* Reset font size */
+        }
+        .resumen-stat-numero {
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #7c1d1d;
+            margin-bottom: 4px;
+        }
+        .resumen-stat-label {
+            color: #64748b;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.6px;
+        }
+
+        /* Tarjeta de total general más limpia */
+        .total-card {
+            width: 92%;
+            max-width: 520px;
+            margin: 24px auto 40px auto;
+            background: #fff;
+            border-radius: 10px;
+            border: 1px solid #e6eef9;
+            box-shadow: 0 4px 10px rgba(14,31,66,0.06);
+            overflow: hidden;
+        }
+        .total-card .accent {
+            height: 6px;
+            background: linear-gradient(90deg, #1e3a8a 0%, #3b82f6 100%);
+        }
+        .total-card .content {
+            padding: 18px 22px;
+            text-align: center;
+        }
+        .total-card .label { color: #334155; font-weight: 600; margin-bottom: 8px; }
+        .total-card .amount { color: #059669; font-size: 1.25rem; font-weight: 800; }
     </style>
 </head>
 <body>
     <!-- Business Header -->
     <div class="main-header">
         <div class="logo-header">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo VASIR" class="logo-img">
+            <img src="{{ public_path('images/logo.png') }}" alt="Logo VASIR" class="logo-img">
             <div class="business-details">
                 <div class="business-info">
                     Dirección: Chalatenango, El Salvador<br>
                     Teléfono: +503 7985 8777<br>
-                    Correo: vasirtours19@gmail.com
+                    Correo: {{ config('mail.from.address', 'vasirtours19@gmail.com') }}
                 </div>
             </div>
         </div>
@@ -183,15 +250,40 @@
             <div class="mes-titulo">
                 Mes: {{ \Carbon\Carbon::createFromFormat('Y-m', $mesData['mes'])->translatedFormat('F Y') }}
             </div>
+            @php
+                // Totales generales del mes para el resumen
+                $totalTours = count($mesData['tours']);
+                $totalCupos = array_sum(array_column($mesData['tours'], 'cupos_vendidos'));
+                $totalMes = array_sum(array_column($mesData['tours'], 'subtotal'));
+            @endphp
+
+            <div class="resumen-mes">
+                <div class="resumen-mes-header">Resumen del Mes</div>
+                <div class="resumen-mes-stats">
+                    <div class="resumen-stat">
+                        <div class="resumen-stat-numero">{{ $totalTours }}</div>
+                        <div class="resumen-stat-label">TOURS</div>
+                    </div>
+                    <div class="resumen-stat">
+                        <div class="resumen-stat-numero">{{ $totalCupos }}</div>
+                        <div class="resumen-stat-label">CUPOS VENDIDOS</div>
+                    </div>
+                    <div class="resumen-stat">
+                        <div class="resumen-stat-numero">${{ number_format($totalMes, 2) }}</div>
+                        <div class="resumen-stat-label">INGRESOS</div>
+                    </div>
+                </div>
+            </div>
+
             <table class="tabla-informe">
                 <thead>
                     <tr>
-                        <th class="th-informe">Fecha</th>
-                        <th class="th-informe">Nombre del Tour</th>
+                        <th class="th-informe">Fecha Salida</th>
+                        <th class="th-informe">Tour</th>
                         <th class="th-informe">Menores de Edad</th>
                         <th class="th-informe">Mayores de Edad</th>
                         <th class="th-informe">Cupos Vendidos</th>
-                        <th class="th-informe">Precio</th>
+                        <th class="th-informe">Precio Unitario</th>
                         <th class="th-informe">Subtotal</th>
                     </tr>
                 </thead>
@@ -235,20 +327,13 @@
         </div>
     @endif
 
-    {{-- Tabla de total general --}}
-    <div class="tabla-total-general">
-        <table class="tabla-informe">
-            <thead>
-                <tr>
-                    <th class="th-informe" colspan="6">Total de todos los meses seleccionados</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td class="td-informe-total" colspan="6">${{ number_format($totalGeneral, 2) }}</td>
-                </tr>
-            </tbody>
-        </table>
+    {{-- Total general en tarjeta centrada --}}
+    <div class="total-card">
+        <div class="accent"></div>
+        <div class="content">
+            <div class="label">Total de todos los meses seleccionados</div>
+            <div class="amount">${{ number_format($totalGeneral, 2) }}</div>
+        </div>
     </div>
 </body>
 </html>

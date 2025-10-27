@@ -4,12 +4,21 @@ import { Link } from '@inertiajs/vue3'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBagShopping, faBullseye, faPhone, faRocket, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faBus, faGlobeAmericas, faBusAlt, faHotel, faUmbrellaBeach, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faBus, faGlobeAmericas, faBusAlt, faHotel, faUmbrellaBeach, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat } from '@fortawesome/free-brands-svg-icons'
 
 const products = ref([])
 const slides = ref([])
 const loading = ref(true)
+const totalTours = ref(0)
+
+// Calcular años de experiencia desde 2019
+const calcularAnosExperiencia = () => {
+  const fechaInicio = new Date('2019-01-01')
+  const fechaActual = new Date()
+  const diferencia = fechaActual.getFullYear() - fechaInicio.getFullYear()
+  return diferencia
+}
 
 // Datos estáticos como respaldo si la API falla
 const fallbackData = [
@@ -35,11 +44,11 @@ const fallbackData = [
   }
 ]
 
-// Estadísticas de la empresa
+// Estadísticas de la empresa (dinámicas)
 const estadisticas = ref([
   { numero: '500+', descripcion: 'Clientes Felices', icono: faFaceSmile, color: 'text-yellow-400' },
-  { numero: '50+', descripcion: 'Destinos Únicos', icono: faMapLocationDot, color: 'text-yellow-400' },
-  { numero: '5+', descripcion: 'Años de Experiencia', icono: faStar, color: 'text-yellow-400' },
+  { numero: '0', descripcion: 'Tours Disponibles', icono: faMapLocationDot, color: 'text-yellow-400' },
+  { numero: `${calcularAnosExperiencia()}+`, descripcion: 'Años de Experiencia', icono: faStar, color: 'text-yellow-400' },
   { numero: '100%', descripcion: 'Satisfacción Garantizada', icono: faTrophy, color: 'text-yellow-400' }
 ])
 
@@ -58,22 +67,12 @@ const servicios = ref([
   {
     titulo: 'Tours Internacionales',
     tituloColor: 'text-blue-600',
-    descripcion: 'Descubre destinos increíbles más allá de nuestras fronteras con paquetes exclusivos.',
+    descripcion: 'Descubre destinos increíbles más allá de nuestras fronteras con tours exclusivos.',
     icono: faGlobeAmericas,
     color: 'text-blue-600',
     label: 'Reservar Ahora',
     enlace: '/tours-internacionales',
     botonColor: '!border-2 !border-blue-600 !text-blue-600 hover:!bg-blue-600 hover:!text-white'
-  },
-  {
-    titulo: 'Paquetes Turísticos',
-    tituloColor: 'text-yellow-600',
-    descripcion: 'Ofertas especiales que combinan transporte, alojamiento y actividades para una experiencia completa.',
-    icono: faBus,
-    color: 'text-yellow-600',
-    label: 'Reservar Ahora',
-    enlace: '/paquetes',
-    botonColor: '!border-2 !border-yellow-600 !text-yellow-600 hover:!bg-yellow-600 hover:!text-white'
   },
   {
     titulo: 'Reservaciones de Hoteles',
@@ -85,16 +84,16 @@ const servicios = ref([
     enlace: '/reservaciones',
     botonColor: '!border-2 !border-red-600 !text-red-600 hover:!bg-red-600 hover:!text-white'
   },
-  {
-    titulo: 'Reservaciones en Hotel Decameron',
-    tituloColor: 'text-blue-600',
-    descripcion: 'Reserva en el prestigioso Hotel Decameron con tarifas exclusivas y beneficios adicionales.',
-    icono: faUmbrellaBeach,
-    color: 'text-blue-600',
-    label: 'Reservar Ahora',
-    enlace: '/reservaciones',
-    botonColor: '!border-2 !border-blue-600 !text-blue-600 hover:!bg-blue-600 hover:!text-white'
-  },
+//   {
+//     titulo: 'Reservaciones en Hotel Decameron',
+//     tituloColor: 'text-blue-600',
+//     descripcion: 'Reserva en el prestigioso Hotel Decameron con tarifas exclusivas y beneficios adicionales.',
+//     icono: faUmbrellaBeach,
+//     color: 'text-blue-600',
+//     label: 'Reservar Ahora',
+//     enlace: '/reservaciones',
+//     botonColor: '!border-2 !border-blue-600 !text-blue-600 hover:!bg-blue-600 hover:!text-white'
+//   },
   {
     titulo: 'Compra productos en línea',
     tituloColor: 'text-yellow-600',
@@ -108,10 +107,25 @@ const servicios = ref([
 ])
 
 const cargarTours = async () => {
-  const categorias = ['nacional', 'internacional']
-  for (const categoria of categorias) {
-    const res = await axios.get(`/api/tours?categoria=${categoria}`)
-    const data = res.data
+  try {
+    // Crear una instancia limpia de axios para evitar headers de autenticación
+    const publicAxios = axios.create({
+      withCredentials: false,
+      headers: {
+        'X-Requested-With': 'XMLHttpRequest',
+        'Accept': 'application/json'
+      }
+    })
+
+    // Obtener todos los tours
+    const res = await publicAxios.get('/api/tours')
+    const data = res.data.data || res.data || []
+
+    // Actualizar el total de tours en las estadísticas
+    totalTours.value = data.length
+    estadisticas.value[1].numero = data.length > 0 ? `${data.length}+` : '0'
+
+    // Filtrar tours disponibles para el slider
     const disponibles = data.filter(tour => tour.cupos_disponibles > 0)
     disponibles.forEach(tour => {
       slides.value.push({
@@ -119,12 +133,25 @@ const cargarTours = async () => {
         imagenes: tour.imagenes,
       })
     })
+  } catch (error) {
+    console.error('Error cargando tours:', error)
+    // En caso de error, mantener valor por defecto
+    estadisticas.value[1].numero = '50+'
   }
 }
 onMounted(cargarTours)
 onMounted(async () => {
     try {
-        const { data } = await axios.get('/api/productos')
+        // Crear una instancia limpia de axios para evitar headers de autenticación
+        const publicAxios = axios.create({
+            withCredentials: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
+        })
+
+        const { data } = await publicAxios.get('/api/productos')
         products.value = data.length > 0 ? data : fallbackData
     } catch {
         products.value = fallbackData
@@ -151,7 +178,7 @@ onMounted(async () => {
           </div>
         </div>
       </template>
-      
+
       <template v-else>
         <!-- Hero Section -->
         <section class="relative bg-gradient-to-br from-red-600 via-red-500 to-blue-600 text-white py-12 sm:py-16 md:py-20 lg:py-24 overflow-hidden">
@@ -172,18 +199,18 @@ onMounted(async () => {
                 ¡Bienvenido a <span class="bg-gradient-to-r from-yellow-300 to-yellow-400 bg-clip-text text-transparent">VASIR</span>!
               </h1>
               <p class="text-base sm:text-lg md:text-xl lg:text-2xl mb-6 sm:mb-8 md:mb-10 opacity-90 max-w-sm sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto leading-relaxed px-4 sm:px-0">
-                Tu puerta de entrada a las experiencias más increíbles de El Salvador. 
+                Tu puerta de entrada a las experiencias más increíbles de El Salvador.
                 Descubre paisajes únicos, cultura vibrante y aventuras inolvidables.
               </p>
               <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0">
-                <Link :href="route('paquetes')">
+                <Link :href="route('tours-nacionales')">
                   <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 !py-3 sm:!py-4 !text-yellow-700 font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base">
-                    <FontAwesomeIcon :icon="faBagShopping" class="text-yellow-700" />Explorar Paquetes
+                    <FontAwesomeIcon :icon="faVolcano" class="text-yellow-700" />Ver Tours Nacionales
                   </Button>
                 </Link>
-                <Link :href="route('tours-nacionales')">
+                <Link :href="route('tours-internacionales')">
                   <Button outlined class="w-full sm:w-auto !border-2 !border-white/80 !text-yellow-400 !px-6 sm:!px-8 !py-3 sm:!py-4 font-bold rounded-xl hover:!bg-white/20 hover:!border-white backdrop-blur-sm transform hover:scale-105 transition-all duration-300 shadow-lg text-sm sm:text-base">
-                    <FontAwesomeIcon :icon="faVolcano" class="text-yellow-400" />Ver Tours
+                    <FontAwesomeIcon :icon="faMapLocationDot" class="text-yellow-400" />Ver Tours Internacionales
                   </Button>
                 </Link>
               </div>
@@ -203,18 +230,13 @@ onMounted(async () => {
               <FontAwesomeIcon :icon="faRocketchat" class="text-red-600 mr-2" />¿Listo para tu próxima aventura?
             </h2>
             <p class="text-black text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-8 sm:mb-10 md:mb-12 opacity-90 max-w-xs sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto leading-relaxed px-4 sm:px-0">
-              Permítenos ser parte de tus mejores recuerdos. Contáctanos hoy mismo y comienza a planificar 
+              Permítenos ser parte de tus mejores recuerdos. Contáctanos hoy mismo y comienza a planificar
               la experiencia de viaje que siempre has soñado. Tu próxima gran aventura te está esperando.
             </p>
             <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0">
               <Link :href="route('contactos')">
                 <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 md:!px-10 !py-3 sm:!py-4 !text-black font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base">
                   <FontAwesomeIcon :icon="faPhone" class="text-red-600" />Contactar Ahora
-                </Button>
-              </Link>
-              <Link :href="route('paquetes')">
-                <Button outlined class="w-full sm:w-auto !border-2 !border-red-600 !text-red-600 !px-6 sm:!px-8 md:!px-10 !py-3 sm:!py-4 font-bold rounded-xl hover:!bg-red-500 hover:!border-red-500 hover:!text-white backdrop-blur-sm transform hover:scale-105 transition-all duration-300 shadow-lg text-sm sm:text-base">
-                  <FontAwesomeIcon :icon="faBullseye"/>Ver Todos los Paquetes
                 </Button>
               </Link>
             </div>
@@ -242,10 +264,10 @@ onMounted(async () => {
                 Números que respaldan nuestra excelencia y compromiso con experiencias inolvidables
               </p>
             </div>
-            
+
             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-4 md:gap-3 lg:gap-4 xl:gap-8">
-              <div 
-                v-for="stat in estadisticas" 
+              <div
+                v-for="stat in estadisticas"
                 :key="stat.descripcion"
                 class="text-center p-4 sm:p-6 md:p-8 bg-white/15 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/20 hover:bg-white/25 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:scale-105 group shadow-lg sm:shadow-xl"
               >
@@ -271,14 +293,14 @@ onMounted(async () => {
                 <FontAwesomeIcon :icon="faBullseye" class="text-red-600 mr-2" />Nuestros Servicios
               </h2>
               <p class="text-sm sm:text-base md:text-lg text-gray-600 max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
-                Ofrecemos una gama completa de servicios turísticos profesionales para hacer realidad 
+                Ofrecemos una gama completa de servicios turísticos profesionales para hacer realidad
                 tus sueños de viaje con la más alta calidad y atención personalizada.
               </p>
             </div>
-            
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
-              <div 
-                v-for="servicio in servicios" 
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
+              <div
+                v-for="servicio in servicios"
                 :key="servicio.titulo"
                 class="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-4 shadow-lg sm:shadow-xl border border-white/40 text-center hover:shadow-2xl transform hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300 group hover:bg-white/90 flex flex-col justify-between"
               >

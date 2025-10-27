@@ -420,8 +420,8 @@ onBeforeUnmount(() => {
                                     @click="toggleDropdown"
                                     class="relative w-full flex items-center justify-between py-3 px-3 rounded-xl transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-red-300/50 group"
                                     :class="{
-                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes'].some(r => route().current(r)),
-                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles', 'gestionPaquetes'].some(r => route().current(r)))
+                                        'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold': isOpen || ['productos', 'tours', 'hoteles'].some(r => route().current(r)),
+                                        'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg': !(isOpen || ['productos', 'tours', 'hoteles'].some(r => route().current(r)))
                                     }"
                                 >
                                     <div class="flex items-center">
@@ -477,19 +477,6 @@ onBeforeUnmount(() => {
                                     >
                                         <FontAwesomeIcon :icon="faHotel" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Hoteles</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('gestionPaquetes')"
-                                        :class="[
-                                            'flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group',
-                                            route().current('gestionPaquetes')
-                                                ? 'bg-gradient-to-r from-red-600 to-red-500 text-white shadow-lg font-bold'
-                                                : 'text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseSidebar('gestionPaquetes')"
-                                    >
-                                        <FontAwesomeIcon :icon="faBoxesStacked" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Paquetes</span>
                                     </Link>
                                 </div>
                             </div>
@@ -711,7 +698,7 @@ onBeforeUnmount(() => {
                                 :class="[
                                     'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 focus:outline-none focus:ring-2 focus:ring-red-300/50 w-full justify-between',
                                     [
-                                        'productos', 'tours', 'hoteles', 'gestionPaquetes'
+                                        'productos', 'tours', 'hoteles'
                                     ].some(r => route().current(r))
                                         ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
                                         : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
@@ -779,19 +766,6 @@ onBeforeUnmount(() => {
                                     >
                                         <FontAwesomeIcon :icon="faHotel" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Hoteles</span>
-                                    </Link>
-                                    <Link
-                                        :href="route('gestionPaquetes')"
-                                        :class="[
-                                            'flex items-center px-3 py-2 rounded-lg transition-all duration-300 group',
-                                            route().current('gestionPaquetes')
-                                                ? 'bg-gradient-to-r from-red-700 to-red-500 text-white shadow-md font-bold'
-                                                : 'text-white hover:bg-red-700 hover:text-white hover:shadow-md'
-                                        ]"
-                                        @click.prevent="navigateAndCloseDropdown('gestionPaquetes')"
-                                    >
-                                        <FontAwesomeIcon :icon="faBoxesStacked" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Paquetes</span>
                                     </Link>
                                 </div>
                             </transition>

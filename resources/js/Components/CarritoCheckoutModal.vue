@@ -123,6 +123,10 @@ const props = defineProps({
   isVisible: {
     type: Boolean,
     default: false
+  },
+  clienteData: {
+    type: Object,
+    default: null
   }
 })
 
@@ -140,10 +144,31 @@ const paymentSuccess = ref(false)
 const error = ref(null)
 const procesandoPago = ref(false)
 
-// Datos del usuario
+// Datos del usuario y cliente
 const user = computed(() => page.props.auth?.user)
 const customerEmail = computed(() => user.value?.email || '')
-const customerName = computed(() => user.value?.name || '')
+const customerName = computed(() => {
+  // Usar nombre del usuario autenticado
+  if (user.value?.name) {
+    return user.value.name
+  }
+  // Fallback si no hay usuario
+  return 'Cliente'
+})
+
+// Datos del cliente para la venta
+const clienteInfo = computed(() => {
+  if (props.clienteData) {
+    return {
+      id: props.clienteData.id,
+      numero_identificacion: props.clienteData.numero_identificacion,
+      telefono: props.clienteData.telefono,
+      direccion: props.clienteData.direccion,
+      tipo_documento_id: props.clienteData.tipo_documento_id
+    }
+  }
+  return null
+})
 
 // Formatear precio
 const formatPrice = (price) => {
@@ -173,11 +198,16 @@ const createVenta = async () => {
     return
   }
 
+  if (!clienteInfo.value) {
+    error.value = 'No se encontraron datos del cliente'
+    return
+  }
+
   isCreatingVenta.value = true
   error.value = null
 
   try {
-    const result = await createVentaFromCarrito(customerEmail.value)
+    const result = await createVentaFromCarrito(customerEmail.value, clienteInfo.value)
 
     if (result.success) {
       ventaCreada.value = result.venta
@@ -215,12 +245,11 @@ const procesarPagoWompi = async () => {
 
   // ✅ PASO 1: Crear la venta primero
   if (!ventaCreada.value) {
-    console.log('🛒 Creando venta antes del pago...')
     isCreatingVenta.value = true
-    
+
     try {
       await createVenta()
-      
+
       // Si hubo error creando la venta, detener
       if (error.value || !ventaCreada.value) {
         procesandoPago.value = false
@@ -230,8 +259,6 @@ const procesarPagoWompi = async () => {
       isCreatingVenta.value = false
     }
   }
-
-  console.log('💳 Procesando pago para venta:', ventaCreada.value?.id)
 
   try {
     // Obtener token CSRF actual

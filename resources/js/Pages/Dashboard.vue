@@ -20,16 +20,13 @@ const chartDataBar = ref();
 const chartOptionsPie = ref();
 const chartOptionsBar = ref();
 
-// ✅ DATOS REALES de tu sistema
 const loading = ref(true);
 const dashboardData = ref({});
 
-// ⚡ CACHÉ SIMPLE para optimizar recargas
 const cacheData = ref(null);
 const cacheExpiry = ref(null);
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos de caché
 
-// 📊 Métricas DINÁMICAS con colores FUERTES y vibrantes, estilo VASIR
 const metrics = ref([
     {
         label: 'Ventas Hoy',

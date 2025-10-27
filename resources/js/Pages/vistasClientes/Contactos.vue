@@ -2,9 +2,15 @@
 import Catalogo from '../Catalogo.vue'
 import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { usePage } from '@inertiajs/vue3'
 
 // Inicializar toast
 const toast = useToast()
+
+// Obtener datos de la página
+const page = usePage()
+const config = computed(() => page.props.config || {})
+const adminEmail = computed(() => config.value.mail_from_address || 'vasirtours19@gmail.com')
 
 const nombre = ref('')
 const email = ref('')
@@ -93,8 +99,8 @@ const preguntasFrecuentes = ref([
   }
 ])
 
-// Información de contacto
-const contactoInfo = ref([
+// Información de contacto (computed para reactividad)
+const contactoInfo = computed(() => [
   {
     icono: '📍',
     titulo: 'Dirección',
@@ -116,8 +122,8 @@ const contactoInfo = ref([
   {
     icono: '📧',
     titulo: 'Email',
-    contenido: 'info@vasir.com',
-    enlace: 'mailto:info@vasir.com'
+    contenido: adminEmail.value,
+    enlace: `mailto:${adminEmail.value}`
   }
 ])
 
@@ -157,282 +163,167 @@ const faqsFiltradas = computed(() => {
 <template>
   <Catalogo>
     <Toast />
-    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen pt-36">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-6 sm:pb-8">
-        <!-- Header Professional -->
-        <div class="mb-8 sm:mb-12">
-          <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl shadow-xl border border-gray-200 overflow-hidden">
-            <div class="bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-6 sm:py-8 md:py-10">
-              <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-3 sm:mb-4">📞 Contáctanos</h1>
-              <p class="text-lg sm:text-xl md:text-2xl text-red-100 mb-4 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
-              <p class="text-base sm:text-lg md:text-xl text-white max-w-4xl mx-auto leading-relaxed px-4">
-                Encuentra respuestas rápidas en nuestras FAQ o envíanos un mensaje personalizado
-              </p>
-            </div>
-          </div>
-        </div>
+    <!-- Header Professional - Ancho completo de la pantalla -->
+    <div class="w-full bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-6 sm:py-8 md:py-10 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">📞 Contáctanos</h1>
+      <p class="text-base sm:text-lg text-red-100 mb-4 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
+    </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+    <!-- Contenido principal con padding responsivo -->
+    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 min-h-screen px-3 sm:px-4 md:px-6 lg:px-8 pb-4 sm:pb-6 md:pb-8">
+      <div class="max-w-7xl mx-auto">
+
+        <!-- Grid responsivo: 1 columna en móvil, 2 columnas en desktop -->
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 md:gap-8">
           <!-- Columna izquierda: FAQs -->
-          <div class="space-y-6 sm:space-y-8">
+          <div class="space-y-4 sm:space-y-6 md:space-y-8">
             <!-- Preguntas Frecuentes -->
-            <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-              <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-4 sm:py-6 rounded-xl mb-6 sm:mb-8">
-                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold flex items-center justify-center">
-                  <span class="text-2xl sm:text-3xl mr-3">❓</span>
-                  Preguntas Frecuentes
+            <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg sm:shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
+              <!-- Header responsivo -->
+              <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-3 sm:py-4 md:py-6 rounded-lg sm:rounded-xl mb-4 sm:mb-6 md:mb-8">
+                <h2 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-3">
+                  <span class="text-xl sm:text-2xl md:text-3xl">❓</span>
+                  <span class="text-center">Preguntas Frecuentes</span>
                 </h2>
               </div>
 
-              <!-- Buscador de FAQs -->
-              <div class="mb-6 sm:mb-8">
+              <!-- Buscador de FAQs responsivo -->
+              <div class="mb-4 sm:mb-6 md:mb-8">
                 <div class="relative">
                   <InputText
                     v-model="busquedaFAQ"
-                    placeholder="Buscar en preguntas frecuentes..."
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
+                    placeholder="Buscar preguntas..."
+                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-2 sm:focus:ring-4 focus:ring-red-200 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 md:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
                   />
-                  <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
-                    <span class="text-lg">🔍</span>
+                  <div class="absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                    <span class="text-base sm:text-lg">🔍</span>
                   </div>
                 </div>
               </div>
 
-              <!-- Lista de FAQs por categoría -->
-              <div class="space-y-4 sm:space-y-6">
-                <div v-for="categoria in faqsFiltradas" :key="categoria.categoria" class="space-y-3 sm:space-y-4">
-                  <h3 class="text-lg sm:text-xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent border-b-2 border-red-200 pb-2 sm:pb-3">
+              <!-- Lista de FAQs por categoría - completamente responsiva -->
+              <div class="space-y-3 sm:space-y-4 md:space-y-6">
+                <div v-for="categoria in faqsFiltradas" :key="categoria.categoria" class="space-y-2 sm:space-y-3 md:space-y-4">
+                  <!-- Título de categoría responsivo -->
+                  <h3 class="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent border-b-2 border-red-200 pb-1 sm:pb-2 md:pb-3">
                     {{ categoria.categoria }}
                   </h3>
 
-                  <div v-for="faq in categoria.preguntas" :key="faq.id" class="bg-white rounded-xl overflow-hidden shadow-lg border border-gray-200 hover:border-red-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                  <!-- Preguntas individuales -->
+                  <div v-for="faq in categoria.preguntas" :key="faq.id" class="bg-white rounded-lg sm:rounded-xl overflow-hidden shadow-md sm:shadow-lg border border-gray-200 hover:border-red-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
+                    <!-- Botón de pregunta responsivo -->
                     <button
                       @click="toggleFAQ(faq.id)"
-                      class="w-full text-left p-4 sm:p-5 bg-gradient-to-r from-gray-50 to-white hover:from-red-50 hover:to-blue-50 transition-all duration-300 flex justify-between items-center"
+                      class="w-full text-left p-3 sm:p-4 md:p-5 bg-gradient-to-r from-gray-50 to-white hover:from-red-50 hover:to-blue-50 transition-all duration-300 flex justify-between items-start sm:items-center gap-3"
                     >
-                      <span class="font-semibold text-gray-800 pr-4 text-sm sm:text-base leading-relaxed">{{ faq.pregunta }}</span>
-                      <div class="w-8 h-8 bg-gradient-to-br from-red-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
-                        <span class="text-white font-bold text-lg">
+                      <span class="font-semibold text-gray-800 text-xs sm:text-sm md:text-base leading-relaxed flex-1">{{ faq.pregunta }}</span>
+                      <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-red-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-md">
+                        <span class="text-white font-bold text-sm sm:text-lg">
                           {{ faqAbierta === faq.id ? '−' : '+' }}
                         </span>
                       </div>
                     </button>
 
-                    <div v-if="faqAbierta === faq.id" class="p-4 sm:p-5 bg-gradient-to-br from-white to-gray-50 border-t-2 border-red-200">
-                      <p class="text-gray-700 leading-relaxed whitespace-pre-line text-sm sm:text-base">{{ faq.respuesta }}</p>
+                    <!-- Respuesta expandible -->
+                    <div v-if="faqAbierta === faq.id" class="p-3 sm:p-4 md:p-5 bg-gradient-to-br from-white to-gray-50 border-t-2 border-red-200">
+                      <p class="text-gray-700 leading-relaxed whitespace-pre-line text-xs sm:text-sm md:text-base">{{ faq.respuesta }}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <!-- Mensaje cuando no hay resultados -->
-              <div v-if="faqsFiltradas.length === 0" class="text-center py-8 sm:py-12">
-                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-xl p-6 sm:p-8 shadow-lg">
-                  <div class="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mx-auto mb-4 flex items-center justify-center shadow-lg">
-                    <span class="text-white text-2xl">🔍</span>
+              <!-- Mensaje cuando no hay resultados - responsivo -->
+              <div v-if="faqsFiltradas.length === 0" class="text-center py-6 sm:py-8 md:py-12">
+                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 border-2 border-yellow-200 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg">
+                  <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-yellow-500 to-orange-500 rounded-full mx-auto mb-3 sm:mb-4 flex items-center justify-center shadow-lg">
+                    <span class="text-white text-lg sm:text-2xl">🔍</span>
                   </div>
-                  <h3 class="text-lg sm:text-xl font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">No se encontraron resultados</h3>
-                  <p class="text-gray-600 mb-4 text-sm sm:text-base">No se encontraron preguntas que coincidan con tu búsqueda.</p>
+                  <h3 class="text-base sm:text-lg md:text-xl font-semibold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-2">No se encontraron resultados</h3>
+                  <p class="text-gray-600 mb-3 sm:mb-4 text-xs sm:text-sm md:text-base">No se encontraron preguntas que coincidan con tu búsqueda.</p>
                   <button
                     @click="busquedaFAQ = ''"
-                    class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+                    class="bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 text-xs sm:text-sm md:text-base"
                   >
                     Ver todas las preguntas
                   </button>
                 </div>
               </div>
             </div>
-
-            <!-- Información de contacto -->
-            <div class="bg-gradient-to-br from-white via-red-50 to-blue-50 rounded-xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-              <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-4 sm:py-6 rounded-xl mb-6 sm:mb-8">
-                <h3 class="text-lg sm:text-xl md:text-2xl font-bold flex items-center justify-center">
-                  <span class="text-xl sm:text-2xl mr-2">📋</span>
-                  Información de Contacto
-                </h3>
-              </div>
-
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-                <div v-for="info in contactoInfo" :key="info.titulo" class="bg-white rounded-xl p-4 sm:p-5 shadow-lg border border-gray-200 hover:border-red-200 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1">
-                  <div class="flex items-start space-x-3 sm:space-x-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-blue-500 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
-                      <span class="text-white text-lg sm:text-xl">{{ info.icono }}</span>
-                    </div>
-                    <div class="flex-1">
-                      <h4 class="font-bold text-gray-800 text-sm sm:text-base mb-1 sm:mb-2">{{ info.titulo }}</h4>
-                      <div v-if="info.enlace">
-                        <a :href="info.enlace" target="_blank" class="text-red-600 hover:text-blue-600 hover:underline text-sm sm:text-base font-medium transition-colors duration-300">
-                          {{ info.contenido }}
-                        </a>
-                      </div>
-                      <div v-else class="text-gray-600 text-sm sm:text-base whitespace-pre-line leading-relaxed">
-                        {{ info.contenido }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
           </div>
 
-          <!-- Columna derecha: Formulario de contacto -->
-          <div class="space-y-6 sm:space-y-8">
-            <!-- Formulario -->
-            <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-              <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-4 sm:py-6 rounded-xl mb-6 sm:mb-8">
-                <h2 class="text-xl sm:text-2xl md:text-3xl font-bold flex items-center justify-center">
-                  <span class="text-2xl sm:text-3xl mr-3">✉️</span>
-                  Envíanos un Mensaje
-                </h2>
-              </div>
+          <!-- Columna derecha: Métodos de contacto -->
+          <div class="space-y-4 sm:space-y-6 md:space-y-8">
 
-              <form class="space-y-5 sm:space-y-6" @submit="enviarFormulario">
-                <div>
-                  <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Nombre completo</label>
-                  <InputText
-                    v-model="nombre"
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
-                    placeholder="Tu nombre completo"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Correo electrónico</label>
-                  <InputText
-                    v-model="email"
-                    type="email"
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
-                    placeholder="tu@email.com"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label class="block mb-2 sm:mb-3 font-bold text-gray-700 text-sm sm:text-base">Mensaje</label>
-                  <Textarea
-                    v-model="mensaje"
-                    class="w-full border-2 border-gray-300 focus:border-red-500 focus:ring-4 focus:ring-red-200 rounded-xl px-4 py-3 sm:py-4 text-sm sm:text-base shadow-md transition-all duration-300"
-                    rows="5"
-                    placeholder="Escribe tu mensaje aquí... Cuéntanos sobre el tour que te interesa, fechas, número de personas, etc."
-                    autoResize
-                    required
-                  />
-                </div>
-
-                <Button
-                  type="submit"
-                  label="Enviar Mensaje"
-                  class="!bg-gradient-to-r !from-red-600 !to-blue-600 hover:!from-red-700 hover:!to-blue-700 !border-none !px-6 !py-3 sm:!py-4 !text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-300 w-full text-sm sm:text-base"
-                />
-              </form>
-            </div>
-
-            <!-- Métodos de contacto directo -->
-            <div class="bg-gradient-to-br from-white via-red-50 to-blue-50 rounded-xl p-6 sm:p-8 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-              <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-4 sm:py-6 rounded-xl mb-6 sm:mb-8">
-                <h3 class="text-lg sm:text-xl md:text-2xl font-bold flex items-center justify-center">
-                  <span class="text-xl sm:text-2xl mr-2">🚀</span>
-                  Contacto Directo
+            <!-- Métodos de contacto directo - completamente responsivo -->
+            <div class="bg-gradient-to-br from-white via-red-50 to-blue-50 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg sm:shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
+              <!-- Header responsivo -->
+              <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-3 sm:py-4 md:py-6 rounded-lg sm:rounded-xl mb-4 sm:mb-6 md:mb-8">
+                <h3 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <span class="text-lg sm:text-xl md:text-2xl">🚀</span>
+                  <span class="text-center">Contacto Directo</span>
                 </h3>
               </div>
 
-              <div class="space-y-4 sm:space-y-5">
+              <!-- Lista de métodos de contacto - responsiva -->
+              <div class="space-y-3 sm:space-y-4 md:space-y-5">
+                <!-- WhatsApp -->
                 <a
-                  href="https://wa.me/50312345678"
+                  href="https://wa.me/50379858777"
                   target="_blank"
-                  class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  class="flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg sm:rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group"
                 >
-                  <div class="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
-                    <span class="text-white text-xl">💬</span>
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <span class="text-white text-base sm:text-xl">💬</span>
                   </div>
-                  <div>
+                  <div class="flex-1">
                     <p class="font-bold text-green-700 text-sm sm:text-base">WhatsApp</p>
                     <p class="text-xs sm:text-sm text-green-600">Respuesta inmediata</p>
                   </div>
                 </a>
 
+                <!-- Email -->
                 <a
-                  href="mailto:info@vasir.com"
-                  class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
+                  :href="`mailto:${adminEmail}`"
+                  class="flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg sm:rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group"
                 >
-                  <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
-                    <span class="text-white text-xl">📧</span>
+                  <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    <span class="text-white text-base sm:text-xl">📧</span>
                   </div>
-                  <div>
+                  <div class="flex-1 min-w-0">
                     <p class="font-bold text-blue-700 text-sm sm:text-base">Email</p>
-                    <p class="text-xs sm:text-sm text-blue-600">info@vasir.com</p>
+                    <p class="text-xs sm:text-sm text-blue-600 truncate">{{ adminEmail }}</p>
                   </div>
                 </a>
-
-                <div class="flex items-center p-4 sm:p-5 bg-gradient-to-r from-red-50 to-red-100 border-2 border-red-200 rounded-xl shadow-lg">
-                  <div class="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center mr-4 shadow-lg">
-                    <span class="text-white text-xl">📱</span>
-                  </div>
-                  <div>
-                    <p class="font-bold text-red-700 text-sm sm:text-base">Redes Sociales</p>
-                    <p class="text-xs sm:text-sm text-red-600">Síguenos en Facebook, Instagram y TikTok</p>
-                  </div>
-                </div>
               </div>
             </div>
 
-            <!-- Mapa -->
-            <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300">
-              <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white p-4 sm:p-5">
-                <h3 class="text-lg sm:text-xl font-bold flex items-center justify-center">
-                  <span class="text-xl sm:text-2xl mr-2">📍</span>
-                  Nuestra Ubicación
+            <!-- Mapa - completamente responsivo -->
+            <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-lg sm:rounded-xl shadow-lg sm:shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300">
+              <!-- Header del mapa -->
+              <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white p-3 sm:p-4 md:p-5">
+                <h3 class="text-base sm:text-lg md:text-xl font-bold flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <span class="text-lg sm:text-xl md:text-2xl">📍</span>
+                  <span class="text-center">Nuestra Ubicación</span>
                 </h3>
               </div>
+              <!-- Iframe del mapa responsivo -->
               <div class="relative">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d241.91319397188843!2d-88.9363812!3d14.0410515!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x8f636570efc5e09d%3A0xe884d67df04d7ff5!2sVASIR!5e0!3m2!1ses-419!2ssv!4v1749418509387!5m2!1ses-419!2ssv"
                   width="100%"
-                  height="250"
+                  height="200"
                   style="border:0;"
                   allowfullscreen=""
                   loading="lazy"
                   referrerpolicy="no-referrer-when-downgrade"
                   title="Ubicación VASIR"
-                  class="hover:opacity-90 transition-opacity duration-300"
+                  class="hover:opacity-90 transition-opacity duration-300 sm:h-64 md:h-72"
                 >
                 </iframe>
-                <div class="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-2 rounded-lg shadow-lg border border-gray-200">
-                  <p class="text-xs font-medium text-gray-800">📍 Chalatenango, El Salvador</p>
+                <!-- Etiqueta flotante responsiva -->
+                <div class="absolute bottom-2 sm:bottom-4 right-2 sm:right-4 bg-white/90 backdrop-blur-sm px-2 sm:px-3 py-1 sm:py-2 rounded-md sm:rounded-lg shadow-lg border border-gray-200">
+                  <p class="text-xs sm:text-sm font-medium text-gray-800">📍 Chalatenango, El Salvador</p>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- CTA Final -->
-        <div class="mt-8 sm:mt-12">
-          <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl p-6 sm:p-8 md:p-10 shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
-            <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-4 sm:py-6 rounded-xl mb-6 sm:mb-8">
-              <h2 class="text-xl sm:text-2xl md:text-3xl font-bold">🤔 ¿No encontraste lo que buscabas?</h2>
-            </div>
-            <div class="text-center">
-              <p class="text-gray-700 mb-6 sm:mb-8 text-sm sm:text-base md:text-lg leading-relaxed max-w-3xl mx-auto">
-                Nuestro equipo está disponible para responder cualquier pregunta específica sobre nuestros tours y servicios.
-                ¡Estamos aquí para hacer realidad tu próxima aventura!
-              </p>
-              <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
-                <a
-                  href="https://wa.me/50312345678"
-                  target="_blank"
-                  class="w-full sm:w-auto bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-6 py-3 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
-                >
-                  <span class="mr-2 text-lg">💬</span>
-                  Chatear por WhatsApp
-                </a>
-                <a
-                  href="/sobre-nosotros"
-                  class="w-full sm:w-auto bg-gradient-to-r from-red-600 to-blue-600 hover:from-red-700 hover:to-blue-700 text-white px-6 py-3 sm:py-4 rounded-xl font-bold transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 inline-flex items-center justify-center"
-                >
-                  <span class="mr-2 text-lg">🏢</span>
-                  Conocer más sobre VASIR
-                </a>
               </div>
             </div>
           </div>

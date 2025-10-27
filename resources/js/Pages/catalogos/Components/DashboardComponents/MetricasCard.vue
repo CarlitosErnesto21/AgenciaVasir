@@ -31,7 +31,7 @@
         </div>
 
         <!-- Reservas del Mes -->
-        <Link href="/gestion-reserva-tours" 
+        <Link href="/reservas"
             class="bg-gradient-to-br from-[#b39ddb] via-[#9575cd] to-[#7e57c2] rounded-xl shadow-md border border-[#9575cd] p-4 sm:p-6 cursor-pointer transform transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 block">
             <div class="flex items-center justify-between">
                 <div class="min-w-0 flex-1">

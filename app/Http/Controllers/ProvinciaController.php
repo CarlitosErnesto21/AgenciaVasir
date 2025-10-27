@@ -7,9 +7,16 @@ use Illuminate\Http\Request;
 
 class ProvinciaController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $provincias = Provincia::with('pais')->get();
+        $query = Provincia::with('pais');
+
+        // Filtrar por país si se proporciona el parámetro pais_id
+        if ($request->has('pais_id') && $request->pais_id) {
+            $query->where('pais_id', $request->pais_id);
+        }
+
+        $provincias = $query->get();
         return response()->json($provincias);
     }
 
