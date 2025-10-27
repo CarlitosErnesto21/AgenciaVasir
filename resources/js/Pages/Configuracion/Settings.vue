@@ -18,23 +18,23 @@
                 <!-- Layout principal con menú lateral -->
                 <div class="flex flex-col lg:flex-row min-h-screen">
                     <!-- Menú lateral -->
-                    <div class="w-full lg:w-80 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-2 sm:p-4 lg:p-6">
-                        <nav class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-1 gap-1 sm:gap-2 lg:space-y-2 lg:gap-0">
+                    <div class="w-full lg:w-72 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-3 sm:p-4 lg:p-5">
+                        <nav class="flex flex-row lg:flex-col gap-2 lg:space-y-2 lg:gap-0">
                             <button
                                 v-for="item in menuItems"
                                 :key="item.id"
                                 @click="handleSectionChange(item.id)"
                                 :class="[
-                                    'w-full flex flex-col lg:flex-row items-center lg:items-center px-1.5 sm:px-3 py-1.5 sm:py-2 lg:px-4 lg:py-3 text-center lg:text-left rounded-lg transition-all duration-200',
+                                    'flex-1 lg:w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start px-3 py-3 lg:px-4 lg:py-3 text-center lg:text-left rounded-lg transition-all duration-200 font-medium',
                                     activeSection === item.id
                                         ? 'bg-red-600 text-white shadow-md'
-                                        : 'text-gray-700 hover:bg-red-50 hover:text-red-700'
+                                        : 'text-gray-700 hover:bg-red-50 hover:text-red-700 hover:shadow-sm'
                                 ]"
                             >
-                                <span class="text-sm sm:text-lg lg:text-xl mb-0.5 sm:mb-1 lg:mb-0 lg:mr-3">{{ item.icon }}</span>
+                                <span class="text-lg lg:text-xl mb-1 lg:mb-0 lg:mr-3">{{ item.icon }}</span>
                                 <div class="flex-1">
-                                    <div class="font-medium text-xs sm:text-sm lg:text-base">{{ item.title }}</div>
-                                    <div class="text-xs hidden lg:block" :class="activeSection === item.id ? 'text-red-100' : 'text-gray-500'">
+                                    <div class="font-semibold text-sm lg:text-base">{{ item.title }}</div>
+                                    <div class="text-xs hidden lg:block mt-0.5" :class="activeSection === item.id ? 'text-red-100' : 'text-gray-500'">
                                         {{ item.description }}
                                     </div>
                                 </div>
@@ -43,37 +43,7 @@
                     </div>
 
                     <!-- Contenido principal -->
-                    <div class="flex-1 p-2 sm:p-4 lg:p-6">
-                        <!-- General Settings -->
-                        <GeneralSettings
-                            v-if="activeSection === 'general'"
-                            :settings="settings"
-                            :is-saving="isSaving"
-                            @save="saveSettings"
-                            @reset="resetSettings"
-                            @unsaved-changes="reportUnsavedChanges"
-                        />
-
-                        <!-- Security Settings -->
-                        <SecuritySettings
-                            v-if="activeSection === 'security'"
-                            :settings="settings"
-                            :is-saving="isSaving"
-                            @save="saveSettings"
-                            @reset="resetSettings"
-                            @unsaved-changes="reportUnsavedChanges"
-                        />
-
-                        <!-- Notification Settings -->
-                        <NotificationSettings
-                            v-if="activeSection === 'notifications'"
-                            :settings="settings"
-                            :is-saving="isSaving"
-                            @save="saveSettings"
-                            @reset="resetSettings"
-                            @unsaved-changes="reportUnsavedChanges"
-                        />
-
+                    <div class="flex-1 p-3 sm:p-4 lg:p-5">
                         <!-- Corporate Settings -->
                         <CorporateSettings
                             v-if="activeSection === 'corporate'"
@@ -118,9 +88,6 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faGear, faSpinner, faFileArchive, faDatabase } from '@fortawesome/free-solid-svg-icons';
 
 // Importar componentes de configuración
-import GeneralSettings from './SettingsComponent/GeneralSettings.vue';
-import SecuritySettings from './SettingsComponent/SecuritySettings.vue';
-import NotificationSettings from './SettingsComponent/NotificationSettings.vue';
 import CorporateSettings from './SettingsComponent/CorporateSettings.vue';
 import DatabaseSettings from './SettingsComponent/DatabaseSettings.vue';
 
@@ -152,7 +119,7 @@ const props = defineProps({
 });
 
 const isSaving = ref(false);
-const activeSection = ref('general');
+const activeSection = ref('corporate');
 
 // Variable reactiva para companyValues que se actualiza desde el servidor
 const companyValues = ref(props.companyValues);
@@ -196,24 +163,6 @@ const reportUnsavedChanges = (hasChanges) => {
 // Elementos del menú lateral
 const menuItems = ref([
     {
-        id: 'general',
-        icon: '⚙️',
-        title: 'Configuración General',
-        description: 'Información básica del sistema'
-    },
-    {
-        id: 'security',
-        icon: '🔐',
-        title: 'Seguridad',
-        description: 'Configuraciones de seguridad'
-    },
-    {
-        id: 'notifications',
-        icon: '📧',
-        title: 'Notificaciones',
-        description: 'Gestión de comunicaciones'
-    },
-    {
         id: 'corporate',
         icon: '🏢',
         title: 'Información Corporativa',
@@ -232,19 +181,7 @@ const settings = ref({
     // Configuraciones para contenido del sitio
     mission: props.siteSettings.mission || '',
     vision: props.siteSettings.vision || '',
-    description: props.siteSettings.description || '',
-
-    // Configuraciones del sistema (solo para display, no funcionales aún)
-    systemName: 'Sistema VASIR',
-    version: '1.0.0',
-    contactEmail: 'contacto@vasir.com',
-    contactPhone: '+505 8888-8888',
-    requireEmailVerification: true,
-    enableTwoFactor: false,
-    sessionTimeout: 120,
-    emailNotifications: true,
-    smsNotifications: false,
-    smtpServer: 'smtp.gmail.com'
+    description: props.siteSettings.description || ''
 });
 
 // Configuraciones originales para restablecer

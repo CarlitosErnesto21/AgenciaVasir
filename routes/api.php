@@ -16,6 +16,7 @@ use App\Http\Controllers\TransporteController;
 use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PagoController;
+use App\Http\Controllers\BackupController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -185,5 +186,22 @@ Route::middleware('auth:sanctum')->group(function () {
             // Administración de pagos (solo para admin)
             Route::get('/', [PagoController::class, 'index'])->name('index');
         });
+
+        // ═══════════════════════════════════════════════════════════
+        // RUTAS DE BACKUPS (PROTEGIDAS - SOLO ADMIN)
+        // ═══════════════════════════════════════════════════════════
+        Route::prefix('backups')->name('backups.')->group(function () {
+            Route::get('/', [BackupController::class, 'index'])->name('index');
+            Route::post('/generate', [BackupController::class, 'generate'])->name('generate');
+            Route::delete('/{id}', [BackupController::class, 'delete'])->name('delete');
+            Route::post('/cleanup', [BackupController::class, 'cleanup'])->name('cleanup');
+        });
     });
+
 });
+
+// ═══════════════════════════════════════════════════════════
+// RUTA DE DESCARGA DE BACKUPS (SIN MIDDLEWARE RESTRICTIVO)
+// Permite descargas directas para usuarios autenticados en el frontend
+// ═══════════════════════════════════════════════════════════
+Route::get('/backups/{id}/download', [BackupController::class, 'download'])->name('backups.download');
