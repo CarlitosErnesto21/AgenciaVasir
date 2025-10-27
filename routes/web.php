@@ -24,6 +24,7 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('productos', fn() => Inertia::render('Catalogos/Productos'))->name('productos');
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
     Route::get('reservas', fn() => Inertia::render('Catalogos/Reservas'))->name('reservas');
+    Route::get('reservas-hoteles', fn() => Inertia::render('Catalogos/ReservasHoteles'))->name('reservasHoteles');
     Route::get('tours', fn() => Inertia::render('Catalogos/Tours'))->name('tours');
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('tipo-documentos', fn() => Inertia::render('Configuracion/TiposDocumento'))->name('tipodocumentos');

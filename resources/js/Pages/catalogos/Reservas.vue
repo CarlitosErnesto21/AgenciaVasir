@@ -22,7 +22,6 @@ const tours = ref([])
 const loading = ref(false)
 const loadingTours = ref(false)
 const filtros = ref({
-  tipo: '',
   busqueda: '',
   fechaDesde: null,
   fechaHasta: null,
@@ -153,7 +152,6 @@ const cargarReservas = async () => {
   loading.value = true
   try {
     const params = {
-      tipo: filtros.value.tipo,
       busqueda: filtros.value.busqueda || undefined,
       fecha_inicio: filtros.value.fechaDesde || undefined,
       fecha_fin: filtros.value.fechaHasta || undefined
@@ -189,7 +187,6 @@ const cargarReservasWithToasts = async () => {
 
   try {
     const params = {
-      tipo: filtros.value.tipo,
       busqueda: filtros.value.busqueda || undefined,
       fecha_inicio: filtros.value.fechaDesde || undefined,
       fecha_fin: filtros.value.fechaHasta || undefined
@@ -552,7 +549,6 @@ const limpiarFiltros = async () => {
     await new Promise(resolve => setTimeout(resolve, 300))
 
     filtros.value = {
-      tipo: '',
       busqueda: '',
       fechaDesde: null,
       fechaHasta: null,
@@ -1022,23 +1018,10 @@ onMounted(() => {
                 style="background-color: white; border-color: #93c5fd;"
               />
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
-              <div class="col-span-1">
-                <select
-                  v-model="filtros.tipo"
-                  @change="aplicarFiltros"
-                  class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
-                >
-                  <option value="" disabled selected hidden>Tipo</option>
-                  <option value="tours" class="truncate text-gray-900">Tours</option>
-                  <option value="hoteles" class="truncate text-gray-900">Hoteles</option>
-                </select>
-              </div>
-
+            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
               <div class="col-span-1">
                 <select
                   v-model="filtros.estadoReserva"
-                  @change="aplicarFiltros"
                   class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                 >
                   <option value="" disabled selected hidden>Estado</option>
@@ -1179,7 +1162,7 @@ onMounted(() => {
                       {{ slotProps.data.entidad_nombre || 'N/A' }}
                     </div>
                     <div class="text-xs text-gray-500 capitalize hidden sm:block">
-                      {{ slotProps.data.tipo || 'N/A' }}
+                      Tours
                     </div>
                   </div>
                 </template>

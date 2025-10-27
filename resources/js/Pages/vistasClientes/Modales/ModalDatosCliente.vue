@@ -3,12 +3,14 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faXmark, faSave, faIdCard, faCalendarAlt, faMapMarkerAlt, faPhone, faVenusMars } from '@fortawesome/free-solid-svg-icons'
+import { faUser, faXmark, faSave, faIdCard, faCalendarAlt, faMapMarkerAlt, faPhone, faVenusMars, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import DatePicker from 'primevue/datepicker'
+import Calendar from 'primevue/calendar'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
+import { VueTelInput } from 'vue-tel-input'
+import 'vue-tel-input/vue-tel-input.css'
 import axios from 'axios'
 
 // Props del componente
@@ -51,6 +53,14 @@ const opcionesGenero = [
 
 // Validaciones
 const errores = ref({})
+
+// Estado de validación del teléfono
+const telefonoValidation = ref({
+  isValid: false,
+  country: null,
+  formattedNumber: '',
+  mensaje: ''
+})
 
 // Cargar tipos de documento al montar el componente
 onMounted(async () => {
@@ -129,6 +139,27 @@ const limpiarFormulario = () => {
   errores.value = {}
 }
 
+// Función de validación del teléfono
+const onValidate = (phoneObject) => {
+  try {
+    if (phoneObject && typeof phoneObject === 'object') {
+      telefonoValidation.value.isValid = phoneObject.valid === true
+      telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
+      telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
+
+      if (formData.value.telefono && phoneObject.valid === false) {
+        telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+      } else if (phoneObject.valid === true) {
+        telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+      } else {
+        telefonoValidation.value.mensaje = ''
+      }
+    }
+  } catch (error) {
+    telefonoValidation.value.mensaje = 'Error en validación'
+  }
+}
+
 // Validar formulario
 const validarFormulario = () => {
   errores.value = {}
@@ -149,8 +180,10 @@ const validarFormulario = () => {
     errores.value.direccion = 'La dirección es requerida'
   }
 
-  if (!formData.value.telefono.trim()) {
-    errores.value.telefono = 'El teléfono es requerido'
+  if (!formData.value.telefono) {
+    errores.value.telefono = 'El número de teléfono es requerido'
+  } else if (telefonoValidation.value.isValid === false) {
+    errores.value.telefono = 'Por favor, ingrese un número de teléfono válido'
   }
 
   if (!formData.value.tipo_documento_id) {
@@ -164,10 +197,10 @@ const validarFormulario = () => {
 const guardarCliente = async () => {
   if (!validarFormulario()) {
     toast.add({
-      severity: 'warn',
+      severity: 'error',
       summary: 'Formulario incompleto',
       detail: 'Por favor completa todos los campos requeridos',
-      life: 3000
+      life: 4000
     })
     return
   }
@@ -242,148 +275,172 @@ const formatearFecha = (fecha) => {
       </div>
 
       <!-- Formulario de datos del cliente -->
-      <form @submit.prevent="guardarCliente" class="space-y-6">
-        <!-- Tipo de documento y número -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form @submit.prevent="guardarCliente" class="space-y-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              <FontAwesomeIcon :icon="faIdCard" class="mr-2" />
-              Tipo de documento *
-            </label>
-            <Select
-              v-model="formData.tipo_documento_id"
-              :options="tiposDocumento"
-              optionLabel="nombre"
-              optionValue="id"
-              placeholder="Selecciona el tipo"
-              :loading="loadingTipos"
-              class="w-full"
+            <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+            <input
+              v-model="formData.numero_identificacion"
+              type="text"
+              required
+              maxlength="25"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': errores.numero_identificacion }"
+              placeholder="Ingrese su DUI o documento"
             />
-            <small v-if="errores.tipo_documento_id" class="p-error">
-              {{ errores.tipo_documento_id }}
+            <small v-if="errores.numero_identificacion" class="text-red-500 text-xs">
+              {{ errores.numero_identificacion }}
             </small>
           </div>
-
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              Número de identificación *
-            </label>
-            <InputText
-              v-model="formData.numero_identificacion"
-              placeholder="Ingresa tu número de identificación"
-              class="w-full"
-              :class="{ 'p-invalid': errores.numero_identificacion }"
-            />
-            <small v-if="errores.numero_identificacion" class="p-error">
-              {{ errores.numero_identificacion }}
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+            <select
+              v-model="formData.tipo_documento_id"
+              required
+              :disabled="loadingTipos"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+              :class="{ 'border-red-500': errores.tipo_documento_id }"
+            >
+              <option v-if="loadingTipos" value="" disabled>Cargando tipos...</option>
+              <option v-else-if="tiposDocumento.length === 0" value="" disabled>No hay tipos disponibles</option>
+              <template v-else>
+                <option value="" disabled>Seleccione un tipo</option>
+                <option v-for="tipo in tiposDocumento" :key="tipo.id" :value="tipo.id">
+                  {{ tipo.nombre }}
+                </option>
+              </template>
+            </select>
+            <small v-if="errores.tipo_documento_id" class="text-red-500 text-xs">
+              {{ errores.tipo_documento_id }}
             </small>
           </div>
         </div>
 
-        <!-- Fecha de nacimiento y género -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              <FontAwesomeIcon :icon="faCalendarAlt" class="mr-2" />
-              Fecha de nacimiento *
-            </label>
-            <DatePicker
+            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+            <Calendar
               v-model="formData.fecha_nacimiento"
-              placeholder="Selecciona tu fecha de nacimiento"
-              dateFormat="dd/mm/yy"
-              :showIcon="true"
               :maxDate="new Date()"
+              dateFormat="dd/mm/yy"
+              placeholder="Seleccionar fecha de nacimiento"
+              showIcon
+              :showOnFocus="false"
+              touchUI
+              yearNavigator
+              yearRange="1920:2010"
               class="w-full"
-              :class="{ 'p-invalid': errores.fecha_nacimiento }"
+              :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.fecha_nacimiento ? 'border-red-500' : ''}`"
             />
-            <small v-if="errores.fecha_nacimiento" class="p-error">
+            <small v-if="errores.fecha_nacimiento" class="text-red-500 text-xs">
               {{ errores.fecha_nacimiento }}
             </small>
           </div>
-
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">
-              <FontAwesomeIcon :icon="faVenusMars" class="mr-2" />
-              Género *
-            </label>
-            <Select
+            <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
+            <select
               v-model="formData.genero"
-              :options="opcionesGenero"
-              optionLabel="label"
-              optionValue="value"
-              placeholder="Selecciona tu género"
-              class="w-full"
-            />
-            <small v-if="errores.genero" class="p-error">
+              required
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': errores.genero }"
+            >
+              <option value="">Seleccione</option>
+              <option value="MASCULINO">Masculino</option>
+              <option value="FEMENINO">Femenino</option>
+            </select>
+            <small v-if="errores.genero" class="text-red-500 text-xs">
               {{ errores.genero }}
             </small>
           </div>
         </div>
 
-        <!-- Dirección -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <FontAwesomeIcon :icon="faMapMarkerAlt" class="mr-2" />
-            Dirección *
-          </label>
-          <Textarea
-            v-model="formData.direccion"
-            placeholder="Ingresa tu dirección completa"
-            rows="3"
-            class="w-full"
-            :class="{ 'p-invalid': errores.direccion }"
-          />
-          <small v-if="errores.direccion" class="p-error">
-            {{ errores.direccion }}
-          </small>
-        </div>
-
-        <!-- Teléfono -->
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            <FontAwesomeIcon :icon="faPhone" class="mr-2" />
-            Teléfono *
-          </label>
-          <InputText
-            v-model="formData.telefono"
-            placeholder="Ingresa tu número de teléfono"
-            class="w-full"
-            :class="{ 'p-invalid': errores.telefono }"
-          />
-          <small v-if="errores.telefono" class="p-error">
-            {{ errores.telefono }}
-          </small>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+            <VueTelInput
+              v-model="formData.telefono"
+              defaultCountry="SV"
+              :preferredCountries="['SV', 'GT', 'HN', 'CR', 'NI', 'PA', 'BZ']"
+              :validCharactersOnly="true"
+              :dropdownOptions="{
+                showDialCodeInSelection: true,
+                showFlags: true,
+                showSearchBox: true,
+                showDialCodeInList: true
+              }"
+              :inputOptions="{
+                placeholder: 'Número de teléfono'
+              }"
+              mode="international"
+              class="w-full border border-gray-300 rounded-lg"
+              @validate="onValidate"
+            />
+            <!-- Mensaje de validación -->
+            <p
+              v-if="telefonoValidation.mensaje"
+              :class="[
+                'text-xs mt-1 flex items-center',
+                telefonoValidation.isValid ? 'text-green-600' : 'text-red-600'
+              ]"
+            >
+              <span class="mr-1">
+                {{ telefonoValidation.isValid ? '✓' : '⚠️' }}
+              </span>
+              {{ telefonoValidation.mensaje }}
+            </p>
+            <small v-if="errores.telefono" class="text-red-500 text-xs">
+              {{ errores.telefono }}
+            </small>
+          </div>
+          <div class="sm:col-span-1">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+            <input
+              v-model="formData.direccion"
+              type="text"
+              required
+              maxlength="200"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': errores.direccion }"
+              placeholder="Dirección completa"
+            />
+            <small v-if="errores.direccion" class="text-red-500 text-xs">
+              {{ errores.direccion }}
+            </small>
+          </div>
         </div>
 
         <!-- Nota informativa -->
-        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-          <p class="text-sm text-yellow-800">
-            <strong>Nota:</strong> Esta información es necesaria para procesar tu compra y generar la factura correspondiente.
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+          <p class="text-sm text-blue-800">
+            <strong>Nota:</strong> Esta información es necesaria para procesar tu compra.
           </p>
         </div>
       </form>
     </div>
 
-    <template #footer>
-      <div class="flex justify-end gap-3">
+        <template #footer>
+      <div class="flex justify-center gap-4 w-full mt-6">
         <button
           type="button"
-          class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-          @click="cerrarModal"
+          class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          @click="guardarCliente"
           :disabled="loading"
         >
-          <FontAwesomeIcon :icon="faXmark" />
-          Cancelar
+          <FontAwesomeIcon
+            :icon="loading ? faSpinner : faSave"
+            :class="['h-5', { 'animate-spin': loading }]"
+          />
+          {{ loading ? 'Guardando...' : 'Guardar y Continuar' }}
         </button>
 
         <button
           type="button"
-          class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50"
-          @click="guardarCliente"
+          class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          @click="cerrarModal"
           :disabled="loading"
         >
-          <FontAwesomeIcon :icon="faSave" />
-          {{ loading ? 'Guardando...' : 'Guardar y Continuar' }}
+          <FontAwesomeIcon :icon="faXmark" class="h-5" />
+          Cancelar
         </button>
       </div>
     </template>
@@ -432,15 +489,15 @@ const formatearFecha = (fecha) => {
   color: white !important;
 }
 
-/* Estilos específicos para el toast de advertencia */
+/* Estilos específicos para el toast de advertencia - más suave */
 .p-toast .p-toast-message-warn {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
-  border: 1px solid #d97706 !important;
-  color: white !important;
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  border: 1px solid #f59e0b !important;
+  color: #92400e !important;
 }
 
 .p-toast .p-toast-message-warn .p-toast-message-icon,
 .p-toast .p-toast-message-warn .p-toast-icon-close {
-  color: white !important;
+  color: #92400e !important;
 }
 </style>

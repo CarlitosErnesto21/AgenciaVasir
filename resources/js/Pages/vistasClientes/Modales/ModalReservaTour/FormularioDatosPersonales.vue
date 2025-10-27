@@ -2,6 +2,10 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
+import InputText from 'primevue/inputtext'
+import Calendar from 'primevue/calendar'
+import Select from 'primevue/select'
+import Textarea from 'primevue/textarea'
 
 // Props del componente
 const props = defineProps({
@@ -100,6 +104,13 @@ const onValidate = (phoneObject) => {
   } catch (error) {
     telefonoValidation.value.mensaje = 'Error en validación'
   }
+}
+
+// Función para obtener fecha máxima de nacimiento (ayer)
+const getFechaMaximaNacimiento = () => {
+  const ayer = new Date()
+  ayer.setDate(ayer.getDate() - 1)
+  return ayer
 }
 
 // Función de validación del formulario
@@ -232,161 +243,98 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
 </script>
 
 <template>
-  <div>
-    <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center text-sm sm:text-base">
-      <span class="text-base sm:text-lg mr-1 sm:mr-2">👤</span>
-      <span class="hidden sm:inline">Datos personales</span>
-      <span class="sm:hidden">Datos</span>
-    </h4>
-
-    <!-- Mensaje informativo para datos precargados -->
-    <div v-if="tieneClienteExistente" class="mb-3 sm:mb-4 p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg">
-      <p class="text-xs sm:text-sm text-blue-700 flex items-center">
-        <span class="mr-1 sm:mr-2">ℹ️</span>
-        <span class="hidden sm:inline">Sus datos personales se han cargado automáticamente desde su perfil. Solo puede modificar la cantidad de cupos para esta reserva.</span>
-        <span class="sm:hidden">Datos cargados desde su perfil. Solo puede modificar cupos.</span>
-      </p>
+  <div class="space-y-6">
+    <!-- Información del usuario (si está logueado) -->
+    <div v-if="user" class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+      <h3 class="font-bold text-lg text-gray-800 mb-2">Información de tu cuenta:</h3>
+      <p class="text-sm text-gray-600 mb-1"><strong>Nombre:</strong> {{ user.name }}</p>
+      <p class="text-sm text-gray-600"><strong>Email:</strong> {{ user.email }}</p>
     </div>
 
-    <form class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 lg:gap-4">
-      <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Correo electrónico</label>
-        <InputText
-          v-model="formularioLocal.correo"
-          type="email"
-          :disabled="!!user"
-          placeholder="ejemplo@email.com"
-          class="w-full"
-          :pt="{
-            root: {
-              class: [
-                'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
-                'focus:ring-2 focus:ring-red-500 focus:border-red-500',
-                { 'bg-gray-100 cursor-not-allowed': !!user }
-              ]
-            }
-          }"
-        />
+    <!-- Mensaje informativo para datos precargados -->
+    <div v-if="tieneClienteExistente" class="flex items-center justify-between mb-3">
+      <h4 class="font-semibold text-gray-800">Información Personal</h4>
+      <div class="flex items-center text-green-600 text-sm">
+        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+        </svg>
+        <span>Datos precargados</span>
       </div>
+    </div>
+
+    <!-- Formulario de información personal -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Nombre Completo</label>
-        <InputText
-          v-model="formularioLocal.nombres"
-          :disabled="!!user"
-          placeholder="Nombres y apellidos"
-          class="w-full"
-          :pt="{
-            root: {
-              class: [
-                'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
-                'focus:ring-2 focus:ring-red-500 focus:border-red-500',
-                { 'bg-gray-100 cursor-not-allowed': !!user }
-              ]
-            }
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Tipo documento</label>
-        <Select
-          :model-value="formularioLocal.tipo_documento"
-          @update:model-value="onTipoDocumentoChange"
-          :options="tiposDocumentos"
-          optionLabel="nombre"
-          :loading="cargandoTipos"
-          :disabled="tieneClienteExistente"
-          placeholder="Seleccionar tipo de documento"
-          class="w-full border border-gray-300 rounded-lg"
-          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
-          :pt="{
-            input: { class: 'px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors' },
-            trigger: { class: 'text-gray-400' },
-            panel: { class: 'border border-gray-300 rounded-lg shadow-lg' },
-            item: { class: 'px-3 py-2 text-xs sm:text-sm hover:bg-red-50 transition-colors' }
-          }"
-        />
-      </div>
-      <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Número de identificación</label>
-        <InputText
+        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+        <input
           v-model="formularioLocal.numero_identificacion"
+          type="text"
+          required
+          maxlength="25"
           :disabled="tieneClienteExistente"
-          placeholder="Número de documento"
-          class="w-full"
-          :pt="{
-            root: {
-              class: [
-                'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
-                'focus:ring-2 focus:ring-red-500 focus:border-red-500',
-                { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ]
-            }
-          }"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+          placeholder="Ingrese su DUI o documento"
         />
       </div>
       <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Fecha de nacimiento</label>
-        <DatePicker
+        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+        <select
+          :value="formularioLocal.tipo_documento_id"
+          @change="onTipoDocumentoChange(tiposDocumentos.find(t => t.id === parseInt($event.target.value)))"
+          required
+          :disabled="cargandoTipos || tieneClienteExistente"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+        >
+          <option v-if="cargandoTipos" value="" disabled>Cargando tipos...</option>
+          <option v-else-if="tiposDocumentos.length === 0" value="" disabled>No hay tipos disponibles</option>
+          <template v-else>
+            <option value="" disabled>Seleccione un tipo</option>
+            <option v-for="tipo in tiposDocumentos" :key="tipo.id" :value="tipo.id">
+              {{ tipo.nombre }}
+            </option>
+          </template>
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+        <Calendar
           v-model="formularioLocal.fecha_nacimiento"
+          :maxDate="getFechaMaximaNacimiento()"
           dateFormat="dd/mm/yy"
-          class="w-full"
-          :inputClass="tieneClienteExistente ? 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm bg-gray-100 cursor-not-allowed' : 'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors'"
-          placeholder="dd/mm/aaaa"
-          :maxDate="new Date()"
-          :disabled="tieneClienteExistente"
+          placeholder="Seleccionar fecha de nacimiento"
           showIcon
+          :showOnFocus="false"
+          touchUI
+          yearNavigator
+          yearRange="1920:2010"
+          :disabled="tieneClienteExistente"
+          class="w-full"
+          :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${tieneClienteExistente ? 'bg-gray-100 cursor-not-allowed' : ''}`"
         />
       </div>
       <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Género</label>
-        <Select
+        <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
+        <select
           v-model="formularioLocal.genero"
-          :options="[
-            { label: 'Masculino', value: 'MASCULINO' },
-            { label: 'Femenino', value: 'FEMENINO' }
-          ]"
-          optionLabel="label"
-          optionValue="value"
+          required
           :disabled="tieneClienteExistente"
-          placeholder="Seleccionar género"
-          class="w-full"
-          :pt="{
-            root: {
-              class: [
-                'w-full border border-gray-300 rounded-lg',
-                { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ]
-            },
-            input: {
-              class: 'px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-colors'
-            },
-            trigger: { class: 'text-gray-400' },
-            panel: { class: 'border border-gray-300 rounded-lg shadow-lg' },
-            item: { class: 'px-3 py-2 text-xs sm:text-sm hover:bg-red-50 transition-colors' }
-          }"
-        />
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+        >
+          <option value="">Seleccione</option>
+          <option value="MASCULINO">Masculino</option>
+          <option value="FEMENINO">Femenino</option>
+        </select>
       </div>
-      <div class="sm:col-span-2">
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Dirección de residencia</label>
-        <Textarea
-          v-model="formularioLocal.direccion"
-          :disabled="tieneClienteExistente"
-          rows="2"
-          placeholder="Dirección completa de residencia"
-          class="w-full"
-          :pt="{
-            root: {
-              class: [
-                'w-full border border-gray-300 rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 text-xs sm:text-sm transition-colors',
-                'focus:ring-2 focus:ring-red-500 focus:border-red-500',
-                { 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }
-              ]
-            }
-          }"
-        />
-      </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
       <div>
-        <label class="block text-xs sm:text-sm font-semibold mb-1 sm:mb-2 text-gray-700">Teléfono</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
         <VueTelInput
           v-model="formularioLocal.telefono"
           defaultCountry="SV"
@@ -421,6 +369,19 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
           {{ telefonoValidation.mensaje }}
         </p>
       </div>
-    </form>
+      <div class="sm:col-span-1">
+        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+        <input
+          v-model="formularioLocal.direccion"
+          type="text"
+          required
+          maxlength="200"
+          :disabled="tieneClienteExistente"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+          placeholder="Dirección completa"
+        />
+      </div>
+    </div>
   </div>
 </template>

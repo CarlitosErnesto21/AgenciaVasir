@@ -327,24 +327,22 @@ watch(() => props.visible, async (newValue) => {
     </div>
 
     <template #footer>
-      <div class="flex flex-row gap-3 sm:gap-4 pt-4 sm:pt-6 px-1 sm:px-0">
-        <button
-          @click="cerrarModal"
-          type="button"
-          class="bg-white hover:bg-red-50 text-red-600 border border-red-600 flex-1 sm:flex-none sm:px-6 px-3 py-3 sm:py-2 text-sm sm:text-base font-medium rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center gap-2"
-        >
-          <FontAwesomeIcon :icon="faXmark" class="h-4 w-4 text-red-600" />
-          <span class="hidden sm:inline">Cancelar</span>
-          <span class="sm:hidden">Cancelar</span>
-        </button>
+      <div class="flex justify-center gap-4 w-full mt-6">
         <button
           @click="confirmarReserva"
           type="button"
-          class="bg-red-600 hover:bg-red-700 text-white border border-red-600 flex-1 sm:flex-none sm:px-6 px-3 py-3 sm:py-2 text-sm sm:text-base font-semibold rounded-lg transition-all duration-200 ease-in-out flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+          class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <FontAwesomeIcon :icon="faCheck" class="h-4 w-4 text-white" />
-          <span class="hidden sm:inline">Confirmar Reserva</span>
-          <span class="sm:hidden">Confirmar</span>
+          <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
+          Confirmar Reserva
+        </button>
+        <button
+          @click="cerrarModal"
+          type="button"
+          class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+        >
+          <FontAwesomeIcon :icon="faXmark" class="h-5" />
+          Cancelar
         </button>
       </div>
     </template>

@@ -1,10 +1,18 @@
 <script setup>
 import Catalogo from '../Catalogo.vue'
+import ModalAuthRequerido from './Modales/ModalAuthRequerido.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay, faPhone, faEnvelope, faInfoCircle, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay, faPhone, faEnvelope, faInfoCircle, faSearch, faTimes, faCheck, faSpinner, faSave } from '@fortawesome/free-solid-svg-icons'
+import Dialog from 'primevue/dialog'
+import Button from 'primevue/button'
+import Card from 'primevue/card'
+import Toast from 'primevue/toast'
+import Calendar from 'primevue/calendar'
+import { VueTelInput } from 'vue-tel-input'
+import 'vue-tel-input/vue-tel-input.css'
 
 // Recibir los props del controlador (opcional, como fallback)
 const props = defineProps({
@@ -30,6 +38,44 @@ const searchQuery = ref('')
 
 // URL de la API para hoteles
 const url = "/api/hoteles"
+
+// Estados para modal de reserva de hotel
+const showReservaModal = ref(false)
+const hotelSeleccionado = ref(null)
+const procesandoReserva = ref(false)
+const tieneClienteExistente = ref(false)
+
+// Estados para modal de autenticación requerida
+const showAuthModal = ref(false)
+const hotelParaReserva = ref(null)
+
+// Datos del formulario de reserva
+const reservaForm = ref({
+  fecha_entrada: null,
+  fecha_salida: null,
+  cantidad_personas: 1,
+  cantidad_habitaciones: 1,
+  cliente_data: {
+    numero_identificacion: '',
+    fecha_nacimiento: null,
+    genero: '',
+    direccion: '',
+    telefono: '',
+    tipo_documento_id: 1
+  }
+})
+
+// Tipos de documento cargados desde la API
+const tiposDocumento = ref([])
+const loadingTiposDocumento = ref(false)
+
+// Estado de validación del teléfono
+const telefonoValidation = ref({
+  isValid: false,
+  country: null,
+  formattedNumber: '',
+  mensaje: ''
+})
 
 
 
@@ -87,6 +133,43 @@ const obtenerHoteles = async () => {
     hoteles.value = props.hoteles || []
   } finally {
     loading.value = false
+  }
+}
+
+// Función para obtener tipos de documento desde la API
+const obtenerTiposDocumento = async () => {
+  try {
+    loadingTiposDocumento.value = true
+    const response = await fetch('/api/tipo-documentos', {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      }
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json()
+    tiposDocumento.value = data.tipos || data || []
+
+    // Si hay datos, establecer el primer tipo como default
+    if (tiposDocumento.value.length > 0) {
+      // Nota: No establecemos aquí porque el formulario puede no estar inicializado
+    }
+
+  } catch (err) {
+    console.error('Error al obtener tipos de documento:', err)
+    // Fallback en caso de error
+    tiposDocumento.value = [
+      { id: 1, nombre: 'DUI' },
+      { id: 2, nombre: 'Pasaporte' },
+      { id: 3, nombre: 'Licencia' }
+    ]
+  } finally {
+    loadingTiposDocumento.value = false
   }
 }
 
@@ -153,10 +236,27 @@ const detenerTodosLosCarruseles = () => {
   detenerCarruselGaleria() // También detener el carrusel de la galería
 }
 
+// Watch para manejar teléfono precargado
+watch(() => reservaForm.value.cliente_data.telefono, (nuevoTelefono, telefonoAnterior) => {
+  // Si hay un teléfono precargado y es diferente del anterior
+  if (nuevoTelefono && nuevoTelefono !== telefonoAnterior && tieneClienteExistente.value) {
+    // Marcar como válido si viene de datos precargados
+    telefonoValidation.value = {
+      isValid: true,
+      country: { name: 'Válido', code: '' },
+      formattedNumber: nuevoTelefono,
+      mensaje: 'Número válido (guardado previamente)'
+    }
+  }
+}, { immediate: true })
+
 // Lifecycle hooks
 onMounted(async () => {
-  // Obtener hoteles desde la API
-  await obtenerHoteles()
+  // Obtener hoteles y tipos de documento desde la API
+  await Promise.all([
+    obtenerHoteles(),
+    obtenerTiposDocumento()
+  ])
 
   // Inicializar carruseles para todos los hoteles con múltiples imágenes
   hoteles.value.forEach(hotel => {
@@ -164,6 +264,8 @@ onMounted(async () => {
       inicializarCarrusel(hotel)
     }
   })
+
+
 })
 
 onUnmounted(() => {
@@ -257,12 +359,7 @@ const contactarHotel = (hotel) => {
 }
 
 const verMasInfo = (hotel) => {
-  toast.add({
-    severity: 'info',
-    summary: `Información de ${hotel.nombre}`,
-    detail: `Ubicación: ${hotel.direccion} | Provincia: ${hotel.provincia?.nombre || 'No especificada'} | Categoría: ${hotel.categoria_hotel?.nombre || 'No especificada'} | Estado: ${hotel.estado} | ${hotel.descripcion}`,
-    life: 8000
-  })
+  // Función deshabilitada - solo mantener referencia para evitar errores
 }
 
 // Función para contactar por email
@@ -289,6 +386,315 @@ Saludos cordiales.`
 // Función para limpiar búsqueda
 const limpiarBusqueda = () => {
   searchQuery.value = ''
+}
+
+// Función para cargar datos del cliente existente
+const cargarDatosCliente = async () => {
+  if (!user.value) return null
+
+  try {
+    const response = await fetch('/api/clientes/mi-perfil', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin'
+    })
+
+    if (response.ok) {
+      const data = await response.json()
+      console.log('Datos del cliente cargados:', data)
+      return data.cliente || data || null
+    } else if (response.status === 404) {
+      console.log('Cliente no encontrado, usuario nuevo')
+      return null
+    } else {
+      console.error('Error al cargar datos del cliente:', response.status)
+      return null
+    }
+  } catch (error) {
+    console.error('Error al cargar datos del cliente:', error)
+    return null
+  }
+}
+
+// Funciones para manejo de reservas de hoteles
+const abrirModalReserva = async (hotel) => {
+  if (!user.value) {
+    // Guardar el hotel para la reserva pendiente y mostrar modal de auth
+    hotelParaReserva.value = hotel
+    showAuthModal.value = true
+    return
+  }
+
+  hotelSeleccionado.value = hotel
+  showReservaModal.value = true
+
+  // Resetear estado
+  tieneClienteExistente.value = false
+
+  // Inicializar formulario con datos básicos
+  const tipoDocumentoId = tiposDocumento.value.length > 0 ? tiposDocumento.value[0].id : ''
+
+  reservaForm.value = {
+    fecha_entrada: null,
+    fecha_salida: null,
+    cantidad_personas: 1,
+    cantidad_habitaciones: 1,
+    cliente_data: {
+      numero_identificacion: '',
+      fecha_nacimiento: null,
+      genero: '',
+      direccion: '',
+      telefono: '',
+      tipo_documento_id: tipoDocumentoId
+    }
+  }
+
+  // Cargar datos existentes del cliente si está logueado
+  const clienteExistente = await cargarDatosCliente()
+
+  if (clienteExistente) {
+    tieneClienteExistente.value = true
+
+    // Formatear fecha de nacimiento para Calendar
+    let fechaNacimientoFormateada = null
+    if (clienteExistente.fecha_nacimiento) {
+      try {
+        fechaNacimientoFormateada = new Date(clienteExistente.fecha_nacimiento)
+      } catch (error) {
+        console.error('Error al formatear fecha:', error)
+        fechaNacimientoFormateada = null
+      }
+    }
+
+    // Actualizar formulario con datos existentes
+    reservaForm.value.cliente_data = {
+      numero_identificacion: clienteExistente.numero_identificacion || '',
+      fecha_nacimiento: fechaNacimientoFormateada,
+      genero: clienteExistente.genero || '',
+      direccion: clienteExistente.direccion || '',
+      telefono: clienteExistente.telefono || '',
+      tipo_documento_id: clienteExistente.tipo_documento_id || tipoDocumentoId
+    }
+
+    // Verificar si la fecha de nacimiento necesita corrección
+    const hoy = new Date()
+    const fechaNac = new Date(clienteExistente.fecha_nacimiento)
+
+    if (fechaNac >= hoy) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Revisar Datos',
+        detail: 'Sus datos han sido precargados, pero la fecha de nacimiento debe ser corregida (debe ser anterior a hoy)',
+        life: 6000
+      })
+    } else {
+      toast.add({
+        severity: 'info',
+        summary: 'Datos Precargados',
+        detail: 'Sus datos personales han sido cargados automáticamente. Puede modificarlos si es necesario.',
+        life: 4000
+      })
+    }
+  }
+}
+
+const cerrarModalReserva = () => {
+  showReservaModal.value = false
+  hotelSeleccionado.value = null
+}
+
+const crearReservaHotel = async () => {
+  try {
+    procesandoReserva.value = true
+
+    // Validaciones básicas
+    if (!reservaForm.value.fecha_entrada || !reservaForm.value.fecha_salida) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error de Validación',
+        detail: 'Las fechas de entrada y salida son requeridas',
+        life: 4000
+      })
+      return
+    }
+
+    if (new Date(reservaForm.value.fecha_entrada) >= new Date(reservaForm.value.fecha_salida)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error de Validación',
+        detail: 'La fecha de salida debe ser posterior a la fecha de entrada',
+        life: 4000
+      })
+      return
+    }
+
+    if (!reservaForm.value.cliente_data.numero_identificacion.trim()) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error de Validación',
+        detail: 'El número de identificación es requerido',
+        life: 4000
+      })
+      return
+    }
+
+    if (!reservaForm.value.cliente_data.telefono) {
+      toast.add({
+        severity: 'error',
+        summary: 'Error de Validación',
+        detail: 'El número de teléfono es requerido',
+        life: 4000
+      })
+      return
+    }
+
+    // Solo validar formato si el teléfono fue modificado (no viene de datos precargados)
+    if (reservaForm.value.cliente_data.telefono && telefonoValidation.value.isValid === false && telefonoValidation.value.mensaje !== 'Número válido (guardado previamente)') {
+      toast.add({
+        severity: 'error',
+        summary: 'Teléfono inválido',
+        detail: 'Por favor, ingrese un número de teléfono válido',
+        life: 4000
+      })
+      return
+    }
+
+    // Validar cantidad de personas (máximo 10)
+    if (reservaForm.value.cantidad_personas > 10) {
+      toast.add({
+        severity: 'error',
+        summary: 'Cantidad de personas excede el límite',
+        detail: 'La cantidad máxima de personas permitida es 10',
+        life: 4000
+      })
+      return
+    }
+
+    // Validar fecha de nacimiento (debe ser anterior a hoy)
+    if (reservaForm.value.cliente_data.fecha_nacimiento) {
+      const hoy = new Date()
+      hoy.setHours(0, 0, 0, 0) // Resetear horas para comparar solo fechas
+      const fechaNacimiento = new Date(reservaForm.value.cliente_data.fecha_nacimiento)
+      fechaNacimiento.setHours(0, 0, 0, 0)
+
+      if (fechaNacimiento >= hoy) {
+        toast.add({
+          severity: 'error',
+          summary: 'Fecha de nacimiento inválida',
+          detail: `La fecha de nacimiento debe ser anterior a hoy (${hoy.toLocaleDateString()}). Por favor, corrija la fecha.`,
+          life: 6000
+        })
+        return
+      }
+    }
+
+    // Preparar datos para enviar
+    const datosReserva = {
+      hotel_id: hotelSeleccionado.value.id,
+      fecha_entrada: reservaForm.value.fecha_entrada,
+      fecha_salida: reservaForm.value.fecha_salida,
+      cantidad_personas: reservaForm.value.cantidad_personas,
+      cantidad_habitaciones: reservaForm.value.cantidad_habitaciones,
+      cliente_data: reservaForm.value.cliente_data
+    }
+
+    console.log('Datos que se enviarán:', datosReserva)
+
+    // Aquí se haría la llamada a la API para crear la reserva de hotel
+    const response = await fetch('/api/reservas/hotel', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify(datosReserva)
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Error del servidor:', errorData)
+
+      // Si hay errores de validación específicos, mostrarlos
+      if (errorData.errors) {
+        const errores = Object.values(errorData.errors).flat().join(', ')
+        throw new Error(`Error de validación: ${errores}`)
+      }
+
+      throw new Error(errorData.message || 'Error al crear la reserva')
+    }
+
+    const data = await response.json()
+
+    toast.add({
+      severity: 'success',
+      summary: 'Reserva Creada',
+      detail: 'Su reserva ha sido creada exitosamente. Recibirá una confirmación por email.',
+      life: 6000
+    })
+
+    cerrarModalReserva()
+
+  } catch (error) {
+    console.error('Error al crear reserva de hotel:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.message || 'No se pudo crear la reserva. Intente nuevamente.',
+      life: 4000
+    })
+  } finally {
+    procesandoReserva.value = false
+  }
+}
+
+// Función para obtener fecha mínima (hoy)
+const getFechaMinima = () => {
+  return new Date()
+}
+
+// Función para obtener fecha mínima de salida (día después de entrada)
+const getFechaMinimaComputada = computed(() => {
+  if (!reservaForm.value.fecha_entrada) return getFechaMinima()
+
+  const fechaEntrada = new Date(reservaForm.value.fecha_entrada)
+  fechaEntrada.setDate(fechaEntrada.getDate() + 1)
+  return fechaEntrada
+})
+
+// Función para obtener fecha máxima de nacimiento (hace 18 años)
+const getFechaMaximaNacimiento = () => {
+  const hoy = new Date()
+  hoy.setFullYear(hoy.getFullYear() - 18)
+  return hoy
+}
+
+// Función de validación del teléfono
+const onValidate = (phoneObject) => {
+  try {
+    if (phoneObject && typeof phoneObject === 'object') {
+      telefonoValidation.value.isValid = phoneObject.valid === true
+      telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
+      telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
+
+      if (reservaForm.value.cliente_data.telefono && phoneObject.valid === false) {
+        telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+      } else if (phoneObject.valid === true) {
+        telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+      } else {
+        telefonoValidation.value.mensaje = ''
+      }
+    }
+  } catch (error) {
+    telefonoValidation.value.mensaje = 'Error en validación'
+  }
 }
 </script>
 
@@ -461,16 +867,15 @@ const limpiarBusqueda = () => {
                   <!-- Botones de acción -->
                   <div class="flex gap-2 mt-4">
                     <Button
-                      label="WhatsApp"
-                      @click="contactarHotel(hotel)"
-                      class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-green-600 !text-white hover:!bg-green-700"
+                      label="Reservar"
+                      @click="abrirModalReserva(hotel)"
+                      class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-blue-600 !text-white hover:!bg-blue-700"
                       size="small"
                     />
                     <Button
-                      label="Email"
-                      @click="contactarPorEmail(hotel)"
-                      outlined
-                      class="!border-blue-600 !text-blue-600 !px-3 !py-2 !text-sm font-semibold rounded hover:!bg-blue-50 transition-all"
+                      label="WhatsApp"
+                      @click="contactarHotel(hotel)"
+                      class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-green-600 !text-white hover:!bg-green-700"
                       size="small"
                     />
                     <Button
@@ -479,9 +884,7 @@ const limpiarBusqueda = () => {
                       outlined
                       class="!border-purple-600 !text-purple-600 !px-2 !py-2 !text-sm font-semibold rounded hover:!bg-purple-50 transition-all"
                       size="small"
-                    >
-                      <FontAwesomeIcon :icon="faInfoCircle" class="w-4 h-4" />
-                    </Button>
+                    />
                   </div>
                 </div>
               </template>
@@ -541,7 +944,13 @@ const limpiarBusqueda = () => {
 
                   <div class="flex gap-2 mt-4">
                     <Button
-                      label="Contactar para Info"
+                      label="Reservar"
+                      @click="abrirModalReserva(hotel)"
+                      class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-blue-600 !text-white hover:!bg-blue-700"
+                      size="small"
+                    />
+                    <Button
+                      label="Contactar"
                       @click="contactarHotel(hotel)"
                       class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-gray-600 !text-white hover:!bg-gray-700"
                       size="small"
@@ -684,6 +1093,254 @@ const limpiarBusqueda = () => {
           </div>
         </div>
       </Dialog>
+
+    <!-- Modal de Reserva de Hotel -->
+    <Dialog
+      v-model:visible="showReservaModal"
+      modal
+      header="Reservar Hotel"
+      :closable="false"
+      class="max-w-2xl w-full mx-4"
+      :draggable="false"
+    >
+      <div v-if="hotelSeleccionado" class="space-y-6">
+        <!-- Información del hotel seleccionado -->
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
+          <h3 class="font-bold text-lg text-gray-800 mb-2">{{ hotelSeleccionado.nombre }}</h3>
+          <p class="text-sm text-gray-600 mb-1">{{ hotelSeleccionado.direccion }}</p>
+          <p class="text-sm text-gray-500">{{ hotelSeleccionado.provincia?.nombre }}, {{ hotelSeleccionado.pais?.nombre }}</p>
+        </div>
+
+        <!-- Formulario de reserva -->
+        <form @submit.prevent="crearReservaHotel" class="space-y-4">
+          <!-- Fechas de estadía -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Entrada</label>
+              <Calendar
+                v-model="reservaForm.fecha_entrada"
+                :minDate="getFechaMinima()"
+                dateFormat="dd/mm/yy"
+                placeholder="Seleccionar fecha de entrada"
+                showIcon
+                :showOnFocus="false"
+                touchUI
+                class="w-full"
+                inputClass="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Salida</label>
+              <Calendar
+                v-model="reservaForm.fecha_salida"
+                :minDate="getFechaMinimaComputada"
+                dateFormat="dd/mm/yy"
+                placeholder="Seleccionar fecha de salida"
+                showIcon
+                :showOnFocus="false"
+                touchUI
+                class="w-full"
+                inputClass="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <!-- Cantidad de personas y habitaciones -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad de Personas</label>
+              <input
+                v-model.number="reservaForm.cantidad_personas"
+                type="number"
+                min="1"
+                max="10"
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad de Habitaciones</label>
+              <input
+                v-model.number="reservaForm.cantidad_habitaciones"
+                type="number"
+                min="1"
+                max="5"
+                required
+                class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          <!-- Información del cliente -->
+          <div class="border-t pt-4">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="font-semibold text-gray-800">Información Personal</h4>
+              <div v-if="tieneClienteExistente" class="flex items-center text-green-600 text-sm">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                </svg>
+                <span>Datos precargados</span>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+                <input
+                  v-model="reservaForm.cliente_data.numero_identificacion"
+                  type="text"
+                  required
+                  maxlength="25"
+                  :disabled="tieneClienteExistente"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+                  placeholder="Ingrese su DUI o documento"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+                <select
+                  v-model="reservaForm.cliente_data.tipo_documento_id"
+                  required
+                  :disabled="loadingTiposDocumento || tieneClienteExistente"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
+                >
+                  <option v-if="loadingTiposDocumento" value="" disabled>Cargando tipos...</option>
+                  <option v-else-if="tiposDocumento.length === 0" value="" disabled>No hay tipos disponibles</option>
+                  <template v-else>
+                    <option value="" disabled>Seleccione un tipo</option>
+                    <option v-for="tipo in tiposDocumento" :key="tipo.id" :value="tipo.id">
+                      {{ tipo.nombre }}
+                    </option>
+                  </template>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+                <Calendar
+                  v-model="reservaForm.cliente_data.fecha_nacimiento"
+                  :maxDate="getFechaMaximaNacimiento()"
+                  dateFormat="dd/mm/yy"
+                  placeholder="Seleccionar fecha de nacimiento"
+                  showIcon
+                  :showOnFocus="false"
+                  touchUI
+                  yearNavigator
+                  yearRange="1920:2010"
+                  :disabled="tieneClienteExistente"
+                  class="w-full"
+                  :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${tieneClienteExistente ? 'bg-gray-100 cursor-not-allowed' : ''}`"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Género</label>
+                <select
+                  v-model="reservaForm.cliente_data.genero"
+                  required
+                  :disabled="tieneClienteExistente"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+                >
+                  <option value="">Seleccione</option>
+                  <option value="MASCULINO">Masculino</option>
+                  <option value="FEMENINO">Femenino</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Teléfono</label>
+                <VueTelInput
+                  v-model="reservaForm.cliente_data.telefono"
+                  defaultCountry="SV"
+                  :preferredCountries="['SV', 'GT', 'HN', 'CR', 'NI', 'PA', 'BZ']"
+                  :validCharactersOnly="true"
+                  :disabled="tieneClienteExistente"
+                  :dropdownOptions="{
+                    showDialCodeInSelection: true,
+                    showFlags: true,
+                    showSearchBox: true,
+                    showDialCodeInList: true
+                  }"
+                  :inputOptions="{
+                    placeholder: 'Número de teléfono'
+                  }"
+                  mode="international"
+                  class="w-full border border-gray-300 rounded-lg"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+                  @validate="onValidate"
+                />
+                <!-- Mensaje de validación -->
+                <p
+                  v-if="telefonoValidation.mensaje"
+                  :class="[
+                    'text-xs mt-1 flex items-center',
+                    telefonoValidation.isValid ? 'text-green-600' : 'text-red-600'
+                  ]"
+                >
+                  <span class="mr-1">
+                    {{ telefonoValidation.isValid ? '✓' : '⚠️' }}
+                  </span>
+                  {{ telefonoValidation.mensaje }}
+                </p>
+              </div>
+              <div class="sm:col-span-1">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+                <input
+                  v-model="reservaForm.cliente_data.direccion"
+                  type="text"
+                  required
+                  maxlength="200"
+                  :disabled="tieneClienteExistente"
+                  class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+                  placeholder="Dirección completa"
+                />
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-center gap-4 w-full mt-6">
+          <button
+            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="crearReservaHotel"
+            :disabled="procesandoReserva"
+          >
+            <FontAwesomeIcon
+              :icon="procesandoReserva ? faSpinner : faCheck"
+              :class="[
+                'h-5 text-white',
+                { 'animate-spin': procesandoReserva }
+              ]"
+            />
+            <span v-if="!procesandoReserva">Crear Reserva</span>
+            <span v-else>Procesando...</span>
+          </button>
+          <button
+            type="button"
+            class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+            @click="cerrarModalReserva"
+            :disabled="procesandoReserva"
+          >
+            <FontAwesomeIcon :icon="faXmark" class="h-5" />
+            Cancelar
+          </button>
+        </div>
+      </template>
+    </Dialog>
+
+    <!-- Modal de Autenticación Requerida -->
+    <ModalAuthRequerido
+      v-model:visible="showAuthModal"
+      :tour-info="hotelParaReserva ? { id: hotelParaReserva.id, nombre: hotelParaReserva.nombre, tipo: 'hotel' } : null"
+    />
   </Catalogo>
 </template>
 

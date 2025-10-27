@@ -31,35 +31,11 @@ const cerrarModal = () => {
 
 // Función para ir al login
 const irALogin = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del login (solo para tours)
-  if (props.tourInfo) {
-    const tourData = {
-      tourId: props.tourInfo.id,
-      tourNombre: props.tourInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-
-    sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
-    sessionStorage.setItem('reserva_session_activa', 'true')
-  }
-
   router.visit('/login')
 }
 
 // Función para ir al registro
 const irARegistro = () => {
-  // Guardar información del tour en sessionStorage para recuperarla después del registro (solo para tours)
-  if (props.tourInfo) {
-    const tourData = {
-      tourId: props.tourInfo.id,
-      tourNombre: props.tourInfo.nombre,
-      returnUrl: window.location.pathname
-    }
-
-    sessionStorage.setItem('tour_reserva_pendiente', JSON.stringify(tourData))
-    sessionStorage.setItem('reserva_session_activa', 'true')
-  }
-
   router.visit('/register')
 }
 </script>
@@ -75,7 +51,8 @@ const irARegistro = () => {
   >
     <template #header>
       <h3 class="text-lg font-bold text-red-700">
-        <span v-if="tourInfo">🔐 Inicia Sesión para Reservar</span>
+        <span v-if="tourInfo && tourInfo.tipo === 'hotel'">🔐 Inicia Sesión para Reservar Hotel</span>
+        <span v-else-if="tourInfo">🔐 Inicia Sesión para Reservar</span>
         <span v-else-if="productoInfo">🔐 Inicia Sesión para Comprar</span>
         <span v-else>🔐 Inicia Sesión para Continuar</span>
       </h3>
@@ -97,17 +74,27 @@ const irARegistro = () => {
       </h3>
 
       <p class="text-gray-600 mb-2">
-        <span v-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
+        <span v-if="tourInfo && tourInfo.tipo === 'hotel'">Para realizar una reserva de hotel necesitas tener una cuenta en nuestra plataforma.</span>
+        <span v-else-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else-if="productoInfo">Para realizar una compra necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else>Para continuar necesitas tener una cuenta en nuestra plataforma.</span>
       </p>
 
-      <div v-if="tourInfo" class="bg-blue-50 rounded-lg p-3 mb-6 text-left">
+      <div v-if="tourInfo && tourInfo.tipo === 'hotel'" class="bg-orange-50 rounded-lg p-3 mb-6 text-left">
+        <p class="text-sm text-orange-800">
+          <strong>Hotel seleccionado:</strong> {{ tourInfo.nombre }}
+        </p>
+        <p class="text-xs text-orange-600 mt-1">
+          Después del login podrás regresar a realizar tu reserva.
+        </p>
+      </div>
+
+      <div v-else-if="tourInfo" class="bg-blue-50 rounded-lg p-3 mb-6 text-left">
         <p class="text-sm text-blue-800">
           <strong>Tour seleccionado:</strong> {{ tourInfo.nombre }}
         </p>
         <p class="text-xs text-blue-600 mt-1">
-          Te redirigiremos automáticamente a la reserva después del login.
+          Después del login podrás regresar a realizar tu reserva.
         </p>
       </div>
 
@@ -116,7 +103,7 @@ const irARegistro = () => {
           <strong>Producto seleccionado:</strong> {{ productoInfo.nombre }}
         </p>
         <p class="text-xs text-green-600 mt-1">
-          Te redirigiremos automáticamente a la compra después del login.
+          Después del login podrás regresar a realizar tu compra.
         </p>
       </div>
 

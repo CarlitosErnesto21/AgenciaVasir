@@ -23,9 +23,22 @@
         <FontAwesomeIcon :icon="faExclamationTriangle" class="error-icon" />
         <h4>Error al procesar</h4>
         <p>{{ error }}</p>
-        <button @click="retry" class="retry-button">
-          Intentar de nuevo
-        </button>
+        <div class="flex justify-center gap-4 w-full mt-4">
+          <button 
+            @click="closeModal" 
+            class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          >
+            <FontAwesomeIcon :icon="faTimes" class="h-5" />
+            Cancelar
+          </button>
+          <button 
+            @click="retry" 
+            class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          >
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-5" />
+            Intentar de nuevo
+          </button>
+        </div>
       </div>
 
       <!-- Payment Form -->
@@ -50,20 +63,33 @@
 
         <!-- Botón de Pago Simplificado -->
         <div class="payment-section">
-          <button
-            @click="procesarPagoWompi"
-            :disabled="procesandoPago"
-            class="w-full inline-flex items-center justify-center px-6 py-4 border border-transparent text-lg font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <svg v-if="!procesandoPago" class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-            </svg>
-            <svg v-else class="w-6 h-6 mr-3 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            {{ procesandoPago ? 'Generando enlace de pago...' : 'Pagar con Wompi' }}
-          </button>
+          <div class="flex justify-center gap-4 w-full">
+            <button
+              @click="closeModal"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+              :disabled="procesandoPago"
+            >
+              <FontAwesomeIcon :icon="faTimes" class="h-5" />
+              Cancelar
+            </button>
+            <button
+              @click="procesarPagoWompi"
+              :disabled="procesandoPago"
+              class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon 
+                v-if="!procesandoPago" 
+                :icon="faCreditCard" 
+                class="h-5" 
+              />
+              <FontAwesomeIcon 
+                v-else 
+                :icon="faCreditCard" 
+                class="h-5 animate-spin" 
+              />
+              {{ procesandoPago ? 'Generando enlace...' : 'Pagar con Wompi' }}
+            </button>
+          </div>
         </div>
 
         <!-- Información adicional -->
@@ -94,9 +120,15 @@
         </div>
         <div class="success-actions">
           <p class="auto-close-notice">Esta ventana se cerrará automáticamente en unos segundos</p>
-          <button @click="closeModal" class="success-button">
-            Cerrar ahora
-          </button>
+          <div class="flex justify-center gap-4 w-full mt-4">
+            <button 
+              @click="closeModal" 
+              class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+            >
+              <FontAwesomeIcon :icon="faTimes" class="h-5" />
+              Cerrar ahora
+            </button>
+          </div>
         </div>
       </div>
     </div>

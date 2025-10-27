@@ -79,6 +79,10 @@ Route::middleware('auth:sanctum')->group(function () {
         ]);
     });
 
+        // RUTAS DE RESERVAS DE CLIENTES (requieren autenticación)
+    Route::post('/reservas/tour', [ReservaController::class, 'crearReservaTour']);
+    Route::post('/reservas/hotel', [ReservaController::class, 'crearReservaHotel']);
+
     // ───────────────────────────────────────────────────────
     // RUTAS ADMINISTRATIVAS (requieren rol admin/empleado)
     // ───────────────────────────────────────────────────────
@@ -94,6 +98,12 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::put('/{id}/finalizar', [ReservaController::class, 'finalizar']);
             Route::post('/finalizar-automaticamente', [ReservaController::class, 'finalizarAutomaticamente']);
             Route::get('/{id}/historial', [ReservaController::class, 'historial']);
+        });
+
+        // Gestión específica de reservas de hoteles
+        Route::prefix('reservas-hoteles')->group(function () {
+            Route::get('/', [ReservaController::class, 'indexHoteles']);
+            Route::get('/{id}', [ReservaController::class, 'showHotel']);
         });
 
         // Recursos CRUD principales
