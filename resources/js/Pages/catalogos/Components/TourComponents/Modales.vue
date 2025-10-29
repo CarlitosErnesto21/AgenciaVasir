@@ -251,18 +251,6 @@ defineOptions({
                     </div>
                 </button>
 
-                <!-- Botón para duplicar tour -->
-                <button
-                    type="button"
-                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="duplicateTour"
-                >
-                    <FontAwesomeIcon :icon="faPlus" class="h-5 w-5" />
-                    <div class="text-left">
-                        <div class="font-medium">Duplicar Tour</div>
-                        <div class="text-xs opacity-90">Crear una copia de este tour</div>
-                    </div>
-                </button>
 
                 <!-- Botón para cambiar estado -->
                 <button
@@ -274,32 +262,6 @@ defineOptions({
                     <div class="text-left">
                         <div class="font-medium">Cambiar Estado</div>
                         <div class="text-xs opacity-90">Modificar el estado del tour</div>
-                    </div>
-                </button>
-
-                <!-- Botón para generar reporte -->
-                <button
-                    type="button"
-                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="generateReport"
-                >
-                    <FontAwesomeIcon :icon="faEye" class="h-5 w-5" />
-                    <div class="text-left">
-                        <div class="font-medium">Generar Reporte</div>
-                        <div class="text-xs opacity-90">Crear reporte detallado del tour</div>
-                    </div>
-                </button>
-
-                <!-- Botón para archivar -->
-                <button
-                    type="button"
-                    class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="archiveTour"
-                >
-                    <FontAwesomeIcon :icon="faTrashCan" class="h-5 w-5" />
-                    <div class="text-left">
-                        <div class="font-medium">Archivar Tour</div>
-                        <div class="text-xs opacity-90">Mover a archivos históricos</div>
                     </div>
                 </button>
             </div>
