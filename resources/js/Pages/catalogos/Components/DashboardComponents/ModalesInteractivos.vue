@@ -1,9 +1,9 @@
 <template>
     <!-- 🚀 MODALES INTERACTIVOS - Responsive con PrimeVue Dialog -->
-    
+
     <!-- Modal: Reservas Pendientes -->
-    <Dialog 
-        :visible="showReservasPendientesModal" 
+    <Dialog
+        :visible="showReservasPendientesModal"
         modal
         :draggable="false"
         :closable="true"
@@ -19,11 +19,11 @@
                 <span class="text-base sm:text-lg font-semibold text-gray-900">Reservas Pendientes</span>
             </div>
         </template>
-        
+
         <div class="space-y-3 overflow-y-auto max-h-[60vh] sm:max-h-[70vh] px-2 sm:px-0">
             <div v-if="dashboardData.reservas && dashboardData.reservas.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente').length > 0"
                 class="space-y-3">
-                <div v-for="reserva in dashboardData.reservas.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente')" 
+                <div v-for="reserva in dashboardData.reservas.filter(r => r.estado && r.estado.toLowerCase() === 'pendiente')"
                     :key="reserva.id"
                     class="bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors p-3 sm:p-4">
                     <div class="flex items-center justify-between">
@@ -34,8 +34,8 @@
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-medium text-gray-900 text-sm truncate">{{ reserva.entidad_nombre || 'Tour no especificado' }}</h4>
                                 <p class="text-xs text-gray-600 truncate">
-                                    {{ (reserva.cliente && reserva.cliente.user && reserva.cliente.user.name) || 
-                                       (reserva.cliente && reserva.cliente.nombres) || 
+                                    {{ (reserva.cliente && reserva.cliente.user && reserva.cliente.user.name) ||
+                                       (reserva.cliente && reserva.cliente.nombres) ||
                                        'Cliente no asignado' }}
                                 </p>
                                 <p class="text-xs text-gray-500">{{ new Date(reserva.fecha_reserva || reserva.fecha).toLocaleDateString('es-ES') }}</p>
@@ -48,17 +48,17 @@
                     </div>
                 </div>
             </div>
-            
+
             <div v-else class="text-center py-6 sm:py-8">
                 <i class="pi pi-check-circle text-green-400 text-3xl sm:text-4xl mb-3"></i>
                 <p class="text-gray-500 text-sm sm:text-base">¡Excelente! No hay reservas pendientes</p>
             </div>
         </div>
-        
+
         <template #footer>
             <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-200">
-                <Link 
-                    href="/gestion-reserva-tours"
+                <Link
+                    href="/reservas"
                     class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                 >
                     <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
@@ -69,7 +69,7 @@
     </Dialog>
 
     <!-- Modal: Productos Stock Bajo -->
-    <Dialog 
+    <Dialog
         :visible="showProductosStockBajoModal"
         modal
         :draggable="false"
@@ -89,11 +89,11 @@
                 </span>
             </div>
         </template>
-        
+
         <div class="space-y-3 overflow-y-auto max-h-[60vh] sm:max-h-[70vh] px-2 sm:px-0">
             <div v-if="dashboardData.stockBajo && dashboardData.stockBajo.length > 0"
                 class="space-y-3">
-                <div v-for="producto in dashboardData.stockBajo" 
+                <div v-for="producto in dashboardData.stockBajo"
                     :key="producto.id"
                     class="bg-red-50 rounded-lg border border-red-200 hover:bg-red-100 transition-colors p-3 sm:p-4">
                     <div class="flex items-center justify-between">
@@ -122,17 +122,17 @@
                     </div>
                 </div>
             </div>
-            
+
             <div v-else class="text-center py-6 sm:py-8">
                 <i class="pi pi-check-circle text-green-400 text-3xl sm:text-4xl mb-3"></i>
                 <p class="text-gray-500 text-sm sm:text-base">¡Perfecto! Todos los productos tienen stock suficiente</p>
             </div>
         </div>
-        
+
         <template #footer>
             <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-200">
-                <Link 
-                    href="/productos"
+                <Link
+                    href="/inventario"
                     class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                 >
                     <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />

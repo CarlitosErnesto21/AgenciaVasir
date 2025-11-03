@@ -298,7 +298,7 @@ onMounted(async () => {
               </p>
             </div>
 
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
               <div
                 v-for="servicio in servicios"
                 :key="servicio.titulo"
