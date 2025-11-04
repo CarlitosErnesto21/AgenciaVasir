@@ -25,7 +25,7 @@ const filtros = ref({
   busqueda: '',
   fechaDesde: null,
   fechaHasta: null,
-  estadoReserva: '',
+  estadoReserva: '', // Siempre vacío por defecto
   estadoTour: null
 })
 
@@ -107,7 +107,7 @@ const reservasFiltradas = computed(() => {
   }
 
   // Ordenar: PENDIENTES primero, luego por fecha más reciente
-  return filtered.sort((a, b) => {
+  const resultado = filtered.sort((a, b) => {
     // Prioridad por estado: PENDIENTE primero
     const prioridadEstado = { 'PENDIENTE': 1, 'CONFIRMADA': 2, 'REPROGRAMADA': 3, 'FINALIZADA': 4, 'RECHAZADA': 5 }
     const prioridadA = prioridadEstado[a.estado] || 6
@@ -120,6 +120,8 @@ const reservasFiltradas = computed(() => {
     // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
     return new Date(b.fecha_reserva) - new Date(a.fecha_reserva)
   })
+  console.log('[Reservas] reservasFiltradas:', resultado)
+  return resultado
 })
 
 // Computed para estadísticas
@@ -156,10 +158,18 @@ const cargarReservas = async () => {
       fecha_inicio: filtros.value.fechaDesde || undefined,
       fecha_fin: filtros.value.fechaHasta || undefined
     }
-
+    console.log('[Reservas] Parámetros enviados a /api/reservas:', params)
     const response = await axios.get('/api/reservas', { params, withCredentials: true })
-    reservas.value = response.data.data || []
-
+    console.log('[Reservas] Respuesta recibida de /api/reservas:', response)
+  reservas.value = Array.isArray(response.data) ? response.data : (response.data.data || [])
+    console.log('[Reservas] Array reservas.value actualizado:', reservas.value)
+    if (reservas.value && reservas.value.length > 0) {
+      reservas.value.forEach((reserva, idx) => {
+        console.log(`[Reservas] Registro[${idx}]:`, reserva)
+      })
+    } else {
+      console.log('[Reservas] No se recibieron registros en reservas.value')
+    }
   } catch (error) {
     console.error('Error cargando reservas:', error)
     toast.add({
@@ -220,8 +230,11 @@ const cargarReservasWithToasts = async () => {
 const cargarTours = async () => {
   loadingTours.value = true
   try {
+    console.log('[Tours] Solicitando /api/tours')
     const response = await axios.get('/api/tours')
+    console.log('[Tours] Respuesta recibida de /api/tours:', response)
     tours.value = response.data || []
+    console.log('[Tours] Array tours.value actualizado:', tours.value)
   } catch (error) {
     console.error('Error cargando tours:', error)
     tours.value = []
@@ -552,7 +565,7 @@ const limpiarFiltros = async () => {
       busqueda: '',
       fechaDesde: null,
       fechaHasta: null,
-      estadoReserva: '',
+      estadoReserva: '', // Limpiar filtro de estado
       estadoTour: null
     }
 
@@ -822,8 +835,11 @@ watch([filtros], () => {
 
 // Cargar datos iniciales
 onMounted(() => {
-  Promise.all([cargarReservasWithToasts(), cargarTours()])
-  forceSelectTruncation()
+  // Limpiar filtros y cargar reservas/tours al iniciar
+  limpiarFiltros().then(() => {
+    Promise.all([cargarReservasWithToasts(), cargarTours()])
+    forceSelectTruncation()
+  })
 })
 </script>
 
@@ -835,8 +851,8 @@ onMounted(() => {
 
     <div class="container mx-auto px-4 py-6">
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Reservas</h1>
-        <p class="text-gray-600">Administra todas las reservas de tours y hoteles</p>
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Reservas de Tours</h1>
+        <p class="text-gray-600">Administra todas las reservas de tours</p>
       </div>
 
       <!-- Estadísticas como tarjetas -->
