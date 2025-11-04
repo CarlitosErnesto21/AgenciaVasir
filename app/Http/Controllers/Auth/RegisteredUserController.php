@@ -33,7 +33,12 @@ class RegisteredUserController extends Controller
     {
         // Validar formato básico
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                'regex:/^[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+(\s[A-Za-zÁÉÍÓÚáéíóúÑñÜü]+)*$/'
+            ],
             'email' => 'required|string|lowercase|email:rfc,dns|max:255',
             'password' => [
                 'required',
@@ -44,6 +49,7 @@ class RegisteredUserController extends Controller
                 'regex:/^[^\s.]*$/', // no espacios ni puntos
             ],
         ], [
+            'name.regex' => 'El nombre solo puede contener letras.',
             'email.required' => 'El correo electrónico es obligatorio.',
             'email.email' => 'El formato del correo electrónico no es válido.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',

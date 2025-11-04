@@ -30,7 +30,8 @@ use Illuminate\Support\Facades\Auth;
 Route::post('/login', [ApiAuthController::class, 'login']);
 
 // Rutas para la tienda
-Route::get('/productos', [ProductoController::class, 'index']);
+// Route::get('/productos', [ProductoController::class, 'index']);
+Route::apiResource('productos', ProductoController::class);
 Route::get('/categorias-productos', [CategoriaProductoController::class, 'index']);
 Route::get('/tours', [TourController::class, 'index']);
 Route::get('/tours/{id}', [TourController::class, 'show']);
@@ -108,7 +109,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Recursos CRUD principales
-        Route::apiResource('productos', ProductoController::class)->except(['index']);
+        // Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
         Route::apiResource('clientes', ClienteController::class);

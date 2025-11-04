@@ -1224,6 +1224,11 @@ const onCupoPaste = (event) => {
     }
 };
 
+const minCupoAllowed = computed(() => {
+    //Si cupo_max es válido, retorna cupo_max -1, si no, retorna
+    return tour.cupo_max ? Math.max(1, tour.cupo_max -1) : 1;
+});
+
 // Función para prevenir teclas no válidas en campos numéricos generales
 const onKeyDown = (event) => {
     const currentValue = event.target.value;
@@ -1734,11 +1739,22 @@ const onPricePaste = (event) => {
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.punto_salida">El punto de salida es obligatorio.</small>
                         <small class="text-red-500 ml-28" v-if="submitted && tour.punto_salida && tour.punto_salida.length < 5">El punto de salida debe tener al menos 5 caracteres.</small>
                     </div>
+                    <div class="w-full flex flex-col">
+                        <div class="flex items-center gap-3.5">
+                            <label for="transporte_id" class="w-24 flex items-center gap-1">Transporte:<span class="text-red-500 font-bold">*</span></label>
+                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id"
+                            class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.transporte_id, }" />
+                        </div>
+                        <small class="text-red-500 ml-28" v-if="submitted && !tour.transporte_id">El tipo de transporte es obligatorio.</small>
+                    </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div class="w-full">
                             <label for="cupo_min" class="flex items-center gap-1 mb-2">
                                 Cupo mínimo: <span class="text-red-500 font-bold">*</span>
-                                <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(Máx: {{ maxCupoAllowed }})</small>
+                                <!-- <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(Máx: {{ maxCupoAllowed }})</small> -->
+                                 <small class="text-gray-500 text-xs" v-if="tour.transporte_id">
+                                    (Mín: {{ minCupoAllowed }})
+                                </small>
                             </label>
                             <InputText
                                 v-model="tour.cupo_min"
@@ -1830,14 +1846,6 @@ const onPricePaste = (event) => {
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.categoria">La categoría es obligatoria.</small>
-                    </div>
-                    <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-3.5">
-                            <label for="transporte_id" class="w-24 flex items-center gap-1">Transporte:<span class="text-red-500 font-bold">*</span></label>
-                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id"
-                            class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.transporte_id, }" />
-                        </div>
-                        <small class="text-red-500 ml-28" v-if="submitted && !tour.transporte_id">El tipo de transporte es obligatorio.</small>
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
