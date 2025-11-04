@@ -60,40 +60,8 @@ const submit = () => {
     form.post(route('register'), {
         onFinish: () => form.reset('password', 'password_confirmation'),
         onSuccess: () => {
-            // Verificar si hay una reserva pendiente ACTIVA de esta sesión
-            const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente');
-            const sessionActiva = sessionStorage.getItem('reserva_session_activa');
-
-            if (reservaPendiente && sessionActiva === 'true') {
-                const tourInfo = JSON.parse(reservaPendiente);
-                // NO limpiar aquí - dejar que la vista de destino lo maneje
-                // Redirigir a la vista original
-                router.visit(tourInfo.returnUrl);
-                return;
-            }
-
-            // Verificar si hay un producto pendiente ACTIVO de esta sesión
-            const productoPendiente = sessionStorage.getItem('producto_compra_pendiente');
-            const sessionActivaProducto = sessionStorage.getItem('compra_session_activa');
-
-            if (productoPendiente && sessionActivaProducto === 'true') {
-                const productoInfo = JSON.parse(productoPendiente);
-                // NO limpiar aquí - dejar que la vista de destino lo maneje
-                // Redirigir a la vista original
-                router.visit(productoInfo.returnUrl);
-                return;
-            }
-
-            // Si no hay reserva o compra pendiente activa, limpiar cualquier dato residual
-            if (!sessionActiva || sessionActiva !== 'true') {
-                sessionStorage.removeItem('tour_reserva_pendiente');
-                sessionStorage.removeItem('reserva_session_activa');
-            }
-
-            if (!sessionActivaProducto || sessionActivaProducto !== 'true') {
-                sessionStorage.removeItem('producto_compra_pendiente');
-                sessionStorage.removeItem('compra_session_activa');
-            }
+            // Eliminado: soporte de reanudación por sessionStorage (funcionalidad retirada).
+            // No se realiza ninguna re-dirección o limpieza basada en sessionStorage aquí.
         }
     });
 };

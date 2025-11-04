@@ -1,10 +1,10 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-gray-100 p-4 overflow-hidden" style="touch-action:none; overscroll-behavior:contain; padding-top:0;">
     <!-- Contenedor principal responsive -->
-    <div class="relative w-full max-w-xs sm:max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-5xl 
+    <div class="relative w-full max-w-xs sm:max-w-sm md:max-w-2xl lg:max-w-4xl xl:max-w-5xl
                 h-auto md:h-[500px]
                 bg-transparent rounded-xl shadow-lg overflow-hidden flex flex-col md:flex-row">
-      
+
       <!-- Panel lateral animado - solo visible en desktop -->
       <div
         class="hidden md:flex absolute top-0 left-0 h-full w-1/2 flex-col items-center justify-center transition-all duration-700 z-20"
@@ -43,7 +43,7 @@
           REGISTRARSE
         </button>
       </div>
-      
+
       <!-- Panel de formularios -->
       <div
         class="flex-1 md:absolute md:top-0 md:left-0 md:w-full md:h-full flex transition-all duration-700"
@@ -51,7 +51,7 @@
       >
         <!-- Lado izquierdo (vacío solo para simetría visual en desktop) -->
         <div class="hidden md:block w-1/2 h-full"></div>
-        
+
         <!-- Formularios -->
         <div class="w-full md:w-1/2 h-full flex flex-col items-center justify-center bg-white p-6 relative">
           <!-- Login -->
@@ -61,7 +61,7 @@
           >
             <slot name="login" />
           </div>
-          
+
           <!-- Register -->
           <div
             class="w-full flex flex-col items-center justify-center transition-all duration-700"
@@ -76,7 +76,6 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
 const props = defineProps({
   isRegister: Boolean,
   toggleForm: Function,

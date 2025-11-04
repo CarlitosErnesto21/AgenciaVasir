@@ -517,49 +517,8 @@ const reservarTour = () => {
   }
 }
 
-// Función para verificar si hay una reserva pendiente después del login
-const verificarReservaPendiente = () => {
-  try {
-    const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente')
-    const sessionActiva = sessionStorage.getItem('reserva_session_activa')
-
-    // Solo procesar si hay reserva pendiente Y la sesión está activa
-    if (reservaPendiente && sessionActiva === 'true' && user.value && tour.value) {
-      const data = JSON.parse(reservaPendiente)
-
-      // Verificar si es el tour actual
-      if (tour.value.id === data.tourId) {
-        // Abrir modal de reserva automáticamente
-        showReservaDialog.value = true
-
-        // Limpiar sessionStorage
-        sessionStorage.removeItem('tour_reserva_pendiente')
-        sessionStorage.removeItem('reserva_session_activa')
-
-        // Mostrar mensaje informativo DESPUÉS de abrir el modal
-        setTimeout(() => {
-          toast.add({
-            severity: 'success',
-            summary: '🎯 Continuando con tu reserva',
-            detail: `¡Perfecto! Ahora puedes completar la reserva para: ${tour.value.nombre}`,
-            life: 6000
-          })
-        }, 500)
-      } else {
-        sessionStorage.removeItem('tour_reserva_pendiente')
-        sessionStorage.removeItem('reserva_session_activa')
-      }
-    } else if (reservaPendiente && sessionActiva !== 'true') {
-      // Si hay información de reserva pero no es de la sesión activa, limpiarla
-      sessionStorage.removeItem('tour_reserva_pendiente')
-      sessionStorage.removeItem('reserva_session_activa')
-    }
-  } catch (error) {
-    // Limpiar sessionStorage si hay errores
-    sessionStorage.removeItem('tour_reserva_pendiente')
-    sessionStorage.removeItem('reserva_session_activa')
-  }
-}
+// Eliminado: verificarReservaPendiente y su lógica de sessionStorage
+// La reanudación de reservas mediante sessionStorage ha sido retirada (Option B).
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {
@@ -608,15 +567,7 @@ const refrescarTour = async () => {
 }
 
 // Watch para verificar reserva pendiente cuando el usuario cambie
-watch(user, (newUser) => {
-  try {
-    if (newUser && tour.value) {
-      verificarReservaPendiente()
-    }
-  } catch (error) {
-    console.error('Error en watcher de usuario:', error)
-  }
-}, { immediate: false })
+// Eliminado: watcher que invocaba verificarReservaPendiente (ya no es necesario)
 
 // Lifecycle hooks
 onMounted(async () => {

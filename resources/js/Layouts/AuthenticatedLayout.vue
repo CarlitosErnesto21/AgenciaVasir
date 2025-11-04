@@ -48,9 +48,6 @@ const toggleSidebar = () => {
 
 const logout = async () => {
     try {
-        // Limpiar cualquier información de reserva pendiente al cerrar sesión
-        sessionStorage.removeItem("tour_reserva_pendiente");
-
         await axios.post("/logout");
         window.location.href = "/";
     } catch (err) {

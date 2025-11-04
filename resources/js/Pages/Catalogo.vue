@@ -72,11 +72,7 @@ const logout = () => {
     // Limpiar carrito al cerrar sesión
     carrito.limpiarCarritoAlCerrarSesion()
 
-    // Limpiar cualquier información de reserva pendiente al cerrar sesión
-    sessionStorage.removeItem('tour_reserva_pendiente')
-    sessionStorage.removeItem('reserva_session_activa')
-    sessionStorage.removeItem('producto_compra_pendiente')
-    sessionStorage.removeItem('compra_session_activa')
+  // Eliminado: limpieza de claves de sessionStorage relacionadas con reservas/compras — funcionalidad retirada
 
     router.post(route('logout'), {}, {
         onSuccess: () => router.visit('/')

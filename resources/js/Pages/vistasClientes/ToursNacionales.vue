@@ -42,60 +42,8 @@ const reservarTour = (tour) => {
   }
 }
 
-// Función para verificar si hay una reserva pendiente después del login
-const verificarReservaPendiente = async () => {
-  try {
-    const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente')
-    const sessionActiva = sessionStorage.getItem('reserva_session_activa')
-
-    // Solo procesar si hay reserva pendiente Y la sesión está activa
-    if (reservaPendiente && sessionActiva === 'true' && user.value && tours.value && Array.isArray(tours.value)) {
-      const data = JSON.parse(reservaPendiente)
-
-      // Buscar el tour en la lista actual
-      const tour = tours.value.find(t => t && t.id === data.tourId)
-
-      if (tour) {
-        // Usar nextTick para asegurar que el componente esté completamente montado
-        await nextTick()
-
-        // Pequeño delay adicional para asegurar el rendering
-        setTimeout(() => {
-          // Abrir modal de reserva automáticamente
-          tourSeleccionado.value = tour
-          showReservaDialog.value = true
-
-          // Mostrar mensaje informativo DESPUÉS de abrir el modal
-          setTimeout(() => {
-            toast.add({
-              severity: 'success',
-              summary: '🎯 Continuando con tu reserva',
-              detail: `¡Perfecto! Ahora puedes completar la reserva para: ${tour.nombre}`,
-              life: 6000 // 6 segundos para que sea más visible
-            })
-          }, 500) // Delay para que aparezca después del modal
-        }, 100)
-
-        // Limpiar sessionStorage
-        sessionStorage.removeItem('tour_reserva_pendiente')
-        sessionStorage.removeItem('reserva_session_activa')
-      } else {
-        // Si no encontramos el tour, limpiar la información obsoleta
-        sessionStorage.removeItem('tour_reserva_pendiente')
-        sessionStorage.removeItem('reserva_session_activa')
-      }
-    } else if (reservaPendiente && sessionActiva !== 'true') {
-      // Si hay información de reserva pero no es de la sesión activa, limpiarla
-      sessionStorage.removeItem('tour_reserva_pendiente')
-      sessionStorage.removeItem('reserva_session_activa')
-    }
-  } catch (error) {
-    console.error('Error en verificarReservaPendiente:', error)
-    // Limpiar sessionStorage si hay errores
-    sessionStorage.removeItem('tour_reserva_pendiente')
-    sessionStorage.removeItem('reserva_session_activa')
-  }
-}
+// Eliminado: verificarReservaPendiente y su lógica de sessionStorage
+// La reanudación de reservas mediante sessionStorage ha sido retirada (Option B).
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {
@@ -151,15 +99,7 @@ const refrescarTour = async (tourId) => {
 }
 
 // Watch para verificar reserva pendiente cuando el usuario cambie
-watch(user, async (newUser) => {
-  try {
-    if (newUser && tours.value && tours.value.length > 0) {
-      await verificarReservaPendiente()
-    }
-  } catch (error) {
-    console.error('Error en watcher de usuario:', error)
-  }
-}, { immediate: false })
+// Eliminado: watcher que verificaba reservas pendientes via sessionStorage
 
 // URL de la API para tours nacionales
 const url = "/api/tours?categoria=nacional"

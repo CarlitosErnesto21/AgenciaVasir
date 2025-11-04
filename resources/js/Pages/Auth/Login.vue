@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, watch } from 'vue'
 import GuestLayout from '@/Layouts/GuestLayout.vue';
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
@@ -7,8 +7,6 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import Register from './Register.vue';
 import { Head, Link, useForm, usePage, router } from '@inertiajs/vue3';
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 
 defineProps({
     canResetPassword: {
@@ -33,40 +31,8 @@ const submit = () => {
     form.post(route('login'), {
         onFinish: () => form.reset('password'),
         onSuccess: () => {
-            // Verificar si hay una reserva pendiente ACTIVA de esta sesión
-            const reservaPendiente = sessionStorage.getItem('tour_reserva_pendiente');
-            const sessionActiva = sessionStorage.getItem('reserva_session_activa');
-
-            if (reservaPendiente && sessionActiva === 'true') {
-                const tourInfo = JSON.parse(reservaPendiente);
-                // NO limpiar aquí - dejar que la vista de destino lo maneje
-                // Redirigir a la vista original
-                router.visit(tourInfo.returnUrl);
-                return;
-            }
-
-            // Verificar si hay un producto pendiente ACTIVO de esta sesión
-            const productoPendiente = sessionStorage.getItem('producto_compra_pendiente');
-            const sessionActivaProducto = sessionStorage.getItem('compra_session_activa');
-
-            if (productoPendiente && sessionActivaProducto === 'true') {
-                const productoInfo = JSON.parse(productoPendiente);
-                // NO limpiar aquí - dejar que la vista de destino lo maneje
-                // Redirigir a la vista original
-                router.visit(productoInfo.returnUrl);
-                return;
-            }
-
-            // Si no hay reserva o compra pendiente activa, limpiar cualquier dato residual
-            if (!sessionActiva || sessionActiva !== 'true') {
-                sessionStorage.removeItem('tour_reserva_pendiente');
-                sessionStorage.removeItem('reserva_session_activa');
-            }
-
-            if (!sessionActivaProducto || sessionActivaProducto !== 'true') {
-                sessionStorage.removeItem('producto_compra_pendiente');
-                sessionStorage.removeItem('compra_session_activa');
-            }
+            // Eliminado: soporte de reanudación por sessionStorage (funcionalidad retirada).
+            // No se realiza ninguna re-dirección o limpieza basada en sessionStorage aquí.
         }
     });
 };
@@ -76,7 +42,7 @@ const isRegister = ref(window.location.pathname.startsWith('/register'));
 
 // Actualiza el título cuando cambias de formulario
 watch(isRegister, (value) => {
-    document.title = value ? 'Register - VASIR' : 'Log in - VASIR';
+    document.title = value ? 'Registrarse - VASIR' : 'Iniciar Sesión - VASIR';
 });
 
 const toggleForm = () => {
@@ -87,6 +53,18 @@ const toggleForm = () => {
         window.history.pushState({}, '', '/register');
         isRegister.value = true;
     }
+};
+
+// Maneja el clic en el enlace de recuperación para evitar navegación durante el procesamiento
+const handlePasswordRequestClick = (e) => {
+    if (form.processing) {
+        // Evitar navegación si el formulario está procesando
+        if (e && e.preventDefault) e.preventDefault();
+        return;
+    }
+
+    // Usar router.visit para navegación Inertia cuando no esté procesando
+    router.visit(route('password.request'));
 };
 </script>
 
@@ -105,7 +83,7 @@ const toggleForm = () => {
                 <Link href="/">
                     <img src="/images/logo.png" alt="Logo"
                          class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer transition-transform hover:scale-105"
-                         title="Ir al Catálogo" />
+                         title="Ir a Inicio" />
                 </Link>
             </div>
 
@@ -122,8 +100,9 @@ const toggleForm = () => {
                     <TextInput
                         id="login-email"
                         type="email"
-                        class="mt-1 block w-full text-sm sm:text-base rounded-lg bg-white text-black border border-gray-300 focus:border-red-500 focus:ring-red-500 transition-colors"
+                        :class="['mt-1 block w-full text-sm sm:text-base rounded-lg border transition-colors', form.processing ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500' : 'bg-white text-black border border-gray-300 focus:border-red-500 focus:ring-red-500']"
                         v-model="form.email"
+                        :disabled="form.processing"
                         required
                         :autofocus="!isRegister"
                         autocomplete="username"
@@ -140,8 +119,9 @@ const toggleForm = () => {
                         <TextInput
                             id="login-password"
                             :type="showPassword ? 'text' : 'password'"
-                            class="mt-1 block w-full text-sm sm:text-base pr-10 rounded-lg bg-white text-black border border-gray-300 focus:border-red-500 focus:ring-red-500 transition-colors"
+                            :class="['mt-1 block w-full text-sm sm:text-base pr-10 rounded-lg border transition-colors', form.processing ? 'opacity-50 cursor-not-allowed bg-gray-100 border-gray-200 text-gray-500' : 'bg-white text-black border border-gray-300 focus:border-red-500 focus:ring-red-500']"
                             v-model="form.password"
+                            :disabled="form.processing"
                             required
                             autocomplete="current-password"
                             placeholder="Tu contraseña"
@@ -149,6 +129,7 @@ const toggleForm = () => {
                         <button
                             type="button"
                             @click="showPassword = !showPassword"
+                            :disabled="form.processing"
                             class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors focus:outline-none"
                             :title="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
                         >
@@ -167,10 +148,11 @@ const toggleForm = () => {
                 <!-- Casilla Recordarme -->
                 <div class="flex items-center justify-between pt-2">
                     <label class="flex items-center cursor-pointer group">
-                        <input 
-                            type="checkbox" 
+                        <input
+                            type="checkbox"
                             v-model="form.remember"
-                            class="w-4 h-4 text-red-600 bg-white border-2 border-gray-300 rounded focus:ring-red-500 focus:ring-2 transition-colors cursor-pointer"
+                            :disabled="form.processing"
+                            :class="['w-4 h-4 text-red-600 bg-white border-2 rounded focus:ring-red-500 focus:ring-2 transition-colors', form.processing ? 'opacity-50 cursor-not-allowed border-gray-200 bg-gray-100' : 'border-gray-300']"
                         />
                         <span class="ml-2 text-sm text-gray-700 group-hover:text-gray-900 transition-colors select-none">
                             Recordarme
@@ -202,7 +184,9 @@ const toggleForm = () => {
                 <div class="text-center pt-2">
                     <Link
                         :href="route('password.request')"
-                        class="text-xs sm:text-sm text-red-600 hover:text-red-800 underline font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded">
+                        :class="[ 'text-xs sm:text-sm underline font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 rounded', form.processing ? 'text-gray-400 hover:text-gray-400 pointer-events-none cursor-not-allowed' : 'text-red-600 hover:text-red-800' ]"
+                        @click.prevent="handlePasswordRequestClick"
+                    >
                         ¿Olvidaste tu contraseña?
                     </Link>
                 </div>
