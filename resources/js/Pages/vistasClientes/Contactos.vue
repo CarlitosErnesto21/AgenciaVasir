@@ -127,7 +127,25 @@ const contactoInfo = computed(() => [
   }
 ])
 
-// Funciones
+// Funciones para generar mensajes personalizados de WhatsApp
+function generarMensajeWhatsApp(tipo = 'general') {
+  const mensajes = {
+    general: 'Hola VASIR, me gustaría recibir información sobre sus servicios turísticos. ¿Podrían ayudarme?',
+    aerolíneas: 'Hola VASIR, necesito información sobre vuelos y tarifas de aerolíneas. ¿Podrían ayudarme con cotizaciones?',
+
+  }
+  return encodeURIComponent(mensajes[tipo] || mensajes.general)
+}
+
+// Función para abrir WhatsApp con mensaje personalizado
+function abrirWhatsApp(tipo = 'general') {
+  const numeroWhatsApp = '50379858777'
+  const mensaje = generarMensajeWhatsApp(tipo)
+  const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
+  window.open(url, '_blank')
+}
+
+// Funciones existentes
 function enviarFormulario(e) {
   e.preventDefault()
   toast.add({
@@ -267,19 +285,21 @@ const faqsFiltradas = computed(() => {
               <!-- Lista de métodos de contacto - responsiva -->
               <div class="space-y-3 sm:space-y-4 md:space-y-5">
                 <!-- WhatsApp -->
-                <a
-                  href="https://wa.me/50379858777"
-                  target="_blank"
-                  class="flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg sm:rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group"
+                <button
+                  @click="abrirWhatsApp('general')"
+                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg sm:rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
                 >
                   <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <span class="text-white text-base sm:text-xl">💬</span>
                   </div>
-                  <div class="flex-1">
+                  <div class="flex-1 text-left">
                     <p class="font-bold text-green-700 text-sm sm:text-base">WhatsApp</p>
                     <p class="text-xs sm:text-sm text-green-600">Respuesta inmediata</p>
                   </div>
-                </a>
+                  <div class="text-green-600 opacity-75 group-hover:opacity-100 transition-opacity">
+                    <span class="text-lg">→</span>
+                  </div>
+                </button>
 
                 <!-- Email -->
                 <a
@@ -297,7 +317,174 @@ const faqsFiltradas = computed(() => {
               </div>
             </div>
 
-            <!-- Mapa - completamente responsivo -->
+
+            <!-- Sección de Aerolíneas  -->
+            <div class="bg-gradient-to-br from-white via-purple-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg sm:shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
+              <!-- Header responsivo -->
+              <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-3 sm:py-4 md:py-6 rounded-lg sm:rounded-xl mb-4 sm:mb-6 md:mb-8">
+                <h3 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold flex flex-col sm:flex-row items-center justify-center gap-2">
+                  <span class="text-lg sm:text-xl md:text-2xl">✈️</span>
+                  <span class="text-center">Aerolíneas Asociadas</span>
+                </h3>
+              </div>
+
+              <!-- Mensaje informativo -->
+              <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 mb-4 sm:mb-6">
+                <div class="text-center">
+                  <h4 class="text-sm sm:text-base md:text-lg font-bold text-blue-800 mb-2">
+                    ¿Necesitas información sobre vuelos?
+                  </h4>
+                  <p class="text-xs sm:text-sm text-blue-600 mb-3 sm:mb-4">
+                    Trabajamos con las mejores aerolíneas para ofrecerte las mejores tarifas y conexiones
+                  </p>
+                </div>
+              </div>
+
+              <!-- Grid de logos de aerolíneas -->
+              <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-4 sm:mb-6">
+                <!-- Avianca -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-red-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_avianca.png" alt="Avianca" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">AVIANCA</div>
+                  </div>
+                </div>
+
+                <!-- Copa Airlines -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-300 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">  
+                    <img src="/images/logosAerolineas/logo_copaAirlines.png" alt="Copa Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">COPA</div>
+                  </div>
+                </div>
+
+                 <!-- Aero Mexico -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_aeroMexico.png" alt="Aero Mexico" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">AERO MEXICO</div>
+                  </div>
+                </div>
+
+                <!-- JetBlue Airways -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-800 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_jetBlue.png" alt="JetBlue Airways" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">JETBLUE</div>
+                  </div>
+                </div>
+
+                <!-- Iberia -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-yellow-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_iberia.png" alt="Iberia" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">IBERIA</div>
+                  </div>
+                </div>
+
+                <!-- Volaris -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-green-400 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_volaris.png" alt="Volaris" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">VOLARIS</div>
+                  </div>
+                </div>
+
+                <!-- Frontier Airlines-->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-green-800 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_frontier.png" alt="Frontier Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">FRONTIER</div>
+                  </div>
+                </div>
+
+                <!-- Air Canada-->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-red-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_airCanada.png" alt="Air Canada" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">AIR CANADA</div>
+                  </div>
+                </div>
+
+                <!-- Arajet Airlines-->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-purple-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_arajet.png" alt="Arajeet Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-600 text-white px-2 py-1 rounded text-xs font-bold">ARAJEET</div>
+                  </div>
+                </div>
+
+                <!-- American Airlines -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-red-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_americanAirlines.png" alt="American" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-red-700 text-white px-2 py-1 rounded text-xs font-bold">AMERICAN</div>
+                  </div>
+                </div>
+
+                <!-- United Airlines -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-900 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_unitedAirlines.png" alt="United Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-blue-800 text-white px-2 py-1 rounded text-xs font-bold">UNITED</div>
+                  </div>
+                </div>
+
+                <!-- Delta Airlines -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-red-500 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_delta.png" alt="Delta Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-red-600 text-white px-2 py-1 rounded text-xs font-bold">DELTA</div>
+                  </div>
+                </div>
+
+                <!-- Spirit Airlines -->
+                <div class="bg-white p-3 sm:p-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-gray-900 transform hover:-translate-y-1">
+                  <div class="w-full h-12 sm:h-16 flex items-center justify-center">
+                    <img src="/images/logosAerolineas/logo_spirit.png" alt="Spirit Airlines" class="max-h-full max-w-full object-contain"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div class="hidden bg-yellow-500 text-black px-2 py-1 rounded text-xs font-bold">SPIRIT</div>
+                  </div>
+                </div>
+              </div>
+
+
+              
+              <!-- Botón de contacto WhatsApp para aerolíneas -->
+              <div class="text-center">
+                <p class="text-xs sm:text-sm text-gray-600 mt-2">
+                  Consulta tarifas especiales y disponibilidad de vuelos con nuestras aerolíneas asociadas,
+                  a través de nuestro canal de WhatsApp.
+                </p>
+                <div class="my-8 sm:my-10 md:my-10"></div>
+                <a
+                  href="https://wa.me/50379858777?text=Hola%2C%20necesito%20información%20sobre%20vuelos%20y%20tarifas%20de%20aerolíneas"
+                  target="_blank"
+                  class="inline-flex items-center justify-center gap-2 sm:gap-3 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 sm:px-6 md:px-8 py-3 sm:py-4 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 group"
+                >
+                  <span class="text-lg sm:text-xl group-hover:animate-pulse">💬</span>
+                  <span>¿Necesitas información?</span>
+                  <span class="bg-white/20 px-2 py-1 rounded-md text-xs sm:text-sm">WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Espacio entre secciones -->
+        <div class="my-8 sm:my-10 md:my-12"></div>
+        <!-- Mapa - completamente responsivo -->
             <div class="bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-lg sm:rounded-xl shadow-lg sm:shadow-xl border border-gray-200 overflow-hidden hover:shadow-2xl transition-all duration-300">
               <!-- Header del mapa -->
               <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white p-3 sm:p-4 md:p-5">
@@ -326,8 +513,6 @@ const faqsFiltradas = computed(() => {
                 </div>
               </div>
             </div>
-          </div>
-        </div>
       </div>
     </div>
   </Catalogo>
