@@ -254,7 +254,7 @@ const saveOrUpdate = async () => {
     } catch (err) {
         if (err.response && err.response.data && err.response.data.errors) {
             const errors = err.response.data.errors;
-            
+
             // Mostrar error de placa si existe
             if (errors.numero_placa) {
                 toast.add({ severity: "error", summary: "Error", detail: errors.numero_placa[0], life: 4000 });
@@ -570,7 +570,7 @@ const handleToursClick = () => {
                         </div>
                     </template>
                 </Column>
-                <Column field="nombre" header="Nombre" sortable class="w-40 min-w-16">
+                <Column field="nombre" header="Descripción" sortable class="w-40 min-w-16">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed overflow-hidden"
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
@@ -648,7 +648,7 @@ const handleToursClick = () => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
                             <label for="nombre" class="w-24 flex items-center gap-1">
-                                Nombre: <span class="text-red-500 font-bold">*</span>
+                                Descripción: <span class="text-red-500 font-bold">*</span>
                             </label>
                             <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Carro pickup, etc"/>
                         </div>
