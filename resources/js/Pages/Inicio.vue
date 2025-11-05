@@ -4,7 +4,7 @@ import { Link } from '@inertiajs/vue3'
 import { ref, onMounted } from 'vue'
 import axios from 'axios'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faBus, faGlobeAmericas, faBusAlt, faHotel, faUmbrellaBeach, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faGlobeAmericas, faHotel } from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat } from '@fortawesome/free-brands-svg-icons'
 
 const products = ref([])
