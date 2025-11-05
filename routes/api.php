@@ -17,6 +17,7 @@ use App\Http\Controllers\TipoDocumentoController;
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\BackupController;
+use App\Http\Controllers\PaqueteVisaController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -108,6 +109,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Recursos CRUD principales
+        Route::apiResource('paquetes-visas', PaqueteVisaController::class);
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
