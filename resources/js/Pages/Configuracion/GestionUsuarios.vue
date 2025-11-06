@@ -253,6 +253,7 @@ const editEmpleado = (emp) => {
     empleado.value = {
         ...emp,
         nombre: emp.nombre || emp.name,
+        cargo: emp.cargo ? emp.cargo.toUpperCase() : emp.cargo, // Convertir cargo a mayúsculas
         password: "",
         password_confirmation: ""
     };
@@ -272,8 +273,30 @@ const saveOrUpdate = async () => {
     if (!empleado.value.nombre || empleado.value.nombre.length < 3 || empleado.value.nombre.length > 255) {
         toast.add({
             severity: "warn",
-            summary: "Campos requeridos",
-            detail: "Por favor verifica que todos los campos obligatorios estén completos y cumplan los requisitos.",
+            summary: "Nombre inválido",
+            detail: "El nombre debe tener entre 3 y 255 caracteres.",
+            life: 4000
+        });
+        return;
+    }
+
+    // Validar que el nombre no contenga números ni caracteres especiales
+    if (/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/.test(empleado.value.nombre)) {
+        toast.add({
+            severity: "warn",
+            summary: "Nombre inválido",
+            detail: "El nombre solo puede contener letras y espacios.",
+            life: 4000
+        });
+        return;
+    }
+
+    // Validar que no exista duplicado
+    if (isNombreDuplicated(empleado.value.nombre)) {
+        toast.add({
+            severity: "warn",
+            summary: "Nombre duplicado",
+            detail: "Ya existe un empleado con este nombre.",
             life: 4000
         });
         return;
@@ -315,8 +338,30 @@ const saveOrUpdate = async () => {
         }
     }
 
-    // Validar campos obligatorios
-    if (!empleado.value.cargo || !empleado.value.telefono) {
+    // Validar cargo específicamente
+    if (!empleado.value.cargo || empleado.value.cargo.length < 2) {
+        toast.add({
+            severity: "warn",
+            summary: "Cargo inválido",
+            detail: "El cargo debe tener al menos 2 caracteres.",
+            life: 4000
+        });
+        return;
+    }
+
+    // Validar que el cargo no contenga números, tildes ni caracteres especiales
+    if (/[^A-Z\s]/.test(empleado.value.cargo)) {
+        toast.add({
+            severity: "warn",
+            summary: "Cargo inválido",
+            detail: "El cargo solo puede contener letras y espacios (sin tildes ni números).",
+            life: 4000
+        });
+        return;
+    }
+
+    // Validar teléfono
+    if (!empleado.value.telefono) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
@@ -514,7 +559,7 @@ const handleChangePassword = (emp) => {
         id: emp.id,
         nombre: emp.nombre,
         email: emp.email,
-        cargo: emp.cargo,
+        cargo: emp.cargo ? emp.cargo.toUpperCase() : emp.cargo, // Convertir cargo a mayúsculas
         telefono: emp.telefono,
         password: "",
         password_confirmation: ""
@@ -649,16 +694,173 @@ const isValidEmail = (email) => {
 
 // ✅ Validaciones en tiempo real
 const validateNombre = () => {
-    if (empleado.value.nombre && empleado.value.nombre.length > 255) {
-        empleado.value.nombre = empleado.value.nombre.substring(0, 255);
+    if (empleado.value.nombre) {
+        // Eliminar caracteres no permitidos (números y caracteres especiales)
+        // Solo permitir letras (incluidas las tildadas), espacios y guiones
+        empleado.value.nombre = empleado.value.nombre.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');
+        
+        // Limitar longitud máxima
+        if (empleado.value.nombre.length > 255) {
+            empleado.value.nombre = empleado.value.nombre.substring(0, 255);
+        }
     }
 };
 
-const validateCargo = () => {
-    if (empleado.value.cargo && empleado.value.cargo.length > 100) {
-        empleado.value.cargo = empleado.value.cargo.substring(0, 100);
+// Función para prevenir la escritura de caracteres no permitidos
+const preventInvalidChars = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
+    if (event.ctrlKey || event.metaKey || 
+        ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
+        return;
+    }
+    
+    // Solo permitir letras (incluidas las tildadas), espacios y guiones
+    const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]$/.test(char);
+    
+    if (!isAllowed) {
+        event.preventDefault();
     }
 };
+
+// Función para manejar el pegado de texto
+const handlePaste = (event) => {
+    event.preventDefault();
+    
+    // Obtener el texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    
+    // Filtrar solo caracteres permitidos
+    const filteredText = pastedText.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');
+    
+    // Obtener la posición actual del cursor
+    const input = event.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    
+    // Construir el nuevo valor
+    const currentValue = empleado.value.nombre || '';
+    const newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+    
+    // Limitar a 255 caracteres
+    empleado.value.nombre = newValue.substring(0, 255);
+    
+    // Establecer la nueva posición del cursor
+    nextTick(() => {
+        const newCursorPosition = start + filteredText.length;
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+};
+
+const validateCargo = () => {
+    if (empleado.value.cargo) {
+        // Convertir a mayúsculas
+        empleado.value.cargo = empleado.value.cargo.toUpperCase();
+        
+        // Eliminar números, caracteres especiales y letras con tildes
+        // Solo permitir letras A-Z y espacios
+        empleado.value.cargo = empleado.value.cargo.replace(/[^A-Z\s]/g, '');
+        
+        // Limitar longitud máxima
+        if (empleado.value.cargo.length > 25) {
+            empleado.value.cargo = empleado.value.cargo.substring(0, 25);
+        }
+    }
+};
+
+// Función para prevenir la escritura de caracteres no permitidos en cargo
+const preventInvalidCharsCargo = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
+    if (event.ctrlKey || event.metaKey || 
+        ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
+        return;
+    }
+    
+    // Solo permitir letras A-Z (se convertirán a mayúsculas) y espacios
+    const isAllowed = /^[a-zA-Z\s]$/.test(char);
+    
+    if (!isAllowed) {
+        event.preventDefault();
+    }
+};
+
+// Función para manejar el pegado de texto en cargo
+const handlePasteCargo = (event) => {
+    event.preventDefault();
+    
+    // Obtener el texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    
+    // Filtrar solo caracteres permitidos y convertir a mayúsculas
+    const filteredText = pastedText.toUpperCase().replace(/[^A-Z\s]/g, '');
+    
+    // Obtener la posición actual del cursor
+    const input = event.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    
+    // Construir el nuevo valor
+    const currentValue = empleado.value.cargo || '';
+    const newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+    
+    // Limitar a 25 caracteres
+    empleado.value.cargo = newValue.substring(0, 25);
+    
+    // Establecer la nueva posición del cursor
+    nextTick(() => {
+        const newCursorPosition = start + filteredText.length;
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+};
+
+// Función para verificar si el nombre ya existe
+const isNombreDuplicated = (nombre) => {
+    if (!nombre || !empleados.value) return false;
+    
+    return empleados.value.some(emp => 
+        emp.id !== empleado.value.id && // Excluir el empleado actual en caso de edición
+        emp.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
+    );
+};
+
+// Validaciones reactivas para el nombre
+const nombreErrors = computed(() => {
+    const errors = [];
+    const nombre = empleado.value.nombre || '';
+    
+    if (nombre.length > 0 && nombre.length < 3) {
+        errors.push('El nombre debe tener al menos 3 caracteres.');
+    }
+    
+    if (nombre.length > 0 && /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/.test(nombre)) {
+        errors.push('El nombre solo puede contener letras, espacios y guiones.');
+    }
+    
+    if (nombre.length > 0 && isNombreDuplicated(nombre)) {
+        errors.push('Ya existe un empleado con este nombre.');
+    }
+    
+    return errors;
+});
+
+// Validaciones reactivas para el cargo
+const cargoErrors = computed(() => {
+    const errors = [];
+    const cargo = empleado.value.cargo || '';
+    
+    if (cargo.length > 0 && cargo.length < 2) {
+        errors.push('El cargo debe tener al menos 2 caracteres.');
+    }
+    
+    if (cargo.length > 0 && /[^A-Z\s]/.test(cargo)) {
+        errors.push('El cargo solo puede contener letras y espacios (sin tildes ni números).');
+    }
+    
+    return errors;
+});
 
 // Validaciones reactivas de contraseña para el formulario principal
 const passwordErrors = computed(() => {
@@ -878,19 +1080,32 @@ const passwordConfirmationError = computed(() => {
                                     id="nombre"
                                     name="nombre"
                                     :maxlength="255"
-                                    :class="{'p-invalid': submitted && (!empleado.nombre || empleado.nombre.length < 3 || empleado.nombre.length > 255)}"
+                                    :class="{'p-invalid': (submitted && (!empleado.nombre || nombreErrors.length > 0)) || nombreErrors.length > 0}"
                                     class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                    placeholder="Nombre completo del empleado"
+                                    placeholder="Nombre completo del empleado (solo letras, espacios y guiones)"
+                                    @keydown="preventInvalidChars"
+                                    @paste="handlePaste"
                                     @input="validateNombre"
                                 />
                             </div>
-                            <small class="text-red-500 ml-28" v-if="empleado.nombre && empleado.nombre.length < 3">
-                                El nombre debe tener al menos 3 caracteres. Actual: {{ empleado.nombre.length }}/3
+                            
+                            <!-- Mostrar errores de validación en tiempo real -->
+                            <div v-if="nombreErrors.length > 0" class="ml-28 mt-1">
+                                <small v-for="error in nombreErrors" :key="error" class="text-red-500 block">
+                                    {{ error }}
+                                </small>
+                            </div>
+                            
+                            <!-- Mostrar contador de caracteres -->
+                            <small class="text-gray-500 ml-28 mt-1" v-if="empleado.nombre && empleado.nombre.length > 0 && nombreErrors.length === 0">
+                                Caracteres: {{ empleado.nombre.length }}/255
                             </small>
-                            <small class="text-orange-500 ml-28" v-if="empleado.nombre && empleado.nombre.length >= 230 && empleado.nombre.length <= 255">
+                            <small class="text-orange-500 ml-28 mt-1" v-if="empleado.nombre && empleado.nombre.length >= 230 && empleado.nombre.length <= 255 && nombreErrors.length === 0">
                                 Caracteres restantes: {{ 255 - empleado.nombre.length }}
                             </small>
-                            <small class="text-red-500 ml-28" v-if="submitted && !empleado.nombre">
+                            
+                            <!-- Error de campo obligatorio -->
+                            <small class="text-red-500 ml-28 mt-1" v-if="submitted && !empleado.nombre">
                                 El nombre es obligatorio.
                             </small>
                         </div>
@@ -978,17 +1193,33 @@ const passwordConfirmationError = computed(() => {
                                     v-model.trim="empleado.cargo"
                                     id="cargo"
                                     name="cargo"
-                                    :maxlength="100"
-                                    :class="{'p-invalid': submitted && !empleado.cargo}"
+                                    :maxlength="25"
+                                    :class="{'p-invalid': (submitted && (!empleado.cargo || cargoErrors.length > 0)) || cargoErrors.length > 0}"
                                     class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                    placeholder="Gerente, Vendedor, etc."
+                                    placeholder="GERENTE, VENDEDOR, etc. (solo letras y espacios)"
+                                    @keydown="preventInvalidCharsCargo"
+                                    @paste="handlePasteCargo"
                                     @input="validateCargo"
                                 />
                             </div>
-                            <small class="text-orange-500 ml-28" v-if="empleado.cargo && empleado.cargo.length >= 80 && empleado.cargo.length <= 100">
-                                Caracteres restantes: {{ 100 - empleado.cargo.length }}
+                            
+                            <!-- Mostrar errores de validación en tiempo real -->
+                            <div v-if="cargoErrors.length > 0" class="ml-28 mt-1">
+                                <small v-for="error in cargoErrors" :key="error" class="text-red-500 block">
+                                    {{ error }}
+                                </small>
+                            </div>
+                            
+                            <!-- Mostrar contador de caracteres -->
+                            <small class="text-gray-500 ml-28 mt-1" v-if="empleado.cargo && empleado.cargo.length > 0 && cargoErrors.length === 0">
+                                Caracteres: {{ empleado.cargo.length }}/25
                             </small>
-                            <small class="text-red-500 ml-28" v-if="submitted && !empleado.cargo">
+                            <small class="text-orange-500 ml-28 mt-1" v-if="empleado.cargo && empleado.cargo.length >= 20 && empleado.cargo.length <= 25 && cargoErrors.length === 0">
+                                Caracteres restantes: {{ 25 - empleado.cargo.length }}
+                            </small>
+                            
+                            <!-- Error de campo obligatorio -->
+                            <small class="text-red-500 ml-28 mt-1" v-if="submitted && !empleado.cargo">
                                 El cargo es obligatorio.
                             </small>
                         </div>

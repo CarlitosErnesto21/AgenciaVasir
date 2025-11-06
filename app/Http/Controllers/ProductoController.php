@@ -47,15 +47,36 @@ class ProductoController extends Controller
             Log::info('=== CREANDO PRODUCTO CON INVENTARIO ===');
 
             $validatedData = $request->validate([
-                'nombre' => 'required|string|min:3|max:100',
-                'descripcion' => 'required|string|min:10|max:255',
+                'nombre' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:100',
+                    'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/',
+                    'unique:productos,nombre'
+                ],
+                'descripcion' => [
+                    'required',
+                    'string',
+                    'min:10',
+                    'max:255',
+                    'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"\']+$/'
+                ],
                 'precio' => 'required|numeric|min:0.01|max:9999.99',
                 'stock_actual' => 'required|integer|min:0',
                 'stock_minimo' => 'required|integer|min:1',
                 'categoria_id' => 'required|exists:categorias_productos,id',
                 'imagenes' => 'nullable|array|max:5',
                 'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
+            ], [
+                'nombre.regex' => 'El nombre solo puede contener letras mayúsculas, acentos y espacios.',
+                'nombre.unique' => 'Ya existe un producto con este nombre.',
+                'descripcion.regex' => 'La descripción solo puede contener letras mayúsculas, números, acentos, espacios y caracteres especiales comunes.'
             ]);
+
+            // Convertir nombre y descripción a mayúsculas
+            $validatedData['nombre'] = strtoupper($validatedData['nombre']);
+            $validatedData['descripcion'] = strtoupper($validatedData['descripcion']);
 
             // ️ INICIAR TRANSACCIÓN
             DB::beginTransaction();
@@ -154,15 +175,36 @@ class ProductoController extends Controller
             Log::info("Actualizando producto ID {$id}");
 
             $validatedData = $request->validate([
-                'nombre' => 'required|string|min:3|max:100',
-                'descripcion' => 'required|string|min:10|max:255',
+                'nombre' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:100',
+                    'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/',
+                    'unique:productos,nombre,' . $id
+                ],
+                'descripcion' => [
+                    'required',
+                    'string',
+                    'min:10',
+                    'max:255',
+                    'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"\']+$/'
+                ],
                 'precio' => 'required|numeric|min:0.01|max:9999.99',
                 'categoria_id' => 'required|exists:categorias_productos,id',
                 'imagenes' => 'nullable|array|max:5',
                 'imagenes.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048'
                 // Nota: Se removieron stock_actual y stock_minimo para actualizaciones
                 // El stock debe actualizarse a través del endpoint específico /actualizar-stock
+            ], [
+                'nombre.regex' => 'El nombre solo puede contener letras mayúsculas, acentos y espacios.',
+                'nombre.unique' => 'Ya existe un producto con este nombre.',
+                'descripcion.regex' => 'La descripción solo puede contener letras mayúsculas, números, acentos, espacios y caracteres especiales comunes.'
             ]);
+
+            // Convertir nombre y descripción a mayúsculas
+            $validatedData['nombre'] = strtoupper($validatedData['nombre']);
+            $validatedData['descripcion'] = strtoupper($validatedData['descripcion']);
 
             // Validar límite total de imágenes (existentes + nuevas - eliminadas)
             $imagenesExistentes = $producto->imagenes()->count();

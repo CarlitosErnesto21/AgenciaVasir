@@ -25,15 +25,15 @@ export default defineConfig({
     },
 
 
-    // Configuración del servidor de desarrollo solo para pruebas en red local
+    /* Configuración del servidor de desarrollo solo para pruebas en red local
     server: {
         host: '0.0.0.0',
         port: 5173,
         hmr: {
-            host: '192.168.1.4'
+            host: '192.168.1.38'
         }
     },
-
+    */
     // Optimizaciones para build en Railway
     build: {
         chunkSizeWarningLimit: 1000,

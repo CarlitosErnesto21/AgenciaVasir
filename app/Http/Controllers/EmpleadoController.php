@@ -60,7 +60,13 @@ class EmpleadoController extends Controller
     {
         // Validar formato básico
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => [
+                'required',
+                'string',
+                'min:3',
+                'max:255',
+                'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$/', // Solo letras con tildes, espacios y guiones
+            ],
             'email' => 'required|string|lowercase|email:rfc,dns|max:255',
             'password' => [
                 'required',
@@ -70,11 +76,19 @@ class EmpleadoController extends Controller
                 'regex:/[0-9]/', // al menos un número
                 'regex:/^[^\s.]*$/', // no espacios ni puntos
             ],
-            'cargo' => 'required|string|max:100',
+            'cargo' => [
+                'required',
+                'string',
+                'min:2',
+                'max:25',
+                'regex:/^[A-Z\s]+$/', // Solo letras mayúsculas y espacios
+            ],
             'telefono' => 'required|string|min:8|max:20',
         ], [
             'name.required' => 'El nombre es obligatorio.',
+            'name.min' => 'El nombre debe tener al menos 3 caracteres.',
             'name.max' => 'El nombre no puede exceder 255 caracteres.',
+            'name.regex' => 'El nombre solo puede contener letras, espacios y guiones.',
             'email.required' => 'El correo electrónico es obligatorio.',
             'email.email' => 'El formato del correo electrónico no es válido.',
             'email.max' => 'El correo electrónico no puede exceder 255 caracteres.',
@@ -83,16 +97,29 @@ class EmpleadoController extends Controller
             'password.regex' => 'La contraseña debe incluir al menos una letra mayúscula y un número, y no puede contener espacios ni puntos.',
             'password.confirmed' => 'Las contraseñas no coinciden.',
             'cargo.required' => 'El cargo es obligatorio.',
-            'cargo.max' => 'El cargo no puede exceder 100 caracteres.',
+            'cargo.min' => 'El cargo debe tener al menos 2 caracteres.',
+            'cargo.max' => 'El cargo no puede exceder 25 caracteres.',
+            'cargo.regex' => 'El cargo solo puede contener letras y espacios (sin tildes ni números).',
             'telefono.required' => 'El teléfono es obligatorio.',
             'telefono.min' => 'El teléfono debe tener al menos 8 caracteres.',
             'telefono.max' => 'El teléfono no puede exceder 20 caracteres.',
         ]);
 
-        // Verificar si las credenciales ya existen
-        if (User::where('name', $request->name)->exists() || User::where('email', $request->email)->exists()) {
+        // Normalizar cargo y nombre
+        $cargo = $this->normalizeCargo($request->cargo);
+        $normalizedName = $this->normalizeNameForComparison($request->name);
+
+        // Verificar si el nombre ya existe (case-insensitive)
+        if (User::whereRaw('LOWER(TRIM(REGEXP_REPLACE(name, "[[:space:]]+", " "))) = ?', [$normalizedName])->exists()) {
             throw ValidationException::withMessages([
-                'email' => 'Estas credenciales ya están en uso. Por favor, utiliza datos diferentes.'
+                'name' => 'Ya existe un empleado con este nombre.'
+            ]);
+        }
+
+        // Verificar si el email ya existe
+        if (User::where('email', $request->email)->exists()) {
+            throw ValidationException::withMessages([
+                'email' => 'Este correo electrónico ya está en uso.'
             ]);
         }
 
@@ -115,7 +142,7 @@ class EmpleadoController extends Controller
 
             // Crear el empleado
             $empleado = Empleado::create([
-                'cargo' => $request->cargo,
+                'cargo' => $cargo, // Usar el cargo convertido a mayúsculas
                 'telefono' => $request->telefono,
                 'user_id' => $user->id,
             ]);
@@ -206,22 +233,42 @@ class EmpleadoController extends Controller
 
             // Validar los datos
             $request->validate([
-                'name' => 'required|string|max:255',
+                'name' => [
+                    'required',
+                    'string',
+                    'min:3',
+                    'max:255',
+                    'regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]+$/', // Solo letras con tildes, espacios y guiones
+                ],
                 'email' => 'required|string|lowercase|email:rfc,dns|max:255',
-                'cargo' => 'required|string|max:100',
+                'cargo' => [
+                    'required',
+                    'string',
+                    'min:2',
+                    'max:25',
+                    'regex:/^[A-Z\s]+$/', // Solo letras mayúsculas y espacios
+                ],
                 'telefono' => 'required|string|min:8|max:20',
             ], [
                 'name.required' => 'El nombre es obligatorio.',
+                'name.min' => 'El nombre debe tener al menos 3 caracteres.',
                 'name.max' => 'El nombre no puede exceder 255 caracteres.',
+                'name.regex' => 'El nombre solo puede contener letras, espacios y guiones.',
                 'email.required' => 'El correo electrónico es obligatorio.',
                 'email.email' => 'El formato del correo electrónico no es válido.',
                 'email.max' => 'El correo electrónico no puede exceder 255 caracteres.',
                 'cargo.required' => 'El cargo es obligatorio.',
-                'cargo.max' => 'El cargo no puede exceder 100 caracteres.',
+                'cargo.min' => 'El cargo debe tener al menos 2 caracteres.',
+                'cargo.max' => 'El cargo no puede exceder 25 caracteres.',
+                'cargo.regex' => 'El cargo solo puede contener letras y espacios (sin tildes ni números).',
                 'telefono.required' => 'El teléfono es obligatorio.',
                 'telefono.min' => 'El teléfono debe tener al menos 8 caracteres.',
                 'telefono.max' => 'El teléfono no puede exceder 20 caracteres.',
             ]);
+
+            // Normalizar cargo y nombre
+            $cargo = $this->normalizeCargo($request->cargo);
+            $normalizedName = $this->normalizeNameForComparison($request->name);
 
             // Verificar si el email ya existe en otro usuario
             if (User::where('email', $request->email)->where('id', '!=', $empleado->user_id)->exists()) {
@@ -230,10 +277,10 @@ class EmpleadoController extends Controller
                 ]);
             }
 
-            // Verificar si el nombre ya existe en otro usuario
-            if (User::where('name', $request->name)->where('id', '!=', $empleado->user_id)->exists()) {
+            // Verificar si el nombre ya existe en otro usuario (case-insensitive)
+            if (User::whereRaw('LOWER(TRIM(REGEXP_REPLACE(name, "[[:space:]]+", " "))) = ? AND id != ?', [$normalizedName, $empleado->user_id])->exists()) {
                 throw ValidationException::withMessages([
-                    'name' => 'Este nombre ya está en uso por otro usuario.'
+                    'name' => 'Ya existe un empleado con este nombre.'
                 ]);
             }
 
@@ -247,7 +294,7 @@ class EmpleadoController extends Controller
 
             // Actualizar empleado
             $empleado->update([
-                'cargo' => $request->cargo,
+                'cargo' => $cargo, // Usar el cargo convertido a mayúsculas
                 'telefono' => $request->telefono,
             ]);
 
@@ -397,5 +444,22 @@ class EmpleadoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Normaliza el cargo eliminando caracteres no permitidos y convirtiendo a mayúsculas
+     */
+    private function normalizeCargo($cargo)
+    {
+        // Convertir a mayúsculas y eliminar caracteres no permitidos
+        return strtoupper(preg_replace('/[^A-Za-z\s]/', '', trim($cargo)));
+    }
+
+    /**
+     * Normaliza el nombre eliminando espacios extra y convirtiendo a minúsculas para comparación
+     */
+    private function normalizeNameForComparison($name)
+    {
+        return strtolower(trim(preg_replace('/\s+/', ' ', $name)));
     }
 }
