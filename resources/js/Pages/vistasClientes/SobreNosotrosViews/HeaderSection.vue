@@ -1,5 +1,5 @@
 <script setup>
-import { faPencil } from '@fortawesome/free-solid-svg-icons';
+import { faFaceSmile, faPencil, faStar } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { ref } from 'vue';
 
@@ -10,12 +10,20 @@ const props = defineProps({
     }
 });
 
+// Calcular años de experiencia desde 2019
+const calcularAnosExperiencia = () => {
+  const fechaInicio = new Date('2019-01-01')
+  const fechaActual = new Date()
+  const diferencia = fechaActual.getFullYear() - fechaInicio.getFullYear()
+  return diferencia
+}
+
 // Datos de estadísticas
 const estadisticas = ref([
-  { numero: '4+', descripcion: 'Años de experiencia', icono: '⏰' },
-  { numero: '500+', descripcion: 'Clientes satisfechos', icono: '😊' },
-  { numero: '50+', descripcion: 'Destinos visitados', icono: '📍' },
-  { numero: '100%', descripcion: 'Compromiso y calidad', icono: '⭐' }
+  { numero: `${calcularAnosExperiencia()}+`, descripcion: 'Años de experiencia', icono: faStar, color: 'text-yellow-400' },
+  { numero: '500+', descripcion: 'Clientes satisfechos', icono: faFaceSmile, color: 'text-green-400' },
+  { numero: '50+', descripcion: 'Destinos visitados', icono: faFaceSmile, color: 'text-blue-400' },
+  { numero: '100%', descripcion: 'Compromiso y calidad', icono: faFaceSmile, color: 'text-red-400' }
 ]);
 </script>
 
@@ -45,13 +53,15 @@ const estadisticas = ref([
       <div class="px-1 sm:px-1 lg:px-2 max-w-7xl mx-auto">
         <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden p-6 sm:p-8">
         <!-- Estadísticas -->
-        <div class="grid grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-8">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3 md:gap-4 lg:gap-6 mb-8">
           <div
             v-for="(stat, index) in estadisticas"
             :key="stat.descripcion"
             class="bg-gradient-to-br from-white to-gray-50 hover:from-red-50 hover:to-blue-50 rounded-lg sm:rounded-xl p-2 sm:p-3 md:p-4 lg:p-6 shadow-lg border-2 border-transparent hover:border-red-200 text-center transform hover:-translate-y-2 hover:scale-105 transition-all duration-300"
           >
-            <div class="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3">{{ stat.icono }}</div>
+            <div class="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3">
+              <FontAwesomeIcon :icon="stat.icono" :class="stat.color" />
+            </div>
             <h3 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2">{{ stat.numero }}</h3>
             <p class="text-xs sm:text-sm md:text-base text-gray-700 font-medium leading-tight">{{ stat.descripcion }}</p>
           </div>
