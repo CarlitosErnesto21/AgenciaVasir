@@ -36,6 +36,7 @@ Route::get('/categorias-productos', [CategoriaProductoController::class, 'index'
 Route::get('/tours', [TourController::class, 'index']);
 Route::get('/tours/{id}', [TourController::class, 'show']);
 Route::get('/hoteles', [HotelController::class, 'index']);
+Route::get('/paquetes-visas', [PaqueteVisaController::class, 'index']);
 Route::get('/tipo-documentos', [TipoDocumentoController::class, 'index']);
 
 // Ruta para que usuarios autenticados puedan crear su perfil de cliente
@@ -109,7 +110,7 @@ Route::middleware('auth:sanctum')->group(function () {
         });
 
         // Recursos CRUD principales
-        Route::apiResource('paquetes-visas', PaqueteVisaController::class);
+        Route::apiResource('paquetes-visas', PaqueteVisaController::class)->except(['index']);
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);

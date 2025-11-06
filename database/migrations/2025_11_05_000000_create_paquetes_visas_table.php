@@ -9,8 +9,8 @@ return new class extends Migration {
     {
         Schema::create('paquetes_visas', function (Blueprint $table) {
             $table->id();
-            $table->string('nombre');
-            $table->text('descripcion')->nullable();
+            $table->string('nombre', 100);
+            $table->string('descripcion', 255)->nullable();
             $table->decimal('precio', 10, 2);
             $table->text('incluye')->nullable();
             $table->text('no_incluye')->nullable();

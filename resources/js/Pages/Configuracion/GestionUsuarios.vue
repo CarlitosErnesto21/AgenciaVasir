@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import Toast from 'primevue/toast';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faFilter, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey } from "@fortawesome/free-solid-svg-icons";
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import Modales from "./GestionUsuarioComponent/Modales.vue";
@@ -828,7 +828,7 @@ const passwordConfirmationError = computed(() => {
                     <Column field="estado" header="Estado" class="w-28 hidden sm:table-cell">
                         <template #body="slotProps">
                             <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Activo
+                                Activoooo
                             </span>
                         </template>
                     </Column>
