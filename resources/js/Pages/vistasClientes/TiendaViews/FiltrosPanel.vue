@@ -93,14 +93,6 @@ const toggleMobileFilters = () => {
     </button>
 
     <div v-show="showMobileFilters" class="mt-4 bg-gradient-to-br from-white via-blue-50 to-red-50 rounded-xl shadow-xl p-4 border border-gray-200">
-      <div class="flex justify-end mb-4">
-        <button
-          @click="clearFilters"
-          class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-3 py-2 rounded-lg text-xs font-medium transition-all duration-300 shadow-md"
-        >
-          Limpiar filtros
-        </button>
-      </div>
 
       <!-- Filtro de Precio Móvil -->
       <div class="mb-4">
@@ -185,14 +177,7 @@ const toggleMobileFilters = () => {
       </h3>
     </div>
 
-    <div class="flex justify-end mb-4">
-      <button
-        @click="clearFilters"
-        class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
-      >
-        Limpiar filtros
-      </button>
-    </div>
+
 
     <!-- Estadísticas de precios -->
     <div class="mb-6">

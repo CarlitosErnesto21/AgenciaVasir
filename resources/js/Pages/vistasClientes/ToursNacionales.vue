@@ -38,12 +38,26 @@ const reservarTour = (tour) => {
   if (!user.value) {
     showAuthDialog.value = true
   } else {
+    // Verificar roles para restricción
+    if (user.value.roles && Array.isArray(user.value.roles)) {
+      const tieneRolRestringido = user.value.roles.some(role =>
+        role.name === 'Administrador' || role.name === 'Empleado'
+      )
+
+      if (tieneRolRestringido) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Acceso Restringido',
+          detail: 'Solo las cuentas de Cliente pueden realizar reservas. Puedes ver los detalles del tour usando el botón "Info".',
+          life: 5000
+        })
+        return
+      }
+    }
+
     showReservaDialog.value = true
   }
 }
-
-// Eliminado: verificarReservaPendiente y su lógica de sessionStorage
-// La reanudación de reservas mediante sessionStorage ha sido retirada (Option B).
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {

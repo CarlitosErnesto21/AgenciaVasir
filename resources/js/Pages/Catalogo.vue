@@ -829,29 +829,7 @@ watch(isAuthenticated, (newValue, oldValue) => {
   border: none !important;
 }
 
-.p-toast .p-toast-message.p-toast-message-success {
-  background-color: #f0fdf4 !important;
-  border-left: 4px solid #22c55e !important;
-  color: #15803d !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-error {
-  background-color: #fef2f2 !important;
-  border-left: 4px solid #ef4444 !important;
-  color: #dc2626 !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-warn {
-  background-color: #fffbeb !important;
-  border-left: 4px solid #f59e0b !important;
-  color: #d97706 !important;
-}
-
-.p-toast .p-toast-message.p-toast-message-info {
-  background-color: #eff6ff !important;
-  border-left: 4px solid #3b82f6 !important;
-  color: #2563eb !important;
-}
+/* Estilos de colores removidos - usando los de app.css que son más suaves */
 /*///////// Fin de los estilos para Toast GLOBALES ////////*/
 </style>
 
