@@ -3,7 +3,7 @@ import Catalogo from '../Catalogo.vue'
 import ModalAuthRequerido from './Modales/ModalAuthRequerido.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import { router, usePage } from '@inertiajs/vue3'
+import { router, usePage, Link } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay, faPhone, faEnvelope, faInfoCircle, faSearch, faTimes, faCheck, faSpinner, faSave } from '@fortawesome/free-solid-svg-icons'
 import Dialog from 'primevue/dialog'
@@ -375,8 +375,8 @@ const contactarHotel = (hotel) => {
   window.open(whatsappUrl, '_blank')
 }
 
-const verMasInfo = (hotel) => {
-  // Función deshabilitada - solo mantener referencia para evitar errores
+const navegarADetalle = (hotel) => {
+  router.visit(`/hoteles/${hotel.id}`)
 }
 
 // Función para limpiar búsqueda
@@ -387,13 +387,11 @@ const limpiarBusqueda = () => {
 // Función para cargar datos del cliente existente
 const cargarDatosCliente = async () => {
   if (!user.value) {
-    console.log('No hay usuario autenticado para cargar datos del cliente')
     return null
   }
 
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
-    console.log('Intentando cargar datos del cliente para usuario:', user.value.id)
 
     const response = await fetch('/api/clientes/mi-perfil', {
       method: 'GET',
@@ -407,21 +405,15 @@ const cargarDatosCliente = async () => {
       credentials: 'same-origin'
     })
 
-    console.log('Respuesta del servidor:', response.status, response.statusText)
-
     if (response.ok) {
       const data = await response.json()
-      console.log('Datos del cliente cargados:', data)
       return data.cliente || data || null
     } else if (response.status === 404) {
-      console.log('Cliente no encontrado, usuario nuevo')
       return null
     } else {
-      console.error('Error al cargar datos del cliente:', response.status, response.statusText)
       return null
     }
   } catch (error) {
-    console.error('Error al cargar datos del cliente:', error)
     return null
   }
 }
@@ -489,7 +481,6 @@ const abrirModalReserva = async (hotel) => {
         try {
           fechaNacimientoFormateada = new Date(clienteExistente.fecha_nacimiento)
         } catch (error) {
-          console.error('Error al formatear fecha:', error)
           fechaNacimientoFormateada = null
         }
       }
@@ -525,7 +516,6 @@ const abrirModalReserva = async (hotel) => {
     }
     }
   } catch (error) {
-    console.error('Error al cargar datos del cliente:', error)
     // Si no se pueden cargar los datos, continuamos sin datos precargados
     tieneClienteExistente.value = false
   }
@@ -891,11 +881,11 @@ const onValidate = async (phoneObject) => {
             <Card
               v-for="hotel in hotelesDisponibles"
               :key="hotel.id"
-              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[400px] sm:min-h-[450px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl"
+              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[400px] sm:min-h-[450px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl cursor-pointer"
+              @click="navegarADetalle(hotel)"
               >
               <template #header>
-                <div class="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-200"
-                     @click="mostrarGaleria(hotel)">
+                <div class="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group border-b border-gray-200">
                   <img
                     :src="obtenerImagenActual(hotel)"
                     :alt="hotel.nombre"
@@ -924,8 +914,7 @@ const onValidate = async (phoneObject) => {
               </template>
 
               <template #title>
-                <div class="h-10 sm:h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg mx-2"
-                     @click="verMasInfo(hotel)">
+                <div class="h-10 sm:h-12 flex items-start px-4 pt-3 hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg mx-2">
                   <span class="font-bold text-gray-800 leading-tight line-clamp-2 text-sm sm:text-base">{{ hotel.nombre }}</span>
                 </div>
               </template>
@@ -959,27 +948,28 @@ const onValidate = async (phoneObject) => {
                         </div>
                       </div>
                     </div>
+
+                    <!-- Mensaje de click para ver detalles -->
+                    <div class="text-center py-2">
+                      <p class="text-xs text-blue-600 font-medium bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                        <i class="pi pi-mouse-pointer mr-1"></i>
+                        Dar click para ver detalles
+                      </p>
+                    </div>
                   </div>
 
                   <!-- Botones de acción -->
                   <div class="flex gap-2 mt-4">
                     <Button
                       label="Reservar"
-                      @click="abrirModalReserva(hotel)"
+                      @click.stop="abrirModalReserva(hotel)"
                       class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-blue-600 !text-white hover:!bg-blue-700"
                       size="small"
                     />
                     <Button
                       label="WhatsApp"
-                      @click="contactarHotel(hotel)"
+                      @click.stop="contactarHotel(hotel)"
                       class="!border-none !px-3 !py-2 !text-sm font-semibold rounded transition-all flex-1 shadow-sm !bg-green-600 !text-white hover:!bg-green-700"
-                      size="small"
-                    />
-                    <Button
-                      label="Info"
-                      @click="verMasInfo(hotel)"
-                      outlined
-                      class="!border-purple-600 !text-purple-600 !px-2 !py-2 !text-sm font-semibold rounded hover:!bg-purple-50 transition-all"
                       size="small"
                     />
                   </div>

@@ -10,6 +10,7 @@ use App\Http\Controllers\TourController;
 use App\Http\Controllers\SobreNosotrosController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ProductoWebController;
+use App\Http\Controllers\HotelWebController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Middleware\RutasAdmin;
@@ -86,8 +87,14 @@ Route::get('/tours-internacionales/{id}', [TourController::class, 'mostrarTourIn
 // Ruta para mostrar el detalle de un producto
 Route::get('/tienda/producto/{id}', [ProductoWebController::class, 'mostrarDetalleProducto'])->name('producto.show');
 
+// Ruta para mostrar el detalle de un hotel
+Route::get('/hoteles/{id}', [HotelWebController::class, 'mostrarDetalleHotel'])->name('hotel.show');
+
 // Ruta para crear reservas de tours (accesible para usuarios autenticados)
 Route::post('/reservas/tour', [ReservaController::class, 'crearReservaTour'])->middleware('auth')->name('reservas.tour');
+
+// Ruta para crear reservas de hoteles (accesible para usuarios autenticados)
+Route::post('/reservas/hotel', [ReservaController::class, 'crearReservaHotel'])->middleware('auth')->name('reservas.hotel');
 
 // Ruta para obtener datos del cliente autenticado
 Route::get('/api/cliente-datos', [ClienteController::class, 'obtenerDatosAutenticado'])->middleware('auth')->name('cliente.datos');
