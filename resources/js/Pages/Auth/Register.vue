@@ -100,7 +100,6 @@ const submit = () => {
                     placeholder="Tu nombre completo"
                 />
                 <InputError class="mt-1 text-xs" :message="form.errors.name" />
-                <div v-if="nameError" class="mt-1 text-xs text-red-500">{{ nameError }}</div>
             </div>
 
             <!-- Campo Email -->

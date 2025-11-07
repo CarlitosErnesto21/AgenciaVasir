@@ -17,7 +17,7 @@ return new class extends Migration
             $table->date('fecha_nacimiento');
             $table->enum('genero', ['MASCULINO', 'FEMENINO']);
             $table->string('direccion', 200);
-            $table->string('telefono', 30);
+            $table->string('telefono', 30)->unique();
             // Llave foranea a la tabla users
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');

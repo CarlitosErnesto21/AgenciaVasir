@@ -6,7 +6,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faChevronLeft, faChevronRight, faCircleChevronRight, faImage, faMapLocation, faMapMarked, faMapMarkedAlt, faMapMarker, faMapMarkerAlt, faPause, faPlay, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarAlt, faChevronLeft, faChevronRight, faCircleChevronRight, faImage, faMapLocation, faMapMarked, faMapMarkedAlt, faMapMarker, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
@@ -30,6 +30,9 @@ const props = defineProps({
 const tours = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// Variable para búsqueda
+const searchQuery = ref('')
 
 // URL de la API
 const url = "/api/tours?categoria=internacional"
@@ -65,10 +68,27 @@ const estadisticas = computed(() => {
 
 // Computed properties para separar tours por disponibilidad
 const toursDisponibles = computed(() => {
-  return tours.value.filter(tour => {
+  let filtrados = tours.value.filter(tour => {
     const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
     return cuposDisponibles > 0
   })
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtrados = filtrados.filter(tour => {
+      const nombre = tour.nombre?.toLowerCase() || ''
+      const pais = tour.pais?.nombre?.toLowerCase() || ''
+      const ubicacion = tour.ubicacion?.toLowerCase() || ''
+      const descripcion = tour.descripcion?.toLowerCase() || ''
+
+      return nombre.includes(query) ||
+             pais.includes(query) ||
+             ubicacion.includes(query) ||
+             descripcion.includes(query)
+    })
+  }
+
+  return filtrados
 })
 
 const toursSinCupos = computed(() => {
@@ -212,14 +232,6 @@ const detenerTodosLosCarruseles = () => {
 onMounted(async () => {
   // Obtener tours desde la API
   await obtenerTours()
-
-  // Verificar reserva pendiente después del login
-  await verificarReservaPendiente()
-
-  // Verificación adicional con delay para problemas de timing
-  setTimeout(async () => {
-    await verificarReservaPendiente()
-  }, 500)
 
   // Inicializar carruseles para todos los tours con múltiples imágenes
   tours.value.forEach(tour => {
@@ -407,6 +419,11 @@ watch(user, async (newUser) => {
   }
 }, { immediate: false })
 
+// Función para limpiar búsqueda
+const limpiarBusqueda = () => {
+  searchQuery.value = ''
+}
+
 // Función para obtener la clase CSS según disponibilidad de cupos
 const obtenerClaseCupos = (tour) => {
   const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
@@ -448,41 +465,7 @@ const verMasInfo = (tour) => {
         <p class="block md:hidden text-base sm:text-lg text-red-100 px-4">Explora alrededor del mundo.</p>
       </div>
 
-      <!-- Stats integradas en el header -->
-      <div v-if="tours.length > 0" class="bg-white py-3 px-3">
-        <div class="max-w-4xl mx-auto">
-          <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
 
-            <!-- Stat 1: Tours Disponibles -->
-            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                {{ estadisticas.totalDestinos }}
-              </div>
-              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Tours Disponibles</div>
-              <div class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</div>
-            </div>
-
-            <!-- Stat 2: Precio Mínimo -->
-            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-red-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo}` : 'Consultar' }}
-              </div>
-              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</div>
-              <div class="hidden md:block text-gray-500 text-xs mt-1">Todo incluido</div>
-            </div>
-
-            <!-- Stat 3: Ubicaciones -->
-            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center border border-blue-200 shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2">
-              <div class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                {{ estadisticas.totalPaises }}
-              </div>
-              <div class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</div>
-              <div class="hidden md:block text-gray-500 text-xs mt-1">Países diferentes</div>
-            </div>
-
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Contenido principal con padding -->
@@ -514,6 +497,41 @@ const verMasInfo = (tour) => {
             <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">No hay tours internacionales disponibles</h3>
             <p class="text-gray-600 mb-4 leading-relaxed">Próximamente tendremos nuevos destinos internacionales.</p>
             <p class="text-sm text-gray-500">Mientras tanto, puedes explorar nuestros tours nacionales.</p>
+          </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        <div v-if="tours.length > 0" class="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-8">
+          <div class="max-w-2xl mx-auto">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">
+              <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-blue-600 mr-2" />
+              Buscar Tours Internacionales
+            </h3>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-gray-400" />
+              </div>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Buscar por nombre del tour, país, ubicación o descripción..."
+                class="w-full pl-12 pr-12 py-4 text-gray-700 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-lg"
+              />
+              <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-4 flex items-center">
+                <button
+                  @click="limpiarBusqueda"
+                  class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1 rounded-full hover:bg-blue-50"
+                  title="Limpiar búsqueda"
+                >
+                  <FontAwesomeIcon :icon="faTimes" class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div class="mt-3 text-center">
+              <p class="text-sm text-gray-500">
+                {{ searchQuery ? `Mostrando ${toursDisponibles.length} resultado${toursDisponibles.length !== 1 ? 's' : ''} para "${searchQuery}"` : `${toursDisponibles.length} tour${toursDisponibles.length !== 1 ? 's' : ''} disponible${toursDisponibles.length !== 1 ? 's' : ''}` }}
+              </p>
+            </div>
           </div>
         </div>
 

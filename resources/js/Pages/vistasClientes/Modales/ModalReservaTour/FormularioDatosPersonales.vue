@@ -86,23 +86,76 @@ const cargarTiposDocumentos = async () => {
 }
 
 // Función de validación del teléfono
-const onValidate = (phoneObject) => {
+const onValidate = async (phoneObject) => {
   try {
     if (phoneObject && typeof phoneObject === 'object') {
       telefonoValidation.value.isValid = phoneObject.valid === true
       telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
       telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
 
-      if (formularioLocal.value.telefono && phoneObject.valid === false) {
-        telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
-      } else if (phoneObject.valid === true) {
-        telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+      // CLAVE: Actualizar el modelo inmediatamente como hace EmpleadoController
+      if (phoneObject.valid === true && phoneObject.formatted) {
+        formularioLocal.value.telefono = phoneObject.formatted
+      }
+
+      // Si los datos están precargados, no validar duplicados (ya son del mismo cliente)
+      if (props.tieneClienteExistente) {
+        if (phoneObject.valid === true) {
+          telefonoValidation.value.mensaje = 'Número válido (guardado previamente)'
+        } else if (formularioLocal.value.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       } else {
-        telefonoValidation.value.mensaje = ''
+        // Solo validar duplicados para nuevos clientes
+        if (formularioLocal.value.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else if (phoneObject.valid === true) {
+          // Ahora validar con el teléfono ya actualizado en el modelo
+          await validarTelefonoUnico(formularioLocal.value.telefono)
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       }
     }
   } catch (error) {
+    console.error('[FormularioDatosPersonales] Error en validación:', error)
     telefonoValidation.value.mensaje = 'Error en validación'
+  }
+}
+
+// Validar que el teléfono no esté duplicado
+const validarTelefonoUnico = async (telefono) => {
+  if (!telefono || telefono.length < 8) return
+
+  try {
+    const response = await fetch('/api/clientes/validar-telefono', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        telefono: telefono
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.disponible) {
+      telefonoValidation.value.mensaje = 'Número válido para ' + telefonoValidation.value.country?.name
+    } else {
+      telefonoValidation.value.isValid = false
+      telefonoValidation.value.mensaje = data.message || 'Este teléfono ya está registrado'
+    }
+  } catch (error) {
+    console.error('[FormularioDatosPersonales] Error validando teléfono:', error)
+    telefonoValidation.value.mensaje = 'Error al validar teléfono'
   }
 }
 
@@ -181,12 +234,22 @@ const validateForm = () => {
 
   // Solo validar formato si el teléfono fue modificado (no viene de datos precargados)
   if (formularioLocal.value.telefono && telefonoValidation.value.isValid === false && telefonoValidation.value.mensaje !== 'Número válido (guardado previamente)') {
-    emit('mostrar-toast', {
-      severity: 'error',
-      summary: 'Teléfono inválido',
-      detail: 'Por favor, ingrese un número de teléfono válido.',
-      life: 4000
-    })
+    // Si el mensaje contiene información sobre duplicado, usar mensaje específico
+    if (telefonoValidation.value.mensaje && (telefonoValidation.value.mensaje.includes('registrado') || telefonoValidation.value.mensaje.includes('diferente'))) {
+      emit('mostrar-toast', {
+        severity: 'warn',
+        summary: 'Teléfono ya registrado',
+        detail: telefonoValidation.value.mensaje,
+        life: 5000
+      })
+    } else {
+      emit('mostrar-toast', {
+        severity: 'error',
+        summary: 'Teléfono inválido',
+        detail: 'Por favor, ingrese un número de teléfono válido.',
+        life: 4000
+      })
+    }
     return false
   }
 
@@ -304,11 +367,9 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
         <Calendar
           v-model="formularioLocal.fecha_nacimiento"
           :maxDate="getFechaMaximaNacimiento()"
-          dateFormat="dd/mm/yy"
+          date-format="dd/mm/yy"
           placeholder="Seleccionar fecha de nacimiento"
           showIcon
-          :showOnFocus="false"
-          touchUI
           yearNavigator
           yearRange="1920:2010"
           :disabled="tieneClienteExistente"

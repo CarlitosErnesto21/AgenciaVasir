@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBusSimple, faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
-import DatePicker from "primevue/datepicker";
+import Calendar from "primevue/calendar";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
 import axios from "axios";
@@ -1511,7 +1511,7 @@ const onPricePaste = (event) => {
                                     </select>
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <DatePicker
+                                    <Calendar
                                         v-model="selectedFechaInicio"
                                         placeholder="Fecha desde"
                                         class="w-full h-9 text-sm rounded-md border border-blue-300"
@@ -1523,7 +1523,7 @@ const onPricePaste = (event) => {
                                     />
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <DatePicker
+                                    <Calendar
                                         v-model="selectedFechaFin"
                                         placeholder="Fecha hasta"
                                         class="w-full h-9 text-sm rounded-md border border-blue-300"
@@ -1535,7 +1535,7 @@ const onPricePaste = (event) => {
                                     />
                                 </div>
                                 <div class="flex w-80 sm:hidden">
-                                    <DatePicker
+                                    <Calendar
                                         v-model="selectedFechaInicio"
                                         placeholder="Fecha desde"
                                         class="h-9 text-sm rounded-md"
@@ -1545,7 +1545,7 @@ const onPricePaste = (event) => {
                                         dateFormat="dd/mm/yy"
                                         :maxDate="selectedFechaFin"
                                     />
-                                    <DatePicker
+                                    <Calendar
                                         v-model="selectedFechaFin"
                                         placeholder="Fecha hasta"
                                         class="h-9 text-sm rounded-md"
@@ -1801,7 +1801,7 @@ const onPricePaste = (event) => {
                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label for="fecha_salida" class="flex items-center gap-1 mb-2">Fecha y hora de salida:<span class="text-red-500 font-bold">*</span></label>
-                            <DatePicker v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
+                            <Calendar v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
                                 :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida()) }"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 :manualInput="false" @dateSelect="validateFechaSalida" @input="validateFechaSalida"
@@ -1810,7 +1810,7 @@ const onPricePaste = (event) => {
                         </div>
                         <div class="flex-1">
                             <label for="horaRegresoCalendar" class="flex items-center gap-1 mb-2">Fecha y hora regreso:<span class="text-red-500 font-bold">*</span></label>
-                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
+                            <Calendar v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
                                 :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>

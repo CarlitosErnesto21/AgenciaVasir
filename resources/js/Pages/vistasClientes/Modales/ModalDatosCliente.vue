@@ -18,6 +18,10 @@ const props = defineProps({
   visible: {
     type: Boolean,
     default: false
+  },
+  tieneClienteExistente: {
+    type: Boolean,
+    default: false
   }
 })
 
@@ -140,23 +144,67 @@ const limpiarFormulario = () => {
 }
 
 // Función de validación del teléfono
-const onValidate = (phoneObject) => {
+const onValidate = async (phoneObject) => {
   try {
     if (phoneObject && typeof phoneObject === 'object') {
       telefonoValidation.value.isValid = phoneObject.valid === true
       telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
       telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
 
-      if (formData.value.telefono && phoneObject.valid === false) {
-        telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
-      } else if (phoneObject.valid === true) {
-        telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+      // CLAVE: Actualizar el modelo inmediatamente como hace EmpleadoController
+      if (phoneObject.valid === true && phoneObject.formatted) {
+        formData.value.telefono = phoneObject.formatted
+      }
+
+      // Si los datos están precargados, no validar duplicados (ya son del mismo cliente)
+      if (props.tieneClienteExistente) {
+        if (phoneObject.valid === true) {
+          telefonoValidation.value.mensaje = 'Número válido (guardado previamente)'
+        } else if (formData.value.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       } else {
-        telefonoValidation.value.mensaje = ''
+        // Solo validar duplicados para nuevos clientes
+        if (formData.value.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else if (phoneObject.valid === true) {
+          // Ahora validar con el teléfono ya actualizado en el modelo
+          await validarTelefonoUnico(formData.value.telefono)
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       }
     }
   } catch (error) {
+    console.error('[ModalDatosCliente] Error en validación:', error)
     telefonoValidation.value.mensaje = 'Error en validación'
+  }
+}
+
+// Validar que el teléfono no esté duplicado
+const validarTelefonoUnico = async (telefono) => {
+  if (!telefono || telefono.length < 8) return
+
+  try {
+    const response = await axios.post('/api/clientes/validar-telefono', {
+      telefono: telefono
+    })
+
+    if (response.data.disponible) {
+      telefonoValidation.value.mensaje = 'Número válido para ' + telefonoValidation.value.country?.name
+    } else {
+      telefonoValidation.value.isValid = false
+      telefonoValidation.value.mensaje = response.data.message || 'Este teléfono ya está registrado'
+    }
+  } catch (error) {
+    console.error('[ModalDatosCliente] Error validando teléfono:', error)
+    if (error.response?.status === 401) {
+      telefonoValidation.value.mensaje = 'Error de autenticación'
+    } else {
+      telefonoValidation.value.mensaje = 'Error al validar teléfono'
+    }
   }
 }
 
@@ -183,7 +231,7 @@ const validarFormulario = () => {
   if (!formData.value.telefono) {
     errores.value.telefono = 'El número de teléfono es requerido'
   } else if (telefonoValidation.value.isValid === false) {
-    errores.value.telefono = 'Por favor, ingrese un número de teléfono válido'
+    errores.value.telefono = telefonoValidation.value.mensaje || 'Por favor, ingrese un número de teléfono válido'
   }
 
   if (!formData.value.tipo_documento_id) {
@@ -196,12 +244,23 @@ const validarFormulario = () => {
 // Guardar información del cliente
 const guardarCliente = async () => {
   if (!validarFormulario()) {
-    toast.add({
-      severity: 'error',
-      summary: 'Formulario incompleto',
-      detail: 'Por favor completa todos los campos requeridos',
-      life: 4000
-    })
+    // Si el único error es el teléfono duplicado, mostrar mensaje específico
+    const erroresKeys = Object.keys(errores.value)
+    if (erroresKeys.length === 1 && erroresKeys[0] === 'telefono' && telefonoValidation.value.isValid === false) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Teléfono ya registrado',
+        detail: telefonoValidation.value.mensaje || 'Este número de teléfono ya está registrado. Por favor, use un número diferente.',
+        life: 5000
+      })
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Formulario incompleto',
+        detail: 'Por favor completa todos los campos requeridos',
+        life: 4000
+      })
+    }
     return
   }
 
@@ -224,7 +283,8 @@ const guardarCliente = async () => {
     cerrarModal()
 
   } catch (error) {
-    console.error('Error al guardar cliente:', error)
+    console.error('[ModalDatosCliente] Error al guardar cliente:', error)
+    console.error('[ModalDatosCliente] Detalles del error:', error.response?.data)
 
     if (error.response?.data?.errors) {
       errores.value = error.response.data.errors
@@ -322,11 +382,9 @@ const formatearFecha = (fecha) => {
             <Calendar
               v-model="formData.fecha_nacimiento"
               :maxDate="new Date()"
-              dateFormat="dd/mm/yy"
+              date-format="dd/mm/yy"
               placeholder="Seleccionar fecha de nacimiento"
               showIcon
-              :showOnFocus="false"
-              touchUI
               yearNavigator
               yearRange="1920:2010"
               class="w-full"
@@ -388,7 +446,8 @@ const formatearFecha = (fecha) => {
               </span>
               {{ telefonoValidation.mensaje }}
             </p>
-            <small v-if="errores.telefono" class="text-red-500 text-xs">
+            <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
+            <small v-if="errores.telefono && !telefonoValidation.mensaje" class="text-red-500 text-xs">
               {{ errores.telefono }}
             </small>
           </div>

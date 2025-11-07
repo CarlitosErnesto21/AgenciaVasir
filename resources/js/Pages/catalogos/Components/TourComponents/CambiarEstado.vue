@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import Dialog from 'primevue/dialog';
-import DatePicker from 'primevue/datepicker';
+import Calendar from 'primevue/calendar';
 import Select from 'primevue/select';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faCheck, faSpinner, faXmark, faExclamationTriangle, faCalendarDays, faClockRotateLeft } from '@fortawesome/free-solid-svg-icons';
@@ -327,7 +327,7 @@ const getMinDateRegreso = () => {
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Nueva Fecha de Salida <span class="text-red-500">*</span>
                         </label>
-                        <DatePicker
+                        <Calendar
                             v-model="nuevaFechaSalida"
                             showTime
                             showIcon
@@ -346,7 +346,7 @@ const getMinDateRegreso = () => {
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Nueva Fecha de Regreso <span class="text-red-500">*</span>
                         </label>
-                        <DatePicker
+                        <Calendar
                             v-model="nuevaFechaRegreso"
                             showTime
                             showIcon

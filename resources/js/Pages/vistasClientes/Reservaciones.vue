@@ -386,27 +386,38 @@ const limpiarBusqueda = () => {
 
 // Función para cargar datos del cliente existente
 const cargarDatosCliente = async () => {
-  if (!user.value) return null
+  if (!user.value) {
+    console.log('No hay usuario autenticado para cargar datos del cliente')
+    return null
+  }
 
   try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+    console.log('Intentando cargar datos del cliente para usuario:', user.value.id)
+
     const response = await fetch('/api/clientes/mi-perfil', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': token || '',
         'X-Requested-With': 'XMLHttpRequest'
       },
       credentials: 'same-origin'
     })
 
+    console.log('Respuesta del servidor:', response.status, response.statusText)
+
     if (response.ok) {
       const data = await response.json()
+      console.log('Datos del cliente cargados:', data)
       return data.cliente || data || null
     } else if (response.status === 404) {
+      console.log('Cliente no encontrado, usuario nuevo')
       return null
     } else {
-      console.error('Error al cargar datos del cliente:', response.status)
+      console.error('Error al cargar datos del cliente:', response.status, response.statusText)
       return null
     }
   } catch (error) {
@@ -466,21 +477,22 @@ const abrirModalReserva = async (hotel) => {
   }
 
   // Cargar datos existentes del cliente si está logueado
-  const clienteExistente = await cargarDatosCliente()
+  try {
+    const clienteExistente = await cargarDatosCliente()
 
-  if (clienteExistente) {
-    tieneClienteExistente.value = true
+    if (clienteExistente) {
+      tieneClienteExistente.value = true
 
-    // Formatear fecha de nacimiento para Calendar
-    let fechaNacimientoFormateada = null
-    if (clienteExistente.fecha_nacimiento) {
-      try {
-        fechaNacimientoFormateada = new Date(clienteExistente.fecha_nacimiento)
-      } catch (error) {
-        console.error('Error al formatear fecha:', error)
-        fechaNacimientoFormateada = null
+      // Formatear fecha de nacimiento para Calendar
+      let fechaNacimientoFormateada = null
+      if (clienteExistente.fecha_nacimiento) {
+        try {
+          fechaNacimientoFormateada = new Date(clienteExistente.fecha_nacimiento)
+        } catch (error) {
+          console.error('Error al formatear fecha:', error)
+          fechaNacimientoFormateada = null
+        }
       }
-    }
 
     // Actualizar formulario con datos existentes
     reservaForm.value.cliente_data = {
@@ -511,6 +523,11 @@ const abrirModalReserva = async (hotel) => {
         life: 4000
       })
     }
+    }
+  } catch (error) {
+    console.error('Error al cargar datos del cliente:', error)
+    // Si no se pueden cargar los datos, continuamos sin datos precargados
+    tieneClienteExistente.value = false
   }
 }
 
@@ -566,12 +583,22 @@ const crearReservaHotel = async () => {
 
     // Solo validar formato si el teléfono fue modificado (no viene de datos precargados)
     if (reservaForm.value.cliente_data.telefono && telefonoValidation.value.isValid === false && telefonoValidation.value.mensaje !== 'Número válido (guardado previamente)') {
-      toast.add({
-        severity: 'error',
-        summary: 'Teléfono inválido',
-        detail: 'Por favor, ingrese un número de teléfono válido',
-        life: 4000
-      })
+      // Si el mensaje contiene información sobre duplicado, usar mensaje específico
+      if (telefonoValidation.value.mensaje && (telefonoValidation.value.mensaje.includes('registrado') || telefonoValidation.value.mensaje.includes('diferente'))) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Teléfono ya registrado',
+          detail: telefonoValidation.value.mensaje,
+          life: 5000
+        })
+      } else {
+        toast.add({
+          severity: 'error',
+          summary: 'Teléfono inválido',
+          detail: 'Por favor, ingrese un número de teléfono válido',
+          life: 4000
+        })
+      }
       return
     }
 
@@ -620,6 +647,7 @@ const crearReservaHotel = async () => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
         'X-Requested-With': 'XMLHttpRequest',
         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
       },
@@ -629,7 +657,7 @@ const crearReservaHotel = async () => {
 
     if (!response.ok) {
       const errorData = await response.json()
-      console.error('Error del servidor:', errorData)
+      console.error('[Reservaciones] Error del servidor:', errorData)
 
       // Si hay errores de validación específicos, mostrarlos
       if (errorData.errors) {
@@ -685,20 +713,80 @@ const getFechaMaximaNacimiento = () => {
   return hoy
 }
 
+// Función para validar la unicidad del teléfono
+const validarTelefonoUnico = async (telefono) => {
+  if (!telefono) return { esValido: true, mensaje: '' }
+
+  try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+
+    const response = await fetch('/api/clientes/validar-telefono', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': token,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ telefono })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    return {
+      esValido: data.disponible,
+      mensaje: data.disponible ? 'Teléfono disponible' : data.mensaje || 'Este teléfono ya está registrado'
+    }
+  } catch (error) {
+    console.error('[Reservaciones] Error al validar teléfono:', error)
+    return { esValido: true, mensaje: 'Error al validar teléfono' }
+  }
+}
+
 // Función de validación del teléfono
-const onValidate = (phoneObject) => {
+const onValidate = async (phoneObject) => {
   try {
     if (phoneObject && typeof phoneObject === 'object') {
       telefonoValidation.value.isValid = phoneObject.valid === true
       telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
       telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
 
-      if (reservaForm.value.cliente_data.telefono && phoneObject.valid === false) {
-        telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
-      } else if (phoneObject.valid === true) {
-        telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+      // Actualizar el modelo inmediatamente como hace EmpleadoController
+      if (phoneObject.valid === true && phoneObject.formatted) {
+        reservaForm.value.cliente_data.telefono = phoneObject.formatted
+      }
+
+      // Si los datos están precargados, no validar duplicados (ya son del mismo cliente)
+      if (tieneClienteExistente.value) {
+        if (phoneObject.valid === true) {
+          telefonoValidation.value.mensaje = 'Número válido (guardado previamente)'
+        } else if (reservaForm.value.cliente_data.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       } else {
-        telefonoValidation.value.mensaje = ''
+        // Solo validar duplicados para nuevos clientes
+        if (reservaForm.value.cliente_data.telefono && phoneObject.valid === false) {
+          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
+        } else if (phoneObject.valid === true) {
+          // Validar con el teléfono ya actualizado en el modelo
+          const validacionUnicidad = await validarTelefonoUnico(reservaForm.value.cliente_data.telefono)
+          if (!validacionUnicidad.esValido) {
+            telefonoValidation.value.isValid = false
+            telefonoValidation.value.mensaje = validacionUnicidad.mensaje
+          } else {
+            telefonoValidation.value.mensaje = 'Número válido para ' + phoneObject.country
+          }
+        } else {
+          telefonoValidation.value.mensaje = ''
+        }
       }
     }
   } catch (error) {
@@ -1129,11 +1217,9 @@ const onValidate = (phoneObject) => {
               <Calendar
                 v-model="reservaForm.fecha_entrada"
                 :minDate="getFechaMinima()"
-                dateFormat="dd/mm/yy"
+                date-format="dd/mm/yy"
                 placeholder="Seleccionar fecha de entrada"
                 showIcon
-                :showOnFocus="false"
-                touchUI
                 class="w-full"
                 inputClass="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -1143,11 +1229,9 @@ const onValidate = (phoneObject) => {
               <Calendar
                 v-model="reservaForm.fecha_salida"
                 :minDate="getFechaMinimaComputada"
-                dateFormat="dd/mm/yy"
+                date-format="dd/mm/yy"
                 placeholder="Seleccionar fecha de salida"
                 showIcon
-                :showOnFocus="false"
-                touchUI
                 class="w-full"
                 inputClass="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
@@ -1232,11 +1316,9 @@ const onValidate = (phoneObject) => {
                 <Calendar
                   v-model="reservaForm.cliente_data.fecha_nacimiento"
                   :maxDate="getFechaMaximaNacimiento()"
-                  dateFormat="dd/mm/yy"
+                  date-format="dd/mm/yy"
                   placeholder="Seleccionar fecha de nacimiento"
                   showIcon
-                  :showOnFocus="false"
-                  touchUI
                   yearNavigator
                   yearRange="1920:2010"
                   :disabled="tieneClienteExistente"

@@ -121,7 +121,7 @@ const resetFormularioReserva = async () => {
       // Marcar que hay datos precargados
       tieneClienteExistente.value = true
 
-      // Formatear fecha de nacimiento para el DatePicker
+      // Formatear fecha de nacimiento para el Calendar
       let fechaNacimientoFormateada = ''
       if (clienteExistente.fecha_nacimiento) {
         try {

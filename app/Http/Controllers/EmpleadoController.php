@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Empleado;
 use App\Models\User;
+use App\Models\Cliente;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -120,6 +121,20 @@ class EmpleadoController extends Controller
         if (User::where('email', $request->email)->exists()) {
             throw ValidationException::withMessages([
                 'email' => 'Este correo electrónico ya está en uso.'
+            ]);
+        }
+
+        // Verificar si el teléfono ya existe en empleados
+        if (Empleado::where('telefono', $request->telefono)->exists()) {
+            throw ValidationException::withMessages([
+                'telefono' => 'Este número de teléfono ya está en uso por otro empleado.'
+            ]);
+        }
+
+        // Verificar si el teléfono ya existe en clientes
+        if (Cliente::where('telefono', $request->telefono)->exists()) {
+            throw ValidationException::withMessages([
+                'telefono' => 'Este número de teléfono ya está en uso por un cliente.'
             ]);
         }
 
@@ -284,6 +299,20 @@ class EmpleadoController extends Controller
                 ]);
             }
 
+            // Verificar si el teléfono ya existe en otros empleados
+            if (Empleado::where('telefono', $request->telefono)->where('id', '!=', $empleado->id)->exists()) {
+                throw ValidationException::withMessages([
+                    'telefono' => 'Este número de teléfono ya está en uso por otro empleado.'
+                ]);
+            }
+
+            // Verificar si el teléfono ya existe en clientes
+            if (Cliente::where('telefono', $request->telefono)->exists()) {
+                throw ValidationException::withMessages([
+                    'telefono' => 'Este número de teléfono ya está en uso por un cliente.'
+                ]);
+            }
+
             DB::beginTransaction();
 
             // Actualizar usuario
@@ -444,6 +473,51 @@ class EmpleadoController extends Controller
                 'error' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Verificar disponibilidad de teléfono
+     */
+    public function checkTelefonoAvailability(Request $request)
+    {
+        $telefono = $request->get('telefono');
+        $empleadoId = $request->get('empleado_id'); // Para edición
+
+        if (!$telefono) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Teléfono requerido'
+            ], 400);
+        }
+
+        // Verificar en empleados
+        $empleadoExists = Empleado::where('telefono', $telefono)
+            ->when($empleadoId, function ($query, $empleadoId) {
+                return $query->where('id', '!=', $empleadoId);
+            })
+            ->exists();
+
+        // Verificar en clientes
+        $clienteExists = Cliente::where('telefono', $telefono)->exists();
+
+        if ($empleadoExists) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Este número de teléfono ya está en uso por otro empleado.'
+            ]);
+        }
+
+        if ($clienteExists) {
+            return response()->json([
+                'available' => false,
+                'message' => 'Este número de teléfono ya está en uso por un cliente.'
+            ]);
+        }
+
+        return response()->json([
+            'available' => true,
+            'message' => 'Teléfono disponible'
+        ]);
     }
 
     /**

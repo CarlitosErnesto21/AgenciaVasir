@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Cliente;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class ClienteController extends Controller
@@ -48,6 +49,24 @@ class ClienteController extends Controller
             'tipo_documento_id' => 'required|exists:tipos_documentos,id',
         ]);
 
+        // Validar que el teléfono no exista en la tabla clientes
+        $existeTelefonoCliente = Cliente::where('telefono', $validated['telefono'])->first();
+        if ($existeTelefonoCliente) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
+        // Validar que el teléfono no exista en la tabla empleados
+        $existeTelefonoEmpleado = \App\Models\Empleado::where('telefono', $validated['telefono'])->first();
+        if ($existeTelefonoEmpleado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
         // Si no se proporciona user_id, usar el usuario autenticado
         if (!isset($validated['user_id']) && $request->user()) {
             $validated['user_id'] = $request->user()->id;
@@ -86,6 +105,27 @@ class ClienteController extends Controller
         ]);
 
         $cliente = Cliente::findOrFail($id);
+
+        // Validar que el teléfono no exista en otros clientes (excepto el actual)
+        $existeTelefonoCliente = Cliente::where('telefono', $validated['telefono'])
+            ->where('id', '!=', $id)
+            ->first();
+        if ($existeTelefonoCliente) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
+        // Validar que el teléfono no exista en la tabla empleados
+        $existeTelefonoEmpleado = \App\Models\Empleado::where('telefono', $validated['telefono'])->first();
+        if ($existeTelefonoEmpleado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
         $cliente->update($validated);
         return response()->json($cliente);
     }
@@ -225,9 +265,26 @@ class ClienteController extends Controller
             ], 422);
         }
 
+        // Validar que el teléfono no exista en la tabla clientes (comparación directa)
+        $existeTelefonoCliente = Cliente::where('telefono', $validated['telefono'])->first();
+        if ($existeTelefonoCliente) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
+        // Validar que el teléfono no exista en la tabla empleados (comparación directa)
+        $existeTelefonoEmpleado = \App\Models\Empleado::where('telefono', $validated['telefono'])->first();
+        if ($existeTelefonoEmpleado) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ], 422);
+        }
+
         $cliente = Cliente::create($validated);
         $cliente->load('tipoDocumento', 'user');
-
         return response()->json([
             'success' => true,
             'data' => $cliente,
@@ -256,6 +313,50 @@ class ClienteController extends Controller
         return Inertia::render('Configuracion/ClienteComponents/VentasCliente', [
             'cliente' => $cliente,
             'ventas' => $ventas
+        ]);
+    }
+
+    // Validar teléfono único en tiempo real
+    public function validarTelefono(Request $request)
+    {
+        $telefono = $request->input('telefono');
+        $clienteId = $request->input('cliente_id'); // Para excluir en ediciones
+
+        if (!$telefono) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Teléfono requerido'
+            ], 400);
+        }
+
+        // Verificar en tabla clientes (comparación directa como EmpleadoController)
+        $queryClientes = Cliente::where('telefono', $telefono);
+        if ($clienteId) {
+            $queryClientes->where('id', '!=', $clienteId);
+        }
+        $existeEnClientes = $queryClientes->first();
+
+        if ($existeEnClientes) {
+            return response()->json([
+                'success' => false,
+                'disponible' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ]);
+        }
+
+        // Verificar en tabla empleados (comparación directa como EmpleadoController)
+        $existeEnEmpleados = \App\Models\Empleado::where('telefono', $telefono)->first();
+        if ($existeEnEmpleados) {
+            return response()->json([
+                'success' => false,
+                'disponible' => false,
+                'message' => 'Ingresa un número de teléfono diferente, este ya está registrado.'
+            ]);
+        }
+        return response()->json([
+            'success' => true,
+            'disponible' => true,
+            'message' => 'Teléfono disponible'
         ]);
     }
 }

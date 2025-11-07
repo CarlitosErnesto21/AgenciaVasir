@@ -1053,7 +1053,7 @@ onMounted(() => {
               </div>
 
               <div class="col-span-1 hidden md:block">
-                <DatePicker
+                <Calendar
                   v-model="filtros.fechaDesde"
                   placeholder="Fecha desde"
                   dateFormat="yy-mm-dd"
@@ -1064,7 +1064,7 @@ onMounted(() => {
               </div>
 
               <div class="col-span-1 hidden md:block">
-                <DatePicker
+                <Calendar
                   v-model="filtros.fechaHasta"
                   placeholder="Fecha hasta"
                   dateFormat="yy-mm-dd"
@@ -1074,16 +1074,16 @@ onMounted(() => {
                 />
               </div>
 
-              <!-- DatePickers para móviles -->
+              <!-- Calendars para móviles -->
               <div class="col-span-2 flex gap-3 md:hidden">
-                <DatePicker
+                <Calendar
                   v-model="filtros.fechaDesde"
                   placeholder="Fecha desde"
                   dateFormat="dd/mm/yy"
                   class="flex-1 h-9 text-sm rounded-md border border-blue-300"
                   showIcon
                 />
-                <DatePicker
+                <Calendar
                   v-model="filtros.fechaHasta"
                   placeholder="Fecha hasta"
                   dateFormat="dd/mm/yy"

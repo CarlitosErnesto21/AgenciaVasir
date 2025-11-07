@@ -3,6 +3,8 @@ import Catalogo from '../Catalogo.vue'
 import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { usePage } from '@inertiajs/vue3'
+import Toast from 'primevue/toast'
+import InputText from 'primevue/inputtext'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMapLocationDot, faHotel, faQuestionCircle, faCreditCard, faBullseye, faRocket, faArrowRight, faEnvelope, faPlane, faLocation, faSearch, faPhone } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
@@ -110,9 +112,51 @@ function generarMensajeWhatsApp(tipo = 'general') {
 
 // Función para abrir WhatsApp con mensaje personalizado
 function abrirWhatsApp(tipo = 'general') {
+  // Verificar si el usuario está autenticado y su rol
+  const user = page.props.auth?.user
+
+  // Verificar si el usuario tiene roles de Administrador o Empleado
+  if (user && user.roles && user.roles.length > 0) {
+    const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
+
+    if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Esta acción está disponible solo para clientes. Los administradores y empleados no pueden realizar consultas de WhatsApp como clientes.',
+        life: 5000
+      })
+      return
+    }
+  }
+
   const numeroWhatsApp = '50379858777'
   const mensaje = generarMensajeWhatsApp(tipo)
   const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
+  window.open(url, '_blank')
+}
+
+// Función para abrir email con mensaje personalizado
+function abrirEmail() {
+  // Verificar si el usuario está autenticado y su rol
+  const user = page.props.auth?.user
+
+  // Verificar si el usuario tiene roles de Administrador o Empleado
+  if (user && user.roles && user.roles.length > 0) {
+    const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
+
+    if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Esta acción está disponible solo para clientes. Los administradores y empleados no pueden realizar consultas por email como clientes.',
+        life: 5000
+      })
+      return
+    }
+  }
+
+  const url = `mailto:${adminEmail.value}`
   window.open(url, '_blank')
 }
 
@@ -268,18 +312,18 @@ const faqsFiltradas = computed(() => {
                 </button>
 
                 <!-- Email -->
-                <a
-                  :href="`mailto:${adminEmail}`"
-                  class="flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg sm:rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group"
+                <button
+                  @click="abrirEmail()"
+                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg sm:rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
                 >
                   <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faEnvelope" class="text-white text-base sm:text-xl"/>
                   </div>
-                  <div class="flex-1 min-w-0">
+                  <div class="flex-1 text-left">
                     <p class="font-bold text-blue-700 text-sm sm:text-base">Email</p>
                     <p class="text-xs sm:text-sm text-blue-600 truncate">{{ adminEmail }}</p>
                   </div>
-                </a>
+                </button>
               </div>
             </div>
 

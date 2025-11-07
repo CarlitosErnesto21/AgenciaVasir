@@ -48,6 +48,9 @@ Route::middleware('auth:sanctum')->get('/verificar-datos-cliente', [ClienteContr
 // Ruta para obtener datos del cliente autenticado
 Route::middleware('auth:sanctum')->get('/clientes/mi-perfil', [ClienteController::class, 'miPerfil']);
 
+// Ruta para validar teléfono único
+Route::middleware('auth:sanctum')->post('/clientes/validar-telefono', [ClienteController::class, 'validarTelefono']);
+
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
 // ═══════════════════════════════════════════════════════════
@@ -133,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('ventas/{venta}/cancelar', [VentaController::class, 'cancelar'])->name('ventas.cancelar');
         Route::delete('ventas/{venta}/eliminar', [VentaController::class, 'eliminar'])->name('ventas.eliminar');
 
+        Route::get('empleados/check-telefono', [EmpleadoController::class, 'checkTelefonoAvailability']);
         Route::apiResource('empleados', EmpleadoController::class);
         Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
         Route::apiResource('categorias-hoteles', CategoriaHotelController::class);

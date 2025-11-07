@@ -6,7 +6,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faChevronLeft, faChevronRight, faImage, faMapMarkerAlt, faPause, faPlay, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarAlt, faChevronLeft, faChevronRight, faImage, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
 
 // Recibir los props del controlador (opcional, como fallback)
 const props = defineProps({
@@ -25,6 +25,9 @@ const toast = useToast()
 const tours = ref([])
 const loading = ref(true)
 const error = ref(null)
+
+// Variable para búsqueda
+const searchQuery = ref('')
 
 // Variables para el modal de reserva de tour
 const showReservaDialog = ref(false)
@@ -147,12 +150,29 @@ const estadisticas = computed(() => {
   }
 })
 
-// Computed properties para separar tours por disponibilidad
+// Computed properties para separar tours por disponibilidad con filtro de búsqueda
 const toursDisponibles = computed(() => {
-  return tours.value.filter(tour => {
+  let filtrados = tours.value.filter(tour => {
     const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
     return cuposDisponibles > 0
   })
+
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase().trim()
+    filtrados = filtrados.filter(tour => {
+      const nombre = tour.nombre?.toLowerCase() || ''
+      const pais = tour.pais?.nombre?.toLowerCase() || ''
+      const ubicacion = tour.ubicacion?.toLowerCase() || ''
+      const descripcion = tour.descripcion?.toLowerCase() || ''
+
+      return nombre.includes(query) ||
+             pais.includes(query) ||
+             ubicacion.includes(query) ||
+             descripcion.includes(query)
+    })
+  }
+
+  return filtrados
 })
 
 const toursSinCupos = computed(() => {
@@ -299,9 +319,6 @@ onMounted(async () => {
   // Obtener tours desde la API
   await obtenerTours()
 
-  // Verificar reserva pendiente después de cargar los tours
-  await verificarReservaPendiente()
-
   // Inicializar carruseles para todos los tours con múltiples imágenes
   tours.value.forEach(tour => {
     if (tour.imagenes && tour.imagenes.length > 1) {
@@ -393,6 +410,11 @@ const irAImagen = (index) => {
   }
 }
 
+// Función para limpiar búsqueda
+const limpiarBusqueda = () => {
+  searchQuery.value = ''
+}
+
 // Función para obtener la clase CSS según disponibilidad de cupos
 const obtenerClaseCupos = (tour) => {
   const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
@@ -433,41 +455,7 @@ const verMasInfo = (tour) => {
         <p class="text-base sm:text-lg text-red-100 px-4">Descubre las maravillas de El Salvador.</p>
       </div>
 
-      <!-- Stats integradas en el header -->
-      <div v-if="tours.length > 0" class="bg-white py-3 px-3">
-        <div class="max-w-4xl mx-auto">
-          <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-6">
 
-            <!-- Stat 1: Tours Disponibles -->
-            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
-                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                  {{ estadisticas.totalDestinos }}
-                </h3>
-                <p class="text-gray-700 font-semibold text-sm md:text-sm md:uppercase tracking-wide">Tours Disponibles</p>
-                <p class="hidden md:block text-gray-500 text-xs mt-1">Experiencias únicas</p>
-            </div>
-
-            <!-- Stat 2: Precios -->
-            <div class="relative bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-200">
-                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2">
-                  {{ estadisticas.precioMinimo > 0 ? `Desde $${estadisticas.precioMinimo.toFixed(2)}` : 'Consultar' }}
-                </h3>
-                <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Precios Accesibles</p>
-                <p class="hidden md:block text-gray-500 text-xs mt-1">Para todos los presupuestos</p>
-            </div>
-
-            <!-- Stat 3: Ubicaciones -->
-            <div class="relative bg-gradient-to-br from-red-50 to-red-100 rounded-2xl py-8 px-2 md:p-6 text-center shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-red-200">
-                <h3 class="text-sm md:text-2xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2">
-                  {{ estadisticas.totalPaises }}
-                </h3>
-                <p class="text-gray-700 font-semibold text-xs md:text-sm md:uppercase tracking-wide">Ubicaciones</p>
-                <p class="hidden md:block text-gray-500 text-xs mt-1">Destinos únicos</p>
-            </div>
-
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- Contenido principal con padding -->
@@ -499,6 +487,41 @@ const verMasInfo = (tour) => {
             <h3 class="text-2xl font-bold bg-gradient-to-r from-red-600 to-indigo-600 bg-clip-text text-transparent mb-3">No hay tours nacionales disponibles</h3>
             <p class="text-gray-600 mb-4 leading-relaxed">Próximamente tendremos nuevos destinos nacionales.</p>
             <p class="text-sm text-gray-500">Mientras tanto, puedes explorar nuestros tours internacionales.</p>
+          </div>
+        </div>
+
+        <!-- Barra de búsqueda -->
+        <div v-if="tours.length > 0" class="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-8">
+          <div class="max-w-2xl mx-auto">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">
+              <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-red-600 mr-2" />
+              Buscar Tours Nacionales
+            </h3>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-gray-400" />
+              </div>
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="Buscar por nombre del tour, país, ubicación o descripción..."
+                class="w-full pl-12 pr-12 py-4 text-gray-700 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-red-500 focus:ring-2 focus:ring-red-200 transition-all duration-300 text-lg"
+              />
+              <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-4 flex items-center">
+                <button
+                  @click="limpiarBusqueda"
+                  class="text-gray-400 hover:text-red-500 transition-colors duration-200 p-1 rounded-full hover:bg-red-50"
+                  title="Limpiar búsqueda"
+                >
+                  <FontAwesomeIcon :icon="faTimes" class="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+            <div class="mt-3 text-center">
+              <p class="text-sm text-gray-500">
+                {{ searchQuery ? `Mostrando ${toursDisponibles.length} resultado${toursDisponibles.length !== 1 ? 's' : ''} para "${searchQuery}"` : `${toursDisponibles.length} tour${toursDisponibles.length !== 1 ? 's' : ''} disponible${toursDisponibles.length !== 1 ? 's' : ''}` }}
+              </p>
+            </div>
           </div>
         </div>
 

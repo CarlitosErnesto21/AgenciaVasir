@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import DatePicker from 'primevue/datepicker'
+import Calendar from 'primevue/calendar'
 import Toast from 'primevue/toast'
 
 // Reactive window size for responsive iframe
@@ -90,7 +90,7 @@ const tiposInformes = [
   }
 ]
 
-// Fecha mínima para el DatePicker de mes único (marzo 2019)
+// Fecha mínima para el Calendar de mes único (marzo 2019)
 const minMesUnico = new Date(2019, 2, 1) // Mes 2 = marzo (0-indexed)
 
 const formatMonth = date =>
@@ -359,7 +359,7 @@ function limpiarFechas() {
                     <label for="mes-unico-picker" class="block text-sm font-medium text-gray-700 mb-3">
                       Mes para el informe:
                     </label>
-                    <DatePicker
+                    <Calendar
                       id="mes-unico-picker"
                       v-model="mesUnico"
                       view="month"
@@ -390,7 +390,7 @@ function limpiarFechas() {
                         <label for="desde-picker" class="block text-sm font-medium text-gray-700 mb-2">
                           Desde:
                         </label>
-                        <DatePicker
+                        <Calendar
                           id="desde-picker"
                           v-model="desde"
                           view="month"
@@ -407,7 +407,7 @@ function limpiarFechas() {
                         <label for="hasta-picker" class="block text-sm font-medium text-gray-700 mb-2">
                           Hasta:
                         </label>
-                        <DatePicker
+                        <Calendar
                           id="hasta-picker"
                           v-model="hasta"
                           view="month"

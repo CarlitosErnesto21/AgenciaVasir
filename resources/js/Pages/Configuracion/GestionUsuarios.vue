@@ -382,6 +382,18 @@ const saveOrUpdate = async () => {
         return;
     }
 
+    // Validar que el teléfono no esté duplicado (verificación en servidor)
+    const telefonoCheck = await checkTelefonoAvailability(empleado.value.telefono);
+    if (!telefonoCheck.available) {
+        toast.add({
+            severity: "warn",
+            summary: "Teléfono no disponible",
+            detail: telefonoCheck.message,
+            life: 4000
+        });
+        return;
+    }
+
     try {
         isLoading.value = true;
 
@@ -427,7 +439,9 @@ const saveOrUpdate = async () => {
             const errors = err.response.data.errors || {};
             let errorMessage = "Por favor revisa los campos e intenta nuevamente.";
 
-            if (errors.email) {
+            if (errors.telefono) {
+                errorMessage = errors.telefono[0];
+            } else if (errors.email) {
                 errorMessage = errors.email[0];
             } else if (errors.name) {
                 errorMessage = errors.name[0];
@@ -698,7 +712,7 @@ const validateNombre = () => {
         // Eliminar caracteres no permitidos (números y caracteres especiales)
         // Solo permitir letras (incluidas las tildadas), espacios y guiones
         empleado.value.nombre = empleado.value.nombre.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');
-        
+
         // Limitar longitud máxima
         if (empleado.value.nombre.length > 255) {
             empleado.value.nombre = empleado.value.nombre.substring(0, 255);
@@ -709,16 +723,16 @@ const validateNombre = () => {
 // Función para prevenir la escritura de caracteres no permitidos
 const preventInvalidChars = (event) => {
     const char = event.key;
-    
+
     // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
-    if (event.ctrlKey || event.metaKey || 
+    if (event.ctrlKey || event.metaKey ||
         ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
         return;
     }
-    
+
     // Solo permitir letras (incluidas las tildadas), espacios y guiones
     const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]$/.test(char);
-    
+
     if (!isAllowed) {
         event.preventDefault();
     }
@@ -727,25 +741,25 @@ const preventInvalidChars = (event) => {
 // Función para manejar el pegado de texto
 const handlePaste = (event) => {
     event.preventDefault();
-    
+
     // Obtener el texto del portapapeles
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     // Filtrar solo caracteres permitidos
     const filteredText = pastedText.replace(/[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/g, '');
-    
+
     // Obtener la posición actual del cursor
     const input = event.target;
     const start = input.selectionStart;
     const end = input.selectionEnd;
-    
+
     // Construir el nuevo valor
     const currentValue = empleado.value.nombre || '';
     const newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
-    
+
     // Limitar a 255 caracteres
     empleado.value.nombre = newValue.substring(0, 255);
-    
+
     // Establecer la nueva posición del cursor
     nextTick(() => {
         const newCursorPosition = start + filteredText.length;
@@ -757,11 +771,11 @@ const validateCargo = () => {
     if (empleado.value.cargo) {
         // Convertir a mayúsculas
         empleado.value.cargo = empleado.value.cargo.toUpperCase();
-        
+
         // Eliminar números, caracteres especiales y letras con tildes
         // Solo permitir letras A-Z y espacios
         empleado.value.cargo = empleado.value.cargo.replace(/[^A-Z\s]/g, '');
-        
+
         // Limitar longitud máxima
         if (empleado.value.cargo.length > 25) {
             empleado.value.cargo = empleado.value.cargo.substring(0, 25);
@@ -772,16 +786,16 @@ const validateCargo = () => {
 // Función para prevenir la escritura de caracteres no permitidos en cargo
 const preventInvalidCharsCargo = (event) => {
     const char = event.key;
-    
+
     // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
-    if (event.ctrlKey || event.metaKey || 
+    if (event.ctrlKey || event.metaKey ||
         ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
         return;
     }
-    
+
     // Solo permitir letras A-Z (se convertirán a mayúsculas) y espacios
     const isAllowed = /^[a-zA-Z\s]$/.test(char);
-    
+
     if (!isAllowed) {
         event.preventDefault();
     }
@@ -790,25 +804,25 @@ const preventInvalidCharsCargo = (event) => {
 // Función para manejar el pegado de texto en cargo
 const handlePasteCargo = (event) => {
     event.preventDefault();
-    
+
     // Obtener el texto del portapapeles
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     // Filtrar solo caracteres permitidos y convertir a mayúsculas
     const filteredText = pastedText.toUpperCase().replace(/[^A-Z\s]/g, '');
-    
+
     // Obtener la posición actual del cursor
     const input = event.target;
     const start = input.selectionStart;
     const end = input.selectionEnd;
-    
+
     // Construir el nuevo valor
     const currentValue = empleado.value.cargo || '';
     const newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
-    
+
     // Limitar a 25 caracteres
     empleado.value.cargo = newValue.substring(0, 25);
-    
+
     // Establecer la nueva posición del cursor
     nextTick(() => {
         const newCursorPosition = start + filteredText.length;
@@ -819,30 +833,63 @@ const handlePasteCargo = (event) => {
 // Función para verificar si el nombre ya existe
 const isNombreDuplicated = (nombre) => {
     if (!nombre || !empleados.value) return false;
-    
-    return empleados.value.some(emp => 
+
+    return empleados.value.some(emp =>
         emp.id !== empleado.value.id && // Excluir el empleado actual en caso de edición
         emp.nombre.toLowerCase().trim() === nombre.toLowerCase().trim()
     );
+};
+
+// Función para verificar si el teléfono ya existe (validación local rápida)
+const isTelefonoDuplicated = (telefono) => {
+    if (!telefono || !empleados.value) return false;
+
+    return empleados.value.some(emp =>
+        emp.id !== empleado.value.id && // Excluir el empleado actual en caso de edición
+        emp.telefono === telefono
+    );
+};
+
+// Función para verificar disponibilidad del teléfono en el servidor
+const checkTelefonoAvailability = async (telefono) => {
+    try {
+        const params = {
+            telefono: telefono
+        };
+
+        // Si estamos editando, incluir el ID del empleado
+        if (empleado.value.id) {
+            params.empleado_id = empleado.value.id;
+        }
+
+        const response = await axios.get('/api/empleados/check-telefono', { params });
+        return response.data;
+    } catch (error) {
+        console.error('Error verificando teléfono:', error);
+        return {
+            available: false,
+            message: 'Error al verificar la disponibilidad del teléfono'
+        };
+    }
 };
 
 // Validaciones reactivas para el nombre
 const nombreErrors = computed(() => {
     const errors = [];
     const nombre = empleado.value.nombre || '';
-    
+
     if (nombre.length > 0 && nombre.length < 3) {
         errors.push('El nombre debe tener al menos 3 caracteres.');
     }
-    
+
     if (nombre.length > 0 && /[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s\-]/.test(nombre)) {
         errors.push('El nombre solo puede contener letras, espacios y guiones.');
     }
-    
+
     if (nombre.length > 0 && isNombreDuplicated(nombre)) {
         errors.push('Ya existe un empleado con este nombre.');
     }
-    
+
     return errors;
 });
 
@@ -850,15 +897,15 @@ const nombreErrors = computed(() => {
 const cargoErrors = computed(() => {
     const errors = [];
     const cargo = empleado.value.cargo || '';
-    
+
     if (cargo.length > 0 && cargo.length < 2) {
         errors.push('El cargo debe tener al menos 2 caracteres.');
     }
-    
+
     if (cargo.length > 0 && /[^A-Z\s]/.test(cargo)) {
         errors.push('El cargo solo puede contener letras y espacios (sin tildes ni números).');
     }
-    
+
     return errors;
 });
 
@@ -884,12 +931,30 @@ const passwordErrors = computed(() => {
 // Validación reactiva para confirmar contraseña en el formulario principal
 const passwordConfirmationError = computed(() => {
     if (
-        empleado.value.password_confirmation.length > 0 &&
+        empleado.value.password &&
+        empleado.value.password_confirmation &&
         empleado.value.password !== empleado.value.password_confirmation
     ) {
         return 'Las contraseñas no coinciden.';
     }
     return '';
+});
+
+// Validaciones reactivas para el teléfono
+const telefonoErrors = computed(() => {
+    const errors = [];
+    const telefono = empleado.value.telefono || '';
+
+    if (telefono.length > 0 && !telefonoValidation.value.isValid) {
+        errors.push('El formato del teléfono no es válido.');
+    }
+
+    // Validación local rápida para empleados ya cargados
+    if (telefono.length > 0 && isTelefonoDuplicated(telefono)) {
+        errors.push('Este número de teléfono ya está en uso por otro empleado.');
+    }
+
+    return errors;
 });
 </script>
 
@@ -1027,14 +1092,6 @@ const passwordConfirmationError = computed(() => {
                         </template>
                     </Column>
 
-                    <Column field="estado" header="Estado" class="w-28 hidden sm:table-cell">
-                        <template #body="slotProps">
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                Activoooo
-                            </span>
-                        </template>
-                    </Column>
-
                     <Column :exportable="false" class="w-52 min-w-36">
                         <template #header>
                             <div class="text-center w-full font-bold">
@@ -1088,14 +1145,14 @@ const passwordConfirmationError = computed(() => {
                                     @input="validateNombre"
                                 />
                             </div>
-                            
+
                             <!-- Mostrar errores de validación en tiempo real -->
                             <div v-if="nombreErrors.length > 0" class="ml-28 mt-1">
                                 <small v-for="error in nombreErrors" :key="error" class="text-red-500 block">
                                     {{ error }}
                                 </small>
                             </div>
-                            
+
                             <!-- Mostrar contador de caracteres -->
                             <small class="text-gray-500 ml-28 mt-1" v-if="empleado.nombre && empleado.nombre.length > 0 && nombreErrors.length === 0">
                                 Caracteres: {{ empleado.nombre.length }}/255
@@ -1103,7 +1160,7 @@ const passwordConfirmationError = computed(() => {
                             <small class="text-orange-500 ml-28 mt-1" v-if="empleado.nombre && empleado.nombre.length >= 230 && empleado.nombre.length <= 255 && nombreErrors.length === 0">
                                 Caracteres restantes: {{ 255 - empleado.nombre.length }}
                             </small>
-                            
+
                             <!-- Error de campo obligatorio -->
                             <small class="text-red-500 ml-28 mt-1" v-if="submitted && !empleado.nombre">
                                 El nombre es obligatorio.
@@ -1202,14 +1259,14 @@ const passwordConfirmationError = computed(() => {
                                     @input="validateCargo"
                                 />
                             </div>
-                            
+
                             <!-- Mostrar errores de validación en tiempo real -->
                             <div v-if="cargoErrors.length > 0" class="ml-28 mt-1">
                                 <small v-for="error in cargoErrors" :key="error" class="text-red-500 block">
                                     {{ error }}
                                 </small>
                             </div>
-                            
+
                             <!-- Mostrar contador de caracteres -->
                             <small class="text-gray-500 ml-28 mt-1" v-if="empleado.cargo && empleado.cargo.length > 0 && cargoErrors.length === 0">
                                 Caracteres: {{ empleado.cargo.length }}/25
@@ -1217,7 +1274,7 @@ const passwordConfirmationError = computed(() => {
                             <small class="text-orange-500 ml-28 mt-1" v-if="empleado.cargo && empleado.cargo.length >= 20 && empleado.cargo.length <= 25 && cargoErrors.length === 0">
                                 Caracteres restantes: {{ 25 - empleado.cargo.length }}
                             </small>
-                            
+
                             <!-- Error de campo obligatorio -->
                             <small class="text-red-500 ml-28 mt-1" v-if="submitted && !empleado.cargo">
                                 El cargo es obligatorio.

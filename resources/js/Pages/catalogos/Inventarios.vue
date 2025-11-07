@@ -184,7 +184,7 @@
                   </div>
 
                   <div class="col-span-1 hidden md:block">
-                    <DatePicker
+                    <Calendar
                       v-model="filtros.fecha_desde"
                       placeholder="Fecha desde"
                       dateFormat="yy-mm-dd"
@@ -195,7 +195,7 @@
                   </div>
 
                   <div class="col-span-1 hidden md:block">
-                    <DatePicker
+                    <Calendar
                       v-model="filtros.fecha_hasta"
                       placeholder="Fecha hasta"
                       dateFormat="yy-mm-dd"
@@ -205,16 +205,16 @@
                     />
                   </div>
 
-                  <!-- DatePickers para móviles - en la fila de abajo -->
+                  <!-- Calendars para móviles - en la fila de abajo -->
                   <div class="col-span-2 flex gap-3 md:hidden">
-                    <DatePicker
+                    <Calendar
                       v-model="filtros.fecha_desde"
                       placeholder="Fecha desde"
                       dateFormat="dd/mm/yy"
                       class="flex-1 h-9 text-sm rounded-md border border-blue-300"
                       showIcon
                     />
-                    <DatePicker
+                    <Calendar
                       v-model="filtros.fecha_hasta"
                       placeholder="Fecha hasta"
                       dateFormat="dd/mm/yy"
