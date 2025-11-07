@@ -11,6 +11,52 @@ use Illuminate\Support\Facades\Storage;
 class TourController extends Controller
 {
     /**
+     * Valida y formatea el nombre del tour
+     */
+    private function validateAndFormatNombre($nombre)
+    {
+        if (empty($nombre)) {
+            return $nombre;
+        }
+        
+        // Convertir a mayúsculas
+        $nombre = mb_strtoupper($nombre, 'UTF-8');
+        
+        // Remover caracteres especiales (mantener solo letras, números, espacios y tildes)
+        // Permite: A-Z, 0-9, espacios, y vocales acentuadas (ÁÉÍÓÚ), Ñ
+        $nombre = preg_replace('/[^A-ZÁÉÍÓÚÑ0-9\s]/u', '', $nombre);
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        $nombre = preg_replace('/\s+/', ' ', $nombre);
+        
+        // Eliminar espacios al inicio y al final
+        $nombre = trim($nombre);
+        
+        return $nombre;
+    }
+    
+    /**
+     * Valida y formatea el punto de salida
+     */
+    private function validateAndFormatPuntoSalida($puntoSalida)
+    {
+        if (empty($puntoSalida)) {
+            return $puntoSalida;
+        }
+        
+        // Convertir a mayúsculas
+        $puntoSalida = mb_strtoupper($puntoSalida, 'UTF-8');
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        $puntoSalida = preg_replace('/\s+/', ' ', $puntoSalida);
+        
+        // Eliminar espacios al inicio y al final
+        $puntoSalida = trim($puntoSalida);
+        
+        return $puntoSalida;
+    }
+
+    /**
      * Display a listing of the resource.
      * Soporta filtrado por categoría: ?categoria=nacional|internacional
      */
@@ -62,7 +108,7 @@ class TourController extends Controller
         $capacidadMaxima = $transporte ? $transporte->capacidad : 30;
 
         $validated = $request->validate([
-            'nombre' => 'required|string|max:200',
+            'nombre' => ['required', 'string', 'max:200', 'regex:/^[A-ZÁÉÍÓÚÑ0-9\s]+$/u'],
             'incluye' => 'nullable|string',
             'no_incluye' => 'nullable|string',
             'cupo_min' => 'required|integer|min:1|max:' . $capacidadMaxima,
@@ -78,7 +124,12 @@ class TourController extends Controller
         ], [
             'cupo_min.max' => 'El cupo mínimo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
             'cupo_max.max' => 'El cupo máximo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
+            'nombre.regex' => 'El nombre del tour solo puede contener letras, números, espacios y tildes. No se permiten caracteres especiales.',
         ]);
+
+        // Aplicar validaciones de formato a los campos específicos
+        $validated['nombre'] = $this->validateAndFormatNombre($validated['nombre']);
+        $validated['punto_salida'] = $this->validateAndFormatPuntoSalida($validated['punto_salida']);
 
         // Preparar datos para crear el tour
         $tourData = $validated;
@@ -152,7 +203,7 @@ class TourController extends Controller
         $capacidadMaxima = $transporte ? $transporte->capacidad : 30;
 
         $validated = $request->validate([
-            'nombre' => 'required|string|max:200',
+            'nombre' => ['required', 'string', 'max:200', 'regex:/^[A-ZÁÉÍÓÚÑ0-9\s]+$/u'],
             'incluye' => 'nullable|string',
             'no_incluye' => 'nullable|string',
             'cupo_min' => 'required|integer|min:1|max:' . $capacidadMaxima,
@@ -169,7 +220,12 @@ class TourController extends Controller
         ], [
             'cupo_min.max' => 'El cupo mínimo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
             'cupo_max.max' => 'El cupo máximo no puede ser mayor que la capacidad del transporte (' . $capacidadMaxima . ').',
+            'nombre.regex' => 'El nombre del tour solo puede contener letras, números, espacios y tildes. No se permiten caracteres especiales.',
         ]);
+
+        // Aplicar validaciones de formato a los campos específicos
+        $validated['nombre'] = $this->validateAndFormatNombre($validated['nombre']);
+        $validated['punto_salida'] = $this->validateAndFormatPuntoSalida($validated['punto_salida']);
 
         // Validar límite total de imágenes (existentes + nuevas - eliminadas)
         $imagenesExistentes = $tour->imagenes()->count();

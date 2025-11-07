@@ -960,16 +960,110 @@ const openImageModal = (index) => {
 };
 
 const validateNombre = () => {
-    // Limitar a 200 caracteres máximo
-    if (tour.value.nombre && tour.value.nombre.length > 200) {
-        tour.value.nombre = tour.value.nombre.substring(0, 200);
+    if (tour.value.nombre) {
+        // Convertir a mayúsculas primero
+        tour.value.nombre = tour.value.nombre.toUpperCase();
+        
+        // ❌ NO permite: @#$%&*()[]{}!¿?.,;:-_+=|\/~`"'<>
+        tour.value.nombre = tour.value.nombre.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        tour.value.nombre = tour.value.nombre.replace(/\s+/g, ' ');
+        
+        // Limitar a 200 caracteres máximo
+        if (tour.value.nombre.length > 200) {
+            tour.value.nombre = tour.value.nombre.substring(0, 200);
+        }
+        
+        // Eliminar espacios al inicio y al final
+        tour.value.nombre = tour.value.nombre.trim();
+    }
+};
+
+// Prevenir la entrada de caracteres especiales en tiempo real
+const preventSpecialChars = (event) => {
+    // Solo permitir: letras (a-z, A-Z), números (0-9), espacios, y caracteres acentuados (áéíóúñÁÉÍÓÚÑ)
+    const allowedPattern = /[a-zA-ZáéíóúñÁÉÍÓÚÑ0-9\s]/;
+    
+    if (!allowedPattern.test(event.key)) {
+        event.preventDefault();
+    }
+};
+
+// Función para manejar paste en el campo nombre
+const onNombrePaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    
+    if (paste) {
+        // Convertir a mayúsculas y limpiar caracteres especiales
+        let cleanPaste = paste.toUpperCase();
+        
+        // Solo permitir: A-Z, 0-9, espacios, y vocales acentuadas (ÁÉÍÓÚ), Ñ
+        cleanPaste = cleanPaste.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        cleanPaste = cleanPaste.replace(/\s+/g, ' ');
+        
+        // Eliminar espacios al inicio y al final
+        cleanPaste = cleanPaste.trim();
+        
+        // Limitar a 200 caracteres máximo
+        if (cleanPaste.length > 200) {
+            cleanPaste = cleanPaste.substring(0, 200);
+        }
+        
+        // Asignar el valor limpio al campo
+        tour.value.nombre = cleanPaste;
+        
+        // Activar validación manual para actualizar la UI
+        validateNombre();
+    }
+};
+
+// Función para manejar paste en el campo punto de salida
+const onPuntoSalidaPaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    
+    if (paste) {
+        // Convertir a mayúsculas
+        let cleanPaste = paste.toUpperCase();
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        cleanPaste = cleanPaste.replace(/\s+/g, ' ');
+        
+        // Eliminar espacios al inicio y al final
+        cleanPaste = cleanPaste.trim();
+        
+        // Limitar a 200 caracteres máximo
+        if (cleanPaste.length > 200) {
+            cleanPaste = cleanPaste.substring(0, 200);
+        }
+        
+        // Asignar el valor limpio al campo
+        tour.value.punto_salida = cleanPaste;
+        
+        // Activar validación manual para actualizar la UI
+        validatePuntoSalida();
     }
 };
 
 const validatePuntoSalida = () => {
-    // Limitar a 200 caracteres máximo
-    if (tour.value.punto_salida && tour.value.punto_salida.length > 200) {
-        tour.value.punto_salida = tour.value.punto_salida.substring(0, 200);
+    if (tour.value.punto_salida) {
+        // Convertir a mayúsculas
+        tour.value.punto_salida = tour.value.punto_salida.toUpperCase();
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        tour.value.punto_salida = tour.value.punto_salida.replace(/\s+/g, ' ');
+        
+        // Limitar a 200 caracteres máximo
+        if (tour.value.punto_salida.length > 200) {
+            tour.value.punto_salida = tour.value.punto_salida.substring(0, 200);
+        }
+        
+        // Eliminar espacios al inicio y al final
+        tour.value.punto_salida = tour.value.punto_salida.trim();
     }
 };
 
@@ -1651,7 +1745,7 @@ const onPricePaste = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
                             <label for="nombre" class="flex items-center gap-1">Tour: <span class="text-red-500 font-bold">*</span></label>
-                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), }" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Tour al Cerro El Pital, etc" @input="validateNombre"/>
+                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), }" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="TOUR AL CERRO EL PITAL, ETC" @input="validateNombre" @keypress="preventSpecialChars" @paste="onNombrePaste"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.nombre && tour.nombre.length < 10">
                             El nombre debe tener al menos 10 caracteres. Actual: {{ tour.nombre.length }}/10
@@ -1730,9 +1824,9 @@ const onPricePaste = (event) => {
                                         *
                                     </span>
                                 </label>
-                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="Atrio de Chalatenango, etc"
+                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="ATRIO DE CHALATENANGO, ETC"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                @input="validatePuntoSalida"/>
+                                @input="validatePuntoSalida" @paste="onPuntoSalidaPaste"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length < 5" >Debe tener al menos 5 caracteres. Actual: {{ tour.punto_salida.length }}/5</small>
                         <small class="text-orange-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length >= 180 && tour.punto_salida.length <= 200">Caracteres restantes: {{ 200 - tour.punto_salida.length }}</small>

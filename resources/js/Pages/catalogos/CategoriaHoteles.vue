@@ -330,10 +330,66 @@ const continueEditing = () => {
 }
 
 const validateNombre = () => {
-    if (categoria.value.nombre && categoria.value.nombre.length > 50) {
-        categoria.value.nombre = categoria.value.nombre.substring(0, 50)
+    if (categoria.value.nombre) {
+        // Convertir a mayúsculas primero
+        categoria.value.nombre = categoria.value.nombre.toUpperCase();
+        
+        // ❌ NO permite: @#$%&*()[]{}!¿?.,;:-_+=|\/~`"'<>
+        categoria.value.nombre = categoria.value.nombre.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        categoria.value.nombre = categoria.value.nombre.replace(/\s+/g, ' ');
+        
+        // Limitar a 50 caracteres máximo
+        if (categoria.value.nombre.length > 50) {
+            categoria.value.nombre = categoria.value.nombre.substring(0, 50);
+        }
+        
+        // Eliminar espacios al inicio y al final
+        categoria.value.nombre = categoria.value.nombre.trim();
     }
 }
+
+// Prevenir la entrada de caracteres especiales en tiempo real
+const preventSpecialChars = (event) => {
+    // Solo permitir: letras (a-z, A-Z), números (0-9), espacios, y caracteres acentuados (áéíóúñÁÉÍÓÚÑ)
+    const allowedPattern = /[a-zA-ZáéíóúñÁÉÍÓÚÑ0-9\s]/;
+    
+    if (!allowedPattern.test(event.key)) {
+        event.preventDefault();
+    }
+};
+
+// Función para manejar paste en el campo nombre
+const onNombrePaste = (event) => {
+    event.preventDefault();
+    const paste = (event.clipboardData || window.clipboardData).getData('text');
+    
+    if (paste) {
+        // Convertir a mayúsculas y limpiar caracteres especiales
+        let cleanPaste = paste.toUpperCase();
+        
+        // Solo permitir: A-Z, 0-9, espacios, y vocales acentuadas (ÁÉÍÓÚ), Ñ
+        cleanPaste = cleanPaste.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
+        
+        // Reemplazar múltiples espacios consecutivos con uno solo
+        cleanPaste = cleanPaste.replace(/\s+/g, ' ');
+        
+        // Eliminar espacios al inicio y al final
+        cleanPaste = cleanPaste.trim();
+        
+        // Limitar a 50 caracteres máximo
+        if (cleanPaste.length > 50) {
+            cleanPaste = cleanPaste.substring(0, 50);
+        }
+        
+        // Asignar el valor limpio al campo
+        categoria.value.nombre = cleanPaste;
+        
+        // Activar validación manual para actualizar la UI
+        validateNombre();
+    }
+};
 </script>
 
 <template>
@@ -452,10 +508,11 @@ const validateNombre = () => {
                                 name="nombre"
                                 :maxlength="50"
                                 :class="{'p-invalid': (submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)) || nombreDuplicado}"
-                                class="flex-1"
+                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="validateNombre"
-                                placeholder="Nombre de la categoría"
-                                @keypress="e => { if (!/[A-Za-zÀ-ÿ\s]/.test(e.key)) e.preventDefault() }"
+                                @keypress="preventSpecialChars"
+                                @paste="onNombrePaste"
+                                placeholder="NOMBRE DE LA CATEGORÍA"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
