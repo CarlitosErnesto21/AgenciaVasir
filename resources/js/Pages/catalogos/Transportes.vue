@@ -101,6 +101,230 @@ watch([transporte], () => {
     }
 }, { deep: true });
 
+// Función para validar marca
+const validateMarca = () => {
+    if (transporte.value.marca) {
+        // Convertir a mayúsculas
+        transporte.value.marca = transporte.value.marca.toUpperCase();
+        
+        // Eliminar caracteres no permitidos (solo letras con tildes y espacios)
+        transporte.value.marca = transporte.value.marca.replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
+        
+        // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
+        transporte.value.marca = transporte.value.marca
+            .trim() // Eliminar espacios al inicio y final
+            .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
+        
+        // Limitar longitud máxima
+        if (transporte.value.marca.length > 30) {
+            transporte.value.marca = transporte.value.marca.substring(0, 30);
+        }
+    }
+};
+
+// Función para prevenir la escritura de caracteres no permitidos en marca
+const preventInvalidCharsMarca = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
+    if (event.ctrlKey || event.metaKey || 
+        ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
+        return;
+    }
+    
+    // Solo permitir letras (incluidas las tildadas) y espacios
+    const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(char);
+    
+    if (!isAllowed) {
+        event.preventDefault();
+        return;
+    }
+    
+    // Prevenir espacios múltiples consecutivos
+    if (char === ' ') {
+        const input = event.target;
+        const cursorPosition = input.selectionStart;
+        const currentValue = transporte.value.marca || '';
+        
+        // Si ya hay un espacio en la posición anterior o si estamos al inicio, prevenir
+        if (cursorPosition === 0 || currentValue[cursorPosition - 1] === ' ') {
+            event.preventDefault();
+        }
+    }
+};
+
+// Función para manejar el pegado de texto en marca
+const handlePasteMarca = (event) => {
+    event.preventDefault();
+    
+    // Obtener el texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    
+    // Filtrar solo caracteres permitidos y convertir a mayúsculas
+    let filteredText = pastedText.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
+    
+    // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
+    filteredText = filteredText
+        .trim() // Eliminar espacios al inicio y final
+        .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
+    
+    // Obtener la posición actual del cursor
+    const input = event.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    
+    // Construir el nuevo valor
+    const currentValue = transporte.value.marca || '';
+    let newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+    
+    // Aplicar trim completo al resultado final
+    newValue = newValue
+        .trim()
+        .replace(/\s+/g, ' ');
+    
+    // Limitar a 30 caracteres
+    transporte.value.marca = newValue.substring(0, 30);
+    
+    // Establecer la nueva posición del cursor
+    nextTick(() => {
+        const newCursorPosition = start + filteredText.length;
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+};
+
+// Validaciones reactivas para la marca
+const marcaErrors = computed(() => {
+    const errors = [];
+    const marca = transporte.value.marca || '';
+    
+    if (marca.length > 0 && marca.length < 2) {
+        errors.push('La marca debe tener al menos 2 caracteres.');
+    }
+    
+    if (marca.length > 0 && /[^A-ZÁÉÍÓÚÑÜ\s]/.test(marca)) {
+        errors.push('La marca solo puede contener letras y espacios (con tildes permitidas).');
+    }
+    
+    // Validar espacios múltiples o espacios al inicio/final
+    if (marca.length > 0 && (marca !== marca.trim() || /\s{2,}/.test(marca))) {
+        errors.push('No se permiten espacios extra al inicio, final o múltiples espacios consecutivos.');
+    }
+    
+    return errors;
+});
+
+// Función para validar nombre (descripción)
+const validateNombre = () => {
+    if (transporte.value.nombre) {
+        // Convertir a mayúsculas
+        transporte.value.nombre = transporte.value.nombre.toUpperCase();
+        
+        // Eliminar caracteres no permitidos (solo letras con tildes, números y espacios)
+        transporte.value.nombre = transporte.value.nombre.replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s]/g, '');
+        
+        // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
+        transporte.value.nombre = transporte.value.nombre
+            .trim() // Eliminar espacios al inicio y final
+            .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
+        
+        // Limitar longitud máxima
+        if (transporte.value.nombre.length > 50) {
+            transporte.value.nombre = transporte.value.nombre.substring(0, 50);
+        }
+    }
+};
+
+// Función para prevenir la escritura de caracteres no permitidos en nombre (descripción)
+const preventInvalidCharsNombre = (event) => {
+    const char = event.key;
+    
+    // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
+    if (event.ctrlKey || event.metaKey || 
+        ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
+        return;
+    }
+    
+    // Solo permitir letras (incluidas las tildadas), números y espacios
+    const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]$/.test(char);
+    
+    if (!isAllowed) {
+        event.preventDefault();
+        return;
+    }
+    
+    // Prevenir espacios múltiples consecutivos
+    if (char === ' ') {
+        const input = event.target;
+        const cursorPosition = input.selectionStart;
+        const currentValue = transporte.value.nombre || '';
+        
+        // Si ya hay un espacio en la posición anterior o si estamos al inicio, prevenir
+        if (cursorPosition === 0 || currentValue[cursorPosition - 1] === ' ') {
+            event.preventDefault();
+        }
+    }
+};
+
+// Función para manejar el pegado de texto en nombre (descripción)
+const handlePasteNombre = (event) => {
+    event.preventDefault();
+    
+    // Obtener el texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    
+    // Filtrar solo caracteres permitidos y convertir a mayúsculas
+    let filteredText = pastedText.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s]/g, '');
+    
+    // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
+    filteredText = filteredText
+        .trim() // Eliminar espacios al inicio y final
+        .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
+    
+    // Obtener la posición actual del cursor
+    const input = event.target;
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    
+    // Construir el nuevo valor
+    const currentValue = transporte.value.nombre || '';
+    let newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
+    
+    // Aplicar trim completo al resultado final
+    newValue = newValue
+        .trim()
+        .replace(/\s+/g, ' ');
+    
+    // Limitar a 50 caracteres
+    transporte.value.nombre = newValue.substring(0, 50);
+    
+    // Establecer la nueva posición del cursor
+    nextTick(() => {
+        const newCursorPosition = start + filteredText.length;
+        input.setSelectionRange(newCursorPosition, newCursorPosition);
+    });
+};
+
+// Validaciones reactivas para el nombre (descripción)
+const nombreErrors = computed(() => {
+    const errors = [];
+    const nombre = transporte.value.nombre || '';
+    
+    if (nombre.length > 0 && nombre.length < 3) {
+        errors.push('La descripción debe tener al menos 3 caracteres.');
+    }
+    
+    if (nombre.length > 0 && /[^A-ZÁÉÍÓÚÑÜ0-9\s]/.test(nombre)) {
+        errors.push('La descripción solo puede contener letras con tildes, números y espacios.');
+    }
+    
+    // Validar espacios múltiples o espacios al inicio/final
+    if (nombre.length > 0 && (nombre !== nombre.trim() || /\s{2,}/.test(nombre))) {
+        errors.push('No se permiten espacios extra al inicio, final o múltiples espacios consecutivos.');
+    }
+    
+    return errors;
+});
+
 function resetForm() {
     transporte.value = {
         id: null,
@@ -191,7 +415,11 @@ const openNew = () => {
 
 const editTransporte = (t) => {
     resetForm();
-    transporte.value = { ...t };
+    transporte.value = { 
+        ...t,
+        marca: t.marca ? t.marca.toUpperCase().trim().replace(/\s+/g, ' ') : t.marca, // Convertir marca a mayúsculas y limpiar espacios extra
+        nombre: t.nombre ? t.nombre.toUpperCase().trim().replace(/\s+/g, ' ') : t.nombre // Convertir descripción a mayúsculas y limpiar espacios extra
+    };
     btnTitle.value = "Actualizar";
     dialog.value = true;
     nextTick(() => {
@@ -212,7 +440,13 @@ const saveOrUpdate = async () => {
         return;
     }
     if (!transporte.value.nombre || transporte.value.nombre.length < 3 || transporte.value.nombre.length > 50) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "El nombre debe tener entre 3 y 50 caracteres.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Descripción inválida", detail: "La descripción debe tener entre 3 y 50 caracteres.", life: 4000 });
+        return;
+    }
+    
+    // Validar que la descripción solo contenga letras con tildes, números y espacios
+    if (/[^A-ZÁÉÍÓÚÑÜ0-9\s]/.test(transporte.value.nombre)) {
+        toast.add({ severity: "warn", summary: "Descripción inválida", detail: "La descripción solo puede contener letras con tildes, números y espacios.", life: 4000 });
         return;
     }
     if (!transporte.value.capacidad || transporte.value.capacidad < 1) {
@@ -220,7 +454,13 @@ const saveOrUpdate = async () => {
         return;
     }
     if (!transporte.value.marca || transporte.value.marca.length < 2 || transporte.value.marca.length > 30) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "La marca debe tener entre 2 y 30 caracteres.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Marca inválida", detail: "La marca debe tener entre 2 y 30 caracteres.", life: 4000 });
+        return;
+    }
+    
+    // Validar que la marca solo contenga letras con tildes y espacios
+    if (/[^A-ZÁÉÍÓÚÑÜ\s]/.test(transporte.value.marca)) {
+        toast.add({ severity: "warn", summary: "Marca inválida", detail: "La marca solo puede contener letras y espacios (con tildes permitidas).", life: 4000 });
         return;
     }
 
@@ -650,16 +890,38 @@ const handleToursClick = () => {
                             <label for="nombre" class="w-24 flex items-center gap-1">
                                 Descripción: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.nombre" id="nombre" name="nombre" :maxlength="50" :class="{'p-invalid': submitted && (!transporte.nombre || transporte.nombre.length < 3 || transporte.nombre.length > 50),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Carro pickup, etc"/>
+                            <InputText 
+                                v-model="transporte.nombre" 
+                                id="nombre" 
+                                name="nombre" 
+                                :maxlength="50" 
+                                :class="{'p-invalid': (submitted && (!transporte.nombre || nombreErrors.length > 0)) || nombreErrors.length > 0}" 
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" 
+                                placeholder="AUTOBUS TURÍSTICO, VAN EJECUTIVA 2024, etc."
+                                @keydown="preventInvalidCharsNombre"
+                                @paste="handlePasteNombre"
+                                @input="validateNombre"
+                            />
                         </div>
-                        <small class="text-red-500 ml-28" v-if="transporte.nombre && transporte.nombre.length < 3">
-                            El nombre debe tener al menos 3 caracteres. Actual: {{ transporte.nombre.length }}/3
+                        
+                        <!-- Mostrar errores de validación en tiempo real -->
+                        <div v-if="nombreErrors.length > 0" class="ml-28 mt-1">
+                            <small v-for="error in nombreErrors" :key="error" class="text-red-500 block">
+                                {{ error }}
+                            </small>
+                        </div>
+                        
+                        <!-- Mostrar contador de caracteres -->
+                        <small class="text-gray-500 ml-28 mt-1" v-if="transporte.nombre && transporte.nombre.length > 0 && nombreErrors.length === 0">
+                            Caracteres: {{ transporte.nombre.length }}/50
                         </small>
-                        <small class="text-orange-500 ml-28" v-if="transporte.nombre && transporte.nombre.length > 45">
+                        <small class="text-orange-500 ml-28 mt-1" v-if="transporte.nombre && transporte.nombre.length >= 45 && transporte.nombre.length <= 50 && nombreErrors.length === 0">
                             Caracteres restantes: {{ 50 - transporte.nombre.length }}
                         </small>
-                        <small class="text-red-500 ml-28" v-if="submitted && !transporte.nombre">
-                            El nombre es obligatorio.
+                        
+                        <!-- Error de campo obligatorio -->
+                        <small class="text-red-500 ml-28 mt-1" v-if="submitted && !transporte.nombre">
+                            La descripción es obligatoria.
                         </small>
                     </div>
                     <div class="w-full flex flex-col">
@@ -694,15 +956,37 @@ const handleToursClick = () => {
                             <label for="marca" class="w-24 flex items-center gap-1">
                                 Marca: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.marca" id="marca" name="marca" :maxlength="30" :class="{'p-invalid': submitted && (!transporte.marca || transporte.marca.length < 2 || transporte.marca.length > 30),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="Toyota, Mercedes, etc"/>
+                            <InputText 
+                                v-model="transporte.marca" 
+                                id="marca" 
+                                name="marca" 
+                                :maxlength="30" 
+                                :class="{'p-invalid': (submitted && (!transporte.marca || marcaErrors.length > 0)) || marcaErrors.length > 0}" 
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" 
+                                placeholder="TOYOTA, MERCEDES, etc."
+                                @keydown="preventInvalidCharsMarca"
+                                @paste="handlePasteMarca"
+                                @input="validateMarca"
+                            />
                         </div>
-                        <small class="text-red-500 ml-28" v-if="transporte.marca && transporte.marca.length < 2">
-                            La marca debe tener al menos 2 caracteres. Actual: {{ transporte.marca.length }}/2
+                        
+                        <!-- Mostrar errores de validación en tiempo real -->
+                        <div v-if="marcaErrors.length > 0" class="ml-28 mt-1">
+                            <small v-for="error in marcaErrors" :key="error" class="text-red-500 block">
+                                {{ error }}
+                            </small>
+                        </div>
+                        
+                        <!-- Mostrar contador de caracteres -->
+                        <small class="text-gray-500 ml-28 mt-1" v-if="transporte.marca && transporte.marca.length > 0 && marcaErrors.length === 0">
+                            Caracteres: {{ transporte.marca.length }}/30
                         </small>
-                        <small class="text-orange-500 ml-28" v-if="transporte.marca && transporte.marca.length > 30">
+                        <small class="text-orange-500 ml-28 mt-1" v-if="transporte.marca && transporte.marca.length >= 25 && transporte.marca.length <= 30 && marcaErrors.length === 0">
                             Caracteres restantes: {{ 30 - transporte.marca.length }}
                         </small>
-                        <small class="text-red-500 ml-28" v-if="submitted && !transporte.marca">
+                        
+                        <!-- Error de campo obligatorio -->
+                        <small class="text-red-500 ml-28 mt-1" v-if="submitted && !transporte.marca">
                             La marca es obligatoria.
                         </small>
                     </div>

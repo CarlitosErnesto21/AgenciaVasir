@@ -23,16 +23,39 @@ class TransporteController extends Controller
                 'unique:transportes,numero_placa',
                 'regex:/^(P|M|C|A|R|D|V|G|AB|MB|CD|CC|CR|MI|FA|PE|OF|OI)[ -]?[0-9A-F]{6}$/i'
             ],
-            'nombre' => 'required|string|max:50|unique:transportes,nombre',
+            'nombre' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'unique:transportes,nombre',
+                'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s]+$/', // Solo letras con tildes, números y espacios
+            ],
             'capacidad' => 'required|integer|min:1',
-            'marca' => 'required|string|max:30',
+            'marca' => [
+                'required',
+                'string',
+                'min:2',
+                'max:30',
+                'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/', // Solo letras con tildes y espacios
+            ],
             'estado' => 'required|in:DISPONIBLE,NO_DISPONIBLE',
         ], [
             // Solo mensajes que no se validan del lado cliente
             'numero_placa.unique' => 'Esta placa ya está registrada en el sistema.',
             'numero_placa.regex' => 'El formato de la placa no es válido. Debe iniciar con un prefijo válido seguido de 6 caracteres alfanuméricos.',
-            'nombre.unique' => 'Ya existe un transporte con este nombre.',
+            'nombre.unique' => 'Ya existe un transporte con esta descripción.',
+            'nombre.min' => 'La descripción debe tener al menos 3 caracteres.',
+            'nombre.max' => 'La descripción no puede exceder 50 caracteres.',
+            'nombre.regex' => 'La descripción solo puede contener letras con tildes, números y espacios.',
+            'marca.min' => 'La marca debe tener al menos 2 caracteres.',
+            'marca.max' => 'La marca no puede exceder 30 caracteres.',
+            'marca.regex' => 'La marca solo puede contener letras con tildes y espacios.',
         ]);
+
+        // Normalizar campos antes de guardar
+        $validated['nombre'] = $this->normalizeText($validated['nombre'], true); // Con números
+        $validated['marca'] = $this->normalizeText($validated['marca'], false); // Sin números
 
         $transporte = Transporte::create($validated);
 
@@ -57,16 +80,39 @@ class TransporteController extends Controller
                 'unique:transportes,numero_placa,' . $transporte->id,
                 'regex:/^(P|M|C|A|R|D|V|G|AB|MB|CD|CC|CR|MI|FA|PE|OF|OI)[ -]?[0-9A-F]{6}$/i'
             ],
-            'nombre' => 'required|string|max:50|unique:transportes,nombre,' . $transporte->id,
+            'nombre' => [
+                'required',
+                'string',
+                'min:3',
+                'max:50',
+                'unique:transportes,nombre,' . $transporte->id,
+                'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s]+$/', // Solo letras con tildes, números y espacios
+            ],
             'capacidad' => 'required|integer|min:1',
-            'marca' => 'required|string|max:30',
+            'marca' => [
+                'required',
+                'string',
+                'min:2',
+                'max:30',
+                'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/', // Solo letras con tildes y espacios
+            ],
             'estado' => 'required|in:DISPONIBLE,NO_DISPONIBLE',
         ], [
             // Solo mensajes que no se validan del lado cliente
             'numero_placa.unique' => 'Esta placa ya está registrada en el sistema.',
             'numero_placa.regex' => 'El formato de la placa no es válido. Debe iniciar con un prefijo válido seguido de 6 caracteres alfanuméricos.',
-            'nombre.unique' => 'Ya existe un transporte con este nombre.',
+            'nombre.unique' => 'Ya existe un transporte con esta descripción.',
+            'nombre.min' => 'La descripción debe tener al menos 3 caracteres.',
+            'nombre.max' => 'La descripción no puede exceder 50 caracteres.',
+            'nombre.regex' => 'La descripción solo puede contener letras con tildes, números y espacios.',
+            'marca.min' => 'La marca debe tener al menos 2 caracteres.',
+            'marca.max' => 'La marca no puede exceder 30 caracteres.',
+            'marca.regex' => 'La marca solo puede contener letras con tildes y espacios.',
         ]);
+
+        // Normalizar campos antes de actualizar
+        $validated['nombre'] = $this->normalizeText($validated['nombre'], true); // Con números
+        $validated['marca'] = $this->normalizeText($validated['marca'], false); // Sin números
 
         $transporte->update($validated);
 
@@ -94,5 +140,19 @@ class TransporteController extends Controller
         return response()->json([
             'message' => 'Transporte eliminado exitosamente',
         ]);
+    }
+
+    /**
+     * Normalizar texto: convertir a mayúsculas y limpiar espacios múltiples
+     */
+    private function normalizeText($text, $allowNumbers = false)
+    {
+        // Convertir a mayúsculas
+        $text = strtoupper($text);
+        
+        // Limpiar espacios múltiples y espacios al inicio/final
+        $text = preg_replace('/\s+/', ' ', trim($text));
+        
+        return $text;
     }
 }
