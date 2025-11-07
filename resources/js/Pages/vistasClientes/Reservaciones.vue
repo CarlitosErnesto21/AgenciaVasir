@@ -353,6 +353,23 @@ const irAImagen = (index) => {
 
 // Funciones para los botones
 const contactarHotel = (hotel) => {
+  // Verificar roles para restricción
+  if (user.value && user.value.roles && Array.isArray(user.value.roles)) {
+    const tieneRolRestringido = user.value.roles.some(role =>
+      role.name === 'Administrador' || role.name === 'Empleado'
+    )
+
+    if (tieneRolRestringido) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Solo las cuentas de Cliente pueden contactar hoteles por WhatsApp desde esta sección.',
+        life: 5000
+      })
+      return
+    }
+  }
+
   const mensaje = `Hola, estoy interesado/a en obtener más información sobre el hotel "${hotel.nombre}" ubicado en ${hotel.direccion}. ¿Podrían proporcionarme detalles sobre disponibilidad, precios y servicios? Gracias.`
   const whatsappUrl = `https://wa.me/50379858777?text=${encodeURIComponent(mensaje)}`
   window.open(whatsappUrl, '_blank')
@@ -360,27 +377,6 @@ const contactarHotel = (hotel) => {
 
 const verMasInfo = (hotel) => {
   // Función deshabilitada - solo mantener referencia para evitar errores
-}
-
-// Función para contactar por email
-const contactarPorEmail = (hotel) => {
-  const asunto = `consulta sobre hotel ${hotel.nombre}`
-  const cuerpo = `Estimados,
-
-Me dirijo a ustedes para solicitar información sobre el hotel "${hotel.nombre}" ubicado en ${hotel.direccion}.
-
-Me gustaría conocer:
-- Disponibilidad de habitaciones
-- Tarifas disponibles
-- Servicios incluidos
-- Políticas de reserva y cancelación
-
-Quedo atento a su respuesta.
-
-Saludos cordiales.`
-
-  const emailUrl = `mailto:${config.value.mail_from_address || 'vasirtours19@gmail.com'}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`
-  window.open(emailUrl, '_blank')
 }
 
 // Función para limpiar búsqueda
@@ -406,10 +402,8 @@ const cargarDatosCliente = async () => {
 
     if (response.ok) {
       const data = await response.json()
-      console.log('Datos del cliente cargados:', data)
       return data.cliente || data || null
     } else if (response.status === 404) {
-      console.log('Cliente no encontrado, usuario nuevo')
       return null
     } else {
       console.error('Error al cargar datos del cliente:', response.status)
@@ -428,6 +422,23 @@ const abrirModalReserva = async (hotel) => {
     hotelParaReserva.value = hotel
     showAuthModal.value = true
     return
+  }
+
+  // Verificar roles para restricción
+  if (user.value.roles && Array.isArray(user.value.roles)) {
+    const tieneRolRestringido = user.value.roles.some(role =>
+      role.name === 'Administrador' || role.name === 'Empleado'
+    )
+
+    if (tieneRolRestringido) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Solo las cuentas de Cliente pueden realizar reservas de hoteles. Por favor, utilice una cuenta de Cliente para continuar.',
+        life: 5000
+      })
+      return
+    }
   }
 
   hotelSeleccionado.value = hotel
@@ -602,8 +613,6 @@ const crearReservaHotel = async () => {
       cantidad_habitaciones: reservaForm.value.cantidad_habitaciones,
       cliente_data: reservaForm.value.cliente_data
     }
-
-    console.log('Datos que se enviarán:', datosReserva)
 
     // Aquí se haría la llamada a la API para crear la reserva de hotel
     const response = await fetch('/api/reservas/hotel', {

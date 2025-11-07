@@ -1,5 +1,8 @@
 <script setup>
 import ImageWithFallback from '@/Components/ImageWithFallback.vue'
+import { faShoppingCart, faMinus, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { ref, reactive } from 'vue'
 
 // Props del componente
 const props = defineProps({
@@ -16,16 +19,50 @@ const props = defineProps({
 // Emits del componente
 const emit = defineEmits([
   'comprar-producto',
-  'ver-detalles'
+  'ir-a-detalle'
 ])
 
+// Estado reactivo para las cantidades seleccionadas
+const cantidades = reactive({})
+
 // Métodos
-const comprarProducto = (producto) => {
-  emit('comprar-producto', producto)
+const getCantidad = (productoId) => {
+  return cantidades[productoId] || 1
 }
 
-const verDetalles = (producto) => {
-  emit('ver-detalles', producto)
+const setCantidad = (productoId, cantidad) => {
+  cantidades[productoId] = Math.max(1, Math.min(cantidad, getStockActual(productoId)))
+}
+
+const getStockActual = (productoId) => {
+  const producto = props.filteredProducts.find(p => p.id === productoId)
+  return producto ? producto.stock_actual : 0
+}
+
+const incrementarCantidad = (productoId) => {
+  const cantidadActual = getCantidad(productoId)
+  const stockDisponible = getStockActual(productoId)
+  if (cantidadActual < stockDisponible) {
+    setCantidad(productoId, cantidadActual + 1)
+  }
+}
+
+const decrementarCantidad = (productoId) => {
+  const cantidadActual = getCantidad(productoId)
+  if (cantidadActual > 1) {
+    setCantidad(productoId, cantidadActual - 1)
+  }
+}
+
+const comprarProducto = (producto) => {
+  const cantidad = getCantidad(producto.id)
+  emit('comprar-producto', { ...producto, cantidadSeleccionada: cantidad })
+  // Resetear la cantidad a 1 después de emitir el evento
+  setCantidad(producto.id, 1)
+}
+
+const irADetalle = (producto) => {
+  emit('ir-a-detalle', producto)
 }
 
 // Helper para construir URL de imagen
@@ -60,64 +97,115 @@ const getImageUrl = (producto) => {
 
   <!-- Grid de productos -->
   <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
-    <Card
+    <div
       v-for="producto in filteredProducts"
       :key="producto.id"
-      class="border-2 border-gray-200 bg-gradient-to-br from-white via-blue-50/30 to-red-50/30 shadow-lg hover:shadow-2xl transition-all duration-500 flex flex-col h-full transform hover:-translate-y-2 hover:border-red-300 group"
+      class="border-2 border-gray-200 bg-gradient-to-br from-white via-blue-50/30 to-red-50/30 shadow-lg hover:shadow-2xl transition-all duration-500 flex flex-col transform hover:-translate-y-2 hover:border-red-300 group cursor-pointer rounded-xl overflow-hidden"
+      style="height: 420px;"
+      @click="irADetalle(producto)"
     >
-      <template #header>
-        <div class="w-full flex justify-center items-center h-32 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 rounded-t-lg overflow-hidden group relative">
-          <ImageWithFallback
-            :src="getImageUrl(producto)"
-            :alt="producto.nombre"
-            :fallback-text="producto.nombre"
-            container-class="w-full h-full"
-            image-class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
-          />
-          <div class="absolute top-1 right-1 bg-gradient-to-r from-red-600 to-red-700 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:right-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg z-10">
-            {{ producto.categoria }}
-          </div>
-          <div class="absolute top-1 left-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-1 py-0.5 rounded text-xs font-normal shadow-sm border border-white/20 leading-none md:top-2 md:left-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-lg z-10">
-            Stock: {{ producto.stock_actual }}
-          </div>
-          <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      <!-- Header: Imagen -->
+      <div class="w-full h-40 sm:h-44 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 overflow-hidden relative">
+        <ImageWithFallback
+          :src="getImageUrl(producto)"
+          :alt="producto.nombre"
+          :fallback-text="producto.nombre"
+          container-class="w-full h-full"
+          image-class="w-full h-full object-cover transition-all duration-500 group-hover:scale-110"
+        />
+        <div class="absolute top-1 right-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-1 py-0.5 rounded text-xs font-normal shadow-xl border border-white/20 leading-none md:top-2 md:right-2 md:px-2.5 md:py-1 md:rounded-full md:font-bold md:shadow-2xl z-10 transform hover:scale-105 transition-all duration-300" style="box-shadow: 0 8px 25px rgba(34, 197, 94, 0.4), 0 0 0 2px white;">
+          Stock: {{ producto.stock_actual }}
         </div>
-      </template>
+        <div class="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+      </div>
 
-      <template #title>
-        <span class="text-sm sm:text-base md:text-lg font-bold text-gray-800 leading-tight line-clamp-2 group-hover:text-red-700 transition-colors duration-300">
+      <!-- Contenido con flexbox para layout fijo -->
+      <div class="flex flex-col p-3 sm:p-6" style="height: 260px; min-height: 260px;">
+        <!-- Categoría y Título -->
+        <div class="mb-2">
+          <span class="inline-flex items-center px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-full font-medium bg-gradient-to-r from-red-600 to-red-700 text-white shadow-xl border border-white/20 transform hover:scale-105 transition-all duration-300" style="box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 0 2px white; font-size: 10px;">
+            {{ producto.categoria }}
+          </span>
+        </div>
+        <h3 class="product-title text-sm sm:text-base font-bold text-gray-800 leading-tight group-hover:text-red-700 transition-colors duration-300 mb-2">
           {{ producto.nombre }}
-        </span>
-      </template>
+        </h3>
 
-      <template #content>
-        <div class="flex-grow">
-          <div class="text-gray-600 text-xs sm:text-sm mb-2 sm:mb-4 line-clamp-2 leading-relaxed">
-            {{ producto.descripcion }}
-          </div>
-          <div class="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2 sm:mb-4">
+        <!-- Mensaje para ver detalles -->
+        <div class="text-gray-500 text-xs italic mb-3">
+          Click para ver detalles
+        </div>
+
+        <!-- Footer con precio y botones (siempre en la parte inferior) -->
+        <div class="mt-auto">
+          <!-- Precio -->
+          <div class="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent mb-2">
             ${{ producto.precio.toFixed(2) }}
           </div>
-        </div>
-      </template>
 
-      <template #footer>
-        <div class="flex gap-1 sm:gap-2 mt-auto">
-          <button
-            @click="comprarProducto(producto)"
-            :disabled="producto.stock_actual <= 0"
-            class="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-none px-2 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 flex-1 shadow-md hover:shadow-lg transform hover:-translate-y-1 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
-          >
-            🛒 Comprar
-          </button>
-          <button
-            @click="verDetalles(producto)"
-            class="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 border-none text-white transition-all duration-300 w-8 h-8 sm:w-10 sm:h-10 p-0 shadow-md hover:shadow-lg transform hover:-translate-y-1 rounded-lg flex items-center justify-center"
-          >
-            <i class="pi pi-eye text-xs sm:text-sm"></i>
-          </button>
+          <!-- Selector de cantidad estilo carrito -->
+          <div class="flex items-center justify-center mb-3">
+            <label class="text-xs sm:text-sm text-gray-600 mr-3">Cantidad:</label>
+            <div class="flex items-center gap-2">
+              <button
+                @click.stop="decrementarCantidad(producto.id)"
+                class="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                :disabled="getCantidad(producto.id) <= 1"
+              >
+                <FontAwesomeIcon :icon="faMinus" class="w-3 h-3" />
+              </button>
+
+              <span class="w-8 text-center text-sm font-medium">
+                {{ getCantidad(producto.id) }}
+              </span>
+
+              <button
+                @click.stop="incrementarCantidad(producto.id)"
+                class="w-7 h-7 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                :disabled="getCantidad(producto.id) >= producto.stock_actual"
+              >
+                <FontAwesomeIcon :icon="faPlus" class="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Botón de comprar (ancho completo) -->
+          <div>
+            <button
+              @click.stop="comprarProducto(producto)"
+              :disabled="producto.stock_actual <= 0"
+              class="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 border-none px-2 py-1.5 sm:px-4 sm:py-2 text-white text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1 disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed"
+            >
+              <FontAwesomeIcon :icon="faShoppingCart" class="mr-2"/>
+              Comprar
+            </button>
+          </div>
         </div>
-      </template>
-    </Card>
+      </div>
+    </div>
   </div>
 </template>
+
+<style scoped>
+/* Título del producto con line-clamp compatible */
+.product-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  line-clamp: 2;
+  overflow: hidden;
+  min-height: 2.5rem;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Botones de cantidad estilizados */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  background-color: transparent !important;
+}
+</style>

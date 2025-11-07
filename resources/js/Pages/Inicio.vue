@@ -5,9 +5,12 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import axios from 'axios'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
+import Toast from 'primevue/toast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft, faChevronRight, faPlane } from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
+import { useToast } from 'primevue/usetoast'
+import { usePage } from '@inertiajs/vue3'
 
 const products = ref([])
 const slides = ref([])
@@ -16,13 +19,17 @@ const loading = ref(true)
 const totalTours = ref(0)
 const currentSlide = ref(0)
 
+// Inicializar toast y página
+const toast = useToast()
+const page = usePage()
+
 // Variables para el modal de detalles del paquete
 const mostrarModal = ref(false)
 const paqueteSeleccionado = ref(null)
 
 // Calcular años de experiencia desde 2019
 const calcularAnosExperiencia = () => {
-  const fechaInicio = new Date('2019-01-01')
+  const fechaInicio = new Date('2019-03-01')
   const fechaActual = new Date()
   const diferencia = fechaActual.getFullYear() - fechaInicio.getFullYear()
   return diferencia
@@ -237,6 +244,24 @@ const generarMensajeWhatsApp = (tipo = 'general', nombrePaquete = '') => {
 
 // Función para abrir WhatsApp con mensaje personalizado
 const abrirWhatsApp = (tipo = 'general', nombrePaquete = '') => {
+  // Verificar si el usuario está autenticado y su rol
+  const user = page.props.auth?.user
+  
+  // Verificar si el usuario tiene roles de Administrador o Empleado
+  if (user && user.roles && user.roles.length > 0) {
+    const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
+    
+    if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Esta acción está disponible solo para clientes. Los administradores y empleados no pueden realizar consultas de WhatsApp como clientes.',
+        life: 5000
+      })
+      return
+    }
+  }
+
   const numeroWhatsApp = '50379858777'
   const mensaje = generarMensajeWhatsApp(tipo, nombrePaquete)
   const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
@@ -297,6 +322,9 @@ onUnmounted(() => {
 
 <template>
   <Catalogo>
+    <!-- Toast para notificaciones -->
+    <Toast class="z-[9999]" />
+    
     <div class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 min-h-screen pt-20 md:pt-28 lg:pt-28 xl:pt-32">
       <template v-if="loading">
         <div class="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
@@ -388,13 +416,13 @@ onUnmounted(() => {
             <div class="text-center mb-8 sm:mb-12 md:mb-16">
               <div class="inline-block mb-3 sm:mb-4">
                 <span class="bg-white/20 backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg">
-                  Paquetes Especiales
+                  Visa Americana
                 </span>
               </div>
 
               <!-- Imagen world.png -->
               <div class="mb-4 sm:mb-6 flex justify-center">
-                <img src="/images/world.png" alt="Mundo" class="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 object-contain" />
+                <img src="/images/usa.png" alt="Mundo" class="w-32 h-24  object-contain" />
               </div>
 
               <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-4 sm:mb-6">

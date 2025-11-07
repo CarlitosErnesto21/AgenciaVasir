@@ -1,5 +1,6 @@
 <script setup>
-import { ref } from 'vue';
+import { faDiamond, faDiamondTurnRight } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 const props = defineProps({
     companyValues: {
@@ -15,10 +16,13 @@ const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝',
   <!-- Nuestros Valores -->
   <div class="mb-8 sm:mb-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-4 sm:py-6 rounded-t-xl">
-        <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold">💎 Nuestros Valores</h2>
-      </div>
-    
+        <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-4 sm:py-6 rounded-t-xl">
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold">
+                💎
+                Nuestros Valores
+            </h2>
+        </div>
+
     <!-- Valores desde la base de datos -->
     <div v-if="companyValues && companyValues.length > 0" class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-b-xl shadow-lg">
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-5 lg:gap-6">
@@ -33,7 +37,7 @@ const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝',
         </div>
       </div>
     </div>
-    
+
     <!-- Mensaje cuando no hay valores configurados -->
     <div v-else class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-b-xl shadow-lg">
       <div class="text-center py-8 sm:py-12">

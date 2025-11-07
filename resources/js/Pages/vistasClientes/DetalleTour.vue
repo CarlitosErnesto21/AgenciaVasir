@@ -513,6 +513,23 @@ const reservarTour = () => {
   if (!user.value) {
     showAuthDialog.value = true
   } else {
+    // Verificar roles para restricción
+    if (user.value.roles && Array.isArray(user.value.roles)) {
+      const tieneRolRestringido = user.value.roles.some(role => 
+        role.name === 'Administrador' || role.name === 'Empleado'
+      )
+      
+      if (tieneRolRestringido) {
+        toast.add({
+          severity: 'warn',
+          summary: 'Acceso Restringido',
+          detail: 'Solo las cuentas de Cliente pueden realizar reservas. Los detalles del tour están disponibles para consulta.',
+          life: 5000
+        })
+        return
+      }
+    }
+    
     showReservaDialog.value = true
   }
 }

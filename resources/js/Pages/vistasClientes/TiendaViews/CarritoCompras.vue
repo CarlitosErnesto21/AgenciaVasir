@@ -6,6 +6,7 @@ import ImageWithFallback from '@/Components/ImageWithFallback.vue'
 import CarritoCheckoutModal from '@/Components/CarritoCheckoutModal.vue'
 import ModalDatosCliente from '../Modales/ModalDatosCliente.vue'
 import { usePage } from '@inertiajs/vue3'
+import { useToast } from 'primevue/usetoast'
 import axios from 'axios'
 import {
   faShoppingCart,
@@ -19,6 +20,7 @@ import {
 
 const carritoStore = useCarritoStore()
 const page = usePage()
+const toast = useToast()
 
 // Estado del modal de checkout
 const showCheckoutModal = ref(false)
@@ -36,6 +38,20 @@ const loadingCheckout = ref(false)
 
 // Verificar si el usuario está autenticado
 const isAuthenticated = computed(() => !!page.props.auth?.user)
+
+// Función para manejar incremento de cantidad con validación
+const incrementarCantidadConValidacion = (productoId) => {
+  const resultado = carritoStore.incrementarCantidad(productoId)
+
+  if (!resultado.success) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Stock insuficiente',
+      detail: resultado.message,
+      life: 3000
+    })
+  }
+}
 
 // Formatear precio
 const formatPrice = (price) => {
@@ -284,7 +300,7 @@ const getImageUrl = (producto) => {
                 </span>
 
                 <button
-                  @click="carritoStore.incrementarCantidad(item.id)"
+                  @click="incrementarCantidadConValidacion(item.id)"
                   class="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md hover:bg-gray-50 transition-colors cantidad-btn"
                   :disabled="item.cantidad >= item.stock_actual"
                 >

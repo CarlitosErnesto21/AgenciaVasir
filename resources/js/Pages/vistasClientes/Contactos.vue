@@ -4,7 +4,7 @@ import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faMapLocationDot, faHotel, faQuestionCircle, faCreditCard, faBullseye, faRocket, faArrowRight, faEnvelope, faPlane, faLocation, faSearch } from '@fortawesome/free-solid-svg-icons'
+import { faMapLocationDot, faHotel, faQuestionCircle, faCreditCard, faBullseye, faRocket, faArrowRight, faEnvelope, faPlane, faLocation, faSearch, faPhone } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 // Inicializar toast
@@ -139,9 +139,11 @@ const faqsFiltradas = computed(() => {
   <Catalogo>
     <Toast />
     <!-- Header Professional - Ancho completo de la pantalla -->
-    <div class="w-full bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-6 sm:py-8 md:py-10 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8">
-      <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">☎️ Contáctanos</h1>
-      <p class="text-base sm:text-lg text-red-100 mb-4 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
+    <div class="w-full bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-4 sm:py-6 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8 shadow-xl">
+      <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+        <FontAwesomeIcon :icon="faPhone" class="text-white mr-2" />
+        Contáctanos</h1>
+      <p class="text-base sm:text-lg text-red-100 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
     </div>
 
     <!-- Contenido principal con padding responsivo -->

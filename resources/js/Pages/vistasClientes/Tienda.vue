@@ -11,8 +11,10 @@ import CarritoButton from './TiendaViews/CarritoButton.vue'
 import { ref, computed, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { useToast } from 'primevue/usetoast'
-import { usePage } from '@inertiajs/vue3'
+import { usePage, Link, router } from '@inertiajs/vue3'
 import { useCarritoStore } from '@/stores/carrito'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faStore } from '@fortawesome/free-solid-svg-icons'
 
 const toast = useToast()
 const page = usePage()
@@ -254,12 +256,26 @@ watch([minPrice, maxPrice], () => {
 })
 
 // 🛒 Funciones para los botones
-const comprarProducto = (producto) => {
+const comprarProducto = (productoData) => {
+  const producto = productoData.cantidadSeleccionada ? productoData : productoData
+  const cantidad = productoData.cantidadSeleccionada || 1
+
   if (producto.stock_actual <= 0) {
     toast.add({
       severity: 'warn',
       summary: 'Sin stock',
       detail: `El producto "${producto.nombre}" no está disponible`,
+      life: 3000
+    })
+    return
+  }
+
+  // Verificar si la cantidad solicitada está disponible
+  if (cantidad > producto.stock_actual) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Stock insuficiente',
+      detail: `Solo hay ${producto.stock_actual} unidades disponibles de "${producto.nombre}"`,
       life: 3000
     })
     return
@@ -274,23 +290,42 @@ const comprarProducto = (producto) => {
     return
   }
 
-  // Agregar al carrito usando Pinia
-  carrito.agregarProducto(producto)
+  // Verificar roles para restricción
+  if (user.roles && Array.isArray(user.roles)) {
+    const tieneRolRestringido = user.roles.some(role =>
+      role.name === 'Administrador' || role.name === 'Empleado'
+    )
 
-  // Opcional: Mostrar el carrito brevemente
-  setTimeout(() => {
-    carrito.mostrarCarrito()
-  }, 500)
+    if (tieneRolRestringido) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Solo las cuentas de Cliente pueden realizar compras. Puedes ver los detalles del producto usando el botón "Info".',
+        life: 5000
+      })
+      return
+    }
+  }
+
+  // Agregar al carrito usando Pinia con la cantidad especificada
+  const productoConCantidad = { ...producto, cantidadSeleccionada: cantidad }
+  const resultado = carrito.agregarProducto(productoConCantidad)
+
+  if (!resultado.success) {
+    // Solo mostrar toast para errores
+    toast.add({
+      severity: 'warn',
+      summary: 'Stock insuficiente',
+      detail: resultado.message,
+      life: 3000
+    })
+  }
+  // Para éxitos, la animación del carrito se activa automáticamente
 }
 
-const verDetalles = (producto) => {
-  // Aquí podrías navegar a una página de detalles del producto
-  toast.add({
-    severity: 'info',
-    summary: 'Detalles del producto',
-    detail: `${producto.nombre} - $${producto.precio.toFixed(2)} - ${producto.categoria} - Stock: ${producto.stock_actual}`,
-    life: 5000
-  })
+const irADetalleProducto = (producto) => {
+  // Navegar a la vista de detalle del producto usando router
+  router.visit(`/tienda/producto/${producto.id}`)
 }
 
 // 🔄 Función para recargar datos (solo para el botón de estado vacío)
@@ -323,7 +358,9 @@ const recargarDatos = async () => {
             <CarritoButton />
           </div>
 
-          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">🛍️ Productos</h1>
+          <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
+            <FontAwesomeIcon :icon="faStore" class="mr-3" /> Productos
+          </h1>
           <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
         </div>
       </div>
@@ -360,6 +397,7 @@ const recargarDatos = async () => {
               :minPrice="minPrice"
               :maxPrice="maxPrice"
               @update:searchTerm="searchTerm = $event"
+              @clear-filters="clearFilters"
             />
 
             <!-- Grid de productos -->
@@ -367,7 +405,7 @@ const recargarDatos = async () => {
               :loading="loading"
               :filteredProducts="filteredProducts"
               @comprar-producto="comprarProducto"
-              @ver-detalles="verDetalles"
+              @ir-a-detalle="irADetalleProducto"
             />
 
             <!-- Controles de paginación -->

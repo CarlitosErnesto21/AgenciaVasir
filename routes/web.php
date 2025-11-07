@@ -9,6 +9,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\SobreNosotrosController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\ProductoWebController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Middleware\RutasAdmin;
@@ -81,6 +82,9 @@ Route::get('contactos', fn() => Inertia::render('VistasClientes/Contactos'))->na
 //Estas rutas muestran un tour ya sea nacional o internacional
 Route::get('/tours-nacionales/{id}', [TourController::class, 'mostrarTourNacional'])->name('tour-nacional.show');
 Route::get('/tours-internacionales/{id}', [TourController::class, 'mostrarTourInternacional'])->name('tour-internacional.show');
+
+// Ruta para mostrar el detalle de un producto
+Route::get('/tienda/producto/{id}', [ProductoWebController::class, 'mostrarDetalleProducto'])->name('producto.show');
 
 // Ruta para crear reservas de tours (accesible para usuarios autenticados)
 Route::post('/reservas/tour', [ReservaController::class, 'crearReservaTour'])->middleware('auth')->name('reservas.tour');

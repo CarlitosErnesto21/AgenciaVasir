@@ -7,6 +7,10 @@ export const useCarritoStore = defineStore('carrito', () => {
   const items = ref([])
   const isVisible = ref(false)
   const page = usePage()
+  
+  // Estado para la animación
+  const lastAddedQuantity = ref(0)
+  const triggerAnimation = ref(0)
 
   // 📊 Computed properties
   const itemCount = computed(() => {
@@ -22,20 +26,48 @@ export const useCarritoStore = defineStore('carrito', () => {
   // 🔧 Acciones del carrito
   const agregarProducto = (producto) => {
     const existingItem = items.value.find(item => item.id === producto.id)
+    const cantidadAAgregar = producto.cantidadSeleccionada || 1
 
     if (existingItem) {
-      // Si ya existe, incrementar cantidad
-      existingItem.cantidad += 1
+      // Si ya existe, validar stock antes de incrementar cantidad
+      const nuevaCantidad = existingItem.cantidad + cantidadAAgregar
+      if (nuevaCantidad <= existingItem.stock_actual) {
+        existingItem.cantidad = nuevaCantidad
+        // Trigger animation con la cantidad agregada
+        lastAddedQuantity.value = cantidadAAgregar
+        triggerAnimation.value++
+        return { 
+          success: true, 
+          message: cantidadAAgregar === 1 
+            ? 'Producto agregado al carrito' 
+            : `${cantidadAAgregar} productos agregados al carrito`
+        }
+      } else {
+        return { success: false, message: 'No hay suficiente stock disponible' }
+      }
     } else {
-      // Si no existe, agregar nuevo item
-      items.value.push({
-        id: producto.id,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        imagen: producto.imagen,
-        stock_actual: producto.stock_actual,
-        cantidad: 1
-      })
+      // Si no existe, validar que hay stock disponible
+      if (producto.stock_actual >= cantidadAAgregar) {
+        items.value.push({
+          id: producto.id,
+          nombre: producto.nombre,
+          precio: producto.precio,
+          imagen: producto.imagen,
+          stock_actual: producto.stock_actual,
+          cantidad: cantidadAAgregar
+        })
+        // Trigger animation con la cantidad agregada
+        lastAddedQuantity.value = cantidadAAgregar
+        triggerAnimation.value++
+        return { 
+          success: true, 
+          message: cantidadAAgregar === 1 
+            ? 'Producto agregado al carrito'
+            : `${cantidadAAgregar} productos agregados al carrito`
+        }
+      } else {
+        return { success: false, message: 'No hay suficiente stock disponible' }
+      }
     }
   }
 
@@ -51,17 +83,28 @@ export const useCarritoStore = defineStore('carrito', () => {
     if (item) {
       if (nuevaCantidad <= 0) {
         eliminarProducto(productoId)
+        return { success: true, message: 'Producto eliminado del carrito' }
       } else if (nuevaCantidad <= item.stock_actual) {
         item.cantidad = nuevaCantidad
+        return { success: true, message: 'Cantidad actualizada' }
+      } else {
+        return { success: false, message: `Solo hay ${item.stock_actual} unidades disponibles` }
       }
     }
+    return { success: false, message: 'Producto no encontrado en el carrito' }
   }
 
   const incrementarCantidad = (productoId) => {
     const item = items.value.find(item => item.id === productoId)
-    if (item && item.cantidad < item.stock_actual) {
-      item.cantidad += 1
+    if (item) {
+      if (item.cantidad < item.stock_actual) {
+        item.cantidad += 1
+        return { success: true, message: 'Cantidad incrementada' }
+      } else {
+        return { success: false, message: 'No hay suficiente stock disponible' }
+      }
     }
+    return { success: false, message: 'Producto no encontrado en el carrito' }
   }
 
   const decrementarCantidad = (productoId) => {
@@ -152,6 +195,10 @@ export const useCarritoStore = defineStore('carrito', () => {
     getItem,
     hasItem,
     getItemQuantity,
-    verificarEstadoAutenticacion
+    verificarEstadoAutenticacion,
+    
+    // Animación
+    lastAddedQuantity,
+    triggerAnimation
   }
 })
