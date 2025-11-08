@@ -626,10 +626,13 @@ watch(isAuthenticated, (newValue, oldValue) => {
               <span class="font-bold text-white">Ofrecemos:</span><br>
               <span class="text-red-100">
                 - Tours nacionales e internacionales<br>
+                - Venta de boletos aéreos<br>
                 - Reservaciones en Hoteles<br>
-                - Venta de artículos turísticos
+                - Venta de artículos de viaje<br>
+                - Servicio de transporte turístico<br>
+                - Asesoría migratoria
               </span><br><br>
-              <span class="font-bold text-yellow-300 text-lg">¡Viajes y Turismo!</span>
+              <span class="font-bold text-yellow-300 text-leg">¡Viajes y Turismo!</span>
             </p>
           </div>
         </div>
