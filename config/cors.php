@@ -5,11 +5,14 @@ return [
     'allowed_methods' => ['*'],
     'allowed_origins' => [
         'http://localhost:5173',
-        'http://192.168.1.5:5173', // Ajusta según tu red local
+        'http://192.168.1.5:5173',
         'http://localhost:8000',
-        'http://192.168.1.5:8000', // Ajusta según tu red local
+        'http://192.168.1.5:8000',
+        'http://localhost:8080',
+        'http://192.168.1.5:8080',
+        'http://127.0.0.1:8080',
         'https://web-production-32cf.up.railway.app'
-    ], // Ajusta según tu frontend y backend
+    ],
     'allowed_origins_patterns' => [
         '/^https:\/\/.*\.railway\.app$/',
         '/^https:\/\/.*\.render\.com$/',

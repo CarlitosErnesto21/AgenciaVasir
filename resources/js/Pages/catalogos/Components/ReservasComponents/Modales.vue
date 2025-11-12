@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faCheck, faXmark, faCalendarDays, faEye,
@@ -637,7 +637,7 @@ const cerrarModalReprogramar = () => {
           <label class="block text-sm font-medium text-gray-700 mb-2">
             Nueva fecha <span class="text-red-500">*</span>
           </label>
-          <Calendar
+          <DatePicker
             v-model="fechaNuevaReprogramacion"
             showTime
             dateFormat="dd/mm/yy"

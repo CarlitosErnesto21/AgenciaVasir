@@ -6,7 +6,7 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faUser, faXmark, faSave, faIdCard, faCalendarAlt, faMapMarkerAlt, faPhone, faVenusMars, faSpinner } from '@fortawesome/free-solid-svg-icons'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
-import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 import { VueTelInput } from 'vue-tel-input'
@@ -379,7 +379,7 @@ const formatearFecha = (fecha) => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
-            <Calendar
+            <DatePicker
               v-model="formData.fecha_nacimiento"
               :maxDate="new Date()"
               date-format="dd/mm/yy"

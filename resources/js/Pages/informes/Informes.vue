@@ -3,7 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head } from '@inertiajs/vue3'
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
-import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue/datepicker'
 import Toast from 'primevue/toast'
 
 // Reactive window size for responsive iframe
@@ -359,7 +359,7 @@ function limpiarFechas() {
                     <label for="mes-unico-picker" class="block text-sm font-medium text-gray-700 mb-3">
                       Mes para el informe:
                     </label>
-                    <Calendar
+                    <DatePicker
                       id="mes-unico-picker"
                       v-model="mesUnico"
                       view="month"
@@ -390,7 +390,7 @@ function limpiarFechas() {
                         <label for="desde-picker" class="block text-sm font-medium text-gray-700 mb-2">
                           Desde:
                         </label>
-                        <Calendar
+                        <DatePicker
                           id="desde-picker"
                           v-model="desde"
                           view="month"
@@ -407,7 +407,7 @@ function limpiarFechas() {
                         <label for="hasta-picker" class="block text-sm font-medium text-gray-700 mb-2">
                           Hasta:
                         </label>
-                        <Calendar
+                        <DatePicker
                           id="hasta-picker"
                           v-model="hasta"
                           view="month"

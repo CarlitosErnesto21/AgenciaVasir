@@ -171,7 +171,7 @@
                 <!-- Fechas - 50/50 en móviles -->
                 <div class="grid grid-cols-2 gap-3 sm:hidden">
                   <div>
-                    <Calendar
+                    <DatePicker
                       v-model="filtros.fechaDesde"
                       placeholder="Fecha Desde"
                       class="w-full h-9 text-sm border"
@@ -184,7 +184,7 @@
                     />
                   </div>
                   <div>
-                    <Calendar
+                    <DatePicker
                       v-model="filtros.fechaHasta"
                       placeholder="Fecha Hasta"
                       class="w-full h-9 text-sm border"
@@ -218,7 +218,7 @@
                     </select>
                   </div>
                   <div>
-                    <Calendar
+                    <DatePicker
                       v-model="filtros.fechaDesde"
                       placeholder="Fecha desde"
                       class="w-full h-9 text-sm border"
@@ -231,7 +231,7 @@
                     />
                   </div>
                   <div>
-                    <Calendar
+                    <DatePicker
                       v-model="filtros.fechaHasta"
                       placeholder="Fecha hasta"
                       class="w-full h-9 text-sm border"
@@ -576,7 +576,7 @@ import Dialog from 'primevue/dialog';
 import Toast from 'primevue/toast';
 import InputText from 'primevue/inputtext';
 import Select from 'primevue/select';
-import Calendar from 'primevue/calendar';
+import DatePicker from 'primevue/datepicker';
 import axios from 'axios';
 axios.defaults.withCredentials = true;
 

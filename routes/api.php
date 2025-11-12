@@ -30,6 +30,11 @@ use Illuminate\Support\Facades\Auth;
 // Rutas de autenticación
 Route::post('/login', [ApiAuthController::class, 'login']);
 
+// Ruta para obtener el token CSRF (debe ser la primera petición desde el frontend)
+Route::get('/csrf-token', function() {
+    return response()->json(['csrf_token' => csrf_token()]);
+});
+
 // Rutas para la tienda
 Route::get('/productos', [ProductoController::class, 'index']);
 Route::get('/categorias-productos', [CategoriaProductoController::class, 'index']);

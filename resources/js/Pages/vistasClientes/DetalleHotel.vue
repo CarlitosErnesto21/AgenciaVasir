@@ -269,7 +269,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Entrada</label>
-              <Calendar
+              <DatePicker
                 v-model="reservaForm.fecha_entrada"
                 :minDate="getFechaMinima()"
                 date-format="dd/mm/yy"
@@ -281,7 +281,7 @@
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Salida</label>
-              <Calendar
+              <DatePicker
                 v-model="reservaForm.fecha_salida"
                 :minDate="getFechaMinimaComputada"
                 date-format="dd/mm/yy"
@@ -368,7 +368,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
-                <Calendar
+                <DatePicker
                   v-model="reservaForm.cliente_data.fecha_nacimiento"
                   :maxDate="getFechaMaximaNacimiento()"
                   date-format="dd/mm/yy"
@@ -494,7 +494,7 @@
 import Catalogo from '../Catalogo.vue'
 import ModalAuthRequerido from './Modales/ModalAuthRequerido.vue'
 import Dialog from 'primevue/dialog'
-import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue/datepicker'
 import Toast from 'primevue/toast'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
