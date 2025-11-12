@@ -31,7 +31,7 @@ import InputNumber from 'primevue/inputnumber';
 import Select from 'primevue/select';
 import Carousel from "primevue/carousel";
 import ConfirmationService from 'primevue/confirmationservice';
-import Calendar from "primevue/calendar";
+import DatePicker from "primevue/datepicker";
 import ConfirmDialog from 'primevue/confirmdialog';
 import Chart from 'primevue/chart';
 import Tabs from 'primevue/tabs';
@@ -88,7 +88,7 @@ createInertiaApp({
             app.component('InputNumber', InputNumber); // Componente de entrada numérica
             app.component('Select', Select); // Componente de selección
             app.component('Carousel', Carousel); // Componente de carrusel
-            app.component('Calendar', Calendar); // Componente de calendario
+            app.component('DatePicker', DatePicker); // Componente de calendario
             app.component('ConfirmDialog', ConfirmDialog); // Componente de diálogo de confirmación
             app.component('Chart', Chart); // Componente de gráficos
             app.component('Tabs', Tabs); // Componente de pestañas

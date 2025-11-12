@@ -221,7 +221,7 @@ const cargarTodosLosDatos = async () => {
     }
 };
 
-// � Función para forzar truncado en selects
+// 🎨 Función para forzar truncado en selects
 const forceSelectTruncation = () => {
     nextTick(() => {
         setTimeout(() => {
@@ -240,7 +240,7 @@ const forceSelectTruncation = () => {
     });
 };
 
-// �📊 Cargar datos
+// 📊 Cargar datos
 onMounted(() => {
     cargarTodosLosDatos();
     fetchCategorias();

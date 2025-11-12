@@ -120,7 +120,6 @@ const reservasFiltradas = computed(() => {
     // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
     return new Date(b.fecha_reserva) - new Date(a.fecha_reserva)
   })
-  console.log('[Reservas] reservasFiltradas:', resultado)
   return resultado
 })
 
@@ -158,18 +157,9 @@ const cargarReservas = async () => {
       fecha_inicio: filtros.value.fechaDesde || undefined,
       fecha_fin: filtros.value.fechaHasta || undefined
     }
-    console.log('[Reservas] Parámetros enviados a /api/reservas:', params)
     const response = await axios.get('/api/reservas', { params, withCredentials: true })
-    console.log('[Reservas] Respuesta recibida de /api/reservas:', response)
-  reservas.value = Array.isArray(response.data) ? response.data : (response.data.data || [])
-    console.log('[Reservas] Array reservas.value actualizado:', reservas.value)
-    if (reservas.value && reservas.value.length > 0) {
-      reservas.value.forEach((reserva, idx) => {
-        console.log(`[Reservas] Registro[${idx}]:`, reserva)
-      })
-    } else {
-      console.log('[Reservas] No se recibieron registros en reservas.value')
-    }
+    reservas.value = Array.isArray(response.data) ? response.data : (response.data.data || [])
+    // Reservas cargadas exitosamente
   } catch (error) {
     console.error('Error cargando reservas:', error)
     toast.add({
@@ -230,11 +220,8 @@ const cargarReservasWithToasts = async () => {
 const cargarTours = async () => {
   loadingTours.value = true
   try {
-    console.log('[Tours] Solicitando /api/tours')
     const response = await axios.get('/api/tours')
-    console.log('[Tours] Respuesta recibida de /api/tours:', response)
     tours.value = response.data || []
-    console.log('[Tours] Array tours.value actualizado:', tours.value)
   } catch (error) {
     console.error('Error cargando tours:', error)
     tours.value = []
@@ -1053,7 +1040,7 @@ onMounted(() => {
               </div>
 
               <div class="col-span-1 hidden md:block">
-                <Calendar
+                <DatePicker
                   v-model="filtros.fechaDesde"
                   placeholder="Fecha desde"
                   dateFormat="yy-mm-dd"
@@ -1064,7 +1051,7 @@ onMounted(() => {
               </div>
 
               <div class="col-span-1 hidden md:block">
-                <Calendar
+                <DatePicker
                   v-model="filtros.fechaHasta"
                   placeholder="Fecha hasta"
                   dateFormat="yy-mm-dd"
@@ -1076,14 +1063,14 @@ onMounted(() => {
 
               <!-- Calendars para móviles -->
               <div class="col-span-2 flex gap-3 md:hidden">
-                <Calendar
+                <DatePicker
                   v-model="filtros.fechaDesde"
                   placeholder="Fecha desde"
                   dateFormat="dd/mm/yy"
                   class="flex-1 h-9 text-sm rounded-md border border-blue-300"
                   showIcon
                 />
-                <Calendar
+                <DatePicker
                   v-model="filtros.fechaHasta"
                   placeholder="Fecha hasta"
                   dateFormat="dd/mm/yy"

@@ -733,7 +733,6 @@ const loadTiposWithToasts = async () => {
 // ✅ INICIALIZACIÓN
 // =====================================================
 onMounted(() => {
-    console.log('Tipos de documento cargados:', tipos.value);
     if (tipos.value.length === 0) {
         loadTiposWithToasts();
     } else {

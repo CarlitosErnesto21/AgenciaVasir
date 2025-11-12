@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, Link } from "@inertiajs/vue3";
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBusSimple, faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
-import Calendar from "primevue/calendar";
+import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
 import axios from "axios";
@@ -321,7 +321,7 @@ const listaATexto = (lista) => {
     return lista.join('|');
 };
 
-// 🔧 Función para forzar truncado en selects
+// ?? Función para forzar truncado en selects
 const forceSelectTruncation = () => {
     nextTick(() => {
         setTimeout(() => {
@@ -498,7 +498,7 @@ const onFechaFinFilterChange = () => {
     }
 };
 
-// 👀 Watchers para forzar truncado cuando cambien los valores
+// ?? Watchers para forzar truncado cuando cambien los valores
 watch([selectedCategoria, selectedTipoTransporte, selectedEstado], () => {
     forceSelectTruncation();
 }, { deep: true });
@@ -963,18 +963,18 @@ const validateNombre = () => {
     if (tour.value.nombre) {
         // Convertir a mayúsculas primero
         tour.value.nombre = tour.value.nombre.toUpperCase();
-        
-        // ❌ NO permite: @#$%&*()[]{}!¿?.,;:-_+=|\/~`"'<>
+
+        // ? NO permite: @#$%&*()[]{}!¿?.,;:-_+=|\/~`"'<>
         tour.value.nombre = tour.value.nombre.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         tour.value.nombre = tour.value.nombre.replace(/\s+/g, ' ');
-        
+
         // Limitar a 200 caracteres máximo
         if (tour.value.nombre.length > 200) {
             tour.value.nombre = tour.value.nombre.substring(0, 200);
         }
-        
+
         // Eliminar espacios al inicio y al final
         tour.value.nombre = tour.value.nombre.trim();
     }
@@ -984,7 +984,7 @@ const validateNombre = () => {
 const preventSpecialChars = (event) => {
     // Solo permitir: letras (a-z, A-Z), números (0-9), espacios, y caracteres acentuados (áéíóúñÁÉÍÓÚÑ)
     const allowedPattern = /[a-zA-ZáéíóúñÁÉÍÓÚÑ0-9\s]/;
-    
+
     if (!allowedPattern.test(event.key)) {
         event.preventDefault();
     }
@@ -994,28 +994,28 @@ const preventSpecialChars = (event) => {
 const onNombrePaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (paste) {
         // Convertir a mayúsculas y limpiar caracteres especiales
         let cleanPaste = paste.toUpperCase();
-        
+
         // Solo permitir: A-Z, 0-9, espacios, y vocales acentuadas (ÁÉÍÓÚ), Ñ
         cleanPaste = cleanPaste.replace(/[^A-ZÁÉÍÓÚÑ0-9\s]/g, '');
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         cleanPaste = cleanPaste.replace(/\s+/g, ' ');
-        
+
         // Eliminar espacios al inicio y al final
         cleanPaste = cleanPaste.trim();
-        
+
         // Limitar a 200 caracteres máximo
         if (cleanPaste.length > 200) {
             cleanPaste = cleanPaste.substring(0, 200);
         }
-        
+
         // Asignar el valor limpio al campo
         tour.value.nombre = cleanPaste;
-        
+
         // Activar validación manual para actualizar la UI
         validateNombre();
     }
@@ -1025,25 +1025,25 @@ const onNombrePaste = (event) => {
 const onPuntoSalidaPaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (paste) {
         // Convertir a mayúsculas
         let cleanPaste = paste.toUpperCase();
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         cleanPaste = cleanPaste.replace(/\s+/g, ' ');
-        
+
         // Eliminar espacios al inicio y al final
         cleanPaste = cleanPaste.trim();
-        
+
         // Limitar a 200 caracteres máximo
         if (cleanPaste.length > 200) {
             cleanPaste = cleanPaste.substring(0, 200);
         }
-        
+
         // Asignar el valor limpio al campo
         tour.value.punto_salida = cleanPaste;
-        
+
         // Activar validación manual para actualizar la UI
         validatePuntoSalida();
     }
@@ -1053,15 +1053,15 @@ const validatePuntoSalida = () => {
     if (tour.value.punto_salida) {
         // Convertir a mayúsculas
         tour.value.punto_salida = tour.value.punto_salida.toUpperCase();
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         tour.value.punto_salida = tour.value.punto_salida.replace(/\s+/g, ' ');
-        
+
         // Limitar a 200 caracteres máximo
         if (tour.value.punto_salida.length > 200) {
             tour.value.punto_salida = tour.value.punto_salida.substring(0, 200);
         }
-        
+
         // Eliminar espacios al inicio y al final
         tour.value.punto_salida = tour.value.punto_salida.trim();
     }
@@ -1550,7 +1550,7 @@ const onPricePaste = (event) => {
                         </div>
                         <div class="space-y-3">
                             <div>
-                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar tours..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                                <InputText v-model="filters['global'].value" placeholder="?? Buscar tours..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 <div>
@@ -1605,7 +1605,7 @@ const onPricePaste = (event) => {
                                     </select>
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <Calendar
+                                    <DatePicker
                                         v-model="selectedFechaInicio"
                                         placeholder="Fecha desde"
                                         class="w-full h-9 text-sm rounded-md border border-blue-300"
@@ -1617,7 +1617,7 @@ const onPricePaste = (event) => {
                                     />
                                 </div>
                                 <div class="col-span-2 sm:col-span-1 md:col-span-1 lg:col-span-1 hidden sm:block">
-                                    <Calendar
+                                    <DatePicker
                                         v-model="selectedFechaFin"
                                         placeholder="Fecha hasta"
                                         class="w-full h-9 text-sm rounded-md border border-blue-300"
@@ -1629,7 +1629,7 @@ const onPricePaste = (event) => {
                                     />
                                 </div>
                                 <div class="flex w-80 sm:hidden">
-                                    <Calendar
+                                    <DatePicker
                                         v-model="selectedFechaInicio"
                                         placeholder="Fecha desde"
                                         class="h-9 text-sm rounded-md"
@@ -1639,7 +1639,7 @@ const onPricePaste = (event) => {
                                         dateFormat="dd/mm/yy"
                                         :maxDate="selectedFechaFin"
                                     />
-                                    <Calendar
+                                    <DatePicker
                                         v-model="selectedFechaFin"
                                         placeholder="Fecha hasta"
                                         class="h-9 text-sm rounded-md"
@@ -1895,7 +1895,7 @@ const onPricePaste = (event) => {
                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label for="fecha_salida" class="flex items-center gap-1 mb-2">Fecha y hora de salida:<span class="text-red-500 font-bold">*</span></label>
-                            <Calendar v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
+                            <DatePicker v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
                                 :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida()) }"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 :manualInput="false" @dateSelect="validateFechaSalida" @input="validateFechaSalida"
@@ -1904,7 +1904,7 @@ const onPricePaste = (event) => {
                         </div>
                         <div class="flex-1">
                             <label for="horaRegresoCalendar" class="flex items-center gap-1 mb-2">Fecha y hora regreso:<span class="text-red-500 font-bold">*</span></label>
-                            <Calendar v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
+                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
                                 :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>

@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
 import InputText from 'primevue/inputtext'
-import Calendar from 'primevue/calendar'
+import DatePicker from 'primevue/datepicker'
 import Select from 'primevue/select'
 import Textarea from 'primevue/textarea'
 
@@ -364,7 +364,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
-        <Calendar
+        <DatePicker
           v-model="formularioLocal.fecha_nacimiento"
           :maxDate="getFechaMaximaNacimiento()"
           date-format="dd/mm/yy"
