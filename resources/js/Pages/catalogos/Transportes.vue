@@ -806,7 +806,7 @@ const handleToursClick = () => {
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.numero_placa"
                         >
-                            {{ slotProps.data.numero_placa }}
+                            {{ slotProps.data.numero_placa?.toUpperCase() }}
                         </div>
                     </template>
                 </Column>
@@ -873,7 +873,7 @@ const handleToursClick = () => {
                             <label for="numero_placa" class="w-24 flex items-center gap-1">
                                 Placa: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText v-model.trim="transporte.numero_placa" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="ABC123"/>
+                            <InputText v-model.trim="transporte.numero_placa" @input="(e) => transporte.numero_placa = e.target.value.toUpperCase()" id="numero_placa" name="numero_placa" :maxlength="10" :class="{'p-invalid': submitted && (!transporte.numero_placa || transporte.numero_placa.length < 5 || transporte.numero_placa.length > 10),}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="ABC123"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="transporte.numero_placa && transporte.numero_placa.length < 5">
                             La placa debe tener al menos 5 caracteres. Actual: {{ transporte.numero_placa.length }}/5
@@ -1096,7 +1096,7 @@ const handleToursClick = () => {
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <label class="text-sm font-semibold text-gray-700">Placa:</label>
-                            <p class="text-lg font-mono text-gray-900 mt-1">{{ transporte.numero_placa }}</p>
+                            <p class="text-lg font-mono text-gray-900 mt-1">{{ transporte.numero_placa?.toUpperCase() }}</p>
                         </div>
                         <div class="bg-gray-50 p-3 rounded-lg">
                             <label class="text-sm font-semibold text-gray-700">Nombre:</label>
