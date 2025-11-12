@@ -180,7 +180,7 @@ const fetchDashboardData = async (forceRefresh = false) => {
             timeout: 10000 // 10 segundos timeout
         };
 
-        // � LLAMADAS API OPTIMIZADAS EN PARALELO con Promise.allSettled para mejor manejo de errores
+        // 🔄 LLAMADAS API OPTIMIZADAS EN PARALELO con Promise.allSettled para mejor manejo de errores
         const [
             inventarioResult,
             ventasResult,
@@ -192,7 +192,7 @@ const fetchDashboardData = async (forceRefresh = false) => {
             // 📊 Datos esenciales del inventario
             axios.get('/api/inventario/resumen', apiConfig),
 
-            // �️ Solo ventas de los últimos 30 días para optimizar
+            // 💰 Solo ventas de los últimos 30 días para optimizar
             axios.get('/api/ventas?desde=' + new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], apiConfig),
 
             // 📦 Stock bajo - solo los críticos

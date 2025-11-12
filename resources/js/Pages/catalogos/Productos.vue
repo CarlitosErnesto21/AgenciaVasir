@@ -204,7 +204,7 @@ function resetForm() {
     submitted.value = false;
 }
 
-// � Función para forzar truncado en selects
+// 🎨 Función para forzar truncado en selects
 const forceSelectTruncation = () => {
     nextTick(() => {
         setTimeout(() => {
@@ -223,7 +223,7 @@ const forceSelectTruncation = () => {
     });
 };
 
-// �📊 Cargar datos
+// 📊 Cargar datos
 onMounted(() => {
     fetchProductosWithToasts();
     fetchCategorias();
@@ -530,12 +530,12 @@ const saveOrUpdate = async () => {
         resetForm();
     } catch (err) {
         console.error('Error al guardar producto:', err);
-        
+
         // Manejar errores de validación específicos
         if (err.response && err.response.status === 422) {
             const errors = err.response.data.errors;
             let errorMessage = "Por favor revisa los siguientes errores:";
-            
+
             if (errors) {
                 const errorMessages = [];
                 if (errors.nombre) {
@@ -564,12 +564,12 @@ const saveOrUpdate = async () => {
                         errors[field].forEach(msg => errorMessages.push(msg));
                     }
                 });
-                
+
                 if (errorMessages.length > 0) {
                     errorMessage = errorMessages.join(' ');
                 }
             }
-            
+
             toast.add({
                 severity: "error",
                 summary: "Error de validación",
@@ -928,10 +928,10 @@ const validateNombre = () => {
     if (producto.value.nombre) {
         // Convertir a mayúsculas
         producto.value.nombre = producto.value.nombre.toUpperCase();
-        
+
         // Filtrar solo caracteres válidos: letras con acentos, Ñ y espacios
         producto.value.nombre = producto.value.nombre.replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
-        
+
         // Limitar longitud
         if (producto.value.nombre.length > 100) {
             producto.value.nombre = producto.value.nombre.substring(0, 100);
@@ -942,13 +942,13 @@ const validateNombre = () => {
 // Función para manejar teclas en el campo nombre
 const onNombreKeyDown = (event) => {
     const key = event.key;
-    
+
     // Permitir teclas de control (Backspace, Tab, Enter, Delete, flechas, etc.)
     if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
         (event.ctrlKey && [65, 67, 86, 88, 90, 89].includes(event.keyCode))) {
         return;
     }
-    
+
     // Permitir solo letras (incluye acentuadas), espacios y Ñ
     if (!/^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(key)) {
         event.preventDefault();
@@ -959,33 +959,33 @@ const onNombreKeyDown = (event) => {
 // Función para manejar paste en el campo nombre
 const onNombrePaste = (event) => {
     event.preventDefault();
-    
+
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (!paste) return;
-    
+
     // Convertir a mayúsculas y filtrar solo caracteres válidos
     let cleanText = paste.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
-    
+
     // Obtener texto actual y posición del cursor
     const input = event.target;
     const currentValue = input.value || '';
     const cursorStart = input.selectionStart || 0;
     const cursorEnd = input.selectionEnd || 0;
-    
+
     // Construir nuevo valor
     const beforeCursor = currentValue.substring(0, cursorStart);
     const afterCursor = currentValue.substring(cursorEnd);
     let newValue = beforeCursor + cleanText + afterCursor;
-    
+
     // Limitar longitud
     if (newValue.length > 100) {
         newValue = newValue.substring(0, 100);
     }
-    
+
     // Actualizar el valor
     producto.value.nombre = newValue;
-    
+
     // Restaurar posición del cursor
     setTimeout(() => {
         const newCursorPosition = Math.min(cursorStart + cleanText.length, newValue.length);
@@ -996,13 +996,13 @@ const onNombrePaste = (event) => {
 // Función para verificar si el nombre ya existe//agregado
 const checkNombreDuplicado = () => {
     if (!producto.value.nombre || producto.value.nombre.length < 3) return false;
-    
+
     const nombreNormalizado = producto.value.nombre.trim().toUpperCase();
-    
+
     return productos.value.some(p => {
         // Excluir el producto actual si estamos editando
         if (producto.value.id && p.id === producto.value.id) return false;
-        
+
         return p.nombre.trim().toUpperCase() === nombreNormalizado;
     });
 };
@@ -1010,13 +1010,13 @@ const checkNombreDuplicado = () => {
 // Función para manejar teclas en el campo descripción
 const onDescripcionKeyDown = (event) => {
     const key = event.key;
-    
+
     // Permitir teclas de control (Backspace, Tab, Enter, Delete, flechas, etc.)
     if ([8, 9, 27, 13, 46, 35, 36, 37, 38, 39, 40].includes(event.keyCode) ||
         (event.ctrlKey && [65, 67, 86, 88, 90, 89].includes(event.keyCode))) {
         return;
     }
-    
+
     // Permitir letras (incluye acentuadas), números, espacios, Ñ y caracteres especiales
     if (!/^[a-zA-Z0-9áéíóúÁÉÍÓÚñÑüÜ\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"']$/.test(key)) {
         event.preventDefault();
@@ -1027,33 +1027,33 @@ const onDescripcionKeyDown = (event) => {
 // Función para manejar paste en el campo descripción
 const onDescripcionPaste = (event) => {
     event.preventDefault();
-    
+
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (!paste) return;
-    
+
     // Convertir a mayúsculas y filtrar solo caracteres válidos
     let cleanText = paste.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"']/g, '');
-    
+
     // Obtener texto actual y posición del cursor
     const input = event.target;
     const currentValue = input.value || '';
     const cursorStart = input.selectionStart || 0;
     const cursorEnd = input.selectionEnd || 0;
-    
+
     // Construir nuevo valor
     const beforeCursor = currentValue.substring(0, cursorStart);
     const afterCursor = currentValue.substring(cursorEnd);
     let newValue = beforeCursor + cleanText + afterCursor;
-    
+
     // Limitar longitud
     if (newValue.length > 255) {
         newValue = newValue.substring(0, 255);
     }
-    
+
     // Actualizar el valor
     producto.value.descripcion = newValue;
-    
+
     // Restaurar posición del cursor
     setTimeout(() => {
         const newCursorPosition = Math.min(cursorStart + cleanText.length, newValue.length);
@@ -1065,10 +1065,10 @@ const validateDescripcion = () => {
     if (producto.value.descripcion) {
         // Convertir a mayúsculas
         producto.value.descripcion = producto.value.descripcion.toUpperCase();
-        
+
         // Filtrar solo caracteres válidos: letras con acentos, números, espacios y caracteres especiales
         producto.value.descripcion = producto.value.descripcion.replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"']/g, '');
-        
+
         // Limitar longitud
         if (producto.value.descripcion.length > 255) {
             producto.value.descripcion = producto.value.descripcion.substring(0, 255);

@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBusSimple, faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
-import Calendar from "primevue/calendar";
+import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
 import axios from "axios";
@@ -86,7 +86,7 @@ const fileInput = ref(null);
 // Computed property para obtener tours filtrados
 const filteredTours = computed(() => {
     let filtered = tours.value;
-    // Filtro por b˙squeda global
+    // Filtro por b√∫squeda global
     if (filters.value.global.value) {
         const searchTerm = filters.value.global.value.toLowerCase();
         filtered = filtered.filter(tour =>
@@ -96,7 +96,7 @@ const filteredTours = computed(() => {
             tour.punto_salida.toLowerCase().includes(searchTerm)
         );
     }
-    // Filtro por categorÌa
+    // Filtro por categor√≠a
     if (filters.value.categoria.value) {
         filtered = filtered.filter(tour =>
             tour.categoria === filters.value.categoria.value
@@ -126,7 +126,7 @@ const filteredTours = computed(() => {
             }
             if (selectedFechaFin.value) {
                 const fechaFin = new Date(selectedFechaFin.value);
-                fechaFin.setHours(23, 59, 59, 999); // Incluir todo el dÌa final
+                fechaFin.setHours(23, 59, 59, 999); // Incluir todo el d√≠a final
                 cumpleFiltro = cumpleFiltro && fechaTour <= fechaFin;
             }
             return cumpleFiltro;
@@ -135,40 +135,40 @@ const filteredTours = computed(() => {
     return filtered;
 });
 
-// Computed para verificar si se puede agregar m·s im·genes
+// Computed para verificar si se puede agregar m√°s im√°genes
 const canAddMoreImages = computed(() => {
     return imagenPreviewList.value.length < 5;
 });
 
-// Computed para el texto del botÛn de im·genes
+// Computed para el texto del bot√≥n de im√°genes
 const imageButtonText = computed(() => {
     if (isUploadingImages.value) return 'Cargando...';
     if (isOpeningGallery.value) return 'Abriendo...';
-    if (!canAddMoreImages.value) return 'LÌmite alcanzado';
+    if (!canAddMoreImages.value) return 'L√≠mite alcanzado';
     return 'Seleccionar';
 });
 
-// Computed para validar cupos con mensajes especÌficos
+// Computed para validar cupos con mensajes espec√≠ficos
 const cupoMinError = computed(() => {
     if (!tour.value.cupo_min) return '';
 
     const cupoMin = parseInt(tour.value.cupo_min) || 0;
     const cupoMax = parseInt(tour.value.cupo_max) || 0;
 
-    // Validar que el cupo mÌnimo sea mayor a 0
+    // Validar que el cupo m√≠nimo sea mayor a 0
     if (cupoMin <= 0) {
-        return 'El cupo mÌnimo debe ser al menos 1.';
+        return 'El cupo m√≠nimo debe ser al menos 1.';
     }
 
     const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
     const capacidadTransporte = transporteSeleccionado ? transporteSeleccionado.capacidad : null;
 
     if (capacidadTransporte && cupoMin > capacidadTransporte) {
-        return `El cupo mÌnimo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
+        return `El cupo m√≠nimo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
     }
 
     if (tour.value.cupo_max && cupoMax > 0 && cupoMin >= cupoMax) {
-        return 'El cupo mÌnimo debe ser menor que el cupo m·ximo.';
+        return 'El cupo m√≠nimo debe ser menor que el cupo m√°ximo.';
     }
 
     return '';
@@ -180,26 +180,26 @@ const cupoMaxError = computed(() => {
     const cupoMin = parseInt(tour.value.cupo_min) || 0;
     const cupoMax = parseInt(tour.value.cupo_max) || 0;
 
-    // Validar que el cupo m·ximo sea mayor a 0
+    // Validar que el cupo m√°ximo sea mayor a 0
     if (cupoMax <= 0) {
-        return 'El cupo m·ximo debe ser al menos 1.';
+        return 'El cupo m√°ximo debe ser al menos 1.';
     }
 
     const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
     const capacidadTransporte = transporteSeleccionado ? transporteSeleccionado.capacidad : null;
 
     if (capacidadTransporte && cupoMax > capacidadTransporte) {
-        return `El cupo m·ximo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
+        return `El cupo m√°ximo no puede ser mayor que la capacidad del transporte (${capacidadTransporte}).`;
     }
 
     if (tour.value.cupo_min && cupoMin > 0 && cupoMax <= cupoMin) {
-        return 'El cupo m·ximo debe ser mayor que el cupo mÌnimo.';
+        return 'El cupo m√°ximo debe ser mayor que el cupo m√≠nimo.';
     }
 
     return '';
 });
 
-// Computed para obtener el lÌmite m·ximo de cupos basado en el transporte seleccionado
+// Computed para obtener el l√≠mite m√°ximo de cupos basado en el transporte seleccionado
 const maxCupoAllowed = computed(() => {
     const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
     return transporteSeleccionado ? transporteSeleccionado.capacidad : 30;
@@ -208,7 +208,7 @@ const maxCupoAllowed = computed(() => {
 // Watcher para detectar cambios en el modal
 watch([tour, horaRegresoCalendar, incluyeLista, noIncluyeLista, imagenPreviewList, removedImages], () => {
     if (originalTourData.value && dialog.value) {
-        // Usar nextTick para evitar que se active inmediatamente despuÈs de cargar datos
+        // Usar nextTick para evitar que se active inmediatamente despu√©s de cargar datos
         nextTick(() => {
             const current = {
                 ...tour.value,
@@ -222,7 +222,7 @@ watch([tour, horaRegresoCalendar, incluyeLista, noIncluyeLista, imagenPreviewLis
                 ...originalTourData.value,
                 imagenes_actuales: originalTourData.value.imagenes_originales
             }) || removedImages.value.length > 0;
-            // Para tours nuevos, tambiÈn verificar si hay alg˙n dato ingresado
+            // Para tours nuevos, tambi√©n verificar si hay alg√∫n dato ingresado
             const isCreatingNew = !originalTourData.value.id;
             const hasAnyData = tour.value.nombre ||
                               tour.value.punto_salida ||
@@ -321,7 +321,7 @@ const listaATexto = (lista) => {
     return lista.join('|');
 };
 
-// ?? FunciÛn para forzar truncado en selects
+// ?? Funci√≥n para forzar truncado en selects
 const forceSelectTruncation = () => {
     nextTick(() => {
         setTimeout(() => {
@@ -340,7 +340,7 @@ const forceSelectTruncation = () => {
     });
 };
 
-// Obtener tours, categorÌas y tipos de transporte
+// Obtener tours, categor√≠as y tipos de transporte
 onMounted(() => {
     fetchToursWithToasts();
     fetchTipoTransportes();
@@ -351,7 +351,7 @@ onMounted(() => {
     }
 });
 
-// Listener para cambios de tamaÒo de ventana
+// Listener para cambios de tama√±o de ventana
 const handleResize = () => {
     windowWidth.value = window.innerWidth;
 };
@@ -377,7 +377,7 @@ const fetchTours = async () => {
             // Agregar campos para filtros
             'transporte.nombre': t.transporte?.nombre,
         })).sort((a, b) => {
-            // Ordenar por fecha de creaciÛn descendente (m·s recientes primero)
+            // Ordenar por fecha de creaci√≥n descendente (m√°s recientes primero)
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
             return dateB - dateA;
@@ -393,7 +393,7 @@ const fetchTours = async () => {
 const fetchToursWithToasts = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duraciÛn autom·tica
+    // Mostrar toast de carga con duraci√≥n autom√°tica
     toast.add({
         severity: "info",
         summary: "Cargando tours...",
@@ -412,13 +412,13 @@ const fetchToursWithToasts = async () => {
             // Agregar campos para filtros
             'transporte.nombre': t.transporte?.nombre,
         })).sort((a, b) => {
-            // Ordenar por fecha de creaciÛn descendente (m·s recientes primero)
+            // Ordenar por fecha de creaci√≥n descendente (m√°s recientes primero)
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
             return dateB - dateA;
         });
 
-        // Mostrar toast de Èxito
+        // Mostrar toast de √©xito
         toast.add({
             severity: "success",
             summary: "Tours cargados",
@@ -474,7 +474,7 @@ const onFechaInicioFilterChange = () => {
             toast.add({
                 severity: "warn",
                 summary: "Fecha ajustada",
-                detail: "La fecha 'hasta' se limpiÛ porque era anterior a la fecha 'desde'.",
+                detail: "La fecha 'hasta' se limpi√≥ porque era anterior a la fecha 'desde'.",
                 life: 5000
             });
         }
@@ -491,7 +491,7 @@ const onFechaFinFilterChange = () => {
             toast.add({
                 severity: "warn",
                 summary: "Fecha ajustada",
-                detail: "La fecha 'desde' se limpiÛ porque era posterior a la fecha 'hasta'.",
+                detail: "La fecha 'desde' se limpi√≥ porque era posterior a la fecha 'hasta'.",
                 life: 5000
             });
         }
@@ -507,7 +507,7 @@ const clearFilters = async () => {
     isClearingFilters.value = true;
 
     try {
-        // Simular un pequeÒo delay para mostrar el loading
+        // Simular un peque√±o delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
 
         selectedCategoria.value = "";
@@ -531,16 +531,16 @@ const clearFilters = async () => {
     }
 };
 
-// FunciÛn para manejar el clic en el enlace de transportes
+// Funci√≥n para manejar el clic en el enlace de transportes
 const handleTransportesClick = () => {
     isNavigatingToTransportes.value = true;
-    // El estado de loading se resetea autom·ticamente cuando se cambia de p·gina
+    // El estado de loading se resetea autom√°ticamente cuando se cambia de p√°gina
 };
 
 const openNew = () => {
     resetForm();
     btnTitle.value = "Guardar";
-    submitted.value = false; // Asegurar que no hay estado de validaciÛn
+    submitted.value = false; // Asegurar que no hay estado de validaci√≥n
     dialog.value = true;
     // Configurar estado inicial para detectar cambios en tours nuevos
     nextTick(() => {
@@ -557,7 +557,7 @@ const openNew = () => {
 
 const editTour = (t) => {
     resetForm();
-    submitted.value = false; // Limpiar estado de validaciÛn
+    submitted.value = false; // Limpiar estado de validaci√≥n
     tour.value = {
         ...t,
         transporte_id: t.transporte?.id || t.transporte_id || null,
@@ -585,7 +585,7 @@ const editTour = (t) => {
     hasUnsavedChanges.value = false;
     btnTitle.value = "Actualizar";
     dialog.value = true;
-    // Guardar datos originales despuÈs de que todo estÈ cargado
+    // Guardar datos originales despu√©s de que todo est√© cargado
     nextTick(() => {
         originalTourData.value = {
             ...tour.value,
@@ -601,66 +601,66 @@ const editTour = (t) => {
 const saveOrUpdate = async () => {
     submitted.value = true;
     if (!horaRegresoCalendar.value) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estÈn completos.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios est√©n completos.", life: 4000 });
         return;
     }
-    // Validar nombre especÌficamente
+    // Validar nombre espec√≠ficamente
     if (!tour.value.nombre || tour.value.nombre.length < 10 || tour.value.nombre.length > 200) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estÈn completos y cumplan los requisitos.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios est√©n completos y cumplan los requisitos.", life: 4000 });
         return;
     }
-    // Validar punto_salida especÌficamente
+    // Validar punto_salida espec√≠ficamente
     if (!tour.value.punto_salida || tour.value.punto_salida.length < 5 || tour.value.punto_salida.length > 200) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estÈn completos y cumplan los requisitos.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios est√©n completos y cumplan los requisitos.", life: 4000 });
         return;
     }
     // Validar cupos con la capacidad del transporte
     if (cupoMinError.value) {
-        toast.add({ severity: "warn", summary: "Error en cupo mÌnimo", detail: cupoMinError.value, life: 4000 });
+        toast.add({ severity: "warn", summary: "Error en cupo m√≠nimo", detail: cupoMinError.value, life: 4000 });
         return;
     }
     if (cupoMaxError.value) {
-        toast.add({ severity: "warn", summary: "Error en cupo m·ximo", detail: cupoMaxError.value, life: 4000 });
+        toast.add({ severity: "warn", summary: "Error en cupo m√°ximo", detail: cupoMaxError.value, life: 4000 });
         return;
     }
-    // Validar cupos si est·n definidos
+    // Validar cupos si est√°n definidos
     if (tour.value.cupo_min && tour.value.cupo_max && tour.value.cupo_min >= tour.value.cupo_max) {
         toast.add({ severity: "warn", summary: "Verificar datos", detail: "Por favor revisa los valores ingresados y corrige cualquier inconsistencia.", life: 4000 });
         return;
     }
     // Validar fechas
     if (!validateFechaSalida()) {
-        toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y aseg˙rate de que sean correctas.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y aseg√∫rate de que sean correctas.", life: 4000 });
         return;
     }
     if (!validateFechaRegreso()) {
-        toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y aseg˙rate de que sean correctas.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y aseg√∫rate de que sean correctas.", life: 4000 });
         return;
     }
     if (!tour.value.fecha_salida || !tour.value.precio || !tour.value.categoria || !tour.value.transporte_id || !tour.value.cupo_min || !tour.value.cupo_max || imagenPreviewList.value.length === 0) {
-        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estÈn completos.", life: 4000 });
+        toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios est√©n completos.", life: 4000 });
         return;
     }
 
-    // Validar lÌmite de im·genes
+    // Validar l√≠mite de im√°genes
     if (imagenPreviewList.value.length > 5) {
         toast.add({
             severity: "warn",
-            summary: "Demasiadas im·genes",
-            detail: "No puedes subir m·s de 5 im·genes por tour.",
+            summary: "Demasiadas im√°genes",
+            detail: "No puedes subir m√°s de 5 im√°genes por tour.",
             life: 4000
         });
         return;
     }
 
-    // Validar tamaÒo de im·genes antes de enviar
+    // Validar tama√±o de im√°genes antes de enviar
     const maxSize = 2 * 1024 * 1024; // 2MB
     const oversizedFiles = imagenFiles.value.filter(file => file.size > maxSize);
     if (oversizedFiles.length > 0) {
         toast.add({
             severity: "warn",
             summary: "Verificar archivos",
-            detail: "Por favor revisa el tamaÒo de las im·genes seleccionadas.",
+            detail: "Por favor revisa el tama√±o de las im√°genes seleccionadas.",
             life: 4000
         });
         return;
@@ -669,13 +669,13 @@ const saveOrUpdate = async () => {
     isLoading.value = true;
     try {
         const formData = new FormData();
-        // Campos obligatorios con validaciÛn
+        // Campos obligatorios con validaci√≥n
         formData.append("nombre", tour.value.nombre || "");
         // Campos opcionales - solo agregar si tienen contenido
         if (incluyeLista.value.length > 0) {
             formData.append("incluye", listaATexto(incluyeLista.value));
         } else {
-            formData.append("incluye", ""); // Enviar cadena vacÌa para limpiar el campo
+            formData.append("incluye", ""); // Enviar cadena vac√≠a para limpiar el campo
         }
         formData.append("punto_salida", tour.value.punto_salida || "");
         // Formatear fecha_salida correctamente
@@ -690,7 +690,7 @@ const saveOrUpdate = async () => {
         } else if (horaRegresoCalendar.value) {
             formData.append("fecha_regreso", horaRegresoCalendar.value);
         }
-        // Campos numÈricos con validaciÛn
+        // Campos num√©ricos con validaci√≥n
         formData.append("precio", tour.value.precio || "");
         formData.append("categoria", tour.value.categoria || "");
         formData.append("transporte_id", tour.value.transporte_id || "");
@@ -699,7 +699,7 @@ const saveOrUpdate = async () => {
         if (noIncluyeLista.value.length > 0) {
             formData.append("no_incluye", listaATexto(noIncluyeLista.value));
         } else {
-            formData.append("no_incluye", ""); // Enviar cadena vacÌa para limpiar el campo
+            formData.append("no_incluye", ""); // Enviar cadena vac√≠a para limpiar el campo
         }
         if (tour.value.cupo_min) {
             formData.append("cupo_min", tour.value.cupo_min);
@@ -718,7 +718,7 @@ const saveOrUpdate = async () => {
             response = await axios.post(url, formData, { headers: {"Content-Type":"multipart/form-data"} });
             toast.add({
                 severity: "success",
-                summary: "°…xito!",
+                summary: "¬°√âxito!",
                 detail: "El tour ha sido creado correctamente.",
                 life: 5000
             });
@@ -727,7 +727,7 @@ const saveOrUpdate = async () => {
             response = await axios.post(`${url}/${tour.value.id}`, formData, { headers: {"Content-Type":"multipart/form-data"} });
             toast.add({
                 severity: "success",
-                summary: "°…xito!",
+                summary: "¬°√âxito!",
                 detail: "El tour ha sido actualizado correctamente.",
                 life: 5000
             });
@@ -740,7 +740,7 @@ const saveOrUpdate = async () => {
     } catch (err) {
         toast.add({
             severity: "warn",
-            summary: "Error de validaciÛn",
+            summary: "Error de validaci√≥n",
             detail: "Por favor revisa los campos e intenta nuevamente.",
             life: 6000
         });
@@ -759,7 +759,7 @@ const deleteTour = async () => {
         deleteDialog.value = false;
         toast.add({
             severity: "success",
-            summary: "°Eliminado!",
+            summary: "¬°Eliminado!",
             detail: "El tour ha sido eliminado correctamente.",
             life: 5000
         });
@@ -767,7 +767,7 @@ const deleteTour = async () => {
         toast.add({
             severity: "error",
             summary: "Error",
-            detail: "No se pudo eliminar el tour. IntÈntalo de nuevo.",
+            detail: "No se pudo eliminar el tour. Int√©ntalo de nuevo.",
             life: 5000
         });
     } finally {
@@ -795,18 +795,18 @@ const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
 
-// FunciÛn para manejar el clic del botÛn de subir im·genes
+// Funci√≥n para manejar el clic del bot√≥n de subir im√°genes
 const handleImageUploadClick = async () => {
     isOpeningGallery.value = true;
 
-    // Simular un pequeÒo delay para mostrar el estado "Abriendo galerÌa"
+    // Simular un peque√±o delay para mostrar el estado "Abriendo galer√≠a"
     await new Promise(resolve => setTimeout(resolve, 300));
 
     // Hacer clic en el input file
     fileInput.value.click();
 
-    // El estado se mantendr· hasta que se seleccionen archivos o se cancele
-    // Se resetea en onImageSelect o cuando se detecta que no se seleccionÛ nada
+    // El estado se mantendr√° hasta que se seleccionen archivos o se cancele
+    // Se resetea en onImageSelect o cuando se detecta que no se seleccion√≥ nada
     setTimeout(() => {
         if (!isUploadingImages.value) {
             isOpeningGallery.value = false;
@@ -817,9 +817,9 @@ const handleImageUploadClick = async () => {
 const onImageSelect = async (event) => {
     const files = event.target ? event.target.files : event.files;
     const maxSize = 2 * 1024 * 1024; // 2MB en bytes
-    const maxImages = 5; // LÌmite m·ximo de im·genes por tour
+    const maxImages = 5; // L√≠mite m√°ximo de im√°genes por tour
 
-    // Resetear el estado de apertura de galerÌa
+    // Resetear el estado de apertura de galer√≠a
     isOpeningGallery.value = false;
 
     if (!files || files.length === 0) {
@@ -827,7 +827,7 @@ const onImageSelect = async (event) => {
         return;
     }
 
-    // Verificar lÌmite total de im·genes
+    // Verificar l√≠mite total de im√°genes
     const imagenesActuales = imagenPreviewList.value.length;
     const imagenesNuevas = files.length;
     const totalImagenes = imagenesActuales + imagenesNuevas;
@@ -836,8 +836,8 @@ const onImageSelect = async (event) => {
         const imagenesPermitidas = maxImages - imagenesActuales;
         toast.add({
             severity: "warn",
-            summary: "LÌmite de im·genes excedido",
-            detail: `Solo puedes subir un m·ximo de ${maxImages} im·genes por tour. Actualmente tienes ${imagenesActuales} imagen${imagenesActuales !== 1 ? 'es' : ''}, puedes agregar m·ximo ${imagenesPermitidas} m·s.`,
+            summary: "L√≠mite de im√°genes excedido",
+            detail: `Solo puedes subir un m√°ximo de ${maxImages} im√°genes por tour. Actualmente tienes ${imagenesActuales} imagen${imagenesActuales !== 1 ? 'es' : ''}, puedes agregar m√°ximo ${imagenesPermitidas} m√°s.`,
             life: 6000
         });
         return;
@@ -852,12 +852,12 @@ const onImageSelect = async (event) => {
 
         for (const file of files) {
             if (file instanceof File) {
-                // Validar tamaÒo del archivo
+                // Validar tama√±o del archivo
                 if (file.size > maxSize) {
                     toast.add({
                         severity: "warn",
                         summary: "Archivo muy grande",
-                        detail: `El archivo "${file.name}" excede el tamaÒo m·ximo de 2MB.`,
+                        detail: `El archivo "${file.name}" excede el tama√±o m√°ximo de 2MB.`,
                         life: 5000
                     });
                     continue; // Saltar este archivo
@@ -866,8 +866,8 @@ const onImageSelect = async (event) => {
                 if (!file.type.startsWith('image/')) {
                     toast.add({
                         severity: "warn",
-                        summary: "Formato no v·lido",
-                        detail: `El archivo "${file.name}" no es una imagen v·lida.`,
+                        summary: "Formato no v√°lido",
+                        detail: `El archivo "${file.name}" no es una imagen v√°lida.`,
                         life: 4000
                     });
                     continue; // Saltar este archivo
@@ -890,14 +890,14 @@ const onImageSelect = async (event) => {
             }
         }
 
-        // Esperar a que todas las im·genes se procesen
+        // Esperar a que todas las im√°genes se procesen
         await Promise.all(processingPromises);
 
-        // Mostrar mensaje de Èxito si se procesaron im·genes
+        // Mostrar mensaje de √©xito si se procesaron im√°genes
         if (validFilesCount > 0) {
             toast.add({
                 severity: "success",
-                summary: "Im·genes cargadas",
+                summary: "Im√°genes cargadas",
                 detail: `${validFilesCount} imagen${validFilesCount > 1 ? 'es' : ''} cargada${validFilesCount > 1 ? 's' : ''} correctamente. Total: ${imagenPreviewList.value.length}/${maxImages}`,
                 life: 4000
             });
@@ -905,8 +905,8 @@ const onImageSelect = async (event) => {
     } catch (error) {
         toast.add({
             severity: "error",
-            summary: "Error al cargar im·genes",
-            detail: "Hubo un problema al procesar las im·genes. IntÈntalo de nuevo.",
+            summary: "Error al cargar im√°genes",
+            detail: "Hubo un problema al procesar las im√°genes. Int√©ntalo de nuevo.",
             life: 4000
         });
     } finally {
@@ -933,27 +933,27 @@ const removeImage = (index) => {
 
 const openImageModal = (index) => {
     if (selectedTour.value && selectedTour.value.imagenes && selectedTour.value.imagenes.length > 0) {
-        // Preparar las im·genes para el carrusel
+        // Preparar las im√°genes para el carrusel
         selectedImages.value = selectedTour.value.imagenes.map(img => {
             const imageName = typeof img === "string" ? img : img.nombre;
             return IMAGE_PATH + imageName;
         });
 
-        // Asegurar que el Ìndice estÈ dentro del rango v·lido
+        // Asegurar que el √≠ndice est√© dentro del rango v√°lido
         const validIndex = Math.max(0, Math.min(index, selectedImages.value.length - 1));
 
-        // Establecer el Ìndice del carrusel ANTES de abrir el modal
+        // Establecer el √≠ndice del carrusel ANTES de abrir el modal
         carouselIndex.value = validIndex;
 
-        // Abrir el modal despuÈs de un pequeÒo delay para asegurar que todo estÈ listo
+        // Abrir el modal despu√©s de un peque√±o delay para asegurar que todo est√© listo
         setTimeout(() => {
             showImageCarouselDialog.value = true;
         }, 50);
     } else {
         toast.add({
             severity: "warn",
-            summary: "Sin im·genes",
-            detail: "No hay im·genes disponibles para mostrar.",
+            summary: "Sin im√°genes",
+            detail: "No hay im√°genes disponibles para mostrar.",
             life: 5000
         });
     }
@@ -961,20 +961,20 @@ const openImageModal = (index) => {
 
 const validateNombre = () => {
     if (tour.value.nombre) {
-        // Convertir a may˙sculas primero
+        // Convertir a may√∫sculas primero
         tour.value.nombre = tour.value.nombre.toUpperCase();
-        
-        // ? NO permite: @#$%&*()[]{}!ø?.,;:-_+=|\/~`"'<>
-        tour.value.nombre = tour.value.nombre.replace(/[^A-Z¡…Õ”⁄—0-9\s]/g, '');
-        
-        // Reemplazar m˙ltiples espacios consecutivos con uno solo
+
+        // ? NO permite: @#$%&*()[]{}!¬ø?.,;:-_+=|\/~`"'<>
+        tour.value.nombre = tour.value.nombre.replace(/[^A-Z√Å√â√ç√ì√ö√ë0-9\s]/g, '');
+
+        // Reemplazar m√∫ltiples espacios consecutivos con uno solo
         tour.value.nombre = tour.value.nombre.replace(/\s+/g, ' ');
-        
-        // Limitar a 200 caracteres m·ximo
+
+        // Limitar a 200 caracteres m√°ximo
         if (tour.value.nombre.length > 200) {
             tour.value.nombre = tour.value.nombre.substring(0, 200);
         }
-        
+
         // Eliminar espacios al inicio y al final
         tour.value.nombre = tour.value.nombre.trim();
     }
@@ -982,86 +982,86 @@ const validateNombre = () => {
 
 // Prevenir la entrada de caracteres especiales en tiempo real
 const preventSpecialChars = (event) => {
-    // Solo permitir: letras (a-z, A-Z), n˙meros (0-9), espacios, y caracteres acentuados (·ÈÌÛ˙Ò¡…Õ”⁄—)
-    const allowedPattern = /[a-zA-Z·ÈÌÛ˙Ò¡…Õ”⁄—0-9\s]/;
-    
+    // Solo permitir: letras (a-z, A-Z), n√∫meros (0-9), espacios, y caracteres acentuados (√°√©√≠√≥√∫√±√Å√â√ç√ì√ö√ë)
+    const allowedPattern = /[a-zA-Z√°√©√≠√≥√∫√±√Å√â√ç√ì√ö√ë0-9\s]/;
+
     if (!allowedPattern.test(event.key)) {
         event.preventDefault();
     }
 };
 
-// FunciÛn para manejar paste en el campo nombre
+// Funci√≥n para manejar paste en el campo nombre
 const onNombrePaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (paste) {
-        // Convertir a may˙sculas y limpiar caracteres especiales
+        // Convertir a may√∫sculas y limpiar caracteres especiales
         let cleanPaste = paste.toUpperCase();
-        
-        // Solo permitir: A-Z, 0-9, espacios, y vocales acentuadas (¡…Õ”⁄), —
-        cleanPaste = cleanPaste.replace(/[^A-Z¡…Õ”⁄—0-9\s]/g, '');
-        
-        // Reemplazar m˙ltiples espacios consecutivos con uno solo
+
+        // Solo permitir: A-Z, 0-9, espacios, y vocales acentuadas (√Å√â√ç√ì√ö), √ë
+        cleanPaste = cleanPaste.replace(/[^A-Z√Å√â√ç√ì√ö√ë0-9\s]/g, '');
+
+        // Reemplazar m√∫ltiples espacios consecutivos con uno solo
         cleanPaste = cleanPaste.replace(/\s+/g, ' ');
-        
+
         // Eliminar espacios al inicio y al final
         cleanPaste = cleanPaste.trim();
-        
-        // Limitar a 200 caracteres m·ximo
+
+        // Limitar a 200 caracteres m√°ximo
         if (cleanPaste.length > 200) {
             cleanPaste = cleanPaste.substring(0, 200);
         }
-        
+
         // Asignar el valor limpio al campo
         tour.value.nombre = cleanPaste;
-        
-        // Activar validaciÛn manual para actualizar la UI
+
+        // Activar validaci√≥n manual para actualizar la UI
         validateNombre();
     }
 };
 
-// FunciÛn para manejar paste en el campo punto de salida
+// Funci√≥n para manejar paste en el campo punto de salida
 const onPuntoSalidaPaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     if (paste) {
-        // Convertir a may˙sculas
+        // Convertir a may√∫sculas
         let cleanPaste = paste.toUpperCase();
-        
-        // Reemplazar m˙ltiples espacios consecutivos con uno solo
+
+        // Reemplazar m√∫ltiples espacios consecutivos con uno solo
         cleanPaste = cleanPaste.replace(/\s+/g, ' ');
-        
+
         // Eliminar espacios al inicio y al final
         cleanPaste = cleanPaste.trim();
-        
-        // Limitar a 200 caracteres m·ximo
+
+        // Limitar a 200 caracteres m√°ximo
         if (cleanPaste.length > 200) {
             cleanPaste = cleanPaste.substring(0, 200);
         }
-        
+
         // Asignar el valor limpio al campo
         tour.value.punto_salida = cleanPaste;
-        
-        // Activar validaciÛn manual para actualizar la UI
+
+        // Activar validaci√≥n manual para actualizar la UI
         validatePuntoSalida();
     }
 };
 
 const validatePuntoSalida = () => {
     if (tour.value.punto_salida) {
-        // Convertir a may˙sculas
+        // Convertir a may√∫sculas
         tour.value.punto_salida = tour.value.punto_salida.toUpperCase();
-        
-        // Reemplazar m˙ltiples espacios consecutivos con uno solo
+
+        // Reemplazar m√∫ltiples espacios consecutivos con uno solo
         tour.value.punto_salida = tour.value.punto_salida.replace(/\s+/g, ' ');
-        
-        // Limitar a 200 caracteres m·ximo
+
+        // Limitar a 200 caracteres m√°ximo
         if (tour.value.punto_salida.length > 200) {
             tour.value.punto_salida = tour.value.punto_salida.substring(0, 200);
         }
-        
+
         // Eliminar espacios al inicio y al final
         tour.value.punto_salida = tour.value.punto_salida.trim();
     }
@@ -1095,15 +1095,15 @@ const validateCupos = () => {
 
     // Si se llena cupo_min, asegurar que cupo_max sea al menos cupo_min + 1
     if (tour.value.cupo_min && !tour.value.cupo_max) {
-        // Si hay mÌnimo pero no m·ximo, sugerir un m·ximo
+        // Si hay m√≠nimo pero no m√°ximo, sugerir un m√°ximo
         return true;
     }
     // Si se llena cupo_max, asegurar que cupo_min sea menor
     if (tour.value.cupo_max && !tour.value.cupo_min) {
-        // Si hay m·ximo pero no mÌnimo, est· bien
+        // Si hay m√°ximo pero no m√≠nimo, est√° bien
         return true;
     }
-    // Si ambos est·n llenos, validar la lÛgica
+    // Si ambos est√°n llenos, validar la l√≥gica
     if (tour.value.cupo_min && tour.value.cupo_max) {
         if (cupoMin >= cupoMax) {
             return false;
@@ -1116,13 +1116,13 @@ const validateFechaSalida = () => {
     if (!tour.value.fecha_salida) return true;
     const now = new Date();
     const fechaSalida = new Date(tour.value.fecha_salida);
-    // Validar que la fecha de salida sea futura (al menos 1 hora despuÈs de ahora)
-    const minTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hora despuÈs de ahora
+    // Validar que la fecha de salida sea futura (al menos 1 hora despu√©s de ahora)
+    const minTime = new Date(now.getTime() + 60 * 60 * 1000); // 1 hora despu√©s de ahora
     if (fechaSalida < minTime) {
         return false;
     }
 
-    // Si hay fecha de regreso, validar que salida sea anterior al regreso con mÌnimo 1 hora de diferencia
+    // Si hay fecha de regreso, validar que salida sea anterior al regreso con m√≠nimo 1 hora de diferencia
     if (horaRegresoCalendar.value) {
         const fechaRegreso = new Date(horaRegresoCalendar.value);
         const diferenciaHoras = (fechaRegreso - fechaSalida) / (1000 * 60 * 60);
@@ -1133,11 +1133,11 @@ const validateFechaSalida = () => {
     return true;
 };
 
-//FunciÛn para validar la fecha de regreso
+//Funci√≥n para validar la fecha de regreso
 const validateFechaRegreso = () => {
     if (!horaRegresoCalendar.value) return true;
     const fechaRegreso = new Date(horaRegresoCalendar.value);
-    // Si hay fecha de salida, validar que regreso sea posterior a salida con mÌnimo 1 hora de diferencia
+    // Si hay fecha de salida, validar que regreso sea posterior a salida con m√≠nimo 1 hora de diferencia
     if (tour.value.fecha_salida) {
         const fechaSalida = new Date(tour.value.fecha_salida);
         const diferenciaHoras = (fechaRegreso - fechaSalida) / (1000 * 60 * 60);
@@ -1149,22 +1149,22 @@ const validateFechaRegreso = () => {
     return true;
 };
 
-// FunciÛn para obtener fecha mÌnima (1 hora desde ahora)
+// Funci√≥n para obtener fecha m√≠nima (1 hora desde ahora)
 const getMinDate = () => {
     const now = new Date();
     now.setHours(now.getHours() + 1); // 1 hora desde ahora
     return now;
 };
 
-// FunciÛn para obtener fecha mÌnima de regreso (fecha salida + 1 hora)
+// Funci√≥n para obtener fecha m√≠nima de regreso (fecha salida + 1 hora)
 const getMinDateRegreso = () => {
     if (!tour.value.fecha_salida) return getMinDate();
     const fechaSalida = new Date(tour.value.fecha_salida);
-    fechaSalida.setHours(fechaSalida.getHours() + 1); // 1 hora despuÈs de la salida
+    fechaSalida.setHours(fechaSalida.getHours() + 1); // 1 hora despu√©s de la salida
     return fechaSalida;
 };
 
-// FunciÛn para obtener fecha m·xima de salida (fecha regreso - 1 hora)
+// Funci√≥n para obtener fecha m√°xima de salida (fecha regreso - 1 hora)
 const getMaxDateSalida = () => {
     if (!horaRegresoCalendar.value) return null;
     const fechaRegreso = new Date(horaRegresoCalendar.value);
@@ -1175,7 +1175,7 @@ const getMaxDateSalida = () => {
 // Variable reactiva para el ancho de ventana
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
 
-// Estilo responsive para el di·logo
+// Estilo responsive para el di√°logo
 const dialogStyle = computed(() => {
     if (windowWidth.value < 640) { // sm
         return { width: '95vw', maxWidth: '380px' };
@@ -1186,7 +1186,7 @@ const dialogStyle = computed(() => {
     }
 });
 
-// FunciÛn para abrir el modal de m·s acciones (corregida para usar selectedTour)
+// Funci√≥n para abrir el modal de m√°s acciones (corregida para usar selectedTour)
 const openMoreActionsModal = (tourData) => {
     selectedTour.value = tourData;
     moreActionsDialog.value = true;
@@ -1229,16 +1229,16 @@ const handleArchiveTour = (tour) => {
     moreActionsDialog.value = false;
 };
 
-// FunciÛn para ver detalles desde el modal de M·s Acciones
+// Funci√≥n para ver detalles desde el modal de M√°s Acciones
 const handleViewDetails = (tour) => {
     moreActionsDialog.value = false;
     selectedTour.value = tour;
     showImageDialog.value = true;
 };
 
-// FunciÛn para manejar el clic en la fila
+// Funci√≥n para manejar el clic en la fila
 const onRowClick = (event) => {
-    // Verificar si el clic fue en un botÛn para evitar abrir el modal
+    // Verificar si el clic fue en un bot√≥n para evitar abrir el modal
     const target = event.originalEvent.target;
     const isButton = target.closest('button');
 
@@ -1248,7 +1248,7 @@ const onRowClick = (event) => {
     }
 };
 
-// FunciÛn para manejar la actualizaciÛn de estado
+// Funci√≥n para manejar la actualizaci√≥n de estado
 const handleEstadoActualizado = async (tourActualizado) => {
     // Actualizar el tour en la lista
     const index = tours.value.findIndex(t => t.id === tourActualizado.id);
@@ -1258,7 +1258,7 @@ const handleEstadoActualizado = async (tourActualizado) => {
     showCambiarEstadoDialog.value = false;
 };
 
-// FunciÛn para prevenir teclas no v·lidas en campos de cupos
+// Funci√≥n para prevenir teclas no v√°lidas en campos de cupos
 const onCupoKeyDown = (event) => {
     const currentValue = event.target.value;
     const key = event.key;
@@ -1269,7 +1269,7 @@ const onCupoKeyDown = (event) => {
         return;
     }
 
-    // Solo permitir n˙meros
+    // Solo permitir n√∫meros
     if (!/[0-9]/.test(key)) {
         event.preventDefault();
         return;
@@ -1279,20 +1279,20 @@ const onCupoKeyDown = (event) => {
     const num = parseInt(newValue);
     const maxCapacidad = maxCupoAllowed.value;
 
-    // Prevenir que el valor sea 0 si es el primer car·cter
+    // Prevenir que el valor sea 0 si es el primer car√°cter
     if (newValue === '0' || (currentValue === '' && key === '0')) {
         event.preventDefault();
         return;
     }
 
-    // Validar que no exceda la capacidad del transporte o el lÌmite de 3 dÌgitos
+    // Validar que no exceda la capacidad del transporte o el l√≠mite de 3 d√≠gitos
     if (newValue.length > 3 || num > maxCapacidad || num < 1) {
         event.preventDefault();
         return;
     }
 };
 
-// FunciÛn para manejar paste en campos de cupos
+// Funci√≥n para manejar paste en campos de cupos
 const onCupoPaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
@@ -1302,14 +1302,14 @@ const onCupoPaste = (event) => {
         let num = parseInt(numericValue);
         const maxCapacidad = maxCupoAllowed.value;
 
-        // Asegurar que el n˙mero sea al menos 1
+        // Asegurar que el n√∫mero sea al menos 1
         if (num < 1) {
             num = 1;
         } else if (num > maxCapacidad) {
             num = maxCapacidad;
         }
 
-        // Determinar quÈ campo se est· editando y asignar el valor
+        // Determinar qu√© campo se est√° editando y asignar el valor
         if (event.target.id.includes('cupo_min')) {
             tour.value.cupo_min = num;
         } else if (event.target.id.includes('cupo_max')) {
@@ -1319,11 +1319,11 @@ const onCupoPaste = (event) => {
 };
 
 const minCupoAllowed = computed(() => {
-    //Si cupo_max es v·lido, retorna cupo_max -1, si no, retorna
+    //Si cupo_max es v√°lido, retorna cupo_max -1, si no, retorna
     return tour.cupo_max ? Math.max(1, tour.cupo_max -1) : 1;
 });
 
-// FunciÛn para prevenir teclas no v·lidas en campos numÈricos generales
+// Funci√≥n para prevenir teclas no v√°lidas en campos num√©ricos generales
 const onKeyDown = (event) => {
     const currentValue = event.target.value;
     const key = event.key;
@@ -1334,7 +1334,7 @@ const onKeyDown = (event) => {
         return;
     }
 
-    // Solo permitir n˙meros
+    // Solo permitir n√∫meros
     if (!/[0-9]/.test(key)) {
         event.preventDefault();
         return;
@@ -1343,14 +1343,14 @@ const onKeyDown = (event) => {
     const newValue = currentValue + key;
     const num = parseInt(newValue);
 
-    // Limitar a 2 dÌgitos y m·ximo 30
+    // Limitar a 2 d√≠gitos y m√°ximo 30
     if (newValue.length > 2 || num > 30) {
         event.preventDefault();
         return;
     }
 };
 
-// FunciÛn para limpiar valor en caso de paste
+// Funci√≥n para limpiar valor en caso de paste
 const onPaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
@@ -1367,7 +1367,7 @@ const onPaste = (event) => {
     }
 };
 
-// FunciÛn para prevenir teclas no v·lidas en campo de precio
+// Funci√≥n para prevenir teclas no v√°lidas en campo de precio
 const onPriceKeyDown = (event) => {
     const currentValue = event.target.value;
     const key = event.key;
@@ -1378,19 +1378,19 @@ const onPriceKeyDown = (event) => {
         return;
     }
 
-    // Permitir n˙meros y punto decimal
+    // Permitir n√∫meros y punto decimal
     if (!/[0-9.]/.test(key)) {
         event.preventDefault();
         return;
     }
 
-    // No permitir m·s de un punto decimal
+    // No permitir m√°s de un punto decimal
     if (key === '.' && currentValue.includes('.')) {
         event.preventDefault();
         return;
     }
 
-    // Validar formato de precio: m·ximo 4 dÌgitos antes del punto y 2 despuÈs
+    // Validar formato de precio: m√°ximo 4 d√≠gitos antes del punto y 2 despu√©s
     if (key !== '.') {
         const parts = currentValue.split('.');
         if (parts[0].length >= 4 && !currentValue.includes('.')) {
@@ -1412,39 +1412,39 @@ const onPriceKeyDown = (event) => {
     }
 };
 
-// FunciÛn para manejar paste en campo de precio
+// Funci√≥n para manejar paste en campo de precio
 const onPricePaste = (event) => {
     event.preventDefault();
     const paste = (event.clipboardData || window.clipboardData).getData('text');
 
-    // Filtrar solo n˙meros y punto decimal, removiendo cualquier otro car·cter
+    // Filtrar solo n√∫meros y punto decimal, removiendo cualquier otro car√°cter
     let numericValue = paste.replace(/[^\d.]/g, '');
 
-    // Si no hay contenido numÈrico v·lido, no hacer nada
+    // Si no hay contenido num√©rico v√°lido, no hacer nada
     if (!numericValue || numericValue === '.') return;
 
     // Verificar que solo tenga un punto decimal
     const dotCount = (numericValue.match(/\./g) || []).length;
     if (dotCount > 1) {
-        // Si hay m˙ltiples puntos, mantener solo el primero
+        // Si hay m√∫ltiples puntos, mantener solo el primero
         const firstDotIndex = numericValue.indexOf('.');
         numericValue = numericValue.substring(0, firstDotIndex + 1) + numericValue.substring(firstDotIndex + 1).replace(/\./g, '');
     }
 
-    // Convertir a n˙mero y validar
+    // Convertir a n√∫mero y validar
     const num = parseFloat(numericValue);
     if (isNaN(num)) return;
 
-    // Limitar a m·ximo 9999.99
+    // Limitar a m√°ximo 9999.99
     const limitedNum = Math.min(num, 9999.99);
 
-    // Formatear a m·ximo 2 decimales
+    // Formatear a m√°ximo 2 decimales
     const formattedValue = limitedNum.toFixed(2);
 
     // Actualizar el modelo de Vue
     tour.precio = formattedValue;
 
-    // TambiÈn actualizar el campo input para sincronizaciÛn
+    // Tambi√©n actualizar el campo input para sincronizaci√≥n
     event.target.value = formattedValue;
 };
 
@@ -1456,8 +1456,8 @@ const onPricePaste = (event) => {
 
         <div class="container mx-auto px-4 py-6">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Cat·logo de Tours</h1>
-                <p class="text-gray-600">GestiÛn completa de paquetes turÌsticos</p>
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">Cat√°logo de Tours</h1>
+                <p class="text-gray-600">Gesti√≥n completa de paquetes tur√≠sticos</p>
             </div>
 
             <div class="bg-white rounded-lg shadow-md">
@@ -1559,7 +1559,7 @@ const onPricePaste = (event) => {
                                         @change="onCategoriaFilterChange"
                                         class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                     >
-                                        <option value="" disabled selected hidden>CategorÌa</option>
+                                        <option value="" disabled selected hidden>Categor√≠a</option>
                                         <option
                                             v-for="categoria in categoriasOptions"
                                             :key="categoria.value"
@@ -1718,9 +1718,9 @@ const onPricePaste = (event) => {
                             <button
                                 class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="openMoreActionsModal(slotProps.data)"
-                                title="M·s acciones">
+                                title="M√°s acciones">
                                 <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
-                                <span class="hidden md:block text-white">M·s</span>
+                                <span class="hidden md:block text-white">M√°s</span>
                             </button>
                             <button
                                 class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
@@ -1844,10 +1844,10 @@ const onPricePaste = (event) => {
                     <div class="grid grid-cols-2 gap-4">
                         <div class="w-full">
                             <label for="cupo_min" class="flex items-center gap-1 mb-2">
-                                Cupo mÌnimo: <span class="text-red-500 font-bold">*</span>
-                                <!-- <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(M·x: {{ maxCupoAllowed }})</small> -->
+                                Cupo m√≠nimo: <span class="text-red-500 font-bold">*</span>
+                                <!-- <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(M√°x: {{ maxCupoAllowed }})</small> -->
                                  <small class="text-gray-500 text-xs" v-if="tour.transporte_id">
-                                    (MÌn: {{ minCupoAllowed }})
+                                    (M√≠n: {{ minCupoAllowed }})
                                 </small>
                             </label>
                             <InputText
@@ -1865,13 +1865,13 @@ const onPricePaste = (event) => {
                                 @paste="onCupoPaste"
                                 @input="validateCupos"
                             />
-                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_min">El cupo mÌnimo es obligatorio.</small>
+                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_min">El cupo m√≠nimo es obligatorio.</small>
                             <small class="text-red-500 block text-xs mt-1" v-if="cupoMinError">{{ cupoMinError }}</small>
                         </div>
                         <div class="w-full">
                             <label for="cupo_max" class="flex items-center gap-1 mb-2">
-                                Cupo m·ximo: <span class="text-red-500 font-bold">*</span>
-                                <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(M·x: {{ maxCupoAllowed }})</small>
+                                Cupo m√°ximo: <span class="text-red-500 font-bold">*</span>
+                                <small class="text-gray-500 text-xs" v-if="tour.transporte_id">(M√°x: {{ maxCupoAllowed }})</small>
                             </label>
                             <InputText
                                 v-model="tour.cupo_max"
@@ -1888,7 +1888,7 @@ const onPricePaste = (event) => {
                                 @paste="onCupoPaste"
                                 @input="validateCupos"
                             />
-                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_max">El cupo m·ximo es obligatorio.</small>
+                            <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.cupo_max">El cupo m√°ximo es obligatorio.</small>
                             <small class="text-red-500 block text-xs mt-1" v-if="cupoMaxError">{{ cupoMaxError }}</small>
                         </div>
                     </div>
@@ -1934,16 +1934,16 @@ const onPricePaste = (event) => {
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-5">
-                            <label for="categoria" class="w-24 flex items-center gap-1">CategorÌa:<span class="text-red-500 font-bold">*</span></label>
+                            <label for="categoria" class="w-24 flex items-center gap-1">Categor√≠a:<span class="text-red-500 font-bold">*</span></label>
                             <Select v-model="tour.categoria" :options="categoriasOptions" optionLabel="label" optionValue="value" id="categoria" name="categoria"
                                 class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.categoria,}"
                             />
                         </div>
-                        <small class="text-red-500 ml-28" v-if="submitted && !tour.categoria">La categorÌa es obligatoria.</small>
+                        <small class="text-red-500 ml-28" v-if="submitted && !tour.categoria">La categor√≠a es obligatoria.</small>
                     </div>
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
-                            <label for="imagenes" class="w-24 flex items-center gap-1">Im·genes:<span class="text-red-500 font-bold">*</span></label>
+                            <label for="imagenes" class="w-24 flex items-center gap-1">Im√°genes:<span class="text-red-500 font-bold">*</span></label>
                             <div class="flex-1">
                                 <div class="flex items-center gap-3 mb-2">
                                     <input type="file" id="imagenes" name="imagenes[]" accept="image/*" multiple @change="onImageSelect" class="hidden" ref="fileInput"/>
@@ -1961,15 +1961,15 @@ const onPricePaste = (event) => {
                                         <span class="text-sm font-medium" :class="imagenPreviewList.length >= 5 ? 'text-red-600' : 'text-gray-600'">
                                             {{ imagenPreviewList.length }}/5
                                         </span>
-                                        <span class="text-xs text-gray-500">im·genes</span>
+                                        <span class="text-xs text-gray-500">im√°genes</span>
                                     </div>
                                 </div>
                                 <div class="text-xs text-gray-500 mb-2">
-                                    M·ximo 5 im·genes por tour ï Formatos: JPG, PNG, GIF ï TamaÒo m·ximo: 2MB por imagen
+                                    M√°ximo 5 im√°genes por tour ‚Ä¢ Formatos: JPG, PNG, GIF ‚Ä¢ Tama√±o m√°ximo: 2MB por imagen
                                 </div>
                             </div>
                         </div>
-                        <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las im·genes son obligatorias (al menos una).</small>
+                        <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las im√°genes son obligatorias (al menos una).</small>
                     </div>
                     <div class="grid grid-cols-3 ml-2 sm:ml-5 gap-y-2">
                         <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-24 sm:w-28 h-24 sm:h-28">
@@ -2067,7 +2067,7 @@ const onPricePaste = (event) => {
     color: #1e40af !important;
 }
 
-/* Estilos para truncar texto en Select - PrimeVue especÌfico */
+/* Estilos para truncar texto en Select - PrimeVue espec√≠fico */
 .p-select .p-select-label,
 .p-select .p-placeholder,
 .p-select-label,
@@ -2101,7 +2101,7 @@ const onPricePaste = (event) => {
     box-sizing: border-box !important;
 }
 
-/* EspecÌfico para el valor mostrado */
+/* Espec√≠fico para el valor mostrado */
 .p-select .p-select-display-chip,
 .p-select .p-select-clear-icon ~ *,
 .p-select .p-select-trigger ~ * {
@@ -2111,7 +2111,7 @@ const onPricePaste = (event) => {
     max-width: calc(100% - 2.5rem) !important;
 }
 
-/* Extra especÌfico para mÛviles */
+/* Extra espec√≠fico para m√≥viles */
 @media (max-width: 768px) {
     .p-select .p-select-label,
     .p-select .p-placeholder {
@@ -2137,7 +2137,7 @@ const onPricePaste = (event) => {
 }
 /* Fin de los estilos para el paginador */
 
-/* AnimaciÛn para el spinner de loading */
+/* Animaci√≥n para el spinner de loading */
 @keyframes spin {
   from {
     transform: rotate(0deg);
