@@ -42,6 +42,12 @@ class PaqueteVisaController extends Controller
             $request->merge(['nombre' => $nombre]);
         }
 
+        // Convertir descripción a mayúsculas
+        if ($request->has('descripcion') && $request->input('descripcion')) {
+            $descripcion = strtoupper(trim($request->input('descripcion')));
+            $request->merge(['descripcion' => $descripcion]);
+        }
+
         $validated = $request->validate([
             'nombre' => 'required|string|max:100|unique:paquetes_visas,nombre|regex:/^[A-Z0-9\s]+$/',
             'descripcion' => 'nullable|string|max:255',
@@ -102,6 +108,12 @@ class PaqueteVisaController extends Controller
             $nombre = preg_replace('/\s+/', ' ', $nombre); // Reemplazar múltiples espacios por uno solo
             $nombre = trim($nombre); // Quitar espacios al inicio y final
             $request->merge(['nombre' => $nombre]);
+        }
+
+        // Convertir descripción a mayúsculas
+        if ($request->has('descripcion') && $request->input('descripcion')) {
+            $descripcion = strtoupper(trim($request->input('descripcion')));
+            $request->merge(['descripcion' => $descripcion]);
         }
 
         $validated = $request->validate([
