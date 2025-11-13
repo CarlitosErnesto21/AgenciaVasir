@@ -47,10 +47,13 @@ const isVisible = computed({
 
 // Computed para calcular el nuevo stock según el tipo de movimiento
 const stockResultante = computed(() => {
-    if (!props.producto || cantidad.value === null || cantidad.value === '') return props.producto?.stock_actual || 0;
+    if (!props.producto || cantidad.value === null || cantidad.value === '') {
+        return parseInt(props.producto?.stock_actual || 0);
+    }
 
-    const stockActual = props.producto.stock_actual || 0;
-    const cantidadNum = Number(cantidad.value);
+    // Asegurar que tanto el stock actual como la cantidad sean números enteros
+    const stockActual = parseInt(props.producto.stock_actual || 0);
+    const cantidadNum = parseInt(cantidad.value || 0);
 
     switch (tipoMovimiento.value) {
         case 'entrada':
@@ -58,7 +61,7 @@ const stockResultante = computed(() => {
         case 'salida':
             return Math.max(0, stockActual - cantidadNum);
         case 'ajuste':
-            return cantidadNum;
+            return cantidadNum; // Para ajuste, la cantidad ES el nuevo stock
         default:
             return stockActual;
     }
@@ -166,21 +169,32 @@ const actualizarStock = async () => {
     submitted.value = true;
 
     // Validaciones
-    if (!cantidad.value || cantidad.value <= 0) {
+    if (!cantidad.value || cantidad.value <= 0 || cantidad.value > 9999) {
         toast.add({
             severity: "warn",
             summary: "Campo requerido",
-            detail: "Debes ingresar una cantidad válida.",
+            detail: "Debes ingresar una cantidad válida entre 1 y 9999.",
             life: 4000
         });
         return;
     }
 
-    if (!motivo.value.trim()) {
+    if (!motivo.value.trim() || motivo.value.trim().length < 3 || motivo.value.trim().length > 100) {
         toast.add({
             severity: "warn",
             summary: "Campo requerido",
-            detail: "Debes especificar el motivo del movimiento.",
+            detail: "El motivo debe tener entre 3 y 100 caracteres.",
+            life: 4000
+        });
+        return;
+    }
+
+    // Validar que el stock resultante sea válido
+    if (stockResultante.value < 0 || stockResultante.value > 9999) {
+        toast.add({
+            severity: "warn",
+            summary: "Stock inválido",
+            detail: "El stock resultante debe estar entre 0 y 9999.",
             life: 4000
         });
         return;
@@ -200,21 +214,26 @@ const actualizarStock = async () => {
     isLoading.value = true;
 
     try {
-        const formData = new FormData();
-        formData.append('tipo_movimiento', tipoMovimiento.value);
-        formData.append('cantidad', cantidad.value);
-        formData.append('motivo', motivo.value.trim());
-        formData.append('stock_resultante', stockResultante.value);
+        // Preparar datos como objeto JSON
+        const data = {
+            tipo_movimiento: tipoMovimiento.value,
+            cantidad: parseInt(cantidad.value),
+            motivo: motivo.value.trim(),
+            stock_resultante: parseInt(stockResultante.value)
+        };
 
         // Si hay campos de ajuste de stock mínimo, incluirlos
         if (nuevoStockMinimo.value !== null && nuevoStockMinimo.value !== props.producto.stock_minimo) {
-            formData.append('nuevo_stock_minimo', nuevoStockMinimo.value);
+            data.nuevo_stock_minimo = parseInt(nuevoStockMinimo.value);
         }
 
-        formData.append('_method', 'PATCH');
 
-        const response = await axios.post(`/api/productos/${props.producto.id}/actualizar-stock`, formData, {
-            headers: { "Content-Type": "multipart/form-data" }
+
+        const response = await axios.patch(`/api/productos/${props.producto.id}/actualizar-stock`, data, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
         });
 
         // Emitir evento para actualizar la lista de productos y cerrar modal
@@ -224,7 +243,17 @@ const actualizarStock = async () => {
         emit('update:visible', false);
 
     } catch (err) {
-        const errorMessage = err.response?.data?.message || "Error al actualizar el stock";
+        let errorMessage = "Error al actualizar el stock";
+
+        if (err.response?.status === 422) {
+            // Error de validación
+            const errors = err.response.data.errors || {};
+            const firstError = Object.values(errors)[0]?.[0];
+            errorMessage = firstError || err.response.data.message || "Error de validación";
+        } else {
+            errorMessage = err.response?.data?.message || errorMessage;
+        }
+
         toast.add({
             severity: "error",
             summary: "Error",

@@ -268,16 +268,6 @@ const fetchPaquetesWithToasts = async () => {
                 summary: "Paquetes cargados",
                 life: 2000
             });
-
-            // Si no hay paquetes, mostrar mensaje informativo adicional
-            if (paquetes.value.length === 0) {
-                toast.add({
-                    severity: 'info',
-                    summary: 'Sin registros',
-                    detail: 'No hay paquetes de visa registrados aún.',
-                    life: 4000
-                });
-            }
         } else {
             toast.add({
                 severity: 'warn',
@@ -726,7 +716,7 @@ const validateNombre = () => {
     if (!paquete.value.nombre || !paquete.value.nombre.trim()) {
         return false;
     }
-    
+
     const nombre = paquete.value.nombre.trim();
     // Verificar longitud mínima y que solo contenga letras, números y espacios
     return nombre.length >= 3 && /^[A-Z0-9\s]+$/.test(nombre);
@@ -799,7 +789,7 @@ const onPricePaste = (event) => {
 // Funciones para validar y limpiar el nombre del paquete
 const cleanNombreInput = (value) => {
     if (!value) return '';
-    
+
     return value
         .replace(/[^A-Za-z0-9\s]/g, '') // Eliminar caracteres especiales, mantener letras, números y espacios
         .replace(/\s{2,}/g, ' ') // Reemplazar 2 o más espacios consecutivos por uno solo
@@ -809,17 +799,17 @@ const cleanNombreInput = (value) => {
 
 const onNombreInput = (event) => {
     let inputValue = event.target.value;
-    
+
     // Aplicar transformaciones básicas sin ser muy agresivo durante la escritura
     inputValue = inputValue
         .replace(/[^A-Za-z0-9\s]/g, '') // Eliminar caracteres especiales
         .toUpperCase(); // Convertir a mayúsculas
-    
+
     // Solo limpiar espacios múltiples si hay más de un espacio consecutivo
     const cleanedValue = inputValue.replace(/\s{3,}/g, ' '); // Solo reemplazar 3 o más espacios
-    
+
     paquete.value.nombre = cleanedValue;
-    
+
     // Actualizar el input solo si es necesario
     if (event.target.value !== cleanedValue) {
         const cursorPosition = event.target.selectionStart;
@@ -852,7 +842,7 @@ const onNombreKeyDown = (event) => {
         const currentValue = event.target.value;
         const cursorPosition = event.target.selectionStart;
         const charBefore = currentValue.charAt(cursorPosition - 1);
-        
+
         // Prevenir espacio si el carácter anterior ya es un espacio o si está al inicio
         if (charBefore === ' ' || cursorPosition === 0) {
             event.preventDefault();
@@ -884,7 +874,7 @@ const onNombrePaste = (event) => {
     if (finalValue.length <= 100) {
         paquete.value.nombre = finalValue;
         event.target.value = finalValue;
-        
+
         // Posicionar cursor
         nextTick(() => {
             const newPosition = Math.min(start + cleanedPaste.length, finalValue.length);
