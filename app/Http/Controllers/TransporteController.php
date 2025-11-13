@@ -54,6 +54,7 @@ class TransporteController extends Controller
         ]);
 
         // Normalizar campos antes de guardar
+        $validated['numero_placa'] = strtoupper($validated['numero_placa']); // Convertir placa a mayúsculas
         $validated['nombre'] = $this->normalizeText($validated['nombre'], true); // Con números
         $validated['marca'] = $this->normalizeText($validated['marca'], false); // Sin números
 
@@ -111,6 +112,7 @@ class TransporteController extends Controller
         ]);
 
         // Normalizar campos antes de actualizar
+        $validated['numero_placa'] = strtoupper($validated['numero_placa']); // Convertir placa a mayúsculas
         $validated['nombre'] = $this->normalizeText($validated['nombre'], true); // Con números
         $validated['marca'] = $this->normalizeText($validated['marca'], false); // Sin números
 
