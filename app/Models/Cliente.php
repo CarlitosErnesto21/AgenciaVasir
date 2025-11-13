@@ -12,19 +12,15 @@ class Cliente extends Model
         'numero_identificacion',
         'fecha_nacimiento',
         'genero',
+        'tipo_documento',
         'direccion',
         'telefono',
-        'user_id',
-        'tipo_documento_id'
+        'user_id'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
-    }
-    public function tipoDocumento()
-    {
-        return $this->belongsTo(TipoDocumento::class);
     }
     public function ventas()
     {

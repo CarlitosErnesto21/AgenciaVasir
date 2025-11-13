@@ -61,13 +61,11 @@ const reservaForm = ref({
     genero: '',
     direccion: '',
     telefono: '',
-    tipo_documento_id: 1
+    tipo_documento: 'DUI'
   }
 })
 
-// Tipos de documento cargados desde la API
-const tiposDocumento = ref([])
-const loadingTiposDocumento = ref(false)
+// Los tipos de documento ahora son ENUM: DUI, PASAPORTE
 
 // Estado de validación del teléfono
 const telefonoValidation = ref({
@@ -136,42 +134,7 @@ const obtenerHoteles = async () => {
   }
 }
 
-// Función para obtener tipos de documento desde la API
-const obtenerTiposDocumento = async () => {
-  try {
-    loadingTiposDocumento.value = true
-    const response = await fetch('/api/tipo-documentos', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json()
-    tiposDocumento.value = data.tipos || data || []
-
-    // Si hay datos, establecer el primer tipo como default
-    if (tiposDocumento.value.length > 0) {
-      // Nota: No establecemos aquí porque el formulario puede no estar inicializado
-    }
-
-  } catch (err) {
-    console.error('Error al obtener tipos de documento:', err)
-    // Fallback en caso de error
-    tiposDocumento.value = [
-      { id: 1, nombre: 'DUI' },
-      { id: 2, nombre: 'Pasaporte' },
-      { id: 3, nombre: 'Licencia' }
-    ]
-  } finally {
-    loadingTiposDocumento.value = false
-  }
-}
+// Ya no necesitamos cargar tipos de documento desde API - ahora usamos ENUM
 
 // Variables para el carrusel de imágenes
 const showImageDialog = ref(false)
@@ -252,11 +215,8 @@ watch(() => reservaForm.value.cliente_data.telefono, (nuevoTelefono, telefonoAnt
 
 // Lifecycle hooks
 onMounted(async () => {
-  // Obtener hoteles y tipos de documento desde la API
-  await Promise.all([
-    obtenerHoteles(),
-    obtenerTiposDocumento()
-  ])
+  // Obtener hoteles desde la API
+  await obtenerHoteles()
 
   // Inicializar carruseles para todos los hoteles con múltiples imágenes
   hoteles.value.forEach(hotel => {
@@ -451,8 +411,6 @@ const abrirModalReserva = async (hotel) => {
   tieneClienteExistente.value = false
 
   // Inicializar formulario con datos básicos
-  const tipoDocumentoId = tiposDocumento.value.length > 0 ? tiposDocumento.value[0].id : ''
-
   reservaForm.value = {
     fecha_entrada: null,
     fecha_salida: null,
@@ -464,7 +422,7 @@ const abrirModalReserva = async (hotel) => {
       genero: '',
       direccion: '',
       telefono: '',
-      tipo_documento_id: tipoDocumentoId
+      tipo_documento: 'DUI'
     }
   }
 
@@ -492,7 +450,7 @@ const abrirModalReserva = async (hotel) => {
       genero: clienteExistente.genero || '',
       direccion: clienteExistente.direccion || '',
       telefono: clienteExistente.telefono || '',
-      tipo_documento_id: clienteExistente.tipo_documento_id || tipoDocumentoId
+      tipo_documento: clienteExistente.tipo_documento || 'DUI'
     }
 
     // Verificar si la fecha de nacimiento necesita corrección
@@ -558,6 +516,11 @@ const crearReservaHotel = async () => {
         detail: 'El número de identificación es requerido',
         life: 4000
       })
+      return
+    }
+
+    // Validar formato del número de identificación
+    if (!validarNumeroIdentificacion()) {
       return
     }
 
@@ -783,6 +746,94 @@ const onValidate = async (phoneObject) => {
     telefonoValidation.value.mensaje = 'Error en validación'
   }
 }
+
+// Función para formatear DUI automáticamente
+const formatearDUI = (valor) => {
+  // Solo permitir números (eliminar TODO lo que no sea dígito)
+  const soloNumeros = valor.replace(/[^0-9]/g, '')
+
+  // Limitar a 9 dígitos máximo
+  const numerosLimitados = soloNumeros.substring(0, 9)
+
+  // Agregar guión automáticamente después del 8vo dígito
+  if (numerosLimitados.length > 8) {
+    return numerosLimitados.substring(0, 8) + '-' + numerosLimitados.substring(8)
+  }
+
+  return numerosLimitados
+}
+
+// Función para formatear PASAPORTE automáticamente
+const formatearPasaporte = (valor) => {
+  // Solo permitir A-Z y 0-9, convertir a mayúsculas, máximo 9 caracteres
+  return valor.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 9)
+}
+
+// Función para manejar entrada de texto según tipo de documento
+const manejarEntradaDocumento = (event) => {
+  const valor = event.target.value
+  let valorFormateado = ''
+
+  if (reservaForm.value.cliente_data.tipo_documento === 'DUI') {
+    valorFormateado = formatearDUI(valor)
+    reservaForm.value.cliente_data.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  } else if (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE') {
+    valorFormateado = formatearPasaporte(valor)
+    reservaForm.value.cliente_data.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  }
+
+  // Validar después de formatear
+  validarNumeroIdentificacion()
+}
+
+// Validación en tiempo real del número de identificación
+const validarNumeroIdentificacion = () => {
+  if (!reservaForm.value.cliente_data.numero_identificacion) {
+    return true // No hay error si está vacío, se maneja en validación de campos requeridos
+  }
+
+  if (reservaForm.value.cliente_data.tipo_documento === 'DUI') {
+    const duiRegex = /^\d{8}-\d{1}$/
+    if (!duiRegex.test(reservaForm.value.cliente_data.numero_identificacion)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Formato incorrecto',
+        detail: 'El DUI debe tener 9 dígitos (formato: 12345678-9)',
+        life: 4000
+      })
+      return false
+    }
+  } else if (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE') {
+    // Validar formato: solo A-Z y 0-9, entre 6 y 9 caracteres
+    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
+    if (!pasaporteRegex.test(reservaForm.value.cliente_data.numero_identificacion)) {
+      toast.add({
+        severity: 'error',
+        summary: 'Formato incorrecto',
+        detail: 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)',
+        life: 4000
+      })
+      return false
+    }
+  }
+  return true
+}
+
+// Watchers para validación en tiempo real del documento
+watch(() => reservaForm.value.cliente_data.numero_identificacion, () => {
+  if (reservaForm.value.cliente_data.numero_identificacion && reservaForm.value.cliente_data.tipo_documento) {
+    validarNumeroIdentificacion()
+  }
+})
+
+watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
+  // Limpiar número cuando cambia el tipo de documento
+  reservaForm.value.cliente_data.numero_identificacion = ''
+})
 </script>
 
 <template>
@@ -1270,32 +1321,28 @@ const onValidate = async (phoneObject) => {
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
                 <input
-                  v-model="reservaForm.cliente_data.numero_identificacion"
+                  :value="reservaForm.cliente_data.numero_identificacion"
+                  @input="manejarEntradaDocumento"
                   type="text"
                   required
-                  maxlength="25"
+                  :maxlength="reservaForm.cliente_data.tipo_documento === 'DUI' ? 10 : 9"
                   :disabled="tieneClienteExistente"
                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
-                  placeholder="Ingrese su DUI o documento"
+                  :placeholder="reservaForm.cliente_data.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
                 />
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
                 <select
-                  v-model="reservaForm.cliente_data.tipo_documento_id"
+                  v-model="reservaForm.cliente_data.tipo_documento"
                   required
-                  :disabled="loadingTiposDocumento || tieneClienteExistente"
+                  :disabled="tieneClienteExistente"
                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 >
-                  <option v-if="loadingTiposDocumento" value="" disabled>Cargando tipos...</option>
-                  <option v-else-if="tiposDocumento.length === 0" value="" disabled>No hay tipos disponibles</option>
-                  <template v-else>
-                    <option value="" disabled>Seleccione un tipo</option>
-                    <option v-for="tipo in tiposDocumento" :key="tipo.id" :value="tipo.id">
-                      {{ tipo.nombre }}
-                    </option>
-                  </template>
+                  <option value="" disabled>Seleccione un tipo</option>
+                  <option value="DUI">DUI</option>
+                  <option value="PASAPORTE">PASAPORTE</option>
                 </select>
               </div>
             </div>

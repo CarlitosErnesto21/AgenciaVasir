@@ -13,7 +13,7 @@ use App\Http\Controllers\CategoriaProductoController;
 use App\Http\Controllers\PaisController;
 use App\Http\Controllers\ProvinciaController;
 use App\Http\Controllers\TransporteController;
-use App\Http\Controllers\TipoDocumentoController;
+
 use App\Http\Controllers\InventarioController;
 use App\Http\Controllers\PagoController;
 use App\Http\Controllers\BackupController;
@@ -42,7 +42,7 @@ Route::get('/tours', [TourController::class, 'index']);
 Route::get('/tours/{id}', [TourController::class, 'show']);
 Route::get('/hoteles', [HotelController::class, 'index']);
 Route::get('/paquetes-visas', [PaqueteVisaController::class, 'index']);
-Route::get('/tipo-documentos', [TipoDocumentoController::class, 'index']);
+
 
 // Ruta para que usuarios autenticados puedan crear su perfil de cliente
 Route::middleware('auth:sanctum')->post('/registro-cliente', [ClienteController::class, 'registroCliente']);
@@ -149,7 +149,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');
         Route::apiResource('provincias', ProvinciaController::class)->parameter('provincias', 'provincia');
         Route::apiResource('transportes', TransporteController::class);
-        Route::apiResource('tipo-documentos', TipoDocumentoController::class)->except(['index']);
+
 
         //Gestión específica de clientes
         Route::prefix('clientes')->group(function () {

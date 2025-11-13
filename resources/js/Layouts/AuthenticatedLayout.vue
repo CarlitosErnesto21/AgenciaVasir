@@ -585,23 +585,7 @@ onBeforeUnmount(() => {
                                 <span class="font-semibold">Clientes</span>
                             </Link>
 
-                            <!-- Documentos -->
-                            <Link
-                                :href="route('tipodocumentos')"
-                                :class="[
-                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-                                    route().current('tipodocumentos')
-                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
-                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
-                                ]"
-                                @click.prevent="navigateAndCloseSidebar('tipodocumentos')"
-                            >
-                                <FontAwesomeIcon
-                                    :icon="faIdCard"
-                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
-                                />
-                                <span class="font-semibold">Documentos</span>
-                            </Link>
+
 
                             <!-- Separador visual -->
                             <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
@@ -898,23 +882,7 @@ onBeforeUnmount(() => {
                             <span class="font-semibold">Clientes</span>
                         </Link>
 
-                        <!-- Documentos -->
-                        <Link
-                            :href="route('tipodocumentos')"
-                            :class="[
-                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
-                                route().current('tipodocumentos')
-                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
-                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
-                            ]"
-                            title="Documentos"
-                        >
-                            <FontAwesomeIcon
-                                :icon="faIdCard"
-                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
-                            />
-                            <span class="font-semibold">Documentos</span>
-                        </Link>
+
 
                         <!-- Informes -->
                         <Link

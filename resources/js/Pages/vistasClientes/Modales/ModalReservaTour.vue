@@ -39,8 +39,7 @@ const formularioDatosRef = ref(null)
 const reservaForm = ref({
   correo: '',
   nombres: '',
-  tipo_documento: null,
-  tipo_documento_id: null, // ID del tipo de documento para precarga
+  tipo_documento: 'DUI', // Usar ENUM directamente
   numero_identificacion: '',
   fecha_nacimiento: '',
   genero: '', // Vacío por defecto
@@ -99,8 +98,7 @@ const resetFormularioReserva = async () => {
   reservaForm.value = {
     correo: correo,
     nombres: nombreCompleto,
-    tipo_documento: null,
-    tipo_documento_id: null,
+    tipo_documento: 'DUI',
     numero_identificacion: '',
     fecha_nacimiento: '',
     genero: '',
@@ -134,7 +132,7 @@ const resetFormularioReserva = async () => {
       // Actualizar el formulario con los datos existentes
       reservaForm.value = {
         ...reservaForm.value,
-        tipo_documento_id: clienteExistente.tipo_documento_id, // Pasar el ID para que el componente hijo lo use
+        tipo_documento: clienteExistente.tipo_documento || 'DUI',
         numero_identificacion: clienteExistente.numero_identificacion || '',
         fecha_nacimiento: fechaNacimientoFormateada,
         genero: clienteExistente.genero || '',
@@ -180,7 +178,7 @@ const confirmarReserva = async () => {
       cliente_data: {
         correo: reservaForm.value.correo,
         nombres: reservaForm.value.nombres,
-        tipo_documento_id: reservaForm.value.tipo_documento_id || reservaForm.value.tipo_documento,
+        tipo_documento: reservaForm.value.tipo_documento,
         numero_identificacion: reservaForm.value.numero_identificacion,
         fecha_nacimiento: reservaForm.value.fecha_nacimiento,
         genero: reservaForm.value.genero?.toUpperCase() || '',

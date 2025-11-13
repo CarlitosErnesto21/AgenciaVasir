@@ -16,14 +16,12 @@ return new class extends Migration
             $table->string('numero_identificacion', 25);
             $table->date('fecha_nacimiento');
             $table->enum('genero', ['MASCULINO', 'FEMENINO']);
+            $table->enum('tipo_documento', ['DUI', 'PASAPORTE']);
             $table->string('direccion', 200);
             $table->string('telefono', 30)->unique();
             // Llave foranea a la tabla users
             $table->unsignedBigInteger('user_id');
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-            // Llave foranea a la tabla tipos_documentos
-            $table->unsignedBigInteger('tipo_documento_id');
-            $table->foreign('tipo_documento_id')->references('id')->on('tipos_documentos')->onDelete('cascade');
             $table->timestamps();
         });
     }

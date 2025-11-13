@@ -26,8 +26,11 @@ const props = defineProps({
 // Emits para comunicación con el componente padre
 const emit = defineEmits(['update:formulario', 'mostrar-toast'])
 
-// Estado para tipos de documentos
-const tiposDocumentos = ref([])
+// Tipos de documento como ENUM
+const tiposDocumentos = ref([
+  { id: 'DUI', nombre: 'DUI' },
+  { id: 'PASAPORTE', nombre: 'PASAPORTE' }
+])
 const cargandoTipos = ref(false)
 
 // Estado de validación del teléfono
@@ -48,42 +51,7 @@ const formularioLocal = computed({
   }
 })
 
-// Función para cargar tipos de documentos
-const cargarTiposDocumentos = async () => {
-  try {
-    cargandoTipos.value = true
-    const response = await fetch('/api/tipo-documentos', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
-      }
-    })
-
-    if (response.ok) {
-      const data = await response.json()
-      tiposDocumentos.value = data.tipos || data
-    } else {
-      console.error('Error al cargar tipos de documentos:', response.status)
-      // Fallback a opciones predeterminadas
-      tiposDocumentos.value = [
-        { id: 1, nombre: 'DUI' },
-        { id: 2, nombre: 'CÉDULA' },
-        { id: 3, nombre: 'PASAPORTE' }
-      ]
-    }
-  } catch (error) {
-    console.error('Error al cargar tipos de documentos:', error)
-    // Fallback a opciones predeterminadas
-    tiposDocumentos.value = [
-      { id: 1, nombre: 'DUI' },
-      { id: 2, nombre: 'CÉDULA' },
-      { id: 3, nombre: 'PASAPORTE' }
-    ]
-  } finally {
-    cargandoTipos.value = false
-  }
-}
+// Ya no necesitamos cargar tipos de documento desde API
 
 // Función de validación del teléfono
 const onValidate = async (phoneObject) => {
@@ -169,7 +137,7 @@ const getFechaMaximaNacimiento = () => {
 // Función de validación del formulario
 const validateForm = () => {
   // Validación del tipo de documento
-  if (!formularioLocal.value.tipo_documento && !formularioLocal.value.tipo_documento_id) {
+  if (!formularioLocal.value.tipo_documento) {
     emit('mostrar-toast', {
       severity: 'error',
       summary: 'Campo requerido',
@@ -187,6 +155,11 @@ const validateForm = () => {
       detail: 'Por favor, ingrese su número de identificación.',
       life: 4000
     })
+    return false
+  }
+
+  // Validar formato del número de identificación
+  if (!validarNumeroIdentificacion()) {
     return false
   }
 
@@ -264,31 +237,107 @@ defineExpose({
 
 // Función para manejar cambio de tipo de documento
 const onTipoDocumentoChange = (nuevoTipo) => {
-  if (nuevoTipo && nuevoTipo.id) {
+  if (nuevoTipo) {
     const nuevoFormulario = {
       ...formularioLocal.value,
-      tipo_documento: nuevoTipo,
-      tipo_documento_id: nuevoTipo.id
+      tipo_documento: nuevoTipo
     }
     emit('update:formulario', nuevoFormulario)
   }
 }
 
-// Hook onMounted para cargar datos iniciales
-onMounted(() => {
-  cargarTiposDocumentos()
-})
+// Función para formatear DUI automáticamente
+const formatearDUI = (valor) => {
+  // Solo permitir números (eliminar TODO lo que no sea dígito)
+  const soloNumeros = valor.replace(/[^0-9]/g, '')
 
-// Watch para seleccionar automáticamente el tipo de documento cuando se cargan los tipos
-watch([tiposDocumentos, () => props.formulario.tipo_documento_id], ([tipos, tipoId]) => {
-  if (tipos.length > 0 && tipoId && !props.formulario.tipo_documento) {
-    const tipoEncontrado = tipos.find(tipo => tipo.id === tipoId)
-    if (tipoEncontrado) {
-      // Actualizar el formulario con el tipo de documento encontrado usando la función segura
-      onTipoDocumentoChange(tipoEncontrado)
+  // Limitar a 9 dígitos máximo
+  const numerosLimitados = soloNumeros.substring(0, 9)
+
+  // Agregar guión automáticamente después del 8vo dígito
+  if (numerosLimitados.length > 8) {
+    return numerosLimitados.substring(0, 8) + '-' + numerosLimitados.substring(8)
+  }
+
+  return numerosLimitados
+}
+
+// Función para formatear PASAPORTE automáticamente
+const formatearPasaporte = (valor) => {
+  // Solo permitir A-Z y 0-9, convertir a mayúsculas, máximo 9 caracteres
+  return valor.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 9)
+}
+
+// Función para manejar entrada de texto según tipo de documento
+const manejarEntradaDocumento = (event) => {
+  const valor = event.target.value
+  let valorFormateado = ''
+
+  if (formularioLocal.value.tipo_documento === 'DUI') {
+    valorFormateado = formatearDUI(valor)
+    formularioLocal.value.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  } else if (formularioLocal.value.tipo_documento === 'PASAPORTE') {
+    valorFormateado = formatearPasaporte(valor)
+    formularioLocal.value.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  }
+
+  // Validar después de formatear
+  validarNumeroIdentificacion()
+}
+
+// Validación en tiempo real del número de identificación
+const validarNumeroIdentificacion = () => {
+  if (!formularioLocal.value.numero_identificacion) {
+    return true
+  }
+
+  if (formularioLocal.value.tipo_documento === 'DUI') {
+    const duiRegex = /^\d{8}-\d{1}$/
+    if (!duiRegex.test(formularioLocal.value.numero_identificacion)) {
+      emit('mostrar-toast', {
+        severity: 'error',
+        summary: 'Formato incorrecto',
+        detail: 'El DUI debe tener 9 dígitos (formato: 12345678-9)',
+        life: 4000
+      })
+      return false
+    }
+  } else if (formularioLocal.value.tipo_documento === 'PASAPORTE') {
+    // Validar formato: solo A-Z y 0-9, entre 6 y 9 caracteres
+    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
+    if (!pasaporteRegex.test(formularioLocal.value.numero_identificacion)) {
+      emit('mostrar-toast', {
+        severity: 'error',
+        summary: 'Formato incorrecto',
+        detail: 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)',
+        life: 4000
+      })
+      return false
     }
   }
-}, { immediate: true, flush: 'post' })
+  return true
+}
+
+// Hook onMounted para cargar datos iniciales
+onMounted(() => {
+  // Ya no necesitamos cargar tipos de documento
+})
+
+// Watchers para validación en tiempo real
+watch(() => formularioLocal.value.numero_identificacion, () => {
+  if (formularioLocal.value.numero_identificacion && formularioLocal.value.tipo_documento) {
+    validarNumeroIdentificacion()
+  }
+})
+
+watch(() => formularioLocal.value.tipo_documento, () => {
+  // Limpiar número cuando cambia el tipo de documento
+  formularioLocal.value.numero_identificacion = ''
+})
 
 // Watch para manejar teléfono precargado
 watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
@@ -330,33 +379,28 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
         <input
-          v-model="formularioLocal.numero_identificacion"
+          :value="formularioLocal.numero_identificacion"
+          @input="manejarEntradaDocumento"
           type="text"
           required
-          maxlength="25"
+          :maxlength="formularioLocal.tipo_documento === 'DUI' ? 10 : 9"
           :disabled="tieneClienteExistente"
           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
           :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
-          placeholder="Ingrese su DUI o documento"
+          :placeholder="formularioLocal.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
         />
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
         <select
-          :value="formularioLocal.tipo_documento_id"
-          @change="onTipoDocumentoChange(tiposDocumentos.find(t => t.id === parseInt($event.target.value)))"
+          v-model="formularioLocal.tipo_documento"
           required
-          :disabled="cargandoTipos || tieneClienteExistente"
+          :disabled="tieneClienteExistente"
           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
         >
-          <option v-if="cargandoTipos" value="" disabled>Cargando tipos...</option>
-          <option v-else-if="tiposDocumentos.length === 0" value="" disabled>No hay tipos disponibles</option>
-          <template v-else>
-            <option value="" disabled>Seleccione un tipo</option>
-            <option v-for="tipo in tiposDocumentos" :key="tipo.id" :value="tipo.id">
-              {{ tipo.nombre }}
-            </option>
-          </template>
+          <option value="" disabled>Seleccione un tipo</option>
+          <option value="DUI">DUI</option>
+          <option value="PASAPORTE">PASAPORTE</option>
         </select>
       </div>
     </div>

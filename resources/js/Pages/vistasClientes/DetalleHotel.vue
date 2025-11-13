@@ -348,19 +348,14 @@
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
                 <select
-                  v-model="reservaForm.cliente_data.tipo_documento_id"
+                  v-model="reservaForm.cliente_data.tipo_documento"
                   required
-                  :disabled="loadingTiposDocumento || tieneClienteExistente"
+                  :disabled="tieneClienteExistente"
                   class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
                 >
-                  <option v-if="loadingTiposDocumento" value="" disabled>Cargando tipos...</option>
-                  <option v-else-if="tiposDocumento.length === 0" value="" disabled>No hay tipos disponibles</option>
-                  <template v-else>
-                    <option value="" disabled>Seleccione un tipo</option>
-                    <option v-for="tipo in tiposDocumento" :key="tipo.id" :value="tipo.id">
-                      {{ tipo.nombre }}
-                    </option>
-                  </template>
+                  <option value="" disabled>Seleccione un tipo</option>
+                  <option value="DUI">DUI</option>
+                  <option value="PASAPORTE">PASAPORTE</option>
                 </select>
               </div>
             </div>
@@ -528,13 +523,12 @@ const reservaForm = ref({
     genero: '',
     direccion: '',
     telefono: '',
-    tipo_documento_id: 1
+    tipo_documento: 'DUI'
   }
 })
 
 // Tipos de documento cargados desde la API
-const tiposDocumento = ref([])
-const loadingTiposDocumento = ref(false)
+// Los tipos de documento ahora son ENUM: DUI, PASAPORTE
 
 // Estado de validación del teléfono
 const telefonoValidation = ref({
@@ -719,8 +713,6 @@ const reservarHotel = async () => {
   }
 
   // Inicializar formulario con datos básicos
-  const tipoDocumentoId = tiposDocumento.value.length > 0 ? tiposDocumento.value[0].id : ''
-
   reservaForm.value = {
     fecha_entrada: null,
     fecha_salida: null,
@@ -732,7 +724,7 @@ const reservarHotel = async () => {
       genero: '',
       direccion: '',
       telefono: '',
-      tipo_documento_id: tipoDocumentoId
+      tipo_documento: 'DUI'
     }
   }
 
@@ -760,7 +752,7 @@ const reservarHotel = async () => {
         genero: clienteExistente.genero || '',
         direccion: clienteExistente.direccion || '',
         telefono: clienteExistente.telefono || '',
-        tipo_documento_id: clienteExistente.tipo_documento_id || tipoDocumentoId
+        tipo_documento: clienteExistente.tipo_documento || 'DUI'
       }
 
       // Verificar si la fecha de nacimiento necesita corrección

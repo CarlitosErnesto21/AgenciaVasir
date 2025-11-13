@@ -12,7 +12,7 @@ class ClienteController extends Controller
     // Vista de configuración de clientes (Inertia)
     public function index()
     {
-        $clientes = Cliente::with(['user', 'tipoDocumento'])->get();
+        $clientes = Cliente::with(['user'])->get();
 
         return Inertia::render('Configuracion/Clientes', [
             'clientes' => $clientes
@@ -22,7 +22,7 @@ class ClienteController extends Controller
     // API para obtener clientes (JSON)
     public function getClientes()
     {
-        $clientes = Cliente::with(['user', 'tipoDocumento'])->get();
+        $clientes = Cliente::with(['user'])->get();
         return response()->json([
             'success' => true,
             'clientes' => $clientes
@@ -32,8 +32,45 @@ class ClienteController extends Controller
     // Mostrar un cliente específico
     public function show($id)
     {
-        $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
+        $cliente = Cliente::with(['user'])->findOrFail($id);
         return response()->json($cliente);
+    }
+
+    /**
+     * Normalizar y validar número de identificación según tipo de documento
+     */
+    private function validateDocumentNumber(&$validated)
+    {
+        // Normalizar número de identificación para PASAPORTE
+        if ($validated['tipo_documento'] === 'PASAPORTE') {
+            $validated['numero_identificacion'] = strtoupper(preg_replace('/[\s-]/', '', $validated['numero_identificacion']));
+        }
+
+        // Validar formato según tipo de documento
+        if ($validated['tipo_documento'] === 'DUI') {
+            if (!preg_match('/^\d{8}-\d{1}$/', $validated['numero_identificacion'])) {
+                return [
+                    'success' => false,
+                    'message' => 'El DUI debe tener el formato: 12345678-9',
+                    'errors' => [
+                        'numero_identificacion' => ['El DUI debe tener el formato: 12345678-9']
+                    ]
+                ];
+            }
+        } elseif ($validated['tipo_documento'] === 'PASAPORTE') {
+            // Validar el número ya normalizado (solo A-Z y 0-9, entre 6 y 9 caracteres)
+            if (!preg_match('/^[A-Z0-9]{6,9}$/', $validated['numero_identificacion'])) {
+                return [
+                    'success' => false,
+                    'message' => 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)',
+                    'errors' => [
+                        'numero_identificacion' => ['El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)']
+                    ]
+                ];
+            }
+        }
+
+        return ['success' => true];
     }
 
     // Crear un nuevo cliente
@@ -46,8 +83,23 @@ class ClienteController extends Controller
             'direccion' => 'required|string|max:200',
             'telefono' => 'required|string|max:30',
             'user_id' => 'sometimes|exists:users,id', // Opcional, se puede obtener del usuario autenticado
-            'tipo_documento_id' => 'required|exists:tipos_documentos,id',
+            'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
+
+        // Validar y normalizar número de identificación
+        $validationResult = $this->validateDocumentNumber($validated);
+        if (!$validationResult['success']) {
+            return response()->json($validationResult, 422);
+        }
+
+        // Validar que número de identificación sea único
+        $existeDocumento = Cliente::where('numero_identificacion', $validated['numero_identificacion'])->first();
+        if ($existeDocumento) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este número de identificación ya está registrado.'
+            ], 422);
+        }
 
         // Validar que el teléfono no exista en la tabla clientes
         $existeTelefonoCliente = Cliente::where('telefono', $validated['telefono'])->first();
@@ -101,10 +153,27 @@ class ClienteController extends Controller
             'direccion' => 'required|string|max:200',
             'telefono' => 'required|string|max:30',
             'user_id' => 'required|exists:users,id',
-            'tipo_documento_id' => 'required|exists:tipos_documentos,id',
+            'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
 
+        // Validar y normalizar número de identificación
+        $validationResult = $this->validateDocumentNumber($validated);
+        if (!$validationResult['success']) {
+            return response()->json($validationResult, 422);
+        }
+
         $cliente = Cliente::findOrFail($id);
+
+        // Validar que número de identificación sea único (excepto el actual)
+        $existeDocumento = Cliente::where('numero_identificacion', $validated['numero_identificacion'])
+            ->where('id', '!=', $id)
+            ->first();
+        if ($existeDocumento) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este número de identificación ya está registrado.'
+            ], 422);
+        }
 
         // Validar que el teléfono no exista en otros clientes (excepto el actual)
         $existeTelefonoCliente = Cliente::where('telefono', $validated['telefono'])
@@ -151,8 +220,7 @@ class ClienteController extends Controller
         }
 
         // Buscar el cliente asociado al usuario autenticado
-        $cliente = Cliente::with('tipoDocumento')
-            ->where('user_id', $user->id)
+        $cliente = Cliente::where('user_id', $user->id)
             ->first();
 
         if (!$cliente) {
@@ -188,8 +256,7 @@ class ClienteController extends Controller
         }
 
         // Buscar el cliente asociado al usuario autenticado
-        $cliente = Cliente::with('tipoDocumento')
-            ->where('user_id', $user->id)
+        $cliente = Cliente::where('user_id', $user->id)
             ->first();
 
         if (!$cliente) {
@@ -208,7 +275,7 @@ class ClienteController extends Controller
             'genero',
             'direccion',
             'telefono',
-            'tipo_documento_id'
+            'tipo_documento'
         ];
 
         $datosCompletos = true;
@@ -250,8 +317,23 @@ class ClienteController extends Controller
             'genero' => 'required|string|max:50',
             'direccion' => 'required|string|max:200',
             'telefono' => 'required|string|max:30',
-            'tipo_documento_id' => 'required|exists:tipos_documentos,id',
+            'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
+
+        // Validar y normalizar número de identificación
+        $validationResult = $this->validateDocumentNumber($validated);
+        if (!$validationResult['success']) {
+            return response()->json($validationResult, 422);
+        }
+
+        // Validar que número de identificación sea único
+        $existeDocumento = Cliente::where('numero_identificacion', $validated['numero_identificacion'])->first();
+        if ($existeDocumento) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Este número de identificación ya está registrado.'
+            ], 422);
+        }
 
         // Agregar el user_id automáticamente
         $validated['user_id'] = $user->id;
@@ -284,7 +366,7 @@ class ClienteController extends Controller
         }
 
         $cliente = Cliente::create($validated);
-        $cliente->load('tipoDocumento', 'user');
+        $cliente->load('user');
         return response()->json([
             'success' => true,
             'data' => $cliente,
@@ -295,7 +377,7 @@ class ClienteController extends Controller
     // Mostrar reservas del cliente
     public function reservas($id)
     {
-        $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
+        $cliente = Cliente::with(['user'])->findOrFail($id);
         $reservas = $cliente->reservas()->with(['empleado.user'])->orderBy('fecha', 'desc')->get();
 
         return Inertia::render('Configuracion/ClienteComponents/ReservasCliente', [
@@ -307,7 +389,7 @@ class ClienteController extends Controller
     // Mostrar ventas del cliente
     public function ventas($id)
     {
-        $cliente = Cliente::with(['user', 'tipoDocumento'])->findOrFail($id);
+        $cliente = Cliente::with(['user'])->findOrFail($id);
         $ventas = $cliente->ventas()->with(['detalleVentas.producto'])->orderBy('fecha', 'desc')->get();
 
         return Inertia::render('Configuracion/ClienteComponents/VentasCliente', [

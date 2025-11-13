@@ -46,7 +46,7 @@ const formData = ref({
   genero: '',
   direccion: '',
   telefono: '',
-  tipo_documento_id: null
+  tipo_documento: 'DUI'
 })
 
 // Opciones para el select de género (deben coincidir con el enum de la BD)
@@ -66,63 +66,12 @@ const telefonoValidation = ref({
   mensaje: ''
 })
 
-// Cargar tipos de documento al montar el componente
+// Ya no necesitamos cargar tipos de documento
 onMounted(async () => {
-  await cargarTiposDocumento()
+  // Componente listo
 })
 
-// Cargar tipos de documento desde la API
-const cargarTiposDocumento = async () => {
-  try {
-    loadingTipos.value = true
-    const response = await axios.get('/api/tipo-documentos')
-
-    // La API devuelve los tipos en response.data.tipos
-    const tipos = response.data.tipos || response.data.data || response.data || []
-
-    tiposDocumento.value = tipos.map(tipo => ({
-      nombre: tipo.nombre,
-      id: tipo.id
-    }))
-
-    // Verificar que tenemos datos válidos
-    if (tiposDocumento.value.length === 0) {
-      console.warn('No se encontraron tipos de documento')
-    }
-
-    // Seleccionar el primer tipo de documento por defecto si existe
-    if (tiposDocumento.value.length > 0) {
-      formData.value.tipo_documento_id = tiposDocumento.value[0].id
-    }
-
-  } catch (error) {
-    console.error('Error al cargar tipos de documento:', error)
-    console.error('Response data:', error.response?.data)
-
-    // Fallback con tipos comunes si no se pueden cargar
-    tiposDocumento.value = [
-      { id: 1, nombre: 'DUI' },
-      { id: 2, nombre: 'CÉDULA' },
-      { id: 3, nombre: 'PASAPORTE' }
-    ]
-
-    let errorMessage = 'No se pudieron cargar los tipos de documento. Usando valores por defecto.'
-    if (error.response?.status === 401) {
-      errorMessage = 'No estás autorizado para acceder a esta información'
-    } else if (error.response?.status === 404) {
-      errorMessage = 'Servicio no encontrado'
-    }
-
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: errorMessage,
-      life: 3000
-    })
-  } finally {
-    loadingTipos.value = false
-  }
-}
+// Ya no necesitamos cargar tipos de documento desde API
 
 // Función para cerrar el modal
 const cerrarModal = () => {
@@ -138,7 +87,7 @@ const limpiarFormulario = () => {
     genero: '',
     direccion: '',
     telefono: '',
-    tipo_documento_id: tiposDocumento.value.length > 0 ? tiposDocumento.value[0].id : null
+    tipo_documento: 'DUI'
   }
   errores.value = {}
 }
@@ -208,36 +157,53 @@ const validarTelefonoUnico = async (telefono) => {
   }
 }
 
-// Validar formulario
+// Validar formulario antes de enviar
 const validarFormulario = () => {
-  errores.value = {}
+  // Limpiar errores previos de validación del formulario
+  const erroresFormulario = {}
 
-  if (!formData.value.numero_identificacion.trim()) {
-    errores.value.numero_identificacion = 'El número de identificación es requerido'
+  // Validar número de identificación
+  if (!formData.value.numero_identificacion) {
+    erroresFormulario.numero_identificacion = 'El número de identificación es requerido'
+  } else {
+    // Validar formato en tiempo real y preservar error si existe
+    validarNumeroIdentificacion()
+    if (errores.value.numero_identificacion) {
+      erroresFormulario.numero_identificacion = errores.value.numero_identificacion
+    }
   }
 
+  // Validar fecha de nacimiento
   if (!formData.value.fecha_nacimiento) {
-    errores.value.fecha_nacimiento = 'La fecha de nacimiento es requerida'
+    erroresFormulario.fecha_nacimiento = 'La fecha de nacimiento es requerida'
   }
 
+  // Validar género
   if (!formData.value.genero) {
-    errores.value.genero = 'El género es requerido'
+    erroresFormulario.genero = 'El género es requerido'
   }
 
-  if (!formData.value.direccion.trim()) {
-    errores.value.direccion = 'La dirección es requerida'
+  // Validar dirección
+  if (!formData.value.direccion) {
+    erroresFormulario.direccion = 'La dirección es requerida'
   }
 
+  // Validar teléfono
   if (!formData.value.telefono) {
-    errores.value.telefono = 'El número de teléfono es requerido'
+    erroresFormulario.telefono = 'El número de teléfono es requerido'
   } else if (telefonoValidation.value.isValid === false) {
-    errores.value.telefono = telefonoValidation.value.mensaje || 'Por favor, ingrese un número de teléfono válido'
+    erroresFormulario.telefono = telefonoValidation.value.mensaje || 'Por favor, ingrese un número de teléfono válido'
   }
 
-  if (!formData.value.tipo_documento_id) {
-    errores.value.tipo_documento_id = 'El tipo de documento es requerido'
+  // Validar tipo de documento
+  if (!formData.value.tipo_documento) {
+    erroresFormulario.tipo_documento = 'El tipo de documento es requerido'
   }
 
+  // Reemplazar errores completamente con solo los errores actuales
+  errores.value = erroresFormulario
+
+  // Verificar si hay errores
   return Object.keys(errores.value).length === 0
 }
 
@@ -290,6 +256,11 @@ const guardarCliente = async () => {
       errores.value = error.response.data.errors
     }
 
+    // Si hay un mensaje específico del servidor, mostrarlo también como error de campo
+    if (error.response?.data?.message && error.response?.data?.message.includes('formato')) {
+      errores.value.numero_identificacion = error.response.data.message
+    }
+
     toast.add({
       severity: 'error',
       summary: 'Error al guardar',
@@ -306,6 +277,110 @@ const formatearFecha = (fecha) => {
   if (!fecha) return ''
   return new Date(fecha).toLocaleDateString('es-ES')
 }
+
+// Función para formatear DUI automáticamente
+const formatearDUI = (valor) => {
+  // Solo permitir números (eliminar TODO lo que no sea dígito)
+  const soloNumeros = valor.replace(/[^0-9]/g, '')
+  
+  // Limitar a 9 dígitos máximo
+  const numerosLimitados = soloNumeros.substring(0, 9)
+  
+  // Agregar guión automáticamente después del 8vo dígito
+  if (numerosLimitados.length > 8) {
+    return numerosLimitados.substring(0, 8) + '-' + numerosLimitados.substring(8)
+  }
+  
+  return numerosLimitados
+}
+
+// Función para formatear PASAPORTE automáticamente
+const formatearPasaporte = (valor) => {
+  // Solo permitir A-Z y 0-9, convertir a mayúsculas, máximo 9 caracteres
+  return valor.toUpperCase().replace(/[^A-Z0-9]/g, '').substring(0, 9)
+}
+
+// Función para manejar entrada de texto según tipo de documento
+const manejarEntradaDocumento = (event) => {
+  const valor = event.target.value
+  let valorFormateado = ''
+  
+  if (formData.value.tipo_documento === 'DUI') {
+    valorFormateado = formatearDUI(valor)
+    formData.value.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  } else if (formData.value.tipo_documento === 'PASAPORTE') {
+    valorFormateado = formatearPasaporte(valor)
+    formData.value.numero_identificacion = valorFormateado
+    // Actualizar el valor del input inmediatamente
+    event.target.value = valorFormateado
+  }
+  
+  // Validar después de formatear
+  validarNumeroIdentificacion()
+}
+
+// Validación en tiempo real del número de identificación
+const validarNumeroIdentificacion = () => {
+  if (!formData.value.numero_identificacion) {
+    delete errores.value.numero_identificacion
+    return
+  }
+
+  if (formData.value.tipo_documento === 'DUI') {
+    const duiRegex = /^\d{8}-\d{1}$/
+    if (!duiRegex.test(formData.value.numero_identificacion)) {
+      errores.value.numero_identificacion = 'El DUI debe tener 9 dígitos (formato: 12345678-9)'
+    } else {
+      delete errores.value.numero_identificacion
+    }
+  } else if (formData.value.tipo_documento === 'PASAPORTE') {
+    // Validar formato: solo A-Z y 0-9, entre 6 y 9 caracteres
+    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
+    if (!pasaporteRegex.test(formData.value.numero_identificacion)) {
+      errores.value.numero_identificacion = 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)'
+    } else {
+      delete errores.value.numero_identificacion
+    }
+  }
+}
+
+// Watchers para validación en tiempo real
+watch(() => formData.value.numero_identificacion, () => {
+  validarNumeroIdentificacion()
+})
+
+watch(() => formData.value.tipo_documento, () => {
+  // Limpiar número cuando cambia el tipo de documento
+  formData.value.numero_identificacion = ''
+  delete errores.value.numero_identificacion
+})
+
+// Watchers para limpiar errores cuando se completan los campos
+watch(() => formData.value.fecha_nacimiento, (newValue) => {
+  if (newValue && errores.value.fecha_nacimiento) {
+    delete errores.value.fecha_nacimiento
+  }
+})
+
+watch(() => formData.value.genero, (newValue) => {
+  if (newValue && errores.value.genero) {
+    delete errores.value.genero
+  }
+})
+
+watch(() => formData.value.direccion, (newValue) => {
+  if (newValue && newValue.trim() && errores.value.direccion) {
+    delete errores.value.direccion
+  }
+})
+
+watch(() => formData.value.telefono, (newValue) => {
+  if (newValue && errores.value.telefono && telefonoValidation.value.isValid) {
+    delete errores.value.telefono
+  }
+})
 </script>
 
 <template>
@@ -340,13 +415,14 @@ const formatearFecha = (fecha) => {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
             <input
-              v-model="formData.numero_identificacion"
+              :value="formData.numero_identificacion"
+              @input="manejarEntradaDocumento"
               type="text"
               required
-              maxlength="25"
+              :maxlength="formData.tipo_documento === 'DUI' ? 10 : 9"
               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               :class="{ 'border-red-500': errores.numero_identificacion }"
-              placeholder="Ingrese su DUI o documento"
+              :placeholder="formData.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
             />
             <small v-if="errores.numero_identificacion" class="text-red-500 text-xs">
               {{ errores.numero_identificacion }}
@@ -355,23 +431,17 @@ const formatearFecha = (fecha) => {
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
             <select
-              v-model="formData.tipo_documento_id"
+              v-model="formData.tipo_documento"
               required
-              :disabled="loadingTipos"
-              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100"
-              :class="{ 'border-red-500': errores.tipo_documento_id }"
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': errores.tipo_documento }"
             >
-              <option v-if="loadingTipos" value="" disabled>Cargando tipos...</option>
-              <option v-else-if="tiposDocumento.length === 0" value="" disabled>No hay tipos disponibles</option>
-              <template v-else>
-                <option value="" disabled>Seleccione un tipo</option>
-                <option v-for="tipo in tiposDocumento" :key="tipo.id" :value="tipo.id">
-                  {{ tipo.nombre }}
-                </option>
-              </template>
+              <option value="" disabled>Seleccione un tipo</option>
+              <option value="DUI">DUI</option>
+              <option value="PASAPORTE">PASAPORTE</option>
             </select>
-            <small v-if="errores.tipo_documento_id" class="text-red-500 text-xs">
-              {{ errores.tipo_documento_id }}
+            <small v-if="errores.tipo_documento" class="text-red-500 text-xs">
+              {{ errores.tipo_documento }}
             </small>
           </div>
         </div>
