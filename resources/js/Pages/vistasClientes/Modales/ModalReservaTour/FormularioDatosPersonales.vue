@@ -127,11 +127,36 @@ const validarTelefonoUnico = async (telefono) => {
   }
 }
 
-// Función para obtener fecha máxima de nacimiento (ayer)
+// Función para obtener fecha máxima de nacimiento (debe tener al menos 18 años)
 const getFechaMaximaNacimiento = () => {
-  const ayer = new Date()
-  ayer.setDate(ayer.getDate() - 1)
-  return ayer
+  const fechaMaxima = new Date()
+  fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 18)
+  return fechaMaxima
+}
+
+// Función para validar edad mínima de 18 años
+const validarEdadMinima = (fechaNacimiento) => {
+  if (!fechaNacimiento) return { esValido: true, mensaje: '' }
+
+  const hoy = new Date()
+  const fechaNac = new Date(fechaNacimiento)
+  const edad = hoy.getFullYear() - fechaNac.getFullYear()
+  const mesNacimiento = fechaNac.getMonth()
+  const diaNacimiento = fechaNac.getDate()
+  const mesActual = hoy.getMonth()
+  const diaActual = hoy.getDate()
+
+  // Ajustar la edad si aún no ha cumplido años este año
+  const edadReal = edad - ((mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) ? 1 : 0)
+
+  if (edadReal < 18) {
+    return {
+      esValido: false,
+      mensaje: `Debe ser mayor de edad (18 años). Edad actual: ${edadReal} años`
+    }
+  }
+
+  return { esValido: true, mensaje: '' }
 }
 
 // Función de validación del formulario
@@ -171,6 +196,17 @@ const validateForm = () => {
       life: 4000
     })
     return false
+  } else {
+    const validacionEdad = validarEdadMinima(formularioLocal.value.fecha_nacimiento)
+    if (!validacionEdad.esValido) {
+      emit('mostrar-toast', {
+        severity: 'error',
+        summary: 'Edad insuficiente',
+        detail: validacionEdad.mensaje,
+        life: 4000
+      })
+      return false
+    }
   }
 
   if (!formularioLocal.value.direccion) {
@@ -339,6 +375,21 @@ watch(() => formularioLocal.value.tipo_documento, () => {
   formularioLocal.value.numero_identificacion = ''
 })
 
+// Watch para validación de fecha de nacimiento en tiempo real
+watch(() => formularioLocal.value.fecha_nacimiento, (nuevaFecha) => {
+  if (nuevaFecha) {
+    const validacionEdad = validarEdadMinima(nuevaFecha)
+    if (!validacionEdad.esValido) {
+      emit('mostrar-toast', {
+        severity: 'error',
+        summary: 'Edad insuficiente',
+        detail: validacionEdad.mensaje,
+        life: 4000
+      })
+    }
+  }
+})
+
 // Watch para manejar teléfono precargado
 watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
   // Si hay un teléfono precargado y es diferente del anterior
@@ -412,10 +463,10 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
           v-model="formularioLocal.fecha_nacimiento"
           :maxDate="getFechaMaximaNacimiento()"
           date-format="dd/mm/yy"
-          placeholder="Seleccionar fecha de nacimiento"
+          placeholder="Seleccionar fecha de nacimiento (debe ser mayor de 18 años)"
           showIcon
           yearNavigator
-          yearRange="1920:2010"
+          yearRange="1920:2006"
           :disabled="tieneClienteExistente"
           class="w-full"
           :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${tieneClienteExistente ? 'bg-gray-100 cursor-not-allowed' : ''}`"

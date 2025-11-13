@@ -53,6 +53,9 @@ Route::middleware('auth:sanctum')->get('/verificar-datos-cliente', [ClienteContr
 // Ruta para obtener datos del cliente autenticado
 Route::middleware('auth:sanctum')->get('/clientes/mi-perfil', [ClienteController::class, 'miPerfil']);
 
+// Ruta alternativa para obtener datos del cliente autenticado
+Route::middleware('auth:sanctum')->get('/cliente-datos', [ClienteController::class, 'miPerfil']);
+
 // Ruta para validar teléfono único
 Route::middleware('auth:sanctum')->post('/clientes/validar-telefono', [ClienteController::class, 'validarTelefono']);
 
