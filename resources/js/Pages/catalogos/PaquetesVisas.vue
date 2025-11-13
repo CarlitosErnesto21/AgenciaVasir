@@ -882,6 +882,23 @@ const onNombrePaste = (event) => {
         });
     }
 };
+
+// Función para convertir la descripción a mayúsculas
+const onDescripcionInput = (event) => {
+    const inputValue = event.target.value;
+    const upperCaseValue = inputValue.toUpperCase();
+    
+    if (inputValue !== upperCaseValue) {
+        const cursorPosition = event.target.selectionStart;
+        paquete.value.descripcion = upperCaseValue;
+        
+        // Mantener la posición del cursor
+        nextTick(() => {
+            event.target.value = upperCaseValue;
+            event.target.setSelectionRange(cursorPosition, cursorPosition);
+        });
+    }
+};
 </script>
 
 <template>
@@ -1117,8 +1134,9 @@ const onNombrePaste = (event) => {
                     <textarea
                         v-model="paquete.descripcion"
                         rows="3"
-                        placeholder="Descripción del paquete (opcional)"
+                        placeholder="DESCRIPCION DEL PAQUETE (OPCIONAL)"
                         maxlength="255"
+                        @input="onDescripcionInput"
                         :class="[
                             'w-full rounded-lg border px-3 py-2 transition-colors focus:outline-none focus:ring-1',
                             submitted && !validateDescripcion()
