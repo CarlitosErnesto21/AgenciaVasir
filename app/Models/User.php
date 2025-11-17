@@ -17,6 +17,18 @@ class User extends Authenticatable implements MustVerifyEmail
     use HasRoles, HasApiTokens;
 
     /**
+     * Eliminar el cliente asociado cuando se elimina el usuario.
+     */
+    protected static function booted()
+    {
+        static::deleted(function ($user) {
+            if ($user->cliente) {
+                $user->cliente->delete();
+            }
+        });
+    }
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

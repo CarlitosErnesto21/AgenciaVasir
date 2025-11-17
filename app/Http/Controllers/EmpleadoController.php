@@ -536,4 +536,23 @@ class EmpleadoController extends Controller
     {
         return strtolower(trim(preg_replace('/\s+/', ' ', $name)));
     }
+
+        /**
+     * Guardar o actualizar datos de empleado desde el Dashboard.
+     */
+    public function completarDatos(Request $request)
+    {
+        $validated = $request->validate([
+            'cargo' => 'required|string|max:255',
+            'telefono' => 'required|string|max:30',
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $empleado = Empleado::firstOrNew(['user_id' => $validated['user_id']]);
+        $empleado->cargo = $validated['cargo'];
+        $empleado->telefono = $validated['telefono'];
+        $empleado->save();
+
+        return redirect()->route('dashboard')->with('status', 'Datos de empleado actualizados correctamente.');
+    }
 }

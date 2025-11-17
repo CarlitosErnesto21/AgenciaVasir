@@ -11,6 +11,8 @@ const props = defineProps({
     unsavedChangesVisible: Boolean,
     passwordVisible: Boolean,
     empleado: Object,
+    usuario: Object, // Nuevo: usuario asociado
+    detailsVisible: Boolean, // Nuevo: visibilidad del modal de detalles
     dialogStyle: Object,
     isDeleting: Boolean,
     isLoading: Boolean,
@@ -23,6 +25,7 @@ const emit = defineEmits([
     'update:delete-visible',
     'update:unsaved-changes-visible',
     'update:password-visible',
+    'update:details-visible', // Nuevo: para el modal de detalles
     'change-password',
     'send-credentials',
     'view-details',
@@ -32,6 +35,11 @@ const emit = defineEmits([
     'continue-editing',
     'update-password'
 ]);
+// Computed para el v-model del modal de detalles
+const isDetailsVisible = computed({
+    get: () => props.detailsVisible,
+    set: (value) => emit('update:details-visible', value)
+});
 
 // Variables reactivas locales
 const passwordData = ref({
@@ -136,6 +144,68 @@ const updatePasswordVisible = (value) => {
 </script>
 
 <template>
+        <!-- Modal de Detalles de Usuario y Empleado -->
+        <Dialog
+            v-model:visible="isDetailsVisible"
+            header="Detalles del Empleado"
+            :modal="true"
+            :style="dialogStyle"
+            :closable="false"
+            :draggable="false"
+        >
+            <div v-if="props.usuario || props.empleado" class="space-y-6">
+                <!-- Detalles de Usuario -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                        <FontAwesomeIcon :icon="faUsers" class="h-5 w-5 text-blue-600" />
+                        Usuario
+                    </h3>
+                    <div class="flex flex-col gap-2">
+                        <div>
+                            <span class="font-medium text-gray-700">Nombre:</span>
+                            <span class="ml-2 text-gray-900">{{ props.usuario?.name ?? '-' }}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Email:</span>
+                            <span class="ml-2 text-gray-900">{{ props.usuario?.email ?? '-' }}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Rol:</span>
+                            <span class="ml-2 text-gray-900 break-words">
+                                <template v-if="Array.isArray(props.usuario?.roles) && props.usuario.roles.length">
+                                    <span v-for="(rol, idx) in props.usuario.roles" :key="rol.id || idx" class="inline-block bg-blue-100 text-blue-800 rounded px-2 py-0.5 text-xs font-semibold mr-1 mb-1">
+                                        {{ rol.name || rol }}
+                                    </span>
+                                </template>
+                                <template v-else>
+                                    -
+                                </template>
+                            </span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Cargo:</span>
+                            <span class="ml-2 text-gray-900">{{ props.empleado?.cargo ?? '-' }}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">Teléfono:</span>
+                            <span class="ml-2 text-gray-900">{{ props.empleado?.telefono ?? '-' }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div v-else class="text-center text-gray-500 py-8">No hay datos para mostrar.</div>
+            <template #footer>
+                <div class="flex justify-center w-full mt-6">
+                    <button
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="isDetailsVisible = false"
+                    >
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                        Cerrar
+                    </button>
+                </div>
+            </template>
+        </Dialog>
     <!-- Modal de Más Acciones -->
     <Dialog
         :visible="visible"
@@ -155,17 +225,6 @@ const updatePasswordVisible = (value) => {
                 <div>
                     <div class="font-medium text-gray-900">Cambiar Contraseña</div>
                     <div class="text-sm text-gray-500">Actualizar la contraseña de acceso</div>
-                </div>
-            </button>
-
-            <button
-                @click="handleSendCredentials"
-                class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-green-50 rounded-lg transition-colors duration-200 border border-gray-200 hover:border-green-300"
-            >
-                <FontAwesomeIcon :icon="faEnvelope" class="h-5 w-5 text-green-600" />
-                <div>
-                    <div class="font-medium text-gray-900">Enviar Credenciales</div>
-                    <div class="text-sm text-gray-500">Reenviar datos de acceso por email</div>
                 </div>
             </button>
 

@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser } from '@fortawesome/free-solid-svg-icons'
+import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser, faSign, faSignIn } from '@fortawesome/free-solid-svg-icons'
 import { faFacebook, faInstagram, faTiktok, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useCarritoStore } from '@/stores/carrito'
 import Toast from 'primevue/toast'
@@ -285,19 +285,19 @@ watch(isAuthenticated, (newValue, oldValue) => {
                 <template v-if="!isAuthenticated">
                     <Link
                         :href="route('login')"
-                        title="Iniciar sesión en tu cuenta"
                         class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-sm md:text-base transform hover:scale-105"
                     >
-                        <FontAwesomeIcon :icon="faSignInAlt" class="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span class="hidden xs:inline ml-1.5 sm:ml-2">Entrar</span>
+                        <FontAwesomeIcon :icon="faSignIn" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <span class="hidden lg:block text-sm">Iniciar Sesión</span>
+                        <span class="block lg:hidden text-sm">Entrar</span>
                     </Link>
                     <Link
                         :href="route('register')"
-                        title="Crear una nueva cuenta"
                         class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl text-red-700 hover:text-white font-semibold shadow-lg hover:shadow-xl border-2 border-red-600 bg-white/90 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-sm md:text-base transform hover:scale-105"
                     >
-                        <FontAwesomeIcon :icon="faUserPlus" class="w-4 h-4 sm:w-5 sm:h-5" />
-                        <span class="hidden xs:inline ml-1.5 sm:ml-2">Registro</span>
+                        <FontAwesomeIcon :icon="faUserPlus" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <span class="hidden lg:block text-sm">Registrarse</span>
+                        <span class="block lg:hidden text-sm">Nuevo</span>
                     </Link>
                 </template>
                 <template v-else>

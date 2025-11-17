@@ -11,6 +11,7 @@ use App\Http\Controllers\SobreNosotrosController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\ProductoWebController;
 use App\Http\Controllers\HotelWebController;
+use App\Http\Controllers\EmpleadoController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use App\Http\Middleware\RutasAdmin;
@@ -21,7 +22,12 @@ Route::get('/', fn() => Inertia::render('Inicio'))->name('inicio');
 // Rutas protegidas
 Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
 
-    Route::get('dashboard', fn() => Inertia::render('Dashboard'))->name('dashboard');
+    Route::get('dashboard', function () {
+        $user = request()->user()->load(['roles', 'empleado']);
+        return Inertia::render('Dashboard', [
+            'user' => $user,
+        ]);
+    })->name('dashboard');
     Route::get('transportes', fn() => Inertia::render('Catalogos/Transportes'))->name('transportes');
     Route::get('productos', fn() => Inertia::render('Catalogos/Productos'))->name('productos');
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
@@ -70,6 +76,9 @@ Route::middleware('auth')->group(function () {
         Route::post('/pagos/venta', [\App\Http\Controllers\PagoController::class, 'procesarPagoVenta']);
         Route::get('/pagos/{pago}/estado', [\App\Http\Controllers\PagoController::class, 'consultarEstadoPago']);
     });
+
+    // Ruta para completar datos de empleado
+    Route::post('empleado/completar-datos', [EmpleadoController::class, 'completarDatos'])->name('empleado.completar-datos')->middleware(['auth']);
 });
 
 //Rutas de clientes

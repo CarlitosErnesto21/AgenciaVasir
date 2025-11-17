@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import Chart from 'primevue/chart';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
@@ -14,6 +14,34 @@ import WidgetsSecundarios from '@/Pages/Catalogos/Components/DashboardComponents
 import ActividadReciente from '@/Pages/Catalogos/Components/DashboardComponents/ActividadReciente.vue';
 import ModalesInteractivos from '@/Pages/Catalogos/Components/DashboardComponents/ModalesInteractivos.vue';
 import GraficosSection from '@/Pages/Catalogos/Components/DashboardComponents/GraficosSection.vue';
+
+import FormularioDatosCompletos from '@/Pages/Profile/FormularioDatosCompletos.vue';
+import { usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
+const page = usePage();
+const user = page.props.user;
+const isAdmin = computed(() => user && user.roles && user.roles.some(r => r.name === 'Administrador'));
+const empleado = computed(() => user && user.empleado ? user.empleado : null);
+
+const showCompletarDatos = ref(false);
+const empleadoIncompleto = computed(() => {
+    if (!user) return false;
+    const emp = empleado.value;
+    return isAdmin.value && (!emp || !emp.cargo || !emp.telefono);
+});
+
+// Mostrar el modal si el empleado está incompleto
+onMounted(() => {
+    if (empleadoIncompleto.value) {
+        showCompletarDatos.value = true;
+    }
+});
+
+watch(empleadoIncompleto, (nuevo) => {
+    if (nuevo) {
+        showCompletarDatos.value = true;
+    }
+});
 
 const chartDataPie = ref();
 const chartDataBar = ref();
@@ -428,6 +456,13 @@ onMounted(() => {
 <template>
     <Head title="Dashboard" />
     <AuthenticatedLayout>
+        <Toast class="z-[9999]" />
+        <FormularioDatosCompletos
+            v-if="showCompletarDatos"
+            :empleado="empleado && empleado.value ? empleado.value : {}"
+            :user-id="user && user.id ? user.id : null"
+            @close="showCompletarDatos = false"
+        />
         <!-- Estado de carga -->
         <LoadingState v-if="loading" />
 

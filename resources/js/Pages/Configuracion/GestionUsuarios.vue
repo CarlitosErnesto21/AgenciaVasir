@@ -1,12 +1,14 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head } from "@inertiajs/vue3";
+import { ref as vueRef } from "vue";
+// Estado de loading para el botón Editar perfil
 import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import Toast from 'primevue/toast';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faFilter, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey, faHandPointUp } from "@fortawesome/free-solid-svg-icons";
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import Modales from "./GestionUsuarioComponent/Modales.vue";
@@ -35,10 +37,13 @@ const unsavedChangesDialog = ref(false);
 const submitted = ref(false);
 const hasUnsavedChanges = ref(false);
 const originalEmpleadoData = ref(null);
+const isProfileLoading = vueRef(false);
 
 // Variables para modales de empleados
 const moreActionsDialog = ref(false);
 const selectedEmpleado = ref(null);
+const detailsDialog = ref(false);
+const selectedUsuario = ref(null);
 
 // Variables de loading
 const isDeleting = ref(false);
@@ -560,6 +565,7 @@ const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
 
+
 // Funciones para manejar los modales de empleados
 const openMoreActionsModal = (empleadoData) => {
     selectedEmpleado.value = empleadoData;
@@ -655,12 +661,17 @@ const updatePassword = async (passwordData) => {
 };
 
 const handleViewDetails = (emp) => {
-    toast.add({
-        severity: "info",
-        summary: "Ver Detalles",
-        detail: `Funcionalidad de visualizar detalles del empleado "${emp.nombre}" en desarrollo.`,
-        life: 5000
-    });
+    // Abrir el modal de detalles con los datos del usuario y empleado
+    selectedEmpleado.value = emp;
+    selectedUsuario.value = {
+        id: emp.user_id || emp.usuario_id || null,
+        name: emp.nombre || emp.name,
+        email: emp.email,
+        roles: emp.roles ? emp.roles : [],
+        status: emp.status || 'Activo',
+        created_at: emp.created_at
+    };
+    detailsDialog.value = true;
     moreActionsDialog.value = false;
 };
 
@@ -676,13 +687,29 @@ const handleSendCredentials = (emp) => {
 
 // Función para manejar el clic en la fila
 const onRowClick = (event) => {
-    // Verificar si el clic fue en un botón para evitar abrir el modal
-    const target = event.originalEvent.target;
-    const isButton = target.closest('button');
-
+    const target = event.originalEvent?.target || event.target;
+    let isButton = false;
+    if (target) {
+        isButton = !!(target.closest && target.closest('button'));
+    }
     if (!isButton) {
-        selectedEmpleado.value = event.data;
-        // Aquí podrías abrir un modal de detalles si lo deseas
+        // Buscar el usuario asociado si existe (por ejemplo, por email)
+        const empleadoData = event.data;
+        selectedEmpleado.value = empleadoData;
+        // Buscar usuario por email (ajusta si tienes otra relación)
+        let usuario = null;
+        if (empleadoData && empleadoData.email) {
+            usuario = {
+                id: empleadoData.user_id || empleadoData.usuario_id || null,
+                name: empleadoData.nombre || empleadoData.name,
+                email: empleadoData.email,
+                roles: empleadoData.roles ? empleadoData.roles : [],
+                status: empleadoData.status || 'Activo',
+                created_at: empleadoData.created_at
+            };
+        }
+        selectedUsuario.value = usuario;
+        detailsDialog.value = true;
     }
 };
 
@@ -971,7 +998,13 @@ const telefonoErrors = computed(() => {
 
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Empleados</h3>
+                    <div class="w-full">
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Empleados</h3>
+                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                            Haz clic en cualquier fila para ver los detalles.
+                        </p>
+                    </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
                             class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
@@ -1064,7 +1097,7 @@ const telefonoErrors = computed(() => {
                         <template #body="slotProps">
                             <div
                                 class="text-sm leading-relaxed overflow-hidden"
-                                style="max-width: 200px; text-overflow: ellipsis; white-space: nowrap;"
+                                style="max-width: 150px; text-overflow: ellipsis; white-space: nowrap;"
                                 :title="slotProps.data.email"
                             >
                                 {{ slotProps.data.email }}
@@ -1100,24 +1133,52 @@ const telefonoErrors = computed(() => {
                         </template>
                         <template #body="slotProps">
                             <div class="flex gap-2 justify-center items-center">
-                                <button
-                                    class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                    @click="openMoreActionsModal(slotProps.data)">
-                                    <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
-                                    <span class="hidden md:block text-white">Más</span>
-                                </button>
-                                <button
-                                   class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                    @click="editEmpleado(slotProps.data)">
-                                    <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
-                                    <span class="hidden md:block text-white">Editar</span>
-                                </button>
-                                <button
-                                    class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                                    @click="confirmDeleteEmpleado(slotProps.data)">
-                                    <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
-                                    <span class="hidden md:block text-white">Eliminar</span>
-                                </button>
+                                <!-- Si el empleado tiene el rol de Administrador, mostrar solo 'Editar perfil' -->
+                                <template v-if="Array.isArray(slotProps.data.roles) && slotProps.data.roles.includes('Administrador')">
+                                    <button
+                                        type="button"
+                                        class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60"
+                                        :disabled="isProfileLoading"
+                                        @click.stop.prevent="
+                                            if (!isProfileLoading) {
+                                                isProfileLoading = true;
+                                                $inertia.visit(route('profile.edit'), {
+                                                    onFinish: () => {
+                                                        isProfileLoading = false;
+                                                    }
+                                                });
+                                            }
+                                        "
+                                    >
+                                        <FontAwesomeIcon
+                                            :icon="isProfileLoading ? faSpinner : faPencil"
+                                            :class="['h-4 w-4', { 'animate-spin': isProfileLoading }]"
+                                        />
+                                        <span v-if="!isProfileLoading">Editar perfil</span>
+                                        <span v-else>Cargando...</span>
+                                    </button>
+                                </template>
+                                <!-- Si NO es Administrador, mostrar los botones normales -->
+                                <template v-else>
+                                    <button
+                                        class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                        @click="openMoreActionsModal(slotProps.data)">
+                                        <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                        <span class="hidden md:block text-white">Más</span>
+                                    </button>
+                                    <button
+                                        class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                        @click="editEmpleado(slotProps.data)">
+                                        <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                        <span class="hidden md:block text-white">Editar</span>
+                                    </button>
+                                    <button
+                                        class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                        @click="confirmDeleteEmpleado(slotProps.data)">
+                                        <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                        <span class="hidden md:block text-white">Eliminar</span>
+                                    </button>
+                                </template>
                             </div>
                         </template>
                     </Column>
@@ -1373,6 +1434,14 @@ const telefonoErrors = computed(() => {
                     @update-password="updatePassword"
                 />
             </div>
+            <!-- Modal de detalles de usuario y empleado -->
+            <Modales
+                :details-visible="detailsDialog"
+                @update:details-visible="detailsDialog = $event"
+                :usuario="selectedUsuario"
+                :empleado="selectedEmpleado"
+                :dialog-style="dialogStyle"
+            />
         </div>
     </AuthenticatedLayout>
 </template>

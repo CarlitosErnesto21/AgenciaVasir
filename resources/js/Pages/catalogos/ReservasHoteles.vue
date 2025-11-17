@@ -222,9 +222,6 @@ onMounted(() => {
         <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
           <div>
             <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Reservas de Hoteles</h3>
-            <p class="text-gray-500 text-sm text-center sm:text-start mt-1">
-              🏨 Gestiona las reservas de hoteles organizadas por estado
-            </p>
             <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium">
               👆 Haz clic en cualquier fila para ver los detalles de la reserva
             </p>
