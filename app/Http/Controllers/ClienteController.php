@@ -73,6 +73,48 @@ class ClienteController extends Controller
         return ['success' => true];
     }
 
+    /**
+     * Validar edad mínima de 18 años
+     */
+    public function validateMinimumAge($fechaNacimiento)
+    {
+        if (!$fechaNacimiento) {
+            return [
+                'success' => false,
+                'message' => 'La fecha de nacimiento es requerida',
+                'errors' => [
+                    'fecha_nacimiento' => ['La fecha de nacimiento es requerida']
+                ]
+            ];
+        }
+
+        $fechaNac = \Carbon\Carbon::parse($fechaNacimiento);
+        $edad = $fechaNac->age;
+
+        if ($edad < 18) {
+            return [
+                'success' => false,
+                'message' => "Debe ser mayor de edad (18 años). Edad actual: {$edad} años",
+                'errors' => [
+                    'fecha_nacimiento' => ["Debe ser mayor de edad (18 años). Edad actual: {$edad} años"]
+                ]
+            ];
+        }
+
+        // Validar que la fecha no sea futura
+        if ($fechaNac->isFuture()) {
+            return [
+                'success' => false,
+                'message' => 'La fecha de nacimiento no puede ser futura',
+                'errors' => [
+                    'fecha_nacimiento' => ['La fecha de nacimiento no puede ser futura']
+                ]
+            ];
+        }
+
+        return ['success' => true];
+    }
+
     // Crear un nuevo cliente
     public function store(Request $request)
     {
@@ -90,6 +132,12 @@ class ClienteController extends Controller
         $validationResult = $this->validateDocumentNumber($validated);
         if (!$validationResult['success']) {
             return response()->json($validationResult, 422);
+        }
+
+        // Validar edad mínima de 18 años
+        $ageValidationResult = $this->validateMinimumAge($validated['fecha_nacimiento']);
+        if (!$ageValidationResult['success']) {
+            return response()->json($ageValidationResult, 422);
         }
 
         // Validar que número de identificación sea único
@@ -160,6 +208,12 @@ class ClienteController extends Controller
         $validationResult = $this->validateDocumentNumber($validated);
         if (!$validationResult['success']) {
             return response()->json($validationResult, 422);
+        }
+
+        // Validar edad mínima de 18 años
+        $ageValidationResult = $this->validateMinimumAge($validated['fecha_nacimiento']);
+        if (!$ageValidationResult['success']) {
+            return response()->json($ageValidationResult, 422);
         }
 
         $cliente = Cliente::findOrFail($id);
@@ -324,6 +378,12 @@ class ClienteController extends Controller
         $validationResult = $this->validateDocumentNumber($validated);
         if (!$validationResult['success']) {
             return response()->json($validationResult, 422);
+        }
+
+        // Validar edad mínima de 18 años
+        $ageValidationResult = $this->validateMinimumAge($validated['fecha_nacimiento']);
+        if (!$ageValidationResult['success']) {
+            return response()->json($ageValidationResult, 422);
         }
 
         // Validar que número de identificación sea único

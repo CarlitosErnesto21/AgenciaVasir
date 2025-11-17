@@ -192,8 +192,20 @@ class ReservaController extends Controller
                 'cliente_data.genero' => 'required|in:MASCULINO,FEMENINO',
                 'cliente_data.direccion' => 'required|string|max:200',
                 'cliente_data.telefono' => 'required|string|max:30',
-                'cliente_data.tipo_documento_id' => 'required|integer|exists:tipos_documentos,id'
+                'cliente_data.tipo_documento' => 'required|in:DUI,PASAPORTE'
             ]);
+
+            // Validar edad mínima de 18 años usando la función del ClienteController
+            $clienteController = new \App\Http\Controllers\ClienteController();
+            $ageValidationResult = $clienteController->validateMinimumAge($validated['cliente_data']['fecha_nacimiento']);
+            if (!$ageValidationResult['success']) {
+                return response()->json($ageValidationResult, 422);
+            }
+
+            // Normalizar número de identificación si es PASAPORTE
+            if ($validated['cliente_data']['tipo_documento'] === 'PASAPORTE') {
+                $validated['cliente_data']['numero_identificacion'] = strtoupper(preg_replace('/[\s-]/', '', $validated['cliente_data']['numero_identificacion']));
+            }
 
             DB::beginTransaction();
 
@@ -209,7 +221,7 @@ class ReservaController extends Controller
                     'direccion' => $validated['cliente_data']['direccion'],
                     'telefono' => $validated['cliente_data']['telefono'],
                     'user_id' => $user->id,
-                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                    'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             } else {
                 // Actualizar datos del cliente existente
@@ -219,7 +231,7 @@ class ReservaController extends Controller
                     'genero' => strtoupper($validated['cliente_data']['genero']),
                     'direccion' => $validated['cliente_data']['direccion'],
                     'telefono' => $validated['cliente_data']['telefono'],
-                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                    'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             }
 
@@ -322,8 +334,20 @@ class ReservaController extends Controller
                 'cliente_data.genero' => 'required|in:MASCULINO,FEMENINO',
                 'cliente_data.direccion' => 'required|string|max:200',
                 'cliente_data.telefono' => 'required|string|max:30',
-                'cliente_data.tipo_documento_id' => 'required|exists:tipos_documentos,id'
+                'cliente_data.tipo_documento' => 'required|in:DUI,PASAPORTE'
             ]);
+
+            // Validar edad mínima de 18 años
+            $clienteController = new \App\Http\Controllers\ClienteController();
+            $ageValidationResult = $clienteController->validateMinimumAge($validated['cliente_data']['fecha_nacimiento']);
+            if (!$ageValidationResult['success']) {
+                return response()->json($ageValidationResult, 422);
+            }
+
+            // Normalizar número de identificación si es PASAPORTE
+            if ($validated['cliente_data']['tipo_documento'] === 'PASAPORTE') {
+                $validated['cliente_data']['numero_identificacion'] = strtoupper(preg_replace('/[\s-]/', '', $validated['cliente_data']['numero_identificacion']));
+            }
 
             // Validar que la fecha de nacimiento sea válida y no sea futura
             try {
@@ -358,7 +382,7 @@ class ReservaController extends Controller
                     'direccion' => $validated['cliente_data']['direccion'],
                     'telefono' => $validated['cliente_data']['telefono'],
                     'user_id' => $user->id,
-                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                    'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             } else {
                 // Actualizar datos del cliente existente
@@ -368,7 +392,7 @@ class ReservaController extends Controller
                     'genero' => strtoupper($validated['cliente_data']['genero']),
                     'direccion' => $validated['cliente_data']['direccion'],
                     'telefono' => $validated['cliente_data']['telefono'],
-                    'tipo_documento_id' => $validated['cliente_data']['tipo_documento_id']
+                    'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             }
 

@@ -157,6 +157,38 @@ const validarTelefonoUnico = async (telefono) => {
   }
 }
 
+// Función para obtener fecha máxima de nacimiento (debe tener al menos 18 años)
+const getFechaMaximaNacimiento = () => {
+  const fechaMaxima = new Date()
+  fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 18)
+  return fechaMaxima
+}
+
+// Función para validar edad mínima de 18 años
+const validarEdadMinima = (fechaNacimiento) => {
+  if (!fechaNacimiento) return { esValido: true, mensaje: '' }
+
+  const hoy = new Date()
+  const fechaNac = new Date(fechaNacimiento)
+  const edad = hoy.getFullYear() - fechaNac.getFullYear()
+  const mesNacimiento = fechaNac.getMonth()
+  const diaNacimiento = fechaNac.getDate()
+  const mesActual = hoy.getMonth()
+  const diaActual = hoy.getDate()
+
+  // Ajustar la edad si aún no ha cumplido años este año
+  const edadReal = edad - ((mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) ? 1 : 0)
+
+  if (edadReal < 18) {
+    return {
+      esValido: false,
+      mensaje: `Debe ser mayor de edad (18 años). Edad actual: ${edadReal} años`
+    }
+  }
+
+  return { esValido: true, mensaje: '' }
+}
+
 // Validar formulario antes de enviar
 const validarFormulario = () => {
   // Limpiar errores previos de validación del formulario
@@ -176,6 +208,11 @@ const validarFormulario = () => {
   // Validar fecha de nacimiento
   if (!formData.value.fecha_nacimiento) {
     erroresFormulario.fecha_nacimiento = 'La fecha de nacimiento es requerida'
+  } else {
+    const validacionEdad = validarEdadMinima(formData.value.fecha_nacimiento)
+    if (!validacionEdad.esValido) {
+      erroresFormulario.fecha_nacimiento = validacionEdad.mensaje
+    }
   }
 
   // Validar género
@@ -359,8 +396,19 @@ watch(() => formData.value.tipo_documento, () => {
 
 // Watchers para limpiar errores cuando se completan los campos
 watch(() => formData.value.fecha_nacimiento, (newValue) => {
-  if (newValue && errores.value.fecha_nacimiento) {
-    delete errores.value.fecha_nacimiento
+  if (newValue) {
+    const validacionEdad = validarEdadMinima(newValue)
+    if (!validacionEdad.esValido) {
+      errores.value.fecha_nacimiento = validacionEdad.mensaje
+      toast.add({
+        severity: 'error',
+        summary: 'Edad insuficiente',
+        detail: validacionEdad.mensaje,
+        life: 4000
+      })
+    } else {
+      delete errores.value.fecha_nacimiento
+    }
   }
 })
 
@@ -451,12 +499,12 @@ watch(() => formData.value.telefono, (newValue) => {
             <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
             <DatePicker
               v-model="formData.fecha_nacimiento"
-              :maxDate="new Date()"
+              :maxDate="getFechaMaximaNacimiento()"
               date-format="dd/mm/yy"
-              placeholder="Seleccionar fecha de nacimiento"
+              placeholder="Seleccionar fecha de nacimiento (debe ser mayor de 18 años)"
               showIcon
               yearNavigator
-              yearRange="1920:2010"
+              yearRange="1920:2006"
               class="w-full"
               :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${errores.fecha_nacimiento ? 'border-red-500' : ''}`"
             />

@@ -566,18 +566,14 @@ const crearReservaHotel = async () => {
       return
     }
 
-    // Validar fecha de nacimiento (debe ser anterior a hoy)
+    // Validar fecha de nacimiento (debe ser mayor de 18 años)
     if (reservaForm.value.cliente_data.fecha_nacimiento) {
-      const hoy = new Date()
-      hoy.setHours(0, 0, 0, 0) // Resetear horas para comparar solo fechas
-      const fechaNacimiento = new Date(reservaForm.value.cliente_data.fecha_nacimiento)
-      fechaNacimiento.setHours(0, 0, 0, 0)
-
-      if (fechaNacimiento >= hoy) {
+      const validacionEdad = validarEdadMinima(reservaForm.value.cliente_data.fecha_nacimiento)
+      if (!validacionEdad.esValido) {
         toast.add({
           severity: 'error',
-          summary: 'Fecha de nacimiento inválida',
-          detail: `La fecha de nacimiento debe ser anterior a hoy (${hoy.toLocaleDateString()}). Por favor, corrija la fecha.`,
+          summary: 'Edad insuficiente',
+          detail: validacionEdad.mensaje + '. Los usuarios deben ser mayores de edad para realizar reservas.',
           life: 6000
         })
         return
@@ -659,11 +655,36 @@ const getFechaMinimaComputada = computed(() => {
   return fechaEntrada
 })
 
-// Función para obtener fecha máxima de nacimiento (hace 18 años)
+// Función para obtener fecha máxima de nacimiento (debe tener al menos 18 años)
 const getFechaMaximaNacimiento = () => {
+  const fechaMaxima = new Date()
+  fechaMaxima.setFullYear(fechaMaxima.getFullYear() - 18)
+  return fechaMaxima
+}
+
+// Función para validar edad mínima de 18 años
+const validarEdadMinima = (fechaNacimiento) => {
+  if (!fechaNacimiento) return { esValido: true, mensaje: '' }
+
   const hoy = new Date()
-  hoy.setFullYear(hoy.getFullYear() - 18)
-  return hoy
+  const fechaNac = new Date(fechaNacimiento)
+  const edad = hoy.getFullYear() - fechaNac.getFullYear()
+  const mesNacimiento = fechaNac.getMonth()
+  const diaNacimiento = fechaNac.getDate()
+  const mesActual = hoy.getMonth()
+  const diaActual = hoy.getDate()
+
+  // Ajustar la edad si aún no ha cumplido años este año
+  const edadReal = edad - ((mesActual < mesNacimiento || (mesActual === mesNacimiento && diaActual < diaNacimiento)) ? 1 : 0)
+
+  if (edadReal < 18) {
+    return {
+      esValido: false,
+      mensaje: `Debe ser mayor de edad (18 años). Edad actual: ${edadReal} años`
+    }
+  }
+
+  return { esValido: true, mensaje: '' }
 }
 
 // Función para validar la unicidad del teléfono
@@ -833,6 +854,21 @@ watch(() => reservaForm.value.cliente_data.numero_identificacion, () => {
 watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
   // Limpiar número cuando cambia el tipo de documento
   reservaForm.value.cliente_data.numero_identificacion = ''
+})
+
+// Watch para validación de fecha de nacimiento en tiempo real
+watch(() => reservaForm.value.cliente_data.fecha_nacimiento, (nuevaFecha) => {
+  if (nuevaFecha) {
+    const validacionEdad = validarEdadMinima(nuevaFecha)
+    if (!validacionEdad.esValido) {
+      toast.add({
+        severity: 'error',
+        summary: 'Edad insuficiente',
+        detail: validacionEdad.mensaje + '. Los usuarios deben ser mayores de edad para realizar reservas.',
+        life: 4000
+      })
+    }
+  }
 })
 </script>
 
@@ -1354,10 +1390,10 @@ watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
                   v-model="reservaForm.cliente_data.fecha_nacimiento"
                   :maxDate="getFechaMaximaNacimiento()"
                   date-format="dd/mm/yy"
-                  placeholder="Seleccionar fecha de nacimiento"
+                  placeholder="Seleccionar fecha de nacimiento (debe ser mayor de 18 años)"
                   showIcon
                   yearNavigator
-                  yearRange="1920:2010"
+                  yearRange="1920:2006"
                   :disabled="tieneClienteExistente"
                   class="w-full"
                   :inputClass="`w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${tieneClienteExistente ? 'bg-gray-100 cursor-not-allowed' : ''}`"
