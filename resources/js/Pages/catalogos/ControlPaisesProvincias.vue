@@ -6,7 +6,6 @@ import Dialog from "primevue/dialog";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import InputText from "primevue/inputtext";
-import Select from "primevue/select";
 import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import axios from "axios";
@@ -151,36 +150,36 @@ async function guardarItem(){
   try{
     isLoading.value = true;
 
-    // ✅ VALIDACIÓN MEJORADA: Verificar si no hay tipo seleccionado
+    // VALIDACIÓN MEJORADA: Verificar si no hay tipo seleccionado
     if (!tipoAgregar.value) {
       toast.add({severity:"warn", summary:"Atención", detail:"Debe seleccionar qué desea agregar (País o Provincia)", life: 4000});
       return;
     }
 
-    // ✅ VALIDACIÓN MEJORADA: Verificar nombre vacío o solo espacios
+    // VALIDACIÓN MEJORADA: Verificar nombre vacío o solo espacios
     if (!nuevoItem.value.nombre || nuevoItem.value.nombre.trim() === "") {
       toast.add({severity:"warn", summary:"Campo requerido", detail:"El nombre es obligatorio", life: 4000});
       return;
     }
 
-    // ✅ VALIDACIÓN: Longitud máxima
+    // VALIDACIÓN: Longitud máxima
     if (nuevoItem.value.nombre.trim().length > 50) {
       toast.add({severity:"warn", summary:"Límite excedido", detail:"El nombre no puede tener más de 50 caracteres", life: 4000});
       return;
     }
-    // ✅ VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
+    // VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
     if(tipoAgregar.value === "Provincia" && !nuevoItem.value.pais_id) {
       toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para la provincia", life: 4000});
       return;
     }
 
     if(tipoAgregar.value==="País"){
-      const response = await axios.post("/api/paises",{nombre:nuevoItem.value.nombre.trim()});
+      const response = await axios.post("/api/paises",{nombre:nuevoItem.value.nombre.trim().toUpperCase()});
       await cargarPaises();
       toast.add({severity:"success", summary:"Guardado", detail:"País agregado correctamente", life: 3000});
     } else if(tipoAgregar.value==="Provincia"){
       const response = await axios.post("/api/provincias",{
-        nombre:nuevoItem.value.nombre.trim(),
+        nombre:nuevoItem.value.nombre.trim().toUpperCase(),
         pais_id:nuevoItem.value.pais_id
       });
       await cargarProvincias();
@@ -226,6 +225,10 @@ async function guardarItem(){
 
 function abrirModalEditar(item){
   itemEdit.value={...item};
+  // Asegurar que el nombre siempre esté en mayúsculas
+  if(itemEdit.value.nombre) {
+    itemEdit.value.nombre = itemEdit.value.nombre.toUpperCase();
+  }
   if(modoSeleccionado.value==="Provincia" && item.pais) {
     itemEdit.value.pais_id=item.pais.id;
   }
@@ -237,19 +240,19 @@ async function actualizarItem(){
   try {
     isLoading.value = true;
 
-    // ✅ VALIDACIÓN MEJORADA: Verificar nombre vacío
+    // VALIDACIÓN MEJORADA: Verificar nombre vacío
     if (!itemEdit.value.nombre || itemEdit.value.nombre.trim() === "") {
       toast.add({severity:"warn", summary:"Campo requerido", detail:"El nombre es obligatorio", life: 4000});
       return;
     }
 
-    // ✅ VALIDACIÓN: Longitud máxima
+    // VALIDACIÓN: Longitud máxima
     if (itemEdit.value.nombre.trim().length > 50) {
       toast.add({severity:"warn", summary:"Límite excedido", detail:"El nombre no puede tener más de 50 caracteres", life: 4000});
       return;
     }
 
-    // ✅ VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
+    //  VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
     if(modoSeleccionado.value === "Provincia" && !itemEdit.value.pais_id) {
       toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para la provincia", life: 4000});
       return;
@@ -257,7 +260,7 @@ async function actualizarItem(){
 
     if(modoSeleccionado.value === "País"){
       await axios.put(`/api/paises/${itemEdit.value.id}`, {
-        nombre: itemEdit.value.nombre.trim()
+        nombre: itemEdit.value.nombre.trim().toUpperCase()
       });
 
       await cargarPaises();
@@ -266,7 +269,7 @@ async function actualizarItem(){
       hasUnsavedChanges.value = false;
     } else {
       await axios.put(`/api/provincias/${itemEdit.value.id}`, {
-        nombre: itemEdit.value.nombre.trim(),
+        nombre: itemEdit.value.nombre.trim().toUpperCase(),
         pais_id: itemEdit.value.pais_id
       });
       await cargarProvincias();
@@ -341,6 +344,56 @@ const validateNombre = (item, isEdit = false) => {
 // Variables para controlar cambios sin guardar
 const hasUnsavedChanges = ref(false);
 const pendingAction = ref(null);
+
+// Función para convertir texto a mayúsculas y validar caracteres
+const convertirAMayuscula = (texto) => {
+  // Eliminar números y caracteres especiales, solo permitir letras y espacios
+  const textoLimpio = texto.replace(/[^A-Za-zÀ-ÿ\s]/g, '');
+  // Convertir a mayúsculas
+  return textoLimpio.toUpperCase();
+};
+
+// Función para manejar input en tiempo real para nuevo item
+const handleInputNuevoItem = (event) => {
+  const textoConvertido = convertirAMayuscula(event.target.value);
+  nuevoItem.value.nombre = textoConvertido;
+};
+
+// Función para manejar input en tiempo real para editar item
+const handleInputEditarItem = (event) => {
+  const textoConvertido = convertirAMayuscula(event.target.value);
+  itemEdit.value.nombre = textoConvertido;
+};
+
+// Función para validar keypress (prevenir números y caracteres especiales)
+const validarKeypress = (event) => {
+  // Permitir solo letras (incluye tildes), espacios, backspace, delete, etc.
+  const regex = /^[A-Za-zÀ-ÿ\s]$/;
+  const isControlKey = event.ctrlKey || event.metaKey;
+  const isNavigationKey = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.key);
+  
+  if (!regex.test(event.key) && !isControlKey && !isNavigationKey) {
+    event.preventDefault();
+  }
+};
+
+// Función para manejar evento paste (pegar) y validar contenido
+const handlePaste = (event, isEdit = false) => {
+  event.preventDefault();
+  
+  // Obtener texto del portapapeles
+  const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+  
+  // Limpiar y convertir el texto pegado
+  const textoLimpio = convertirAMayuscula(pastedText);
+  
+  // Aplicar el texto limpio al campo correspondiente
+  if (isEdit) {
+    itemEdit.value.nombre = textoLimpio;
+  } else {
+    nuevoItem.value.nombre = textoLimpio;
+  }
+};
 
 // Funciones para el modal de cambios sin guardar
 const checkForUnsavedChanges = (action) => {
@@ -554,16 +607,13 @@ onMounted(() => {
             </label>
             <select
               v-model="tipoAgregar"
-              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+              class="w-full h-9 text-sm border border-gray-500 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 truncate"
               :class="{ 'border-red-300': !tipoAgregar }"
             >
               <option value="" disabled selected hidden>Seleccione qué desea agregar</option>
               <option value="País" class="truncate">País</option>
               <option value="Provincia" class="truncate">Provincia</option>
             </select>
-            <small class="text-red-500 mt-1" v-if="!tipoAgregar">
-              ⚠️ Debe seleccionar el tipo
-            </small>
           </div>
 
           <div class="w-full flex flex-col">
@@ -572,17 +622,16 @@ onMounted(() => {
             </label>
             <InputText
               v-model="nuevoItem.nombre"
-              placeholder="Nombre (máximo 50 caracteres)"
-              class="w-full"
+              placeholder="NOMBRE (MÁXIMO 50 CARACTERES)"
+              class="w-full uppercase flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md text-gray-600"
               :class="{ 'border-red-300': !nuevoItem.nombre || nuevoItem.nombre.trim() === '' }"
               :disabled="!tipoAgregar"
               maxlength="50"
-              @keypress="e => { if (!/[A-Za-zÀ-ÿ\s]/.test(e.key)) e.preventDefault() }"
+              @keypress="validarKeypress"
+              @input="handleInputNuevoItem"
+              @paste="handlePaste($event, false)"
             />
-            <small class="text-red-500 mt-1" v-if="!nuevoItem.nombre || nuevoItem.nombre.trim() === ''">
-              ⚠️ El nombre es obligatorio
-            </small>
-            <small class="text-orange-500 mt-1" v-else-if="nuevoItem.nombre && nuevoItem.nombre.length >= 40 && nuevoItem.nombre.length <= 50">
+            <small class="text-orange-500 mt-1" v-if="nuevoItem.nombre && nuevoItem.nombre.length >= 40 && nuevoItem.nombre.length <= 50">
               Caracteres restantes: {{ 50 - nuevoItem.nombre.length }}
             </small>
           </div>
@@ -593,7 +642,7 @@ onMounted(() => {
             </label>
             <select
               v-model="nuevoItem.pais_id"
-              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+              class="w-full h-9 text-sm border border-gray-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-gray-500 focus:ring-1 focus:ring-gray-500 truncate"
               :class="{ 'border-red-300': tipoAgregar === 'Provincia' && !nuevoItem.pais_id }"
             >
               <option value="" disabled selected hidden>Seleccione un país</option>
@@ -606,9 +655,6 @@ onMounted(() => {
                 {{ pais.nombre }}
               </option>
             </select>
-            <small class="text-red-500 mt-1" v-if="tipoAgregar === 'Provincia' && !nuevoItem.pais_id">
-              ⚠️ Debe seleccionar un país
-            </small>
           </div>
         </div>
         <template #footer>
@@ -643,7 +689,7 @@ onMounted(() => {
             </label>
             <select
               v-model="itemEdit.pais_id"
-              class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+              class="w-full h-9 text-sm border border-gray-300 rounded-md px-3 py-1 bg-white text-gray-700 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
               :class="{ 'border-red-300': modoSeleccionado === 'Provincia' && !itemEdit.pais_id }"
             >
               <option value="" disabled selected hidden>Seleccione un país</option>
@@ -656,9 +702,6 @@ onMounted(() => {
                 {{ pais.nombre }}
               </option>
             </select>
-            <small class="text-red-500 mt-1" v-if="modoSeleccionado === 'Provincia' && !itemEdit.pais_id">
-              ⚠️ Debe seleccionar un país
-            </small>
           </div>
 
           <div class="w-full flex flex-col">
@@ -667,16 +710,15 @@ onMounted(() => {
             </label>
             <InputText
               v-model="itemEdit.nombre"
-              placeholder="Nombre (máximo 50 caracteres)"
-              class="w-full"
+              placeholder="NOMBRE (MÁXIMO 50 CARACTERES)"
+              class="w-full uppercase flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md text-gray-600"
               :class="{ 'border-red-300': !itemEdit.nombre || itemEdit.nombre.trim() === '' }"
               maxlength="50"
-              @keypress="e => { if (!/[A-Za-zÀ-ÿ\s]/.test(e.key)) e.preventDefault() }"
+              @keypress="validarKeypress"
+              @input="handleInputEditarItem"
+              @paste="handlePaste($event, true)"
             />
-            <small class="text-red-500 mt-1" v-if="!itemEdit.nombre || itemEdit.nombre.trim() === ''">
-              ⚠️ El nombre es obligatorio
-            </small>
-            <small class="text-orange-500 mt-1" v-else-if="itemEdit.nombre && itemEdit.nombre.length >= 40 && itemEdit.nombre.length <= 50">
+            <small class="text-orange-500 mt-1" v-if="itemEdit.nombre && itemEdit.nombre.length >= 40 && itemEdit.nombre.length <= 50">
               Caracteres restantes: {{ 50 - itemEdit.nombre.length }}
             </small>
           </div>
@@ -822,4 +864,10 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 /* Fin de la animación para el spinner de loading */
+
+/* Estilo para inputs en mayúsculas */
+.uppercase {
+  text-transform: uppercase !important;
+}
+/* Fin del estilo para inputs en mayúsculas */
 </style>

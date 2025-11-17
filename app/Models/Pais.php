@@ -13,11 +13,11 @@ class Pais extends Model
     
     protected $fillable = ['nombre'];
 
-    // Normalizar el nombre automáticamente
+    // Normalizar el nombre automáticamente a MAYÚSCULAS
     public function setNombreAttribute($value)
     {
-        // Normalizar: trim, convertir múltiples espacios a uno solo, y capitalizar
-        $normalized = ucwords(strtolower(trim(preg_replace('/\s+/', ' ', $value))));
+        // Normalizar: trim, convertir múltiples espacios a uno solo, y convertir a MAYÚSCULAS
+        $normalized = strtoupper(trim(preg_replace('/\s+/', ' ', $value)));
         $this->attributes['nombre'] = $normalized;
     }
 
