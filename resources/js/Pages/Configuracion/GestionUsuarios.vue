@@ -1007,9 +1007,10 @@ const telefonoErrors = computed(() => {
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
-                            class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                            class="flex bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                             @click="openNew">
-                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" /><span>&nbsp;Agregar empleado</span>
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white block lg:hidden" /><span class="block lg:hidden">&nbsp;Agregar empleado</span>
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white hidden lg:block" /><span class="hidden lg:block">&nbsp;Agregar</span>
                         </button>
                     </div>
                 </div>
