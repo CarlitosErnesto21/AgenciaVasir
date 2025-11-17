@@ -11,7 +11,13 @@
 
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Clientes</h3>
+                    <div class="w-full">
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Clientes</h3>
+                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                            Haz clic en cualquier fila para ver los detalles.
+                        </p>
+                    </div>
                 </div>
 
                             <DataTable
@@ -179,7 +185,7 @@ import { Link, Head } from '@inertiajs/vue3';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUsers, faIdCard, faListDots, faPencil, faTrashCan, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faUsers, faIdCard, faListDots, faPencil, faTrashCan, faSpinner, faHandPointUp } from '@fortawesome/free-solid-svg-icons';
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Toast from 'primevue/toast';
