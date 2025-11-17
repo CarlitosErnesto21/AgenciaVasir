@@ -31,14 +31,14 @@ class ProvinciaController extends Controller
                 'string',
                 'max:50',
                 function ($attribute, $value, $fail) use ($nombreNormalizado, $request) {
-                    // Validación: solo letras y espacios (permitiendo tildes)
-                    if (!preg_match('/^[\p{L} ]+$/u', $value)) {
-                        $fail('El nombre solo puede contener letras.');
+                    // Validación: solo letras, espacios y tildes (sin números ni caracteres especiales)
+                    if (!preg_match('/^[A-Za-zÀ-ÿ\s]+$/u', $value)) {
+                        $fail('El nombre solo puede contener letras y espacios. No se permiten números ni caracteres especiales.');
                     }
 
                     // Validación: no permitir provincia repetida en el mismo país
                     if (Provincia::where('pais_id', $request->pais_id)
-                        ->whereRaw('LOWER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtolower($nombreNormalizado)])
+                        ->whereRaw('UPPER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtoupper($nombreNormalizado)])
                         ->exists()) {
                         $fail('Este país ya tiene registrada una provincia con este nombre.');
                     }
@@ -82,14 +82,14 @@ class ProvinciaController extends Controller
                 'string',
                 'max:50',
                 function ($attribute, $value, $fail) use ($nombreNormalizado, $request, $provincia) {
-                    // Validación: solo letras y espacios (permitiendo tildes)
-                    if (!preg_match('/^[\p{L} ]+$/u', $value)) {
-                        $fail('El nombre solo puede contener letras y espacios.');
+                    // Validación: solo letras, espacios y tildes (sin números ni caracteres especiales)
+                    if (!preg_match('/^[A-Za-zÀ-ÿ\s]+$/u', $value)) {
+                        $fail('El nombre solo puede contener letras y espacios. No se permiten números ni caracteres especiales.');
                     }
 
                     // Validación: no permitir provincia repetida en el mismo país (excepto si es la misma provincia que se actualiza)
                     $existe = Provincia::where('pais_id', $request->pais_id)
-                        ->whereRaw('LOWER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtolower($nombreNormalizado)])
+                        ->whereRaw('UPPER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtoupper($nombreNormalizado)])
                         ->where('id', '!=', $provincia->id)
                         ->exists();
 
@@ -130,8 +130,11 @@ class ProvinciaController extends Controller
         ]);
     }
 
-     private function normalizarNombre($nombre)
+     /**
+     * Normalizar nombre: trim, múltiples espacios a uno, convertir a mayúsculas
+     */
+    private function normalizarNombre($nombre)
     {
-        return ucwords(strtolower(trim(preg_replace('/\s+/', ' ', $nombre))));
+        return strtoupper(trim(preg_replace('/\s+/', ' ', $nombre)));
     }
 }

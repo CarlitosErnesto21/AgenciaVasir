@@ -25,10 +25,12 @@ class PaisController extends Controller
                 'string',
                 'max:50',
                 function ($attribute, $value, $fail) use ($nombreNormalizado) {
-                     if (!preg_match('/^[\p{L} ]+$/u', $value)) {
-                        $fail('El nombre solo puede contener letras.');
+                    // Validar que solo contenga letras, espacios y tildes (sin números ni caracteres especiales)
+                    if (!preg_match('/^[A-Za-zÀ-ÿ\s]+$/u', $value)) {
+                        $fail('El nombre solo puede contener letras y espacios. No se permiten números ni caracteres especiales.');
                     }
-                    if (Pais::whereRaw('LOWER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtolower($nombreNormalizado)])->exists()) {
+                    // Validar duplicados
+                    if (Pais::whereRaw('UPPER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtoupper($nombreNormalizado)])->exists()) {
                         $fail('Ya existe un país con este nombre.');
                     }
                 }
@@ -66,7 +68,12 @@ class PaisController extends Controller
                 'string',
                 'max:50',
                 function ($attribute, $value, $fail) use ($nombreNormalizado, $pais) {
-                    $existe = Pais::whereRaw('LOWER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtolower($nombreNormalizado)])
+                    // Validar que solo contenga letras, espacios y tildes (sin números ni caracteres especiales)
+                    if (!preg_match('/^[A-Za-zÀ-ÿ\s]+$/u', $value)) {
+                        $fail('El nombre solo puede contener letras y espacios. No se permiten números ni caracteres especiales.');
+                    }
+                    // Validar duplicados
+                    $existe = Pais::whereRaw('UPPER(TRIM(REGEXP_REPLACE(nombre, "[[:space:]]+", " "))) = ?', [strtoupper($nombreNormalizado)])
                         ->where('id', '!=', $pais->id)
                         ->exists();
                     
@@ -115,10 +122,10 @@ class PaisController extends Controller
     }
 
     /**
-     * Normalizar nombre: trim, múltiples espacios a uno, capitalizar
+     * Normalizar nombre: trim, múltiples espacios a uno, convertir a mayúsculas
      */
     private function normalizarNombre($nombre)
     {
-        return ucwords(strtolower(trim(preg_replace('/\s+/', ' ', $nombre))));
+        return strtoupper(trim(preg_replace('/\s+/', ' ', $nombre)));
     }
 }
