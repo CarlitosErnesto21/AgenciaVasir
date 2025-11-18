@@ -62,7 +62,9 @@ const isLoadingTable = ref(true);
 // 📂 Datos de apoyo
 const paises = ref([]);
 const provincias = ref([]);
+const provinciasFiltradasPorPais = ref([]);
 const categoriasHoteles = ref([]);
+const selectedPais = ref("");
 const selectedProvincia = ref("");
 const selectedEstado = ref("");
 
@@ -187,6 +189,8 @@ function resetForm() {
         categoria: null,
         imagenes: [],
     };
+    selectedPais.value = "";
+    provinciasFiltradasPorPais.value = [];
     imagenPreviewList.value = [];
     imagenFiles.value = [];
     removedImages.value = [];
@@ -328,12 +332,23 @@ const fetchPaises = async () => {
     }
 };
 
-const fetchProvincias = async () => {
+const fetchProvincias = async (paisId = null) => {
     try {
-        const response = await axios.get("/api/provincias");
-        provincias.value = response.data.data || response.data || [];
+        const url = paisId ? `/api/provincias?pais_id=${paisId}` : "/api/provincias";
+        const response = await axios.get(url);
+        const provinciasList = response.data.data || response.data || [];
+        
+        if (paisId) {
+            provinciasFiltradasPorPais.value = provinciasList;
+        } else {
+            provincias.value = provinciasList;
+        }
     } catch (err) {
-        provincias.value = [];
+        if (paisId) {
+            provinciasFiltradasPorPais.value = [];
+        } else {
+            provincias.value = [];
+        }
         toast.add({
             severity: "error",
             summary: "Error",
@@ -362,6 +377,17 @@ const fetchCategoriasHoteles = async () => {
 const fetchCategorias = fetchCategoriasHoteles;
 
 // 🔍 Funciones para manejar filtros
+const onPaisChange = async () => {
+    // Limpiar provincia seleccionada cuando cambie el país
+    hotel.value.provincia = null;
+    
+    if (selectedPais.value) {
+        await fetchProvincias(selectedPais.value);
+    } else {
+        provinciasFiltradasPorPais.value = [];
+    }
+};
+
 const onProvinciaFilterChange = () => {
     filters.value.provincia.value = selectedProvincia.value === "" ? null : selectedProvincia.value;
     forceSelectTruncation();
@@ -384,6 +410,7 @@ const clearFilters = async () => {
         // Simular un pequeño delay para mostrar el loading
         await new Promise(resolve => setTimeout(resolve, 300));
 
+        selectedPais.value = "";
         selectedProvincia.value = "";
         selectedEstado.value = "";
         filters.value.global.value = null;
@@ -427,12 +454,19 @@ const openNew = () => {
     });
 };
 
-const editHotel = (h) => {
+const editHotel = async (h) => {
     resetForm();
     submitted.value = false;
     hotel.value = { ...h };
     hotel.value.categoria = h.categoria_hotel ? h.categoria_hotel.id : null;
     hotel.value.provincia = h.provincia ? h.provincia.id : null;
+    
+    // Cargar el país correspondiente si hay provincia
+    if (h.provincia && h.provincia.pais) {
+        selectedPais.value = h.provincia.pais.id;
+        await fetchProvincias(h.provincia.pais.id);
+    }
+    
     imagenPreviewList.value = Array.isArray(h.imagenes)
         ? h.imagenes.map((img) => (typeof img === "string" ? img : img.nombre))
         : [];
@@ -485,7 +519,7 @@ const saveOrUpdate = async () => {
     }
 
     // Validar campos obligatorios
-    if (!hotel.value.estado || !hotel.value.provincia || !hotel.value.categoria || imagenPreviewList.value.length === 0) {
+    if (!hotel.value.estado || !selectedPais.value || !hotel.value.provincia || !hotel.value.categoria || imagenPreviewList.value.length === 0) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
@@ -1011,14 +1045,14 @@ function onFilterDropdown(field, event) {
                             <div>
                                 <InputText v-model="filters['global'].value" placeholder="🔍 Buscar hoteles..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
-                            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 <div>
                                     <select
                                         v-model="selectedProvincia"
                                         @change="onProvinciaFilterChange"
                                         class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                                     >
-                                        <option value="" disabled selected hidden>Provincia</option>
+                                        <option value="" disabled selected hidden>Departamento/Provincia</option>
                                         <option
                                             v-for="provincia in provincias"
                                             :key="provincia.id"
@@ -1082,10 +1116,10 @@ function onFilterDropdown(field, event) {
                     </template>
                 </Column>
 
-                <Column field="provincia.nombre" header="Provincia" class="w-32 hidden sm:table-cell">
+                <Column field="provincia.nombre" header="Departamento/Provincia" class="w-32 hidden sm:table-cell">
                     <template #body="slotProps">
                         <div class="text-sm leading-relaxed">
-                            {{ slotProps.data.provincia?.nombre || 'Sin provincia' }}
+                            {{ slotProps.data.provincia?.nombre || 'Sin departamento/provincia' }}
                         </div>
                     </template>
                 </Column>
@@ -1264,31 +1298,61 @@ function onFilterDropdown(field, event) {
                         </small>
                     </div>
 
+                    <!-- País -->
+                    <div class="w-full flex flex-col">
+                        <div class="flex items-center gap-4 sm:gap-5">
+                            <label for="pais" class="w-36 sm:w-32 flex items-center gap-1">
+                                País: <span class="text-red-500 font-bold">*</span>
+                            </label>
+                            <Select
+                                v-model="selectedPais"
+                                :options="paises"
+                                optionLabel="nombre"
+                                optionValue="id"
+                                id="pais"
+                                name="pais"
+                                :filter="true"
+                                filterPlaceholder="Buscar país..."
+                                :showClear="true"
+                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
+                                placeholder="Seleccionar país"
+                                :class="{'p-invalid': submitted && !selectedPais}"
+                                @change="onPaisChange"
+                            />
+                        </div>
+                        <small class="text-red-500 ml-28" v-if="submitted && !selectedPais">
+                            El país es obligatorio.
+                        </small>
+                    </div>
+
                     <!-- Provincia -->
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4 sm:gap-5">
                             <label for="provincia" class="w-36 sm:w-32 flex items-center gap-1">
+                                Depa/
+                                <br/>
                                 Provincia: <span class="text-red-500 font-bold">*</span>
                             </label>
                             <Select
                                 v-model="hotel.provincia"
-                                :options="provincias"
+                                :options="provinciasFiltradasPorPais"
                                 optionLabel="nombre"
                                 optionValue="id"
                                 id="provincia"
                                 name="provincia"
                                 :filter="true"
-                                filterPlaceholder="Buscar provincia..."
+                                filterPlaceholder="Buscar departamento/provincia..."
                                 :showClear="true"
+                                :disabled="!selectedPais"
                                 class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
-                                placeholder="Seleccionar"
+                                :placeholder="selectedPais ? 'Seleccionar departamento/provincia' : 'Primero seleccione un país'"
                                 :class="{'p-invalid': submitted && !hotel.provincia}"
                                 @input="onInputDropdown('provincia', $event)"
                                 @filter="onFilterDropdown('provincia', $event)"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !hotel.provincia">
-                            La provincia es obligatoria.
+                            El departamento/provincia es obligatorio.
                         </small>
                     </div>
 

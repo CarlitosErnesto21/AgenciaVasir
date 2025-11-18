@@ -45,6 +45,11 @@ const dialogStyle = computed(() => {
     }
 });
 
+// Computed para mostrar el nombre correcto del tipo seleccionado
+const tipoSeleccionadoDisplay = computed(() => {
+    return modoSeleccionado.value === 'Provincia' ? 'Departamento/Provincia' : modoSeleccionado.value;
+});
+
 // 📄 Paginación
 const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
@@ -57,7 +62,7 @@ const itemEliminar = ref(null);
 // Opciones para el select
 const opcionesMostrar = ref([
   { label: 'Países', value: 'País' },
-  { label: 'Provincias', value: 'Provincia' }
+  { label: 'Departamentos/Provincias', value: 'Provincia' }
 ]);
 
 // Funciones para manejo de ventana
@@ -122,7 +127,7 @@ const cargarProvincias = async () => {
     const res = await axios.get("/api/provincias");
     provincias.value = res.data;
   } catch {
-    toast.add({ severity:"error", summary:"Error", detail:"No se pudieron cargar las provincias", life: 3000 });
+    toast.add({ severity:"error", summary:"Error", detail:"No se pudieron cargar los departamentos/provincias", life: 3000 });
   }
 };
 
@@ -152,7 +157,7 @@ async function guardarItem(){
 
     // VALIDACIÓN MEJORADA: Verificar si no hay tipo seleccionado
     if (!tipoAgregar.value) {
-      toast.add({severity:"warn", summary:"Atención", detail:"Debe seleccionar qué desea agregar (País o Provincia)", life: 4000});
+      toast.add({severity:"warn", summary:"Atención", detail:"Debe seleccionar qué desea agregar (País o Departamento/Provincia)", life: 4000});
       return;
     }
 
@@ -167,9 +172,9 @@ async function guardarItem(){
       toast.add({severity:"warn", summary:"Límite excedido", detail:"El nombre no puede tener más de 50 caracteres", life: 4000});
       return;
     }
-    // VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
+    // VALIDACIÓN ESPECÍFICA PARA DEPARTAMENTOS/PROVINCIAS
     if(tipoAgregar.value === "Provincia" && !nuevoItem.value.pais_id) {
-      toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para la provincia", life: 4000});
+      toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para el departamento/provincia", life: 4000});
       return;
     }
 
@@ -183,7 +188,7 @@ async function guardarItem(){
         pais_id:nuevoItem.value.pais_id
       });
       await cargarProvincias();
-      toast.add({severity:"success", summary:"Guardado", detail:"Provincia agregada correctamente", life: 3000});
+      toast.add({severity:"success", summary:"Guardado", detail:"Departamento/Provincia agregado correctamente", life: 3000});
     }
 
     modalAgregar.value=false;
@@ -252,9 +257,9 @@ async function actualizarItem(){
       return;
     }
 
-    //  VALIDACIÓN ESPECÍFICA PARA PROVINCIAS
+    //  VALIDACIÓN ESPECÍFICA PARA DEPARTAMENTOS/PROVINCIAS
     if(modoSeleccionado.value === "Provincia" && !itemEdit.value.pais_id) {
-      toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para la provincia", life: 4000});
+      toast.add({severity:"warn", summary:"Campo requerido", detail:"Debe seleccionar un país para el departamento/provincia", life: 4000});
       return;
     }
 
@@ -273,7 +278,7 @@ async function actualizarItem(){
         pais_id: itemEdit.value.pais_id
       });
       await cargarProvincias();
-      toast.add({severity:"success", summary:"Actualizado", detail:"Provincia actualizada correctamente", life: 3000});
+      toast.add({severity:"success", summary:"Actualizado", detail:"Departamento/Provincia actualizado correctamente", life: 3000});
       modalEditar.value = false;
       hasUnsavedChanges.value = false;
     }
@@ -310,13 +315,13 @@ async function eliminarItem(){
     } else {
       await axios.delete(`/api/provincias/${itemEliminar.value.id}`);
       await cargarProvincias();
-      toast.add({severity:"success", summary:"Eliminado", detail:"Provincia eliminada correctamente", life: 3000});
+      toast.add({severity:"success", summary:"Eliminado", detail:"Departamento/Provincia eliminado correctamente", life: 3000});
     }
 
     modalEliminar.value = false;
     itemEliminar.value = null;
   } catch (error) {
-    // 🎯 Manejar casos específicos como países con provincias asociadas
+    // 🎯 Manejar casos específicos como países con departamentos/provincias asociados
     if (error.response?.status === 422) {
       toast.add({severity:"warn", summary:"No se puede eliminar", detail: error.response.data.message, life: 5000});
     } else {
@@ -443,14 +448,14 @@ onMounted(() => {
 </script>
 
 <template>
-  <Head title="Países y Provincias" />
+  <Head title="Países y Departamentos/Provincias" />
   <AuthenticatedLayout>
     <Toast class="z-[9999]" />
 
     <div class="container mx-auto px-4 py-6">
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Países y Provincias</h1>
-        <p class="text-gray-600">Gestión de países y provincias del sistema</p>
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Países y Departamentos/Provincias</h1>
+        <p class="text-gray-600">Gestión de países y departamentos/provincias del sistema</p>
       </div>
 
       <div class="bg-white rounded-lg shadow-md">
@@ -541,7 +546,7 @@ onMounted(() => {
                 <InputText
                   v-model="busquedaGeneral"
                   v-if="modoSeleccionado==='Provincia'"
-                  placeholder="🔍 Buscar provincias..."
+                  placeholder="🔍 Buscar departamentos/provincias..."
                   class="w-full h-9 text-sm rounded-md"
                   style="background-color: white; border-color: #93c5fd;"
                 />
@@ -612,7 +617,7 @@ onMounted(() => {
             >
               <option value="" disabled selected hidden>Seleccione qué desea agregar</option>
               <option value="País" class="truncate">País</option>
-              <option value="Provincia" class="truncate">Provincia</option>
+              <option value="Provincia" class="truncate">Departamento/Provincia</option>
             </select>
           </div>
 
@@ -681,7 +686,7 @@ onMounted(() => {
       </Dialog>
 
       <!-- ✏️ Modal Editar CON VALIDACIÓN VISUAL MEJORADA -->
-      <Dialog v-model:visible="modalEditar" :header="`Editar ${modoSeleccionado}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
+      <Dialog v-model:visible="modalEditar" :header="`Editar ${tipoSeleccionadoDisplay}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
         <div class="flex flex-col gap-4">
           <div v-if="modoSeleccionado==='Provincia'" class="w-full flex flex-col">
             <label class="text-sm font-medium text-gray-700 mb-2">
@@ -747,11 +752,11 @@ onMounted(() => {
       </Dialog>
 
       <!-- 🗑️ Modal Confirmar eliminar -->
-      <Dialog v-model:visible="modalEliminar" :header="`Eliminar ${modoSeleccionado}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
+      <Dialog v-model:visible="modalEliminar" :header="`Eliminar ${tipoSeleccionadoDisplay}`" :modal="true" :closable="false" :style="dialogStyle" :draggable="false">
         <div class="flex items-center gap-3">
           <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
           <div class="flex flex-col">
-            <span>¿Estás seguro de eliminar {{ modoSeleccionado.toLowerCase() }}: <b>{{ itemEliminar?.nombre }}</b>?</span>
+            <span>¿Estás seguro de eliminar {{ tipoSeleccionadoDisplay.toLowerCase() }}: <b>{{ itemEliminar?.nombre }}</b>?</span>
             <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
           </div>
         </div>
