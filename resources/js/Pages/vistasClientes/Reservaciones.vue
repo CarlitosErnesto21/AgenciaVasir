@@ -81,6 +81,12 @@ const documentoValidation = ref({
   mensaje: ''
 })
 
+// Estado de validación de formato en tiempo real
+const formatoValidation = ref({
+  isValid: true,
+  mensaje: ''
+})
+
 
 
 // Computed properties para hoteles filtrados por búsqueda
@@ -356,10 +362,11 @@ const cargarDatosCliente = async () => {
     return null
   }
 
+  // Verificar primero si el usuario tiene datos usando la API de verificación
   try {
     const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
 
-    const response = await fetch('/api/clientes/mi-perfil', {
+    const verificacionResponse = await fetch('/api/verificar-datos-cliente', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -371,15 +378,37 @@ const cargarDatosCliente = async () => {
       credentials: 'same-origin'
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      return data.cliente || data || null
-    } else if (response.status === 404) {
-      return null
-    } else {
-      return null
+    if (verificacionResponse.ok) {
+      const verificacion = await verificacionResponse.json()
+
+      // Si no tiene datos completos, no hacer la segunda petición
+      if (!verificacion.tiene_datos_completos) {
+        return null
+      }
+
+      // Si tiene datos completos, obtenerlos
+      const response = await fetch('/api/clientes/mi-perfil', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+          'X-CSRF-TOKEN': token || '',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.cliente || data || null
+      }
     }
+
+    return null
   } catch (error) {
+    // Solo logear errores de red/conexión reales
+    console.error('[Reservaciones] Error de conexión al cargar datos del cliente:', error)
     return null
   }
 }
@@ -488,6 +517,11 @@ const abrirModalReserva = async (hotel) => {
 const cerrarModalReserva = () => {
   showReservaModal.value = false
   hotelSeleccionado.value = null
+}
+
+// Función para navegar al perfil del usuario
+const navegarAlPerfil = () => {
+  router.visit('/profile')
 }
 
 const crearReservaHotel = async () => {
@@ -890,49 +924,59 @@ const manejarEntradaDocumento = (event) => {
 }
 
 // Validación en tiempo real del número de identificación
+// Función para validar formato de documento en tiempo real (sin toasts)
+const validarFormatoDocumento = (numeroIdentificacion, tipoDocumento) => {
+  if (!numeroIdentificacion || !tipoDocumento) {
+    formatoValidation.value.mensaje = ''
+    formatoValidation.value.isValid = true
+    return
+  }
+
+  if (tipoDocumento === 'DUI') {
+    const duiRegex = /^\d{8}-\d{1}$/
+    if (!duiRegex.test(numeroIdentificacion)) {
+      formatoValidation.value.mensaje = 'El DUI debe tener 9 dígitos (formato: 12345678-9)'
+      formatoValidation.value.isValid = false
+    } else {
+      formatoValidation.value.mensaje = ''
+      formatoValidation.value.isValid = true
+    }
+  } else if (tipoDocumento === 'PASAPORTE') {
+    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
+    if (!pasaporteRegex.test(numeroIdentificacion)) {
+      formatoValidation.value.mensaje = 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)'
+      formatoValidation.value.isValid = false
+    } else {
+      formatoValidation.value.mensaje = ''
+      formatoValidation.value.isValid = true
+    }
+  }
+}
+
 const validarNumeroIdentificacion = () => {
   if (!reservaForm.value.cliente_data.numero_identificacion) {
     return true // No hay error si está vacío, se maneja en validación de campos requeridos
   }
 
-  if (reservaForm.value.cliente_data.tipo_documento === 'DUI') {
-    const duiRegex = /^\d{8}-\d{1}$/
-    if (!duiRegex.test(reservaForm.value.cliente_data.numero_identificacion)) {
-      toast.add({
-        severity: 'error',
-        summary: 'Formato incorrecto',
-        detail: 'El DUI debe tener 9 dígitos (formato: 12345678-9)',
-        life: 4000
-      })
-      return false
-    }
-  } else if (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE') {
-    // Validar formato: solo A-Z y 0-9, entre 6 y 9 caracteres
-    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
-    if (!pasaporteRegex.test(reservaForm.value.cliente_data.numero_identificacion)) {
-      toast.add({
-        severity: 'error',
-        summary: 'Formato incorrecto',
-        detail: 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)',
-        life: 4000
-      })
-      return false
-    }
-  }
-  return true
+  // Usar la validación silenciosa
+  validarFormatoDocumento(
+    reservaForm.value.cliente_data.numero_identificacion,
+    reservaForm.value.cliente_data.tipo_documento
+  )
+
+  // Retornar el resultado sin mostrar toasts (solo para validación de envío)
+  return formatoValidation.value.isValid
 }
 
 // Watchers para validación en tiempo real del documento
 watch(() => reservaForm.value.cliente_data.numero_identificacion, (newValue) => {
   if (newValue && reservaForm.value.cliente_data.tipo_documento) {
-    validarNumeroIdentificacion()
+    // Validar formato en tiempo real (sin toasts)
+    validarFormatoDocumento(newValue, reservaForm.value.cliente_data.tipo_documento)
 
     // Validar duplicados si el formato es válido y no es cliente existente
-    if (newValue.length >= 3) {
-      const isValidFormat = (reservaForm.value.cliente_data.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(newValue)) ||
-                           (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(newValue))
-
-      if (isValidFormat && !tieneClienteExistente.value) {
+    if (newValue.length >= 3 && formatoValidation.value.isValid) {
+      if (!tieneClienteExistente.value) {
         validarDocumentoUnico(newValue)
       } else {
         documentoValidation.value.mensaje = ''
@@ -950,6 +994,8 @@ watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
   reservaForm.value.cliente_data.numero_identificacion = ''
   documentoValidation.value.mensaje = ''
   documentoValidation.value.isValid = true
+  formatoValidation.value.mensaje = ''
+  formatoValidation.value.isValid = true
 })
 
 // Watch para validación de fecha de nacimiento en tiempo real
@@ -1381,6 +1427,27 @@ watch(() => reservaForm.value.cliente_data.fecha_nacimiento, (nuevaFecha) => {
           <p class="text-sm text-gray-500">{{ hotelSeleccionado.provincia?.nombre }}, {{ hotelSeleccionado.pais?.nombre }}</p>
         </div>
 
+        <!-- Mensaje informativo para datos precargados -->
+        <div v-if="tieneClienteExistente" class="flex items-center justify-between mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div class="flex items-center text-green-700">
+            <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+            </svg>
+            <span class="font-medium">Datos personales precargados</span>
+          </div>
+          <button
+            @click="navegarAlPerfil"
+            type="button"
+            class="inline-flex items-center px-4 py-2 border border-blue-300 text-sm font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+            title="Editar mis datos personales en mi perfil"
+          >
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+            Editar mis datos
+          </button>
+        </div>
+
         <!-- Formulario de reserva -->
         <form @submit.prevent="crearReservaHotel" class="space-y-4">
           <!-- Fechas de estadía -->
@@ -1463,16 +1530,27 @@ watch(() => reservaForm.value.cliente_data.fecha_nacimiento, (nuevaFecha) => {
                   :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
                   :placeholder="reservaForm.cliente_data.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
                 />
-                <!-- Mensaje de validación en tiempo real del documento -->
-                <p
+                <!-- Mensaje de validación de formato en tiempo real -->
+                <small
+                  v-if="formatoValidation.mensaje && !tieneClienteExistente"
+                  :class="[
+                    'block mt-1',
+                    formatoValidation.isValid ? 'text-green-600' : 'text-red-500'
+                  ]"
+                >
+                  {{ formatoValidation.mensaje }}
+                </small>
+
+                <!-- Mensaje de validación de duplicados -->
+                <small
                   v-if="documentoValidation.mensaje && !tieneClienteExistente"
                   :class="[
-                    'text-xs mt-1',
-                    documentoValidation.isValid ? 'text-green-600' : 'text-red-600'
+                    'block mt-1',
+                    documentoValidation.isValid ? 'text-green-600' : 'text-red-500'
                   ]"
                 >
                   {{ documentoValidation.mensaje }}
-                </p>
+                </small>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>

@@ -56,8 +56,9 @@ const tieneClienteExistente = ref(false)
 const cargarDatosCliente = async () => {
   if (!props.user) return null
 
+  // Verificar primero si el usuario tiene datos usando la API de verificación
   try {
-    const response = await fetch('/api/cliente-datos', {
+    const verificacionResponse = await fetch('/api/verificar-datos-cliente', {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -68,17 +69,36 @@ const cargarDatosCliente = async () => {
       credentials: 'same-origin'
     })
 
-    if (response.ok) {
-      const data = await response.json()
-      return data.cliente || null
-    } else if (response.status === 404) {
-      return null
-    } else {
-      console.error('Error al cargar datos del cliente:', response.status)
-      return null
+    if (verificacionResponse.ok) {
+      const verificacion = await verificacionResponse.json()
+
+      // Si no tiene datos completos, no hacer la segunda petición
+      if (!verificacion.tiene_datos_completos) {
+        return null
+      }
+
+      // Si tiene datos completos, obtenerlos
+      const response = await fetch('/api/cliente-datos', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin'
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        return data.cliente || null
+      }
     }
+
+    return null
   } catch (error) {
-    console.error('Error al cargar datos del cliente:', error)
+    // Solo logear errores de red/conexión reales
+    console.error('[ModalReservaTour] Error de conexión al cargar datos del cliente:', error)
     return null
   }
 }

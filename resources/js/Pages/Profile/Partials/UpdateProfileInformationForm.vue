@@ -151,12 +151,12 @@ const manejarEntradaDocumento = (event) => {
 
     // Validar después de formatear
     validarNumeroIdentificacion();
-    
+
     // Validar duplicados si el formato es válido
     if (form.numero_identificacion && form.numero_identificacion.length >= 3) {
         const isValidFormat = (form.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(form.numero_identificacion)) ||
                              (form.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(form.numero_identificacion));
-        
+
         if (isValidFormat) {
             validarDocumentoUnico(form.numero_identificacion);
         } else {
@@ -195,12 +195,12 @@ watch(() => form.tipo_documento, () => {
 // Watchers para validación en tiempo real (como en ModalDatosCliente.vue)
 watch(() => form.numero_identificacion, (newValue) => {
     validarNumeroIdentificacion();
-    
+
     // Validar duplicados si el formato es válido
     if (newValue && newValue.length >= 3) {
         const isValidFormat = (form.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(newValue)) ||
                              (form.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(newValue));
-        
+
         if (isValidFormat) {
             validarDocumentoUnico(newValue);
         } else {
@@ -592,7 +592,7 @@ const submitForm = () => {
         });
         return;
     }
-    
+
     // Verificar si el documento no está validado por duplicados
     if (isCliente.value && form.numero_identificacion && !documentoValidation.value.isValid) {
         toast.add({
@@ -716,15 +716,15 @@ watch(
                                 :placeholder="form.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
                             />
                             <!-- Mensaje de validación en tiempo real del documento -->
-                            <p
+                            <small
                                 v-if="documentoValidation.mensaje"
                                 :class="[
-                                    'mt-1 text-sm',
-                                    documentoValidation.isValid ? 'text-green-600' : 'text-red-600'
+                                    'block mt-1',
+                                    documentoValidation.isValid ? 'text-green-600' : 'text-red-500'
                                 ]"
                             >
                                 {{ documentoValidation.mensaje }}
-                            </p>
+                            </small>
                             <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
                             <InputError v-if="form.errors.numero_identificacion && !documentoValidation.mensaje" :message="(form.errors.numero_identificacion || (submitted && identificacionErrors[0])) || ''" />
                         </div>
@@ -921,7 +921,7 @@ watch(
             </div>
         </form>
     </section>
-    
+
     <!-- Toast component para mostrar notificaciones -->
     <Toast class="z-[9999]" />
 </template>
