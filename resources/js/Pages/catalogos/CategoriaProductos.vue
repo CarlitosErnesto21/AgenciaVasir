@@ -437,7 +437,7 @@ const onNombrePaste = (event) => {
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="onNombreInput"
                                 @paste="onNombrePaste"
-                                placeholder="Nombre de la categoría"
+                                placeholder="MALETAS, BOLSOS, ACCESORIOS, ETC."
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">

@@ -527,8 +527,11 @@ const reservaForm = ref({
   }
 })
 
-// Tipos de documento cargados desde la API
-// Los tipos de documento ahora son ENUM: DUI, PASAPORTE
+// Los tipos de documento ahora son ENUM: DUI, PASAPORTE (valores fijos)
+const tiposDocumento = ref([
+  { id: 'DUI', nombre: 'DUI' },
+  { id: 'PASAPORTE', nombre: 'PASAPORTE' }
+])
 
 // Estado de validación del teléfono
 const telefonoValidation = ref({
@@ -614,36 +617,7 @@ const detenerCarrusel = () => {
   }
 }
 
-// Función para obtener tipos de documento desde la API
-const obtenerTiposDocumento = async () => {
-  try {
-    loadingTiposDocumento.value = true
-    const response = await fetch('/api/tipo-documentos', {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest'
-      }
-    })
-
-    if (!response.ok) {
-      throw new Error(`Error ${response.status}: ${response.statusText}`);
-    }
-
-    const data = await response.json()
-    tiposDocumento.value = data.tipos || data || []
-
-  } catch (err) {
-    // Fallback en caso de error
-    tiposDocumento.value = [
-      { id: 1, nombre: 'DUI' },
-      { id: 2, nombre: 'Pasaporte' },
-      { id: 3, nombre: 'Licencia' }
-    ]
-  } finally {
-    loadingTiposDocumento.value = false
-  }
-}
+// Ya no necesitamos cargar tipos de documento desde API - usamos ENUM fijo
 
 // Función para cargar datos del cliente existente
 const cargarDatosCliente = async () => {
@@ -706,11 +680,6 @@ const reservarHotel = async () => {
 
   // Resetear estado
   tieneClienteExistente.value = false
-
-  // Cargar tipos de documento si no están cargados
-  if (tiposDocumento.value.length === 0) {
-    await obtenerTiposDocumento()
-  }
 
   // Inicializar formulario con datos básicos
   reservaForm.value = {

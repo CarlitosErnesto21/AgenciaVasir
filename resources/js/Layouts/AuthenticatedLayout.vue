@@ -41,18 +41,8 @@ const toggleConfigDropdown = () => {
     isConfigDropdownOpen.value = !isConfigDropdownOpen.value;
 };
 
-const toggleSidebar = () => {
-    // Función vacía, ya no se usa colapso en escritorio
-    isOpen.value = false;
-};
-
-const logout = async () => {
-    try {
-        await axios.post("/logout");
-        window.location.href = "/";
-    } catch (err) {
-        console.error("Error al cerrar la sesion", err);
-    }
+const logout = () => {
+    router.post(route('logout'));
 };
 
 const handleResize = () => {
@@ -128,7 +118,6 @@ watch(isSidebarOpen, (newValue) => {
     }
 })
 
-// Eliminado el watcher de colapso del sidebar
 
 // Función simplificada para navegación
 const navigateAndCloseSidebar = (routeName) => {

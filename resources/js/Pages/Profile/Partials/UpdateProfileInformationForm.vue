@@ -755,11 +755,6 @@ watch(
                             <InputError :message="form.errors.genero || (submitted && generoErrors[0]) || ''" />
                         </div>
                         <div class="sm:col-span-2">
-                            <InputLabel for="direccion" value="Dirección" />
-                            <TextInput id="direccion" v-model="form.direccion" class="mt-1 block w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none outline-none rounded-md" required />
-                            <InputError :message="form.errors.direccion || (submitted && direccionErrors[0]) || ''" />
-                        </div>
-                        <div class="sm:col-span-2">
                             <InputLabel for="telefono" value="Teléfono" />
                             <VueTelInput
                                 v-model="form.telefono"
@@ -787,6 +782,11 @@ watch(
                             </p>
                             <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
                             <InputError v-if="form.errors.telefono && !telefonoValidation.mensaje" :message="form.errors.telefono || (submitted && telefonoErrors[0]) || ''" />
+                        </div>
+                        <div class="sm:col-span-2">
+                            <InputLabel for="direccion" value="Dirección" />
+                            <TextInput id="direccion" v-model="form.direccion" class="mt-1 block w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none outline-none rounded-md" required />
+                            <InputError :message="form.errors.direccion || (submitted && direccionErrors[0]) || ''" />
                         </div>
                     </div>
                 </div>

@@ -532,6 +532,22 @@ watch(() => formData.value.telefono, (newValue) => {
       <form @submit.prevent="guardarCliente" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+            <select
+              v-model="formData.tipo_documento"
+              required
+              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="{ 'border-red-500': errores.tipo_documento }"
+            >
+              <option value="" disabled>Seleccione un tipo</option>
+              <option value="DUI">DUI</option>
+              <option value="PASAPORTE">PASAPORTE</option>
+            </select>
+            <small v-if="errores.tipo_documento" class="text-red-500 text-xs">
+              {{ errores.tipo_documento }}
+            </small>
+          </div>
+          <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
             <input
               :value="formData.numero_identificacion"
@@ -558,22 +574,7 @@ watch(() => formData.value.telefono, (newValue) => {
               {{ errores.numero_identificacion }}
             </small>
           </div>
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
-            <select
-              v-model="formData.tipo_documento"
-              required
-              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              :class="{ 'border-red-500': errores.tipo_documento }"
-            >
-              <option value="" disabled>Seleccione un tipo</option>
-              <option value="DUI">DUI</option>
-              <option value="PASAPORTE">PASAPORTE</option>
-            </select>
-            <small v-if="errores.tipo_documento" class="text-red-500 text-xs">
-              {{ errores.tipo_documento }}
-            </small>
-          </div>
+
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

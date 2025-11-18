@@ -470,8 +470,11 @@ watch(() => formularioLocal.value.numero_identificacion, (newValue) => {
 })
 
 watch(() => formularioLocal.value.tipo_documento, () => {
-  // Limpiar número cuando cambia el tipo de documento
-  formularioLocal.value.numero_identificacion = ''
+  // Solo limpiar número cuando cambia el tipo de documento si NO tiene datos precargados
+  // Esto evita que se borren los datos cuando se cargan desde el cliente existente
+  if (!props.tieneClienteExistente) {
+    formularioLocal.value.numero_identificacion = ''
+  }
   documentoValidation.value.mensaje = ''
   documentoValidation.value.isValid = true
   formatoValidation.value.mensaje = ''

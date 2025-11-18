@@ -549,7 +549,7 @@ const crearReservaHotel = async () => {
       return
     }
 
-    if (!reservaForm.value.cliente_data.numero_identificacion.trim()) {
+    if (!reservaForm.value.cliente_data.numero_identificacion || !reservaForm.value.cliente_data.numero_identificacion.trim()) {
       toast.add({
         severity: 'error',
         summary: 'Error de Validación',
@@ -990,8 +990,11 @@ watch(() => reservaForm.value.cliente_data.numero_identificacion, (newValue) => 
 })
 
 watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
-  // Limpiar número cuando cambia el tipo de documento
-  reservaForm.value.cliente_data.numero_identificacion = ''
+  // Solo limpiar número cuando cambia el tipo de documento si NO tiene datos precargados
+  // Esto evita que se borren los datos cuando se cargan desde el cliente existente
+  if (!tieneClienteExistente.value) {
+    reservaForm.value.cliente_data.numero_identificacion = ''
+  }
   documentoValidation.value.mensaje = ''
   documentoValidation.value.isValid = true
   formatoValidation.value.mensaje = ''
