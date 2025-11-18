@@ -6,6 +6,8 @@ import UpdatePasswordForm from './Partials/UpdatePasswordForm.vue';
 import UpdateProfileInformationForm from './Partials/UpdateProfileInformationForm.vue';
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faUser, faLock, faExclamationTriangle, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
     mustVerifyEmail: {
@@ -65,12 +67,10 @@ const goBack = () => {
         <div class="bg-gray-50" :class="isAdmin ? 'pt-4 md:pt-6' : ''">
 
             <!-- Header para admin/empleado sin fondo rojo -->
-            <div v-if="isAdmin" class="bg-white shadow-lg border-b border-gray-200 mb-8 md:mb-10">
+            <div v-if="isAdmin" class="bg-white shadow-lg border-b border-gray-200 mb-5 md:mb-10">
                 <div class="max-w-4xl mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
                     <div class="bg-red-600 rounded-xl p-4 shadow flex items-center justify-center border-4 border-white mb-3 sm:mb-0">
-                        <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
+                        <FontAwesomeIcon :icon="faUser" class="w-10 h-10 text-white" />
                     </div>
                     <div class="text-center sm:text-left">
                         <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Mi Perfil</h1>
@@ -80,12 +80,10 @@ const goBack = () => {
             </div>
 
             <!-- Header mejorado para clientes -->
-            <div v-else class="mb-8 md:mb-10">
+            <div v-else class="mb-5 md:mb-10">
                 <div class="flex flex-col items-center justify-center">
                     <div class="bg-gradient-to-br from-red-600 via-red-500 to-red-400 rounded-full p-4 sm:p-5 w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center mb-3 sm:mb-4 shadow-2xl border-4 border-white">
-                        <svg class="w-12 h-12 sm:w-14 sm:h-14 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                        </svg>
+                        <FontAwesomeIcon :icon="faUser" class="w-12 h-12 sm:w-14 sm:h-14 text-white" />
                     </div>
                     <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-1 tracking-tight">Mi Perfil</h1>
                     <p class="text-gray-700 text-base sm:text-lg font-medium">Gestiona tu información personal y configuración de cuenta</p>
@@ -99,9 +97,7 @@ const goBack = () => {
                             <!-- Tarjeta Información Personal -->
                             <div @click="showForm('profile')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
                                 <div class="bg-red-100 rounded-full p-4 mb-4">
-                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                    </svg>
+                                    <FontAwesomeIcon :icon="faUser" class="w-8 h-8 text-red-600" />
                                 </div>
                                 <h3 class="text-lg font-bold text-gray-900 mb-1">Información Personal</h3>
                                 <p class="text-gray-600 text-sm text-center">Actualiza tu información de perfil y correo electrónico</p>
@@ -109,9 +105,7 @@ const goBack = () => {
                             <!-- Tarjeta Seguridad -->
                             <div @click="showForm('password')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
                                 <div class="bg-red-100 rounded-full p-4 mb-4">
-                                    <svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
-                                    </svg>
+                                    <FontAwesomeIcon :icon="faLock" class="w-8 h-8 text-red-600" />
                                 </div>
                                 <h3 class="text-lg font-bold text-gray-900 mb-1">Seguridad</h3>
                                 <p class="text-gray-600 text-sm text-center">Cambia tu contraseña y mantén tu cuenta segura</p>
@@ -119,9 +113,7 @@ const goBack = () => {
                             <!-- Tarjeta Eliminar Cuenta -->
                             <div @click="showForm('delete')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-red-200 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
                                 <div class="bg-red-200 rounded-full p-4 mb-4">
-                                    <svg class="w-8 h-8 text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                    </svg>
+                                    <FontAwesomeIcon :icon="faExclamationTriangle" class="w-8 h-8 text-red-700" />
                                 </div>
                                 <h3 class="text-lg font-bold text-red-900 mb-1">Eliminar Cuenta</h3>
                                 <p class="text-red-700 text-sm text-center">Acción irreversible - procede con precaución</p>
@@ -129,7 +121,7 @@ const goBack = () => {
                         </div>
                     </template>
                     <template v-else>
-                        <button @click="goBack" class="mb-6 flex items-center text-red-600 hover:text-red-800 font-semibold text-base"><svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>Volver</button>
+                        <button @click="goBack" class="mb-6 flex items-center text-red-600 hover:text-red-800 font-semibold text-base"><FontAwesomeIcon :icon="faChevronLeft" class="w-5 h-5 mr-2" />Volver</button>
                         <div v-if="selectedForm === 'profile'">
                             <UpdateProfileInformationForm
                                 :must-verify-email="mustVerifyEmail"

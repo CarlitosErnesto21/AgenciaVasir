@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Select from "primevue/select";
-import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faInfoCircle, faPencil, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faInfoCircle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const toast = useToast();
@@ -106,15 +106,15 @@ const validateMarca = () => {
     if (transporte.value.marca) {
         // Convertir a mayúsculas
         transporte.value.marca = transporte.value.marca.toUpperCase();
-        
+
         // Eliminar caracteres no permitidos (solo letras con tildes y espacios)
         transporte.value.marca = transporte.value.marca.replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
-        
+
         // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
         transporte.value.marca = transporte.value.marca
             .trim() // Eliminar espacios al inicio y final
             .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
-        
+
         // Limitar longitud máxima
         if (transporte.value.marca.length > 30) {
             transporte.value.marca = transporte.value.marca.substring(0, 30);
@@ -125,27 +125,27 @@ const validateMarca = () => {
 // Función para prevenir la escritura de caracteres no permitidos en marca
 const preventInvalidCharsMarca = (event) => {
     const char = event.key;
-    
+
     // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
-    if (event.ctrlKey || event.metaKey || 
+    if (event.ctrlKey || event.metaKey ||
         ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
         return;
     }
-    
+
     // Solo permitir letras (incluidas las tildadas) y espacios
     const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s]$/.test(char);
-    
+
     if (!isAllowed) {
         event.preventDefault();
         return;
     }
-    
+
     // Prevenir espacios múltiples consecutivos
     if (char === ' ') {
         const input = event.target;
         const cursorPosition = input.selectionStart;
         const currentValue = transporte.value.marca || '';
-        
+
         // Si ya hay un espacio en la posición anterior o si estamos al inicio, prevenir
         if (cursorPosition === 0 || currentValue[cursorPosition - 1] === ' ') {
             event.preventDefault();
@@ -156,35 +156,35 @@ const preventInvalidCharsMarca = (event) => {
 // Función para manejar el pegado de texto en marca
 const handlePasteMarca = (event) => {
     event.preventDefault();
-    
+
     // Obtener el texto del portapapeles
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     // Filtrar solo caracteres permitidos y convertir a mayúsculas
     let filteredText = pastedText.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
-    
+
     // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
     filteredText = filteredText
         .trim() // Eliminar espacios al inicio y final
         .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
-    
+
     // Obtener la posición actual del cursor
     const input = event.target;
     const start = input.selectionStart;
     const end = input.selectionEnd;
-    
+
     // Construir el nuevo valor
     const currentValue = transporte.value.marca || '';
     let newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
-    
+
     // Aplicar trim completo al resultado final
     newValue = newValue
         .trim()
         .replace(/\s+/g, ' ');
-    
+
     // Limitar a 30 caracteres
     transporte.value.marca = newValue.substring(0, 30);
-    
+
     // Establecer la nueva posición del cursor
     nextTick(() => {
         const newCursorPosition = start + filteredText.length;
@@ -196,20 +196,20 @@ const handlePasteMarca = (event) => {
 const marcaErrors = computed(() => {
     const errors = [];
     const marca = transporte.value.marca || '';
-    
+
     if (marca.length > 0 && marca.length < 2) {
         errors.push('La marca debe tener al menos 2 caracteres.');
     }
-    
+
     if (marca.length > 0 && /[^A-ZÁÉÍÓÚÑÜ\s]/.test(marca)) {
         errors.push('La marca solo puede contener letras y espacios (con tildes permitidas).');
     }
-    
+
     // Validar espacios múltiples o espacios al inicio/final
     if (marca.length > 0 && (marca !== marca.trim() || /\s{2,}/.test(marca))) {
         errors.push('No se permiten espacios extra al inicio, final o múltiples espacios consecutivos.');
     }
-    
+
     return errors;
 });
 
@@ -218,15 +218,15 @@ const validateNombre = () => {
     if (transporte.value.nombre) {
         // Convertir a mayúsculas
         transporte.value.nombre = transporte.value.nombre.toUpperCase();
-        
+
         // Eliminar caracteres no permitidos (solo letras con tildes, números y espacios)
         transporte.value.nombre = transporte.value.nombre.replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s]/g, '');
-        
+
         // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
         transporte.value.nombre = transporte.value.nombre
             .trim() // Eliminar espacios al inicio y final
             .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
-        
+
         // Limitar longitud máxima
         if (transporte.value.nombre.length > 50) {
             transporte.value.nombre = transporte.value.nombre.substring(0, 50);
@@ -237,27 +237,27 @@ const validateNombre = () => {
 // Función para prevenir la escritura de caracteres no permitidos en nombre (descripción)
 const preventInvalidCharsNombre = (event) => {
     const char = event.key;
-    
+
     // Permitir teclas de control (Backspace, Delete, Tab, Enter, etc.)
-    if (event.ctrlKey || event.metaKey || 
+    if (event.ctrlKey || event.metaKey ||
         ['Backspace', 'Delete', 'Tab', 'Enter', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(char)) {
         return;
     }
-    
+
     // Solo permitir letras (incluidas las tildadas), números y espacios
     const isAllowed = /^[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ0-9\s]$/.test(char);
-    
+
     if (!isAllowed) {
         event.preventDefault();
         return;
     }
-    
+
     // Prevenir espacios múltiples consecutivos
     if (char === ' ') {
         const input = event.target;
         const cursorPosition = input.selectionStart;
         const currentValue = transporte.value.nombre || '';
-        
+
         // Si ya hay un espacio en la posición anterior o si estamos al inicio, prevenir
         if (cursorPosition === 0 || currentValue[cursorPosition - 1] === ' ') {
             event.preventDefault();
@@ -268,35 +268,35 @@ const preventInvalidCharsNombre = (event) => {
 // Función para manejar el pegado de texto en nombre (descripción)
 const handlePasteNombre = (event) => {
     event.preventDefault();
-    
+
     // Obtener el texto del portapapeles
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-    
+
     // Filtrar solo caracteres permitidos y convertir a mayúsculas
     let filteredText = pastedText.toUpperCase().replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s]/g, '');
-    
+
     // Eliminar espacios extra: solo un espacio entre palabras, sin espacios al inicio o final
     filteredText = filteredText
         .trim() // Eliminar espacios al inicio y final
         .replace(/\s+/g, ' '); // Reemplazar múltiples espacios con un solo espacio
-    
+
     // Obtener la posición actual del cursor
     const input = event.target;
     const start = input.selectionStart;
     const end = input.selectionEnd;
-    
+
     // Construir el nuevo valor
     const currentValue = transporte.value.nombre || '';
     let newValue = currentValue.substring(0, start) + filteredText + currentValue.substring(end);
-    
+
     // Aplicar trim completo al resultado final
     newValue = newValue
         .trim()
         .replace(/\s+/g, ' ');
-    
+
     // Limitar a 50 caracteres
     transporte.value.nombre = newValue.substring(0, 50);
-    
+
     // Establecer la nueva posición del cursor
     nextTick(() => {
         const newCursorPosition = start + filteredText.length;
@@ -308,20 +308,20 @@ const handlePasteNombre = (event) => {
 const nombreErrors = computed(() => {
     const errors = [];
     const nombre = transporte.value.nombre || '';
-    
+
     if (nombre.length > 0 && nombre.length < 3) {
         errors.push('La descripción debe tener al menos 3 caracteres.');
     }
-    
+
     if (nombre.length > 0 && /[^A-ZÁÉÍÓÚÑÜ0-9\s]/.test(nombre)) {
         errors.push('La descripción solo puede contener letras con tildes, números y espacios.');
     }
-    
+
     // Validar espacios múltiples o espacios al inicio/final
     if (nombre.length > 0 && (nombre !== nombre.trim() || /\s{2,}/.test(nombre))) {
         errors.push('No se permiten espacios extra al inicio, final o múltiples espacios consecutivos.');
     }
-    
+
     return errors;
 });
 
@@ -415,7 +415,7 @@ const openNew = () => {
 
 const editTransporte = (t) => {
     resetForm();
-    transporte.value = { 
+    transporte.value = {
         ...t,
         marca: t.marca ? t.marca.toUpperCase().trim().replace(/\s+/g, ' ') : t.marca, // Convertir marca a mayúsculas y limpiar espacios extra
         nombre: t.nombre ? t.nombre.toUpperCase().trim().replace(/\s+/g, ' ') : t.nombre // Convertir descripción a mayúsculas y limpiar espacios extra
@@ -443,7 +443,7 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Descripción inválida", detail: "La descripción debe tener entre 3 y 50 caracteres.", life: 4000 });
         return;
     }
-    
+
     // Validar que la descripción solo contenga letras con tildes, números y espacios
     if (/[^A-ZÁÉÍÓÚÑÜ0-9\s]/.test(transporte.value.nombre)) {
         toast.add({ severity: "warn", summary: "Descripción inválida", detail: "La descripción solo puede contener letras con tildes, números y espacios.", life: 4000 });
@@ -457,7 +457,7 @@ const saveOrUpdate = async () => {
         toast.add({ severity: "warn", summary: "Marca inválida", detail: "La marca debe tener entre 2 y 30 caracteres.", life: 4000 });
         return;
     }
-    
+
     // Validar que la marca solo contenga letras con tildes y espacios
     if (/[^A-ZÁÉÍÓÚÑÜ\s]/.test(transporte.value.marca)) {
         toast.add({ severity: "warn", summary: "Marca inválida", detail: "La marca solo puede contener letras y espacios (con tildes permitidas).", life: 4000 });
@@ -680,38 +680,41 @@ const handleToursClick = () => {
 };
 </script>
 <template>
-    <Head title="Catálogo de Transportes" />
     <AuthenticatedLayout>
+        <Head title="Control de Transportes" />
         <Toast class="z-[9999]" />
-        <div class="px-auto md:px-2 mt-6">
-            <div class="flex justify-between items-end sm:items-center mb-4 gap-1 sm:gap-0">
-                <div class="flex items-center gap-0 sm:gap-3">
-                    <Link
-                        :href="route('tours')"
-                        @click="handleToursClick"
-                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-4 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                        :class="{ 'opacity-50 cursor-not-allowed': isNavigatingToTours }"
-                        title="Regresar a Tours"
-                    >
-                        <FontAwesomeIcon
-                            :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
-                            :class="[
-                                'h-7 sm:h-8',
-                                { 'animate-spin': isNavigatingToTours }
-                            ]"
-                        />
-                        <span v-if="isNavigatingToTours" class="ml-2 text-sm hidden sm:inline">Navegando...</span>
-                    </Link>
-                    <h3 class="text-3xl text-blue-600 font-bold hidden md:block">Catálogo de Transportes</h3>
-                    <h3 class="text-2xl text-blue-600 font-bold block md:hidden">Transportes</h3>
-                </div>
-                <button
-                    class="bg-blue-500 border border-blue-500 p-2 text-sm mr-4 text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex" @click="openNew">
-                    <FontAwesomeIcon :icon="faBusSimple" class="h-4 w-4 mr-2 text-white" />
-                    <span class="hidden md:block">Agregar nuevo</span>
-                    <span class="block md:hidden">Agregar</span>
-                </button>
+
+        <div class="container mx-auto px-4 py-6">
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Transportes</h1>
+                <p class="text-gray-600">Gestión de vehículos y transportes</p>
             </div>
+
+            <div class="bg-white rounded-lg shadow-md">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                    <div class="flex items-center gap-3">
+                        <Link
+                            :href="route('tours')"
+                            @click="handleToursClick"
+                            :class="{'opacity-50 cursor-not-allowed': isNavigatingToTours}"
+                            class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+                            title="Regresar a Tours">
+                            <FontAwesomeIcon
+                                :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
+                                :class="{'animate-spin': isNavigatingToTours, 'h-5 w-5': true}"
+                            />
+                        </Link>
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Transportes</h3>
+                    </div>
+                    <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
+                        <button
+                            class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2"
+                            @click="openNew">
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                            <span>Agregar transporte</span>
+                        </button>
+                    </div>
+                </div>
             <DataTable
                 :value="filteredTransportes"
                 v-model:selection="selectedTransportes"
@@ -800,7 +803,7 @@ const handleToursClick = () => {
                         </div>
                     </div>
                 </template>
-                <Column field="numero_placa" header="Placa" sortable class="w-32 min-w-32">
+                <Column field="numero_placa" header="Placa" sortable class="w-32 min-w-16">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed overflow-hidden"
                             style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
@@ -810,10 +813,10 @@ const handleToursClick = () => {
                         </div>
                     </template>
                 </Column>
-                <Column field="nombre" header="Descripción" sortable class="w-40 min-w-16">
+                <Column field="nombre" header="Descripción" sortable class="w-36 min-w-10">
                     <template #body="slotProps">
                         <div class="text-sm font-medium leading-relaxed overflow-hidden"
-                            style="max-width: 85px; text-overflow: ellipsis; white-space: nowrap;"
+                            style="max-width: 75px; text-overflow: ellipsis; white-space: nowrap;"
                             :title="slotProps.data.nombre"
                         >
                             {{ slotProps.data.nombre }}
@@ -850,21 +853,23 @@ const handleToursClick = () => {
                     <template #body="slotProps">
                         <div class="flex gap-2 h-full justify-center items-center">
                             <button
-                                class="flex bg-blue-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editTransporte(slotProps.data)">
-                                <FontAwesomeIcon :icon="faPencil" class="h-4 w-7 text-white" />
+                                <FontAwesomeIcon :icon="faPencil" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Editar</span>
                             </button>
                             <button
-                                class="flex bg-red-500 border p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="confirmDeleteTransporte(slotProps.data)">
-                                <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-7 sm:w-4 text-white" />
+                                <FontAwesomeIcon :icon="faTrashCan" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
                                 <span class="hidden md:block text-white">Eliminar</span>
                             </button>
                         </div>
                     </template>
                 </Column>
             </DataTable>
+
+            <!-- Modal de formulario -->
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="dialogStyle"
                 :closable="false" :draggable="false">
                 <div class="space-y-4">
@@ -890,27 +895,27 @@ const handleToursClick = () => {
                             <label for="nombre" class="w-24 flex items-center gap-1">
                                 Descripción: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText 
-                                v-model="transporte.nombre" 
-                                id="nombre" 
-                                name="nombre" 
-                                :maxlength="50" 
-                                :class="{'p-invalid': (submitted && (!transporte.nombre || nombreErrors.length > 0)) || nombreErrors.length > 0}" 
-                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" 
+                            <InputText
+                                v-model="transporte.nombre"
+                                id="nombre"
+                                name="nombre"
+                                :maxlength="50"
+                                :class="{'p-invalid': (submitted && (!transporte.nombre || nombreErrors.length > 0)) || nombreErrors.length > 0}"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 placeholder="AUTOBUS TURÍSTICO, VAN EJECUTIVA 2024, etc."
                                 @keydown="preventInvalidCharsNombre"
                                 @paste="handlePasteNombre"
                                 @input="validateNombre"
                             />
                         </div>
-                        
+
                         <!-- Mostrar errores de validación en tiempo real -->
                         <div v-if="nombreErrors.length > 0" class="ml-28 mt-1">
                             <small v-for="error in nombreErrors" :key="error" class="text-red-500 block">
                                 {{ error }}
                             </small>
                         </div>
-                        
+
                         <!-- Mostrar contador de caracteres -->
                         <small class="text-gray-500 ml-28 mt-1" v-if="transporte.nombre && transporte.nombre.length > 0 && nombreErrors.length === 0">
                             Caracteres: {{ transporte.nombre.length }}/50
@@ -918,7 +923,7 @@ const handleToursClick = () => {
                         <small class="text-orange-500 ml-28 mt-1" v-if="transporte.nombre && transporte.nombre.length >= 45 && transporte.nombre.length <= 50 && nombreErrors.length === 0">
                             Caracteres restantes: {{ 50 - transporte.nombre.length }}
                         </small>
-                        
+
                         <!-- Error de campo obligatorio -->
                         <small class="text-red-500 ml-28 mt-1" v-if="submitted && !transporte.nombre">
                             La descripción es obligatoria.
@@ -956,27 +961,27 @@ const handleToursClick = () => {
                             <label for="marca" class="w-24 flex items-center gap-1">
                                 Marca: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <InputText 
-                                v-model="transporte.marca" 
-                                id="marca" 
-                                name="marca" 
-                                :maxlength="30" 
-                                :class="{'p-invalid': (submitted && (!transporte.marca || marcaErrors.length > 0)) || marcaErrors.length > 0}" 
-                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" 
+                            <InputText
+                                v-model="transporte.marca"
+                                id="marca"
+                                name="marca"
+                                :maxlength="30"
+                                :class="{'p-invalid': (submitted && (!transporte.marca || marcaErrors.length > 0)) || marcaErrors.length > 0}"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 placeholder="TOYOTA, MERCEDES, etc."
                                 @keydown="preventInvalidCharsMarca"
                                 @paste="handlePasteMarca"
                                 @input="validateMarca"
                             />
                         </div>
-                        
+
                         <!-- Mostrar errores de validación en tiempo real -->
                         <div v-if="marcaErrors.length > 0" class="ml-28 mt-1">
                             <small v-for="error in marcaErrors" :key="error" class="text-red-500 block">
                                 {{ error }}
                             </small>
                         </div>
-                        
+
                         <!-- Mostrar contador de caracteres -->
                         <small class="text-gray-500 ml-28 mt-1" v-if="transporte.marca && transporte.marca.length > 0 && marcaErrors.length === 0">
                             Caracteres: {{ transporte.marca.length }}/30
@@ -984,7 +989,7 @@ const handleToursClick = () => {
                         <small class="text-orange-500 ml-28 mt-1" v-if="transporte.marca && transporte.marca.length >= 25 && transporte.marca.length <= 30 && marcaErrors.length === 0">
                             Caracteres restantes: {{ 30 - transporte.marca.length }}
                         </small>
-                        
+
                         <!-- Error de campo obligatorio -->
                         <small class="text-red-500 ml-28 mt-1" v-if="submitted && !transporte.marca">
                             La marca es obligatoria.
@@ -1040,7 +1045,9 @@ const handleToursClick = () => {
                     </div>
                 </template>
             </Dialog>
-            <Dialog v-model:visible="deleteDialog" header="Eliminar transporte" :modal="true" :style="{ width: '350px' }" :closable="false" :draggable="false">
+
+            <!-- Modal de confirmación de eliminación -->
+            <Dialog v-model:visible="deleteDialog" header="Eliminar transporte" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
                     <div class="flex flex-col">
@@ -1073,6 +1080,8 @@ const handleToursClick = () => {
                     </div>
                 </template>
             </Dialog>
+
+            <!-- Modal de cambios sin guardar -->
             <Dialog v-model:visible="unsavedChangesDialog" header="Cambios sin guardar" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="flex items-center gap-3">
                     <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
@@ -1091,6 +1100,8 @@ const handleToursClick = () => {
                     </div>
                 </template>
             </Dialog>
+
+            <!-- Modal de detalles -->
             <Dialog v-model:visible="detailsDialog" header="Detalles del Transporte" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1128,6 +1139,7 @@ const handleToursClick = () => {
                     </div>
                 </template>
             </Dialog>
+            </div>
         </div>
     </AuthenticatedLayout>
 </template>
