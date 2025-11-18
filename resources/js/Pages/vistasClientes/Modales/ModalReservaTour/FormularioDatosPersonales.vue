@@ -41,6 +41,12 @@ const telefonoValidation = ref({
   mensaje: ''
 })
 
+// Estado de validación del documento
+const documentoValidation = ref({
+  isValid: true,
+  mensaje: ''
+})
+
 // Computed para el formulario reactivo
 const formularioLocal = computed({
   get() {
@@ -124,6 +130,48 @@ const validarTelefonoUnico = async (telefono) => {
   } catch (error) {
     console.error('[FormularioDatosPersonales] Error validando teléfono:', error)
     telefonoValidation.value.mensaje = 'Error al validar teléfono'
+  }
+}
+
+// Validar que el documento no esté duplicado
+const validarDocumentoUnico = async (numeroIdentificacion) => {
+  if (!numeroIdentificacion || numeroIdentificacion.length < 3) return
+
+  try {
+    const response = await fetch('/api/clientes/validar-documento', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        numero_identificacion: numeroIdentificacion
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.disponible) {
+      documentoValidation.value.mensaje = '✓ Número de identificación disponible'
+      documentoValidation.value.isValid = true
+    } else {
+      documentoValidation.value.isValid = false
+      documentoValidation.value.mensaje = data.message || 'Este número de identificación ya está registrado'
+    }
+  } catch (error) {
+    console.error('[FormularioDatosPersonales] Error validando documento:', error)
+    documentoValidation.value.isValid = false
+    if (error.response?.status === 403) {
+      documentoValidation.value.mensaje = 'No tienes permisos para validar este documento'
+    } else if (error.response?.status === 401) {
+      documentoValidation.value.mensaje = 'Error de autenticación'
+    } else {
+      documentoValidation.value.mensaje = 'Error al validar documento'
+    }
   }
 }
 
@@ -262,6 +310,17 @@ const validateForm = () => {
     return false
   }
 
+  // Validar documento duplicado
+  if (!props.tieneClienteExistente && formularioLocal.value.numero_identificacion && !documentoValidation.value.isValid) {
+    emit('mostrar-toast', {
+      severity: 'warn',
+      summary: 'Documento no disponible',
+      detail: documentoValidation.value.mensaje || 'Este número de identificación no está disponible.',
+      life: 5000
+    })
+    return false
+  }
+
   return true
 }
 
@@ -323,6 +382,19 @@ const manejarEntradaDocumento = (event) => {
 
   // Validar después de formatear
   validarNumeroIdentificacion()
+
+  // Validar duplicados si el formato es válido y no es cliente existente
+  if (formularioLocal.value.numero_identificacion && formularioLocal.value.numero_identificacion.length >= 3) {
+    const isValidFormat = (formularioLocal.value.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(formularioLocal.value.numero_identificacion)) ||
+                         (formularioLocal.value.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(formularioLocal.value.numero_identificacion))
+
+    if (isValidFormat && !props.tieneClienteExistente) {
+      validarDocumentoUnico(formularioLocal.value.numero_identificacion)
+    } else {
+      documentoValidation.value.mensaje = ''
+      documentoValidation.value.isValid = true
+    }
+  }
 }
 
 // Validación en tiempo real del número de identificación
@@ -364,15 +436,33 @@ onMounted(() => {
 })
 
 // Watchers para validación en tiempo real
-watch(() => formularioLocal.value.numero_identificacion, () => {
-  if (formularioLocal.value.numero_identificacion && formularioLocal.value.tipo_documento) {
+watch(() => formularioLocal.value.numero_identificacion, (newValue) => {
+  if (newValue && formularioLocal.value.tipo_documento) {
     validarNumeroIdentificacion()
+
+    // Validar duplicados si el formato es válido y no es cliente existente
+    if (newValue.length >= 3) {
+      const isValidFormat = (formularioLocal.value.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(newValue)) ||
+                           (formularioLocal.value.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(newValue))
+
+      if (isValidFormat && !props.tieneClienteExistente) {
+        validarDocumentoUnico(newValue)
+      } else {
+        documentoValidation.value.mensaje = ''
+        documentoValidation.value.isValid = true
+      }
+    }
+  } else {
+    documentoValidation.value.mensaje = ''
+    documentoValidation.value.isValid = true
   }
 })
 
 watch(() => formularioLocal.value.tipo_documento, () => {
   // Limpiar número cuando cambia el tipo de documento
   formularioLocal.value.numero_identificacion = ''
+  documentoValidation.value.mensaje = ''
+  documentoValidation.value.isValid = true
 })
 
 // Watch para validación de fecha de nacimiento en tiempo real
@@ -440,6 +530,16 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
           :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
           :placeholder="formularioLocal.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
         />
+        <!-- Mensaje de validación en tiempo real del documento -->
+        <p
+          v-if="documentoValidation.mensaje && !tieneClienteExistente"
+          :class="[
+            'text-xs mt-1',
+            documentoValidation.isValid ? 'text-green-600' : 'text-red-600'
+          ]"
+        >
+          {{ documentoValidation.mensaje }}
+        </p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>

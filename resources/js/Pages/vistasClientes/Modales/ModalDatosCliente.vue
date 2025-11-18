@@ -66,6 +66,12 @@ const telefonoValidation = ref({
   mensaje: ''
 })
 
+// Estado de validación del documento
+const documentoValidation = ref({
+  isValid: true,
+  mensaje: ''
+})
+
 // Ya no necesitamos cargar tipos de documento
 onMounted(async () => {
   // Componente listo
@@ -157,6 +163,35 @@ const validarTelefonoUnico = async (telefono) => {
   }
 }
 
+// Validar que el documento no esté duplicado
+const validarDocumentoUnico = async (numeroIdentificacion) => {
+  if (!numeroIdentificacion || numeroIdentificacion.length < 3) return
+
+  try {
+    const response = await axios.post('/api/clientes/validar-documento', {
+      numero_identificacion: numeroIdentificacion
+    })
+
+    if (response.data.disponible) {
+      documentoValidation.value.mensaje = '✓ Número de identificación disponible'
+      documentoValidation.value.isValid = true
+    } else {
+      documentoValidation.value.isValid = false
+      documentoValidation.value.mensaje = response.data.message || 'Este número de identificación ya está registrado'
+    }
+  } catch (error) {
+    console.error('[ModalDatosCliente] Error validando documento:', error)
+    documentoValidation.value.isValid = false
+    if (error.response?.status === 403) {
+      documentoValidation.value.mensaje = 'No tienes permisos para validar este documento'
+    } else if (error.response?.status === 401) {
+      documentoValidation.value.mensaje = 'Error de autenticación'
+    } else {
+      documentoValidation.value.mensaje = 'Error al validar documento'
+    }
+  }
+}
+
 // Función para obtener fecha máxima de nacimiento (debe tener al menos 18 años)
 const getFechaMaximaNacimiento = () => {
   const fechaMaxima = new Date()
@@ -230,6 +265,11 @@ const validarFormulario = () => {
     erroresFormulario.telefono = 'El número de teléfono es requerido'
   } else if (telefonoValidation.value.isValid === false) {
     erroresFormulario.telefono = telefonoValidation.value.mensaje || 'Por favor, ingrese un número de teléfono válido'
+  }
+
+  // Validar documento duplicado
+  if (!props.tieneClienteExistente && formData.value.numero_identificacion && !documentoValidation.value.isValid) {
+    erroresFormulario.numero_identificacion = documentoValidation.value.mensaje || 'Este número de identificación no está disponible'
   }
 
   // Validar tipo de documento
@@ -319,15 +359,15 @@ const formatearFecha = (fecha) => {
 const formatearDUI = (valor) => {
   // Solo permitir números (eliminar TODO lo que no sea dígito)
   const soloNumeros = valor.replace(/[^0-9]/g, '')
-  
+
   // Limitar a 9 dígitos máximo
   const numerosLimitados = soloNumeros.substring(0, 9)
-  
+
   // Agregar guión automáticamente después del 8vo dígito
   if (numerosLimitados.length > 8) {
     return numerosLimitados.substring(0, 8) + '-' + numerosLimitados.substring(8)
   }
-  
+
   return numerosLimitados
 }
 
@@ -341,7 +381,7 @@ const formatearPasaporte = (valor) => {
 const manejarEntradaDocumento = (event) => {
   const valor = event.target.value
   let valorFormateado = ''
-  
+
   if (formData.value.tipo_documento === 'DUI') {
     valorFormateado = formatearDUI(valor)
     formData.value.numero_identificacion = valorFormateado
@@ -353,9 +393,22 @@ const manejarEntradaDocumento = (event) => {
     // Actualizar el valor del input inmediatamente
     event.target.value = valorFormateado
   }
-  
+
   // Validar después de formatear
   validarNumeroIdentificacion()
+
+  // Validar duplicados si el formato es válido
+  if (formData.value.numero_identificacion && formData.value.numero_identificacion.length >= 3) {
+    const isValidFormat = (formData.value.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(formData.value.numero_identificacion)) ||
+                         (formData.value.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(formData.value.numero_identificacion))
+
+    if (isValidFormat && !props.tieneClienteExistente) {
+      validarDocumentoUnico(formData.value.numero_identificacion)
+    } else {
+      documentoValidation.value.mensaje = ''
+      documentoValidation.value.isValid = true
+    }
+  }
 }
 
 // Validación en tiempo real del número de identificación
@@ -384,14 +437,32 @@ const validarNumeroIdentificacion = () => {
 }
 
 // Watchers para validación en tiempo real
-watch(() => formData.value.numero_identificacion, () => {
+watch(() => formData.value.numero_identificacion, (newValue) => {
   validarNumeroIdentificacion()
+
+  // Validar duplicados si el formato es válido
+  if (newValue && newValue.length >= 3) {
+    const isValidFormat = (formData.value.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(newValue)) ||
+                         (formData.value.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(newValue))
+
+    if (isValidFormat && !props.tieneClienteExistente) {
+      validarDocumentoUnico(newValue)
+    } else {
+      documentoValidation.value.mensaje = ''
+      documentoValidation.value.isValid = true
+    }
+  } else {
+    documentoValidation.value.mensaje = ''
+    documentoValidation.value.isValid = true
+  }
 })
 
 watch(() => formData.value.tipo_documento, () => {
   // Limpiar número cuando cambia el tipo de documento
   formData.value.numero_identificacion = ''
   delete errores.value.numero_identificacion
+  documentoValidation.value.mensaje = ''
+  documentoValidation.value.isValid = true
 })
 
 // Watchers para limpiar errores cuando se completan los campos
@@ -472,7 +543,18 @@ watch(() => formData.value.telefono, (newValue) => {
               :class="{ 'border-red-500': errores.numero_identificacion }"
               :placeholder="formData.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
             />
-            <small v-if="errores.numero_identificacion" class="text-red-500 text-xs">
+            <!-- Mensaje de validación en tiempo real del documento -->
+            <p
+              v-if="documentoValidation.mensaje && !props.tieneClienteExistente"
+              :class="[
+                'text-xs mt-1',
+                documentoValidation.isValid ? 'text-green-600' : 'text-red-600'
+              ]"
+            >
+              {{ documentoValidation.mensaje }}
+            </p>
+            <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
+            <small v-if="errores.numero_identificacion && !documentoValidation.mensaje" class="text-red-500 text-xs">
               {{ errores.numero_identificacion }}
             </small>
           </div>

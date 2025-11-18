@@ -75,6 +75,12 @@ const telefonoValidation = ref({
   mensaje: ''
 })
 
+// Estado de validación del documento
+const documentoValidation = ref({
+  isValid: true,
+  mensaje: ''
+})
+
 
 
 // Computed properties para hoteles filtrados por búsqueda
@@ -524,6 +530,17 @@ const crearReservaHotel = async () => {
       return
     }
 
+    // Validar documento duplicado
+    if (!tieneClienteExistente.value && reservaForm.value.cliente_data.numero_identificacion && !documentoValidation.value.isValid) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Documento no disponible',
+        detail: documentoValidation.value.mensaje || 'Este número de identificación no está disponible.',
+        life: 5000
+      })
+      return
+    }
+
     if (!reservaForm.value.cliente_data.telefono) {
       toast.add({
         severity: 'error',
@@ -723,6 +740,54 @@ const validarTelefonoUnico = async (telefono) => {
   }
 }
 
+// Validar que el documento no esté duplicado
+const validarDocumentoUnico = async (numeroIdentificacion) => {
+  if (!numeroIdentificacion || numeroIdentificacion.length < 3) return
+
+  try {
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || ''
+
+    const response = await fetch('/api/clientes/validar-documento', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': token,
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        numero_identificacion: numeroIdentificacion
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`Error ${response.status}: ${response.statusText}`)
+    }
+
+    const data = await response.json()
+
+    if (data.disponible) {
+      documentoValidation.value.mensaje = '✓ Número de identificación disponible'
+      documentoValidation.value.isValid = true
+    } else {
+      documentoValidation.value.isValid = false
+      documentoValidation.value.mensaje = data.message || 'Este número de identificación ya está registrado'
+    }
+  } catch (error) {
+    console.error('[Reservaciones] Error validando documento:', error)
+    documentoValidation.value.isValid = false
+    if (error.response?.status === 403) {
+      documentoValidation.value.mensaje = 'No tienes permisos para validar este documento'
+    } else if (error.response?.status === 401) {
+      documentoValidation.value.mensaje = 'Error de autenticación'
+    } else {
+      documentoValidation.value.mensaje = 'Error al validar documento'
+    }
+  }
+}
+
 // Función de validación del teléfono
 const onValidate = async (phoneObject) => {
   try {
@@ -809,6 +874,19 @@ const manejarEntradaDocumento = (event) => {
 
   // Validar después de formatear
   validarNumeroIdentificacion()
+
+  // Validar duplicados si el formato es válido y no es cliente existente
+  if (reservaForm.value.cliente_data.numero_identificacion && reservaForm.value.cliente_data.numero_identificacion.length >= 3) {
+    const isValidFormat = (reservaForm.value.cliente_data.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(reservaForm.value.cliente_data.numero_identificacion)) ||
+                         (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(reservaForm.value.cliente_data.numero_identificacion))
+
+    if (isValidFormat && !tieneClienteExistente.value) {
+      validarDocumentoUnico(reservaForm.value.cliente_data.numero_identificacion)
+    } else {
+      documentoValidation.value.mensaje = ''
+      documentoValidation.value.isValid = true
+    }
+  }
 }
 
 // Validación en tiempo real del número de identificación
@@ -845,15 +923,33 @@ const validarNumeroIdentificacion = () => {
 }
 
 // Watchers para validación en tiempo real del documento
-watch(() => reservaForm.value.cliente_data.numero_identificacion, () => {
-  if (reservaForm.value.cliente_data.numero_identificacion && reservaForm.value.cliente_data.tipo_documento) {
+watch(() => reservaForm.value.cliente_data.numero_identificacion, (newValue) => {
+  if (newValue && reservaForm.value.cliente_data.tipo_documento) {
     validarNumeroIdentificacion()
+
+    // Validar duplicados si el formato es válido y no es cliente existente
+    if (newValue.length >= 3) {
+      const isValidFormat = (reservaForm.value.cliente_data.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(newValue)) ||
+                           (reservaForm.value.cliente_data.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(newValue))
+
+      if (isValidFormat && !tieneClienteExistente.value) {
+        validarDocumentoUnico(newValue)
+      } else {
+        documentoValidation.value.mensaje = ''
+        documentoValidation.value.isValid = true
+      }
+    }
+  } else {
+    documentoValidation.value.mensaje = ''
+    documentoValidation.value.isValid = true
   }
 })
 
 watch(() => reservaForm.value.cliente_data.tipo_documento, () => {
   // Limpiar número cuando cambia el tipo de documento
   reservaForm.value.cliente_data.numero_identificacion = ''
+  documentoValidation.value.mensaje = ''
+  documentoValidation.value.isValid = true
 })
 
 // Watch para validación de fecha de nacimiento en tiempo real
@@ -1367,6 +1463,16 @@ watch(() => reservaForm.value.cliente_data.fecha_nacimiento, (nuevaFecha) => {
                   :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
                   :placeholder="reservaForm.cliente_data.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
                 />
+                <!-- Mensaje de validación en tiempo real del documento -->
+                <p
+                  v-if="documentoValidation.mensaje && !tieneClienteExistente"
+                  :class="[
+                    'text-xs mt-1',
+                    documentoValidation.isValid ? 'text-green-600' : 'text-red-600'
+                  ]"
+                >
+                  {{ documentoValidation.mensaje }}
+                </p>
               </div>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>

@@ -5,7 +5,7 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50">
+    <div class="min-h-screen bg-gray-50 flex flex-col">
         <!-- Header simple con botón de regreso -->
         <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -40,15 +40,15 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
             </div>
         </header>
 
-        <!-- Contenido principal -->
-        <main class="py-8">
+        <!-- Contenido principal con flex-grow para empujar el footer -->
+        <main class="flex-grow py-8">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
                 <slot />
             </div>
         </main>
 
         <!-- Footer simple -->
-        <footer class="bg-red-600 border-t border-gray-200 mt-16">
+        <footer class="bg-red-600 border-t border-gray-200">
             <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                 <div class="text-center text-white text-sm">
                     <p>&copy; {{ new Date().getFullYear() }} VASIR. Todos los derechos reservados.</p>

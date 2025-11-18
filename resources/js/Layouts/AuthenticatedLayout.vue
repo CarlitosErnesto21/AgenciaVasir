@@ -175,6 +175,7 @@ onBeforeUnmount(() => {
 
 <template>
     <div class="min-h-screen flex flex-col bg-white">
+        <Toast />
         <!-- Header principal profesional -->
         <header class="bg-gradient-to-r from-white/98 via-red-50/95 to-white/98 backdrop-blur-xl text-black shadow-lg fixed top-0 left-0 w-full z-50 border-b border-red-100/50 overflow-visible">
             <!-- Elementos decorativos de fondo -->
@@ -980,6 +981,15 @@ onBeforeUnmount(() => {
                 <main class="flex-1 overflow-auto bg-white">
                     <slot />
                 </main>
+
+                <!-- Footer -->
+                <footer class="bg-red-600 border-t border-gray-200">
+                    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <div class="text-center text-white text-sm">
+                            <p>&copy; {{ new Date().getFullYear() }} VASIR. Todos los derechos reservados.</p>
+                        </div>
+                    </div>
+                </footer>
             </div>
         </div>
     </div>

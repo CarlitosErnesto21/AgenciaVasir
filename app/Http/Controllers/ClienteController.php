@@ -118,20 +118,68 @@ class ClienteController extends Controller
     // Crear un nuevo cliente
     public function store(Request $request)
     {
+
         $validated = $request->validate([
-            'numero_identificacion' => 'required|string|max:25',
-            'fecha_nacimiento' => 'required|date',
-            'genero' => 'required|string|max:50', // Actualizado para permitir más opciones de género
+            // Número de identificación: requerido, formato según tipo_documento
+            'numero_identificacion' => [
+                'required',
+                'string',
+                'max:25',
+                function($attribute, $value, $fail) use ($request) {
+                    $tipo = $request->input('tipo_documento');
+                    if ($tipo === 'DUI') {
+                        if (!preg_match('/^\d{8}-\d{1}$/', $value)) {
+                            $fail('El DUI debe tener 9 dígitos (formato: 12345678-9)');
+                        }
+                    } elseif ($tipo === 'PASAPORTE') {
+                        if (!preg_match('/^[A-Z0-9]{6,9}$/', strtoupper($value))) {
+                            $fail('El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)');
+                        }
+                    }
+                }
+            ],
+            // Fecha de nacimiento: requerido, mayor de edad
+            'fecha_nacimiento' => [
+                'required',
+                'date',
+                function($attribute, $value, $fail) {
+                    $fecha = \Carbon\Carbon::parse($value);
+                    $edad = $fecha->age;
+                    if ($edad < 18) {
+                        $fail('Debe ser mayor de edad (18 años). Edad actual: ' . $edad . ' años');
+                    }
+                    if ($fecha->isFuture()) {
+                        $fail('La fecha de nacimiento no puede ser futura');
+                    }
+                }
+            ],
+            // Género: solo MASCULINO o FEMENINO
+            'genero' => 'required|in:MASCULINO,FEMENINO',
+            // Dirección: requerido, máximo 200
             'direccion' => 'required|string|max:200',
-            'telefono' => 'required|string|max:30',
-            'user_id' => 'sometimes|exists:users,id', // Opcional, se puede obtener del usuario autenticado
+            // Teléfono: requerido, internacional, máximo 30
+            'telefono' => [
+                'required',
+                'string',
+                'max:30',
+                'regex:/^\+[0-9\s\-()]+$/',
+            ],
+            'user_id' => 'sometimes|exists:users,id',
+            // Tipo de documento: solo DUI o PASAPORTE
             'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
 
         // Validar y normalizar número de identificación
         $validationResult = $this->validateDocumentNumber($validated);
         if (!$validationResult['success']) {
-            return response()->json($validationResult, 422);
+            // Estructura de error compatible con el frontend
+            return response()->json([
+                'success' => false,
+                'message' => $validationResult['message'],
+                'errors' => [
+                    'numero_identificacion' => $validationResult['errors']['numero_identificacion'] ?? [$validationResult['message']]
+                ]
+            ], 422);
         }
 
         // Validar edad mínima de 18 años
@@ -194,12 +242,47 @@ class ClienteController extends Controller
     // Actualizar un cliente existente
     public function update(Request $request, $id)
     {
+
         $validated = $request->validate([
-            'numero_identificacion' => 'required|string|max:25',
-            'fecha_nacimiento' => 'required|date',
+            'numero_identificacion' => [
+                'required',
+                'string',
+                'max:25',
+                function($attribute, $value, $fail) use ($request) {
+                    $tipo = $request->input('tipo_documento');
+                    if ($tipo === 'DUI') {
+                        if (!preg_match('/^\d{8}-\d{1}$/', $value)) {
+                            $fail('El DUI debe tener 9 dígitos (formato: 12345678-9)');
+                        }
+                    } elseif ($tipo === 'PASAPORTE') {
+                        if (!preg_match('/^[A-Z0-9]{6,9}$/', strtoupper($value))) {
+                            $fail('El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)');
+                        }
+                    }
+                }
+            ],
+            'fecha_nacimiento' => [
+                'required',
+                'date',
+                function($attribute, $value, $fail) {
+                    $fecha = \Carbon\Carbon::parse($value);
+                    $edad = $fecha->age;
+                    if ($edad < 18) {
+                        $fail('Debe ser mayor de edad (18 años). Edad actual: ' . $edad . ' años');
+                    }
+                    if ($fecha->isFuture()) {
+                        $fail('La fecha de nacimiento no puede ser futura');
+                    }
+                }
+            ],
             'genero' => 'required|in:MASCULINO,FEMENINO',
             'direccion' => 'required|string|max:200',
-            'telefono' => 'required|string|max:30',
+            'telefono' => [
+                'required',
+                'string',
+                'max:30',
+                'regex:/^\+[0-9\s\-()]+$/',
+            ],
             'user_id' => 'required|exists:users,id',
             'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
@@ -207,7 +290,14 @@ class ClienteController extends Controller
         // Validar y normalizar número de identificación
         $validationResult = $this->validateDocumentNumber($validated);
         if (!$validationResult['success']) {
-            return response()->json($validationResult, 422);
+            // Estructura de error compatible con el frontend
+            return response()->json([
+                'success' => false,
+                'message' => $validationResult['message'],
+                'errors' => [
+                    'numero_identificacion' => $validationResult['errors']['numero_identificacion'] ?? [$validationResult['message']]
+                ]
+            ], 422);
         }
 
         // Validar edad mínima de 18 años
@@ -366,11 +456,45 @@ class ClienteController extends Controller
         }
 
         $validated = $request->validate([
-            'numero_identificacion' => 'required|string|max:25',
-            'fecha_nacimiento' => 'required|date',
-            'genero' => 'required|string|max:50',
+            'numero_identificacion' => [
+                'required',
+                'string',
+                'max:25',
+                function($attribute, $value, $fail) use ($request) {
+                    $tipo = $request->input('tipo_documento');
+                    if ($tipo === 'DUI') {
+                        if (!preg_match('/^\d{8}-\d{1}$/', $value)) {
+                            $fail('El DUI debe tener 9 dígitos (formato: 12345678-9)');
+                        }
+                    } elseif ($tipo === 'PASAPORTE') {
+                        if (!preg_match('/^[A-Z0-9]{6,9}$/', strtoupper($value))) {
+                            $fail('El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)');
+                        }
+                    }
+                }
+            ],
+            'fecha_nacimiento' => [
+                'required',
+                'date',
+                function($attribute, $value, $fail) {
+                    $fecha = \Carbon\Carbon::parse($value);
+                    $edad = $fecha->age;
+                    if ($edad < 18) {
+                        $fail('Debe ser mayor de edad (18 años). Edad actual: ' . $edad . ' años');
+                    }
+                    if ($fecha->isFuture()) {
+                        $fail('La fecha de nacimiento no puede ser futura');
+                    }
+                }
+            ],
+            'genero' => 'required|in:MASCULINO,FEMENINO',
             'direccion' => 'required|string|max:200',
-            'telefono' => 'required|string|max:30',
+            'telefono' => [
+                'required',
+                'string',
+                'max:30',
+                'regex:/^\+[0-9\s\-()]+$/',
+            ],
             'tipo_documento' => 'required|in:DUI,PASAPORTE',
         ]);
 
@@ -499,6 +623,43 @@ class ClienteController extends Controller
             'success' => true,
             'disponible' => true,
             'message' => 'Teléfono disponible'
+        ]);
+    }
+
+    public function validarDocumento(Request $request)
+    {
+        $numeroIdentificacion = $request->input('numero_identificacion');
+        $usuarioId = $request->input('usuario_id'); // Para excluir en ediciones (perfil)
+
+        if (!$numeroIdentificacion) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Número de identificación requerido'
+            ], 400);
+        }
+
+        // Verificar en tabla clientes
+        $queryClientes = Cliente::where('numero_identificacion', $numeroIdentificacion);
+        if ($usuarioId) {
+            // Excluir por usuario_id en lugar de cliente_id para el perfil
+            $queryClientes->whereHas('user', function($query) use ($usuarioId) {
+                $query->where('id', '!=', $usuarioId);
+            });
+        }
+        $existeEnClientes = $queryClientes->first();
+
+        if ($existeEnClientes) {
+            return response()->json([
+                'success' => false,
+                'disponible' => false,
+                'message' => 'Este número de identificación ya está registrado por otro cliente.'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'disponible' => true,
+            'message' => 'Número de identificación disponible'
         ]);
     }
 }
