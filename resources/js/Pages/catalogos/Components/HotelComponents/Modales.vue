@@ -2,9 +2,8 @@
 import { computed, ref, watch, nextTick } from 'vue';
 import { Link } from '@inertiajs/vue3';
 import Dialog from 'primevue/dialog';
-import Carousel from 'primevue/carousel';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft, faCheck, faEye, faExclamationTriangle, faImages, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faClipboardList, faMapLocationDot } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faEye, faExclamationTriangle,  faPencil,  faSignOut, faSpinner, faTrashCan, faXmark, faClipboardList, faMapLocationDot } from '@fortawesome/free-solid-svg-icons';
 
 // Props
 const props = defineProps({
@@ -65,8 +64,6 @@ const props = defineProps({
 const emit = defineEmits([
     // Modal Más Acciones
     'update:visible',
-    'generateReport',
-    'archive',
     'viewDetails',
     // Modal Detalles del Hotel
     'update:detailsVisible',
@@ -142,16 +139,6 @@ const getEstadoHotel = (hotel) => {
     }
 };
 
-// Funciones para las acciones
-const generateReport = () => {
-    emit('update:visible', false);
-    emit('generateReport', props.hotel);
-};
-
-const archiveHotel = () => {
-    emit('update:visible', false);
-    emit('archive', props.hotel);
-};
 
 const viewDetails = () => {
     emit('update:visible', false);
@@ -254,33 +241,10 @@ defineOptions({
                     </div>
                 </button>
 
-                <!-- Botón para generar reporte -->
-                <button
-                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="generateReport"
-                >
-                    <FontAwesomeIcon :icon="faClipboardList" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Generar Reporte</div>
-                        <div class="text-xs opacity-90">Reporte de reservas y estadísticas</div>
-                    </div>
-                </button>
-
-                <!-- Botón para archivar -->
-                <button
-                    class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="archiveHotel"
-                >
-                    <FontAwesomeIcon :icon="faTrashCan" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Archivar Hotel</div>
-                        <div class="text-xs opacity-90">Mover a hoteles archivados</div>
-                    </div>
-                </button>
-
+                
                 <!-- Botón para ver reservas -->
                 <Link
-                    :href="route('reservas')"
+                    :href="route('reservasHoteles')"
                     class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="closeModal"
                 >
@@ -399,7 +363,7 @@ defineOptions({
             <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeDetailsModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" />
@@ -473,7 +437,7 @@ defineOptions({
             <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-white hover:bg-green-100 text-green-600 border border-green-600 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeCarouselModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" />

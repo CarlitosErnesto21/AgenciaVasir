@@ -893,8 +893,11 @@ const viewImages = (imagenesHotel) => {
 
 // ✅ Validaciones en tiempo real
 const validateNombre = () => {
-    if (hotel.value.nombre && hotel.value.nombre.length > 50) {
-        hotel.value.nombre = hotel.value.nombre.substring(0, 50);
+    if (hotel.value.nombre) {
+        hotel.value.nombre = hotel.value.nombre.toUpperCase();
+        if (hotel.value.nombre.length > 50) {
+            hotel.value.nombre = hotel.value.nombre.substring(0, 50);
+        }
     }
 };
 
@@ -905,8 +908,11 @@ const validateDireccion = () => {
 };
 
 const validateDescripcion = () => {
-    if (hotel.value.descripcion && hotel.value.descripcion.length > 255) {
-        hotel.value.descripcion = hotel.value.descripcion.substring(0, 255);
+    if (hotel.value.descripcion) {
+        hotel.value.descripcion = hotel.value.descripcion.toUpperCase();
+        if (hotel.value.descripcion.length > 255) {
+            hotel.value.descripcion = hotel.value.descripcion.substring(0, 255);
+        }
     }
 };
 
@@ -930,6 +936,53 @@ function onFilterDropdown(field, event) {
         event.value = sanitizeDropdownInput(event.value);
     }
 }
+
+// Funciones para manejar paste (pegar) y convertir a mayúsculas
+const handlePasteNombre = (event) => {
+    event.preventDefault();
+    const input = event.target;
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    const upperCaseText = pastedText.toUpperCase();
+    
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const currentText = hotel.value.nombre || '';
+    
+    // Insertar texto en la posición del cursor
+    const newText = currentText.substring(0, start) + upperCaseText + currentText.substring(end);
+    
+    // Respetar límite de caracteres
+    hotel.value.nombre = newText.length > 100 ? newText.substring(0, 100) : newText;
+    
+    // Restaurar posición del cursor después del texto pegado
+    setTimeout(() => {
+        const newPosition = start + upperCaseText.length;
+        input.setSelectionRange(newPosition, newPosition);
+    }, 0);
+};
+
+const handlePasteDescripcion = (event) => {
+    event.preventDefault();
+    const input = event.target;
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+    const upperCaseText = pastedText.toUpperCase();
+    
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const currentText = hotel.value.descripcion || '';
+    
+    // Insertar texto en la posición del cursor
+    const newText = currentText.substring(0, start) + upperCaseText + currentText.substring(end);
+    
+    // Respetar límite de caracteres
+    hotel.value.descripcion = newText.length > 500 ? newText.substring(0, 500) : newText;
+    
+    // Restaurar posición del cursor después del texto pegado
+    setTimeout(() => {
+        const newPosition = start + upperCaseText.length;
+        input.setSelectionRange(newPosition, newPosition);
+    }, 0);
+};
 </script>
 
 <template>
@@ -1178,9 +1231,10 @@ function onFilterDropdown(field, event) {
                                 name="nombre"
                                 :maxlength="100"
                                 :class="{'p-invalid': submitted && (!hotel.nombre || hotel.nombre.length < 3 || hotel.nombre.length > 100)}"
-                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                placeholder="Hotel Paradise, etc."
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md uppercase"
+                                placeholder="HOTEL PARADISE, ETC."
                                 @input="validateNombre"
+                                @paste="handlePasteNombre"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="hotel.nombre && hotel.nombre.length < 3">
@@ -1236,9 +1290,10 @@ function onFilterDropdown(field, event) {
                                 :maxlength="500"
                                 rows="4"
                                 :class="{'p-invalid': submitted && (!hotel.descripcion || hotel.descripcion.length < 10 || hotel.descripcion.length > 500)}"
-                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md uppercase"
                                 @input="validateDescripcion"
-                                placeholder="Hotel de lujo con todas las comodidades, etc."
+                                @paste="handlePasteDescripcion"
+                                placeholder="HOTEL DE LUJO CON TODAS LAS COMODIDADES, ETC."
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="hotel.descripcion && hotel.descripcion.length < 10">
@@ -1555,4 +1610,10 @@ function onFilterDropdown(field, event) {
   animation: spin 1s linear infinite;
 }
 /* Fin de la animación para el spinner de loading */
+
+/* Estilo para inputs en mayúsculas */
+.uppercase {
+  text-transform: uppercase !important;
+}
+/* Fin del estilo para inputs en mayúsculas */
 </style>

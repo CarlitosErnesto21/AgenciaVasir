@@ -44,6 +44,10 @@ class HotelController extends Controller
             'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
+        // Convertir nombre y descripción a mayúsculas
+        $validated['nombre'] = strtoupper($validated['nombre']);
+        $validated['descripcion'] = strtoupper($validated['descripcion']);
+
         $hotel = Hotel::create($validated);
 
         if ($request->hasFile('imagenes')) {
@@ -81,6 +85,10 @@ class HotelController extends Controller
             'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'removed_images' => 'nullable|array',
         ]);
+
+        // Convertir nombre y descripción a mayúsculas
+        $validated['nombre'] = strtoupper($validated['nombre']);
+        $validated['descripcion'] = strtoupper($validated['descripcion']);
 
         // Validar límite total de imágenes (existentes + nuevas - eliminadas)
         $imagenesExistentes = $hotele->imagenes()->count();
