@@ -8,7 +8,8 @@ import {
   faCheck, faXmark, faCalendarDays, faClockRotateLeft,
   faUsers, faDollarSign,
   faCalendarCheck, faInfoCircle,
-  faSpinner, faListDots, faRefresh
+  faSpinner, faListDots, faRefresh,
+  faHandPointUp
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 import ReservaModales from './Components/ReservasComponents/Modales.vue'
@@ -914,7 +915,8 @@ onMounted(() => {
               📊 Gestiona las reservas organizadas por su estado actual
             </p>
             <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium">
-              👆 Haz clic en cualquier fila para ver los detalles de la reserva
+                <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                Haz clic en cualquier fila para ver los detalles.
             </p>
           </div>
         </div>

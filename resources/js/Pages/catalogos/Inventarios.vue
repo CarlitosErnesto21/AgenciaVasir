@@ -72,6 +72,10 @@
               📊 Vista de solo lectura - Para gestionar stock, ve a
               <span class="text-blue-600 font-medium">Productos > Más Acciones > Actualizar Stock</span>
             </p>
+            <p class="text-blue-600 text-sm text-center sm:text-start mt-1">
+                <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                Haz clic en cualquier fila para ver los detalles.
+            </p>
           </div>
         </div>
 
@@ -463,7 +467,8 @@ import {
   faPencil,
   faEye,
   faHistory,
-  faTimes
+  faTimes,
+  faHandPointUp
 } from "@fortawesome/free-solid-svg-icons"
 import axios from 'axios'
 

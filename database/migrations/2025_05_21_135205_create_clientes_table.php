@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('clientes', function (Blueprint $table) {
             $table->id();
-            $table->string('numero_identificacion', 25);
+            $table->string('numero_identificacion', 25)->unique();
             $table->date('fecha_nacimiento');
             $table->enum('genero', ['MASCULINO', 'FEMENINO']);
             $table->enum('tipo_documento', ['DUI', 'PASAPORTE']);

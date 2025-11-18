@@ -2,10 +2,8 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { VueTelInput } from 'vue-tel-input'
 import 'vue-tel-input/vue-tel-input.css'
-import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
-import Select from 'primevue/select'
-import Textarea from 'primevue/textarea'
+import { router } from '@inertiajs/vue3'
 
 // Props del componente
 const props = defineProps({
@@ -38,7 +36,22 @@ const telefonoValidation = ref({
   isValid: false,
   country: null,
   formattedNumber: '',
-  mensaje: ''
+  mensaje: '',
+  mostrarMensaje: false
+})
+
+// Estado de validación del documento
+const documentoValidation = ref({
+  isValid: false,
+  mensaje: '',
+  mostrarMensaje: false
+})
+
+// Estado de validación de formato en tiempo real
+const formatoValidation = ref({
+  isValid: true,
+  mensaje: '',
+  mostrarMensaje: false
 })
 
 // Computed para el formulario reactivo
@@ -55,40 +68,27 @@ const formularioLocal = computed({
 
 // Función de validación del teléfono
 const onValidate = async (phoneObject) => {
+  // Evitar múltiples validaciones rápidas
+  if (!phoneObject || typeof phoneObject !== 'object') return
+
   try {
-    if (phoneObject && typeof phoneObject === 'object') {
-      telefonoValidation.value.isValid = phoneObject.valid === true
-      telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
-      telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
+    telefonoValidation.value.isValid = phoneObject.valid === true
+    telefonoValidation.value.country = { name: phoneObject.country, code: phoneObject.countryCode }
+    telefonoValidation.value.formattedNumber = phoneObject.formatted || ''
 
-      // CLAVE: Actualizar el modelo inmediatamente como hace EmpleadoController
-      if (phoneObject.valid === true && phoneObject.formatted) {
-        formularioLocal.value.telefono = phoneObject.formatted
-      }
-
-      // Si los datos están precargados, no validar duplicados (ya son del mismo cliente)
-      if (props.tieneClienteExistente) {
-        if (phoneObject.valid === true) {
-          telefonoValidation.value.mensaje = 'Número válido (guardado previamente)'
-        } else if (formularioLocal.value.telefono && phoneObject.valid === false) {
-          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
-        } else {
-          telefonoValidation.value.mensaje = ''
-        }
+    // Si los datos están precargados, no validar duplicados
+    if (props.tieneClienteExistente) {
+      telefonoValidation.value.mensaje = phoneObject.valid ? 'Número válido (guardado previamente)' : ''
+    } else {
+      // Solo validar duplicados si el número es válido y completo
+      if (phoneObject.valid === true) {
+        await validarTelefonoUnico(phoneObject.formatted)
       } else {
-        // Solo validar duplicados para nuevos clientes
-        if (formularioLocal.value.telefono && phoneObject.valid === false) {
-          telefonoValidation.value.mensaje = 'Número de teléfono inválido para ' + phoneObject.country
-        } else if (phoneObject.valid === true) {
-          // Ahora validar con el teléfono ya actualizado en el modelo
-          await validarTelefonoUnico(formularioLocal.value.telefono)
-        } else {
-          telefonoValidation.value.mensaje = ''
-        }
+        telefonoValidation.value.mensaje = ''
       }
     }
   } catch (error) {
-    console.error('[FormularioDatosPersonales] Error en validación:', error)
+    console.error('Error en validación:', error)
     telefonoValidation.value.mensaje = 'Error en validación'
   }
 }
@@ -124,6 +124,77 @@ const validarTelefonoUnico = async (telefono) => {
   } catch (error) {
     console.error('[FormularioDatosPersonales] Error validando teléfono:', error)
     telefonoValidation.value.mensaje = 'Error al validar teléfono'
+  }
+}
+
+// Función para validar formato de documento en tiempo real (sin toasts)
+const validarFormatoDocumento = (numeroIdentificacion, tipoDocumento) => {
+  if (!numeroIdentificacion || !tipoDocumento) {
+    formatoValidation.value.mensaje = ''
+    formatoValidation.value.isValid = true
+    return
+  }
+
+  if (tipoDocumento === 'DUI') {
+    const duiRegex = /^\d{8}-\d{1}$/
+    if (!duiRegex.test(numeroIdentificacion)) {
+      formatoValidation.value.mensaje = 'El DUI debe tener 9 dígitos (formato: 12345678-9)'
+      formatoValidation.value.isValid = false
+    } else {
+      formatoValidation.value.mensaje = ''
+      formatoValidation.value.isValid = true
+    }
+  } else if (tipoDocumento === 'PASAPORTE') {
+    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
+    if (!pasaporteRegex.test(numeroIdentificacion)) {
+      formatoValidation.value.mensaje = 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)'
+      formatoValidation.value.isValid = false
+    } else {
+      formatoValidation.value.mensaje = ''
+      formatoValidation.value.isValid = true
+    }
+  }
+}
+
+// Validar que el documento no esté duplicado
+const validarDocumentoUnico = async (numeroIdentificacion) => {
+  if (!numeroIdentificacion || numeroIdentificacion.length < 3) return
+
+  try {
+    const response = await fetch('/api/clientes/validar-documento', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem('auth_token') || ''}`,
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        numero_identificacion: numeroIdentificacion
+      })
+    })
+
+    const data = await response.json()
+
+    if (data.disponible) {
+      documentoValidation.value.mensaje = '✓ Número de identificación disponible'
+      documentoValidation.value.isValid = true
+    } else {
+      documentoValidation.value.isValid = false
+      documentoValidation.value.mensaje = data.message || 'Este número de identificación ya está registrado'
+    }
+  } catch (error) {
+    console.error('[FormularioDatosPersonales] Error validando documento:', error)
+    documentoValidation.value.isValid = false
+    if (error.response?.status === 403) {
+      documentoValidation.value.mensaje = 'No tienes permisos para validar este documento'
+    } else if (error.response?.status === 401) {
+      documentoValidation.value.mensaje = 'Error de autenticación'
+    } else {
+      documentoValidation.value.mensaje = 'Error al validar documento'
+    }
   }
 }
 
@@ -262,7 +333,23 @@ const validateForm = () => {
     return false
   }
 
+  // Validar documento duplicado
+  if (!props.tieneClienteExistente && formularioLocal.value.numero_identificacion && !documentoValidation.value.isValid) {
+    emit('mostrar-toast', {
+      severity: 'warn',
+      summary: 'Documento no disponible',
+      detail: documentoValidation.value.mensaje || 'Este número de identificación no está disponible.',
+      life: 5000
+    })
+    return false
+  }
+
   return true
+}
+
+// Función para navegar al perfil del usuario
+const navegarAlPerfil = () => {
+  router.visit('/profile')
 }
 
 // Exponer los tipos de documentos y funciones al componente padre
@@ -323,39 +410,35 @@ const manejarEntradaDocumento = (event) => {
 
   // Validar después de formatear
   validarNumeroIdentificacion()
+
+  // Validar duplicados si el formato es válido y no es cliente existente
+  if (formularioLocal.value.numero_identificacion && formularioLocal.value.numero_identificacion.length >= 3) {
+    const isValidFormat = (formularioLocal.value.tipo_documento === 'DUI' && /^\d{8}-\d{1}$/.test(formularioLocal.value.numero_identificacion)) ||
+                         (formularioLocal.value.tipo_documento === 'PASAPORTE' && /^[A-Z0-9]{6,9}$/.test(formularioLocal.value.numero_identificacion))
+
+    if (isValidFormat && !props.tieneClienteExistente) {
+      validarDocumentoUnico(formularioLocal.value.numero_identificacion)
+    } else {
+      documentoValidation.value.mensaje = ''
+      documentoValidation.value.isValid = true
+    }
+  }
 }
 
-// Validación en tiempo real del número de identificación
+// Validación en tiempo real del número de identificación (sin toasts, solo para validación de envío)
 const validarNumeroIdentificacion = () => {
   if (!formularioLocal.value.numero_identificacion) {
     return true
   }
 
-  if (formularioLocal.value.tipo_documento === 'DUI') {
-    const duiRegex = /^\d{8}-\d{1}$/
-    if (!duiRegex.test(formularioLocal.value.numero_identificacion)) {
-      emit('mostrar-toast', {
-        severity: 'error',
-        summary: 'Formato incorrecto',
-        detail: 'El DUI debe tener 9 dígitos (formato: 12345678-9)',
-        life: 4000
-      })
-      return false
-    }
-  } else if (formularioLocal.value.tipo_documento === 'PASAPORTE') {
-    // Validar formato: solo A-Z y 0-9, entre 6 y 9 caracteres
-    const pasaporteRegex = /^[A-Z0-9]{6,9}$/
-    if (!pasaporteRegex.test(formularioLocal.value.numero_identificacion)) {
-      emit('mostrar-toast', {
-        severity: 'error',
-        summary: 'Formato incorrecto',
-        detail: 'El PASAPORTE debe tener entre 6 y 9 caracteres (solo letras mayúsculas y números)',
-        life: 4000
-      })
-      return false
-    }
-  }
-  return true
+  // Usar la validación silenciosa que ya actualiza formatoValidation
+  validarFormatoDocumento(
+    formularioLocal.value.numero_identificacion,
+    formularioLocal.value.tipo_documento
+  )
+
+  // Retornar el resultado sin mostrar toasts (solo para validación de envío)
+  return formatoValidation.value.isValid
 }
 
 // Hook onMounted para cargar datos iniciales
@@ -364,15 +447,38 @@ onMounted(() => {
 })
 
 // Watchers para validación en tiempo real
-watch(() => formularioLocal.value.numero_identificacion, () => {
-  if (formularioLocal.value.numero_identificacion && formularioLocal.value.tipo_documento) {
+watch(() => formularioLocal.value.numero_identificacion, (newValue) => {
+  if (newValue && formularioLocal.value.tipo_documento) {
     validarNumeroIdentificacion()
+
+    // Validar formato en tiempo real (sin toasts)
+    validarFormatoDocumento(newValue, formularioLocal.value.tipo_documento)
+
+    // Validar duplicados si el formato es válido y no es cliente existente
+    if (newValue.length >= 3 && formatoValidation.value.isValid) {
+      if (!props.tieneClienteExistente) {
+        validarDocumentoUnico(newValue)
+      } else {
+        documentoValidation.value.mensaje = ''
+        documentoValidation.value.isValid = true
+      }
+    }
+  } else {
+    documentoValidation.value.mensaje = ''
+    documentoValidation.value.isValid = true
   }
 })
 
 watch(() => formularioLocal.value.tipo_documento, () => {
-  // Limpiar número cuando cambia el tipo de documento
-  formularioLocal.value.numero_identificacion = ''
+  // Solo limpiar número cuando cambia el tipo de documento si NO tiene datos precargados
+  // Esto evita que se borren los datos cuando se cargan desde el cliente existente
+  if (!props.tieneClienteExistente) {
+    formularioLocal.value.numero_identificacion = ''
+  }
+  documentoValidation.value.mensaje = ''
+  documentoValidation.value.isValid = true
+  formatoValidation.value.mensaje = ''
+  formatoValidation.value.isValid = true
 })
 
 // Watch para validación de fecha de nacimiento en tiempo real
@@ -417,30 +523,29 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
     <!-- Mensaje informativo para datos precargados -->
     <div v-if="tieneClienteExistente" class="flex items-center justify-between mb-3">
       <h4 class="font-semibold text-gray-800">Información Personal</h4>
-      <div class="flex items-center text-green-600 text-sm">
-        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-        </svg>
-        <span>Datos precargados</span>
+      <div class="flex items-center gap-3">
+        <div class="flex items-center text-green-600 text-sm">
+          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+          </svg>
+          <span>Datos precargados</span>
+        </div>
+        <button
+          @click="navegarAlPerfil"
+          type="button"
+          class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-blue-50 hover:bg-blue-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+          title="Editar mis datos personales"
+        >
+          <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+          </svg>
+          Editar datos
+        </button>
       </div>
     </div>
 
     <!-- Formulario de información personal -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
-        <input
-          :value="formularioLocal.numero_identificacion"
-          @input="manejarEntradaDocumento"
-          type="text"
-          required
-          :maxlength="formularioLocal.tipo_documento === 'DUI' ? 10 : 9"
-          :disabled="tieneClienteExistente"
-          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
-          :placeholder="formularioLocal.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
-        />
-      </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
         <select
@@ -454,6 +559,42 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
           <option value="PASAPORTE">PASAPORTE</option>
         </select>
       </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+        <input
+          :value="formularioLocal.numero_identificacion"
+          @input="manejarEntradaDocumento"
+          type="text"
+          required
+          :maxlength="formularioLocal.tipo_documento === 'DUI' ? 10 : 9"
+          :disabled="tieneClienteExistente"
+          class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          :class="{ 'bg-gray-100 cursor-not-allowed': tieneClienteExistente }"
+          :placeholder="formularioLocal.tipo_documento === 'DUI' ? 'Ingrese 9 dígitos (ej: 123456789)' : 'Ingrese su PASAPORTE (ej: A1B2C3D4)'"
+        />
+        <!-- Mensaje de validación de formato en tiempo real -->
+        <small
+          v-if="formatoValidation.mensaje && !tieneClienteExistente"
+          :class="[
+            'block mt-1',
+            formatoValidation.isValid ? 'text-green-600' : 'text-red-500'
+          ]"
+        >
+          {{ formatoValidation.mensaje }}
+        </small>
+
+        <!-- Mensaje de validación de duplicados -->
+        <small
+          v-if="documentoValidation.mensaje && !tieneClienteExistente"
+          :class="[
+            'block mt-1',
+            documentoValidation.isValid ? 'text-green-600' : 'text-red-500'
+          ]"
+        >
+          {{ documentoValidation.mensaje }}
+        </small>
+      </div>
+
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">

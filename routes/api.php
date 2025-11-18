@@ -59,6 +59,9 @@ Route::middleware('auth:sanctum')->get('/cliente-datos', [ClienteController::cla
 // Ruta para validar teléfono único
 Route::middleware('auth:sanctum')->post('/clientes/validar-telefono', [ClienteController::class, 'validarTelefono']);
 
+// Ruta para validar documento único
+Route::middleware('auth:sanctum')->post('/clientes/validar-documento', [ClienteController::class, 'validarDocumento']);
+
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
 // ═══════════════════════════════════════════════════════════
@@ -66,8 +69,7 @@ Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
 Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
 Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLinkFromCart']);
 
-// Ruta de prueba para verificar imágenes de productos (temporal)
-Route::get('/debug/product-images', [PagoController::class, 'testProductImages']);
+
 
 // Webhook de Wompi (debe ser público para que Wompi pueda llamarlo)
 Route::post('/wompi/webhook', [PagoController::class, 'webhook']);

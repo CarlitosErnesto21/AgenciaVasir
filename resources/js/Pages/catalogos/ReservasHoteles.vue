@@ -9,7 +9,8 @@ import {
   faCheck, faXmark, faCalendarDays, faClockRotateLeft,
   faUsers, faHotel, faBed, faCalendarCheck, faInfoCircle,
   faSpinner, faRefresh, faFilter, faDollarSign, faListDots,
-  faBars, faTimesCircle
+  faBars, faTimesCircle,
+  faHandPointUp
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 import Card from 'primevue/card'
@@ -220,12 +221,13 @@ onMounted(() => {
       <!-- Sección de contenido principal -->
       <div class="bg-white rounded-lg shadow-md">
         <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-          <div>
-            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Reservas de Hoteles</h3>
-            <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium">
-              👆 Haz clic en cualquier fila para ver los detalles de la reserva
-            </p>
-          </div>
+            <div class="w-full">
+                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Reservas</h3>
+                <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                    <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                    Haz clic en cualquier fila para ver los detalles.
+                </p>
+            </div>
           <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
             <button
               @click="recargarDatos"

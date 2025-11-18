@@ -40,11 +40,9 @@ return [
         'client_id' => env('WOMPI_CLIENT_ID'),
         'client_secret' => env('WOMPI_CLIENT_SECRET'),
         'sandbox' => env('WOMPI_SANDBOX', true),
-        'auth_url' => 'https://id.wompi.sv/connect/token',
-        'base_url' => env('WOMPI_SANDBOX', true)
-            ? 'https://api.wompi.sv'
-            : 'https://api.wompi.sv',
-        'audience' => 'wompi_api',
+        'auth_url' => env('WOMPI_AUTH_URL', 'https://id.wompi.sv/connect/token'),
+        'base_url' => env('WOMPI_BASE_URL', 'https://api.wompi.sv'),
+        'audience' => env('WOMPI_AUDIENCE', 'wompi_api'),
 
         // Claves antiguas para compatibilidad (por si cambias a Wompi Colombia)
         'public_key' => env('WOMPI_PUBLIC_KEY'),

@@ -515,10 +515,10 @@ const reservarTour = () => {
   } else {
     // Verificar roles para restricción
     if (user.value.roles && Array.isArray(user.value.roles)) {
-      const tieneRolRestringido = user.value.roles.some(role => 
+      const tieneRolRestringido = user.value.roles.some(role =>
         role.name === 'Administrador' || role.name === 'Empleado'
       )
-      
+
       if (tieneRolRestringido) {
         toast.add({
           severity: 'warn',
@@ -529,7 +529,7 @@ const reservarTour = () => {
         return
       }
     }
-    
+
     showReservaDialog.value = true
   }
 }
@@ -589,7 +589,6 @@ const refrescarTour = async () => {
 // Lifecycle hooks
 onMounted(async () => {
   await obtenerTour()
-  verificarReservaPendiente()
   iniciarCarrusel()
 })
 

@@ -46,7 +46,13 @@
 
       <div class="bg-white rounded-lg shadow-md">
         <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
-          <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Ventas</h3>
+          <div class="w-full">
+                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Ventas</h3>
+                <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                    <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                    Haz clic en cualquier fila para ver los detalles.
+                </p>
+            </div>
         </div>
         <DataTable
           :value="ventasFiltradas"
@@ -568,7 +574,8 @@ import {
   faDollarSign,
   faBox,
   faRefresh,
-  faEnvelope
+  faEnvelope,
+  faHandPointUp
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';

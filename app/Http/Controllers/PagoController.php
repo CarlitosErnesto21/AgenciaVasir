@@ -944,8 +944,22 @@ class PagoController extends Controller
                 ]);
             }
 
+            Log::info('🔗 PagoController - Datos antes de enviar a Wompi', [
+                'validated_amount' => $validated['amount'],
+                'amount_in_cents' => $paymentData['amount_in_cents'],
+                'amount_final' => $paymentData['amount_in_cents'] / 100,
+                'product_name' => $paymentData['product_name'],
+                'reference' => $paymentData['reference'],
+                'full_payment_data' => $paymentData
+            ]);
+
             // ✅ CREAR ENLACE DE PAGO CON WOMPI
             $result = $this->wompiService->createPaymentLink($paymentData);
+
+            Log::info('🔗 PagoController - Resultado de Wompi', [
+                'success' => $result['success'],
+                'result' => $result
+            ]);
 
             if (!$result['success']) {
                 Log::error('❌ Error creando enlace de pago con Wompi', [
