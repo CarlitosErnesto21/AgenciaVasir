@@ -213,6 +213,22 @@ watch(() => form.numero_identificacion, (newValue) => {
     }
 });
 
+// Watcher para validar nombre en tiempo real
+watch(() => form.name, async (newValue) => {
+    if (newValue && newValue.trim().length >= 3) {
+        // Verificar formato válido antes de validar duplicados
+        if (nameRegex.test(newValue.trim())) {
+            await validarNombreUnico(newValue.trim());
+        } else {
+            nombreValidation.value.mensaje = '';
+            nombreValidation.value.isValid = true;
+        }
+    } else {
+        nombreValidation.value.mensaje = '';
+        nombreValidation.value.isValid = true;
+    }
+});
+
 // Watchers para limpiar errores cuando se completan los campos
 watch(() => form.fecha_nacimiento, (newValue) => {
     if (newValue) {
@@ -283,6 +299,11 @@ const telefonoValidation = ref({
 });
 
 const documentoValidation = ref({
+    isValid: true,
+    mensaje: ''
+});
+
+const nombreValidation = ref({
     isValid: true,
     mensaje: ''
 });
@@ -368,6 +389,46 @@ const onValidate = async (phoneObject) => {
     } catch (error) {
         console.error('[UpdateProfile] Error en validación:', error);
         telefonoValidation.value.mensaje = 'Error en validación';
+    }
+};
+
+// Validar que el nombre no esté duplicado
+const validarNombreUnico = async (nombre) => {
+    if (!nombre || nombre.trim().length < 3) return;
+
+    try {
+        // Verificar si es el mismo nombre que ya tenía el usuario
+        const nombreActual = user.name;
+        const esMismoNombre = nombre.trim() === nombreActual;
+
+        if (esMismoNombre) {
+            nombreValidation.value.mensaje = '✓ Este es tu nombre actual';
+            nombreValidation.value.isValid = true;
+            return;
+        }
+
+        const response = await axios.post('/api/users/validar-nombre', {
+            name: nombre.trim(),
+            usuario_id: user.id // Excluir el usuario actual
+        });
+
+        if (response.data.disponible) {
+            nombreValidation.value.mensaje = '✓ Nombre disponible';
+            nombreValidation.value.isValid = true;
+        } else {
+            nombreValidation.value.isValid = false;
+            nombreValidation.value.mensaje = response.data.message || 'Este nombre ya está registrado por otro usuario';
+        }
+    } catch (error) {
+        console.error('[UpdateProfile] Error validando nombre:', error);
+        nombreValidation.value.isValid = false;
+        if (error.response?.status === 403) {
+            nombreValidation.value.mensaje = 'No tienes permisos para validar este nombre';
+        } else if (error.response?.status === 401) {
+            nombreValidation.value.mensaje = 'Error de autenticación';
+        } else {
+            nombreValidation.value.mensaje = 'Error al validar nombre';
+        }
     }
 };
 
@@ -508,6 +569,17 @@ const submitForm = () => {
             summary: 'Error en Nombre',
             detail: nameErrors.value[0],
             life: 4000
+        });
+        return;
+    }
+
+    // Verificar si el nombre no está validado por duplicados
+    if (form.name && !nombreValidation.value.isValid) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Nombre no disponible',
+            detail: nombreValidation.value.mensaje || 'Este nombre no está disponible. Por favor, use un nombre diferente.',
+            life: 5000
         });
         return;
     }
@@ -663,7 +735,18 @@ watch(
                             </svg>
                         </div>
                     </div>
-                    <InputError class="text-red-600 text-sm" :message="form.errors.name" />
+                    <!-- Mensaje de validación en tiempo real del nombre -->
+                    <small
+                        v-if="nombreValidation.mensaje"
+                        :class="[
+                            'block mt-1',
+                            nombreValidation.isValid ? 'text-green-600' : 'text-red-500'
+                        ]"
+                    >
+                        {{ nombreValidation.mensaje }}
+                    </small>
+                    <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
+                    <InputError v-if="form.errors.name && !nombreValidation.mensaje" class="text-red-600 text-sm" :message="form.errors.name" />
                 </div>
 
                 <!-- Campo Email -->
