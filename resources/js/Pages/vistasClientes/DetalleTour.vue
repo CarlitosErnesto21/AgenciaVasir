@@ -279,10 +279,14 @@
                     Información importante
                   </h3>
                   <ul class="text-blue-800 space-y-1 text-xs sm:text-sm">
-                    <li>• Confirmar disponibilidad antes de realizar el pago</li>
-                    <li>• Los precios pueden variar según la temporada</li>
-                    <li>• Se requiere documento de identidad vigente</li>
-                    <li>• Cancelaciones con 48 horas de anticipación</li>
+                    <li>• Somos una marca registrada ®️</li>
+                    <li>• Somos una Agencia respaldada por el MITUR y CORSATUR.</li>
+                    <li>• Poseemos Sello de Verificación de Protocolos de Bioseguridad. </li>
+                    <li>• Tours sujetos a completar cupo mínimo. </li>
+                    <li>• Reservás tu cupo con el 50% y el resto el día del tour.</li>
+                    <li>• Si por cualquier motivo como organizadores cancelamos el tour, te devolvemos el total de tu dinero.</li>
+                    <li>• Si no asistís en la fecha y hora indicada no hay devolución de tu reserva.</li>
+                    <li>• Para cancelaciones con menos de 72 horas antes del tour, no hay devolución de tu reserva.</li>
                   </ul>
                 </div>
               </div>
