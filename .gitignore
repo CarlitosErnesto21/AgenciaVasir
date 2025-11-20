@@ -6,7 +6,6 @@
 /storage/pail
 /vendor
 .env
-vite.config.js
 Procfile
 .env.backup
 .env.production
