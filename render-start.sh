@@ -15,8 +15,12 @@ done
 echo "✅ Base de datos conectada!"
 
 # Ejecutar migraciones (fresh para recrear la base de datos completamente)
-echo "🔄 Recreando base de datos con migraciones frescas..."
-php artisan migrate:fresh --force --seed
+# echo "🔄 Recreando base de datos con migraciones frescas..."
+# php artisan migrate:fresh --force --seed
+
+# Ejecutar migraciones (solo migrate, no fresh en producción)
+echo "🔄 Ejecutando migraciones..."
+php artisan migrate --force
 
 # Configurar sistema de almacenamiento
 echo "📁 Configurando almacenamiento..."
@@ -38,6 +42,11 @@ if [ ! -L public/storage ]; then
 fi
 
 echo "✅ Aplicación lista!"
+
+# PENDIENTE PARA BORRAR LUEGO
+# Iniciar worker de queue en background para emails
+echo "📧 Iniciando worker de cola de emails..."
+php artisan queue:work --daemon --sleep=3 --tries=3 &
 
 # Iniciar Apache
 exec apache2-foreground
