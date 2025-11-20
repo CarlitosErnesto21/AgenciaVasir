@@ -116,18 +116,14 @@
 
                 <div class="mb-4 sm:mb-6">
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-gradient-to-r from-red-600 to-red-700 text-white shadow-xl border border-white/20 transform hover:scale-105 transition-all duration-300" style="box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 0 2px white;">
-                    {{ producto.categoria || 'Sin categoría' }}
+                    <span>{{ producto.categoria || 'Sin categoría' }}</span>
                   </span>
                 </div>
 
                 <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div class="flex items-start text-gray-600 text-sm sm:text-base">
-                    <i class="pi pi-tag mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
-                    <span><strong>Categoría:</strong> {{ producto.categoria || 'Sin categoría' }}</span>
-                  </div>
-                  <div class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-box mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
-                    <span><strong>Stock disponible:</strong>
+                    <span><strong>Stock disponible:&nbsp;</strong>
                       <span :class="obtenerClaseStock(producto)">
                         {{ producto.stock_actual || 0 }} unidades
                       </span>
@@ -240,7 +236,6 @@
                   </h3>
                   <ul class="text-yellow-800 space-y-1 text-xs sm:text-sm">
                     <li>• Verificar disponibilidad antes de realizar el pedido</li>
-                    <li>• Los precios pueden variar según la disponibilidad</li>
                     <li>• Producto sujeto a stock disponible</li>
                     <li>• Para pedidos especiales, contactar directamente</li>
                   </ul>
