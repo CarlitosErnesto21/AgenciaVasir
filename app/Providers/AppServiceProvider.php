@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
+use Carbon\Carbon;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +22,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Configurar idioma español para Carbon (fechas)
+        Carbon::setLocale('es');
+        
         // Configurar longitud por defecto de las cadenas para compatibilidad con MySQL
         Schema::defaultStringLength(191);
 
