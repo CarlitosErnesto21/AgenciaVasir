@@ -6,7 +6,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faChevronLeft, faChevronRight, faImage, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes, faVolcano, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarAlt, faChevronLeft, faChevronRight, faImage, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes, faVolcano, faExclamationTriangle, faMapSigns, faLeaf, faHandshake } from '@fortawesome/free-solid-svg-icons'
 
 // Recibir los props del controlador (opcional, como fallback)
 const props = defineProps({
@@ -450,7 +450,7 @@ const verMasInfo = (tour) => {
     <!-- Header Profesional con Stats Integradas - Ancho completo de la pantalla -->
     <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32">
       <!-- Header con gradiente -->
-      <div class="bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white text-center py-4 sm:py-6">
+      <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
           <!-- <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" /> -->
           <FontAwesomeIcon :icon="faVolcano" class="w-8 h-8 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
@@ -748,7 +748,7 @@ const verMasInfo = (tour) => {
         <div class="w-full">
           <div class="bg-gradient-to-br from-gray-50 to-white rounded-xl shadow-lg overflow-hidden border border-gray-200">
           <!-- Header con gradiente -->
-            <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-6">
+            <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-6">
               <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
                 ¿Por qué elegir nuestros tours nacionales?
               </h2>
@@ -759,19 +759,25 @@ const verMasInfo = (tour) => {
             <div class="p-2 md:p-8">
               <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
                 <div class="text-center bg-gradient-to-br from-white to-red-50 hover:from-red-50 hover:to-red-100 rounded-xl p-1 md:p-6  shadow-md hover:shadow-xl border-2 border-transparent hover:border-red-200 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300">
-                  <div class="text-lg md:text-5xl mb-4">🏛️</div>
-                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-3">Historia y Cultura</h3>
-                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">Descubre la rica historia y tradiciones de El Salvador con guías locales expertos</p>
+                  <div class="text-lg md:text-5xl mb-4">
+                    <FontAwesomeIcon :icon="faMapSigns" class="text-yellow-500"/>
+                  </div>
+                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-3">VIAJES HECHOS A TU MEDIDA</h3>
+                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">En VASIR te guiamos en cada paso del viaje: desde la planificación hasta el regreso, con atención cercana y personalizada.</p>
                 </div>
                 <div class="text-center bg-gradient-to-br from-white to-green-50 hover:from-green-50 hover:to-green-100 rounded-xl p-1 md:p-6  shadow-md hover:shadow-xl border-2 border-transparent hover:border-green-200 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300">
-                  <div class="text-lg md:text-5xl mb-4">🌋</div>
-                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-3">Naturaleza Única</h3>
-                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">Explora volcanes, lagos, playas y bosques en paisajes únicos de Centroamérica</p>
+                  <div class="text-lg md:text-5xl mb-4">
+                    <FontAwesomeIcon :icon="faLeaf" class="text-green-500"/>
+                  </div>
+                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-green-600 to-green-700 bg-clip-text text-transparent mb-3">EXPERIENCIAS AUTÉNTICAS Y RESPONSABLES</h3>
+                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">Diseñamos viajes enfocados en la sostenibilidad, la cultura y el turismo naranja, para que vivás experiencias reales y con impacto positivo.</p>
                 </div>
                 <div class="text-center bg-gradient-to-br from-white to-blue-50 hover:from-blue-50 hover:to-blue-100 rounded-xl p-1 md:p-6 shadow-md hover:shadow-xl border-2 border-transparent hover:border-blue-200 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300">
-                  <div class="text-lg md:text-5xl mb-4">🤝</div>
-                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-3">Apoyo Local</h3>
-                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">Contribuye al desarrollo de las comunidades locales con turismo responsable</p>
+                  <div class="text-lg md:text-5xl mb-4">
+                    <FontAwesomeIcon :icon="faHandshake" class="text-blue-500"/>
+                  </div>
+                  <h3 class="text-sm md:text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-3">CALIDAD Y CONFIANZA</h3>
+                  <p class="text-gray-700 leading-relaxed text-xs md:text-sm">Trabajamos con aliados verificados y logística clara, asegurando tranquilidad, comodidad y una experiencia sin complicaciones.</p>
                 </div>
               </div>
             </div>
