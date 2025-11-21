@@ -21,7 +21,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
-/public/images/aerolinea/*
 /public/images/hoteles/*
 /public/images/productos/*
 /public/images/tours/*
