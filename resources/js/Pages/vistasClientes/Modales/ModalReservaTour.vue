@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faXmark, faCheck } from '@fortawesome/free-solid-svg-icons'
+import { faXmark, faCheck, faClipboardList } from '@fortawesome/free-solid-svg-icons'
 import { useToast } from 'primevue/usetoast'
 import axios from 'axios'
 
@@ -315,10 +315,11 @@ watch(() => props.visible, async (newValue) => {
     :draggable="false"
   >
     <template #header>
-      <h3 class="text-sm sm:text-base lg:text-lg font-bold text-red-700 flex items-center">
-        <span class="mr-1 sm:mr-2">🧾</span>
-        <span class="hidden sm:inline">Reservando Tour</span>
-        <span class="sm:hidden">Reserva</span>
+      <h3 class="text-sm sm:text-base lg:text-lg font-bold text-red-700 flex items-center text-center justify-center w-full">
+        <span class="mr-1 sm:mr-2">
+            <FontAwesomeIcon :icon="faClipboardList" class="h-5 text-blue-500" />
+        </span>
+        <span class="text-blue-500">Reservando Tour</span>
       </h3>
     </template>
 
@@ -352,7 +353,7 @@ watch(() => props.visible, async (newValue) => {
           class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-          Confirmar Reserva
+          Confirmar
         </button>
         <button
           @click="cerrarModal"

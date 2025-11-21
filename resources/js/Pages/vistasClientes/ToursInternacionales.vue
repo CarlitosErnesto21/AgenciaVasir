@@ -6,7 +6,7 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faChevronLeft, faChevronRight, faCircleChevronRight, faImage, faMapLocation, faMapMarked, faMapMarkedAlt, faMapMarker, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarAlt, faChevronLeft, faChevronRight, faCircleChevronRight, faImage, faMapLocation, faMapMarked, faMapMarkedAlt, faMapMarker, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes, faGlobe, faGlobeAmericas, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
@@ -140,14 +140,17 @@ const obtenerTours = async () => {
   }
 }
 
-// Función para formatear la fecha
+// Función para formatear la fecha con hora
 const formatearFecha = (fecha) => {
   if (!fecha) return ''
   const date = new Date(fecha)
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
   })
 }
 
@@ -158,12 +161,14 @@ const calcularDuracion = (fechaSalida, fechaRegreso) => {
   const salida = new Date(fechaSalida)
   const regreso = new Date(fechaRegreso)
 
-  // Normalizar las fechas para que solo considere el día (sin hora)
-  salida.setHours(0, 0, 0, 0)
-  regreso.setHours(0, 0, 0, 0)
-
+  // Calcular diferencia en milisegundos considerando las horas exactas
   const diffTime = regreso.getTime() - salida.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 porque incluimos el día de salida
+
+  // Si la diferencia es negativa o cero, es el mismo día o error
+  if (diffTime <= 0) return '1 día'
+
+  // Calcular días completos
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays === 1 ? '1 día' : `${diffDays} días`
 }
@@ -456,7 +461,7 @@ const verMasInfo = (tour) => {
       <!-- Header con gradiente -->
       <div class="bg-gradient-to-r from-blue-600 via-purple-600 to-red-600 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
-          <img src="/images/world.png" alt="Tours Internacionales" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" />
+           <FontAwesomeIcon :icon="faGlobeAmericas" class="w-8 h-8 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Tours Internacionales
           </h1>
@@ -484,7 +489,9 @@ const verMasInfo = (tour) => {
         <!-- Estado de error -->
         <div v-else-if="error && tours.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-red-50 to-orange-50 border-2 border-red-200 text-red-700 px-8 py-6 rounded-xl shadow-lg max-w-md mx-auto">
-            <div class="text-4xl mb-4">⚠️</div>
+            <div class="text-4xl mb-4">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="w-10 h-10 text-yellow-500" />
+            </div>
             <h3 class="text-xl font-bold bg-gradient-to-r from-red-600 to-orange-600 bg-clip-text text-transparent mb-3">No se pudieron cargar los tours</h3>
             <p class="text-sm text-red-600 leading-relaxed">Por favor, intenta recargar la página o contacta con nosotros.</p>
           </div>
@@ -493,43 +500,53 @@ const verMasInfo = (tour) => {
         <!-- Estado vacío -->
         <div v-else-if="!loading && tours.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
-            <div class="text-6xl mb-4">🌍</div>
+            <div class="text-6xl mb-4">
+                <FontAwesomeIcon :icon="faGlobeAmericas" class="w-16 h-16 text-blue-400" />
+            </div>
             <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">No hay tours internacionales disponibles</h3>
             <p class="text-gray-600 mb-4 leading-relaxed">Próximamente tendremos nuevos destinos internacionales.</p>
             <p class="text-sm text-gray-500">Mientras tanto, puedes explorar nuestros tours nacionales.</p>
           </div>
         </div>
 
-        <!-- Barra de búsqueda -->
-        <div v-if="tours.length > 0" class="bg-white rounded-xl p-6 shadow-md border border-gray-200 mb-8">
-          <div class="max-w-2xl mx-auto">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4 text-center">
-              <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-blue-600 mr-2" />
-              Buscar Tours Internacionales
-            </h3>
-            <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                <FontAwesomeIcon :icon="faSearch" class="w-5 h-5 text-gray-400" />
+        <!-- Barra de búsqueda optimizada -->
+        <div v-if="tours.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
+          <div class="max-w-xl mx-auto">
+            <div class="text-center mb-3">
+              <div class="flex items-center justify-center gap-2 mb-2">
+                <h3 class="text-base font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                  Explorar Tours Internacionales
+                </h3>
+              </div>
+            </div>
+
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <FontAwesomeIcon :icon="faSearch" class="w-4 h-4 text-blue-400 group-focus-within:text-blue-600 transition-colors" />
               </div>
               <input
                 v-model="searchQuery"
                 type="text"
-                placeholder="Buscar por nombre del tour, país, ubicación o descripción..."
-                class="w-full pl-12 pr-12 py-4 text-gray-700 bg-gray-50 border-2 border-gray-200 rounded-xl focus:outline-none focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-lg"
+                placeholder="Buscar destinos, países, ubicaciones..."
+                class="w-full pl-10 pr-10 py-3 text-gray-700 bg-white border-2 border-blue-300 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all duration-300 text-sm shadow-sm placeholder-gray-400"
               />
-              <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-4 flex items-center">
+              <div v-if="searchQuery" class="absolute inset-y-0 right-0 pr-3 flex items-center">
                 <button
                   @click="limpiarBusqueda"
-                  class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1 rounded-full hover:bg-blue-50"
+                  class="text-gray-400 hover:text-blue-500 transition-colors duration-200 p-1.5 rounded-full hover:bg-blue-100"
                   title="Limpiar búsqueda"
                 >
-                  <FontAwesomeIcon :icon="faTimes" class="w-5 h-5" />
+                  <FontAwesomeIcon :icon="faTimes" class="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
-            <div class="mt-3 text-center">
-              <p class="text-sm text-gray-500">
-                {{ searchQuery ? `Mostrando ${toursDisponibles.length} resultado${toursDisponibles.length !== 1 ? 's' : ''} para "${searchQuery}"` : `${toursDisponibles.length} tour${toursDisponibles.length !== 1 ? 's' : ''} disponible${toursDisponibles.length !== 1 ? 's' : ''}` }}
+
+            <div class="mt-2 text-center">
+              <p class="text-xs text-gray-600 bg-white/60 rounded-full px-3 py-1 inline-block">
+                {{ searchQuery
+                  ? `${toursDisponibles.length} resultado${toursDisponibles.length !== 1 ? 's' : ''} encontrado${toursDisponibles.length !== 1 ? 's' : ''}`
+                  : `${toursDisponibles.length} destino${toursDisponibles.length !== 1 ? 's' : ''} disponible${toursDisponibles.length !== 1 ? 's' : ''}`
+                }}
               </p>
             </div>
           </div>
@@ -537,18 +554,15 @@ const verMasInfo = (tour) => {
 
         <!-- Tours Disponibles -->
         <div v-if="toursDisponibles.length > 0" class="mb-8">
-          <div class="bg-gradient-to-r from-blue-500 via-blue-500 to-blue-500 text-white text-center py-4 px-6 rounded-t-sm mb-6">
-            <h2 class="text-xl md:text-2xl font-bold">Tours Internacionales Disponibles</h2>
-            <p class="text-blue-100 text-sm mt-1">{{ toursDisponibles.length }} destino{{ toursDisponibles.length !== 1 ? 's' : '' }} con cupos disponibles</p>
-          </div>
+
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             <Card
               v-for="tour in toursDisponibles"
               :key="tour.id"
-              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[400px] sm:min-h-[450px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl"
+              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-blue-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[320px] sm:min-h-[340px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl"
               >
               <template #header>
-                <div class="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-200"
+                <div class="relative w-full h-28 sm:h-30 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-200"
                      @click="mostrarGaleria(tour)">
                   <img
                     :src="obtenerImagenActual(tour)"
@@ -582,51 +596,56 @@ const verMasInfo = (tour) => {
               </template>
 
               <template #title>
-                <div class="h-10 sm:h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg mx-2"
+                <div class="h-6 sm:h-8 flex items-start px-2.5 pt-1 cursor-pointer hover:bg-gradient-to-r hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg mx-2"
                      @click="verMasInfo(tour)">
-                  <span class="text-sm sm:text-base font-bold bg-gradient-to-r from-gray-800 to-blue-700 bg-clip-text text-transparent leading-tight line-clamp-2">{{ tour.nombre }}</span>
+                  <span class="text-xs font-bold bg-gradient-to-r from-gray-800 to-blue-700 bg-clip-text text-transparent leading-tight line-clamp-2">{{ tour.nombre }}</span>
                 </div>
               </template>
 
               <template #content>
-                <div class="flex-1 flex flex-col px-4 pb-4 min-h-0">
-                  <div class="flex-1 space-y-2 sm:space-y-3 cursor-pointer hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg p-2 -m-2"
+                <div class="flex-1 flex flex-col px-2.5 pb-2.5 min-h-0">
+                  <div class="flex-1 space-y-1 cursor-pointer hover:bg-gradient-to-br hover:from-gray-50 hover:to-blue-50 transition-all duration-300 rounded-lg p-1 -m-1"
                        @click="verMasInfo(tour)">
-                    <div class="flex items-center text-xs text-gray-500 mb-2 bg-gray-50 rounded-lg p-2 border border-gray-100 shadow-sm">
-                      <FontAwesomeIcon :icon="faMapMarkerAlt" class="w-4 h-4 mr-2 flex-shrink-0 text-blue-500" />
-                      <span class="truncate font-medium">{{ tour.punto_salida }}</span>
+                    <div class="flex items-center text-xs text-gray-500 mb-0.5 bg-gray-50 rounded-lg p-1 border border-gray-100 shadow-sm">
+                      <FontAwesomeIcon :icon="faMapMarkerAlt" class="w-3 h-3 mr-1 flex-shrink-0 text-blue-500" />
+                      <span class="truncate font-medium text-xs">{{ tour.punto_salida }}</span>
                     </div>
-                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
-                      <div class="flex items-center gap-2 mb-2">
-                        <FontAwesomeIcon :icon="faCalendarAlt" class="w-4 h-4 text-blue-500 flex-shrink-0" />
-                        <p class="text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Fecha de Salida</p>
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-1.5 border border-blue-100">
+                      <div class="flex items-center gap-1 mb-0.5">
+                        <FontAwesomeIcon :icon="faCalendarAlt" class="w-3 h-3 text-blue-500 flex-shrink-0" />
+                        <p class="text-xs font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Fecha</p>
                       </div>
-                      <p class="text-sm text-gray-700 font-semibold">{{ formatearFecha(tour.fecha_salida) }}</p>
+                      <p class="text-xs text-gray-700 font-semibold">{{ formatearFecha(tour.fecha_salida) }}</p>
                     </div>
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-3 border border-green-100">
-                      <div class="flex items-center gap-2 mb-2">
-                        <svg class="w-4 h-4 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-1.5 border border-green-100">
+                      <div class="flex items-center gap-1 mb-0.5">
+                        <svg class="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <p class="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Cupos Disponibles</p>
+                        <p class="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Cupos</p>
                       </div>
-                      <p class="text-sm font-bold" :class="obtenerClaseCupos(tour)">
+                      <p class="text-xs font-bold" :class="obtenerClaseCupos(tour)">
                         {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
                       </p>
                     </div>
                   </div>
 
+                  <!-- Texto informativo -->
+                  <div class="mt-1 mb-1 text-center">
+                    <p class="text-xs text-gray-500 italic">Toca en cualquier parte para ver más detalles</p>
+                  </div>
+
                   <!-- Botones profesionales - SIEMPRE VISIBLES -->
-                  <div class="flex gap-2 mt-3 pt-3 border-t border-gray-100 flex-shrink-0">
+                  <div class="flex gap-1 mt-1.5 pt-1.5 border-t border-gray-100 flex-shrink-0">
                     <button
                       @click="reservarTour(tour)"
-                      class="px-3 py-2 text-xs font-bold rounded-lg transition-all duration-300 flex-1 shadow-md hover:shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transform hover:scale-105"
+                      class="px-2 py-1 text-xs font-bold rounded-lg transition-all duration-300 flex-1 shadow-md hover:shadow-lg bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transform hover:scale-105"
                       >
                         Reservar
                     </button>
                     <button
                         @click="verMasInfo(tour)"
-                        class="border-2 border-blue-500 text-blue-600 hover:text-blue-700 px-3 py-2 text-xs font-bold rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg bg-white"
+                        class="border-2 border-blue-500 text-blue-600 hover:text-blue-700 px-2 py-1 text-xs font-bold rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg bg-white"
                       >
                         Info
                     </button>
@@ -714,6 +733,11 @@ const verMasInfo = (tour) => {
                     </div>
                   </div>
 
+                  <!-- Texto informativo -->
+                  <div class="mt-2 mb-1 text-center">
+                    <p class="text-xs text-gray-500 italic">Clic para ver más detalles</p>
+                  </div>
+
                   <!-- Botones profesionales - SIEMPRE VISIBLES -->
                   <div class="flex gap-2 mt-3 pt-3 border-t border-gray-200 flex-shrink-0">
                     <button
@@ -748,7 +772,7 @@ const verMasInfo = (tour) => {
 
             <!-- Contenido -->
             <div class="p-8">
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 text-center border border-blue-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                   <div class="text-4xl mb-3">✈️</div>
                   <h3 class="font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2 text-lg">Vuelos Incluidos</h3>
@@ -763,11 +787,6 @@ const verMasInfo = (tour) => {
                   <div class="text-4xl mb-3">🗺️</div>
                   <h3 class="font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2 text-lg">Guías Expertos</h3>
                   <p class="text-gray-600 text-sm leading-relaxed">Guías locales que conocen los mejores lugares y secretos</p>
-                </div>
-                <div class="bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl p-6 text-center border border-amber-200 shadow-md hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
-                  <div class="text-4xl mb-3">📞</div>
-                  <h3 class="font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent mb-2 text-lg">Soporte 24/7</h3>
-                  <p class="text-gray-600 text-sm leading-relaxed">Asistencia completa durante todo tu viaje</p>
                 </div>
               </div>
             </div>

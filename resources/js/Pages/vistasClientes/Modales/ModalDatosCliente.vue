@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from 'vue'
 import { usePage } from '@inertiajs/vue3'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faUser, faXmark, faSave, faIdCard, faCalendarAlt, faMapMarkerAlt, faPhone, faVenusMars, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { faUser, faXmark, faSave, faIdCard, faCalendarAlt, faMapMarkerAlt, faPhone, faVenusMars, faSpinner, faCheck } from '@fortawesome/free-solid-svg-icons'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import DatePicker from 'primevue/datepicker'
@@ -512,8 +512,7 @@ watch(() => formData.value.telefono, (newValue) => {
     :draggable="false"
   >
     <template #header>
-      <h3 class="text-xl font-bold text-red-700 flex items-center gap-2">
-        <FontAwesomeIcon :icon="faUser" />
+      <h3 class="text-xl font-bold text-blue-700 gap-2 text-center justify-center w-full">
         Completar información de cliente
       </h3>
     </template>
@@ -521,7 +520,7 @@ watch(() => formData.value.telefono, (newValue) => {
     <div class="py-4">
       <!-- Información del usuario actual -->
       <div class="bg-blue-50 rounded-lg p-4 mb-6">
-        <h4 class="font-semibold text-blue-800 mb-2">Información de tu cuenta:</h4>
+        <h4 class="font-semibold text-blue-800 mb-2 text-center justify-center w-full">Información de tu cuenta</h4>
         <div class="text-sm text-blue-700">
           <p><strong>Nombre:</strong> {{ usuario?.name }}</p>
           <p><strong>Email:</strong> {{ usuario?.email }}</p>
@@ -532,7 +531,7 @@ watch(() => formData.value.telefono, (newValue) => {
       <form @submit.prevent="guardarCliente" class="space-y-4">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Documento de identidad</label>
             <select
               v-model="formData.tipo_documento"
               required
@@ -548,7 +547,7 @@ watch(() => formData.value.telefono, (newValue) => {
             </small>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Número de identificación</label>
             <input
               :value="formData.numero_identificacion"
               @input="manejarEntradaDocumento"
@@ -579,7 +578,7 @@ watch(() => formData.value.telefono, (newValue) => {
 
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de nacimiento</label>
             <DatePicker
               v-model="formData.fecha_nacimiento"
               :maxDate="getFechaMaximaNacimiento()"
@@ -653,7 +652,7 @@ watch(() => formData.value.telefono, (newValue) => {
             </small>
           </div>
           <div class="sm:col-span-1">
-            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de residencia</label>
             <input
               v-model="formData.direccion"
               type="text"
@@ -670,16 +669,18 @@ watch(() => formData.value.telefono, (newValue) => {
         </div>
 
         <!-- Nota informativa -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-          <p class="text-sm text-blue-800">
-            <strong>Nota:</strong> Esta información es necesaria para procesar tu compra.
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p class="text-xs text-blue-800">
+            <strong>Nota:</strong> Esta información es necesaria para procesar tu compra. <br>
+            En tu primera compra, se creará automáticamente una cuenta de cliente con estos datos. <br>
+            Ya no necesitarás completar este formulario en futuras compras.
           </p>
         </div>
       </form>
     </div>
 
         <template #footer>
-      <div class="flex justify-center gap-4 w-full mt-6">
+      <div class="flex justify-center gap-4 w-full mt-4">
         <button
           type="button"
           class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -687,10 +688,10 @@ watch(() => formData.value.telefono, (newValue) => {
           :disabled="loading"
         >
           <FontAwesomeIcon
-            :icon="loading ? faSpinner : faSave"
+            :icon="loading ? faSpinner : faCheck"
             :class="['h-5', { 'animate-spin': loading }]"
           />
-          {{ loading ? 'Guardando...' : 'Guardar y Continuar' }}
+          {{ loading ? 'Guardando...' : 'Continuar' }}
         </button>
 
         <button
