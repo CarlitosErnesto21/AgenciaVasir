@@ -735,7 +735,7 @@ const verMasInfo = (tour) => {
 
                   <!-- Texto informativo -->
                   <div class="mt-2 mb-1 text-center">
-                    <p class="text-xs text-gray-500 italic">Clic para ver más detalles</p>
+                    <p class="text-xs text-gray-500 italic">Toca en cualquier parte para ver más detalles</p>
                   </div>
 
                   <!-- Botones profesionales - SIEMPRE VISIBLES -->
