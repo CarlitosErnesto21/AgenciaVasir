@@ -8,6 +8,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import Swal from 'sweetalert2';
 import PrimeVue from 'primevue/config';
 import { createPinia } from 'pinia';
+import { useCSRF } from './composables/useCSRF';
 
 import Aura from '@primeuix/themes/aura';
 import { ToastService } from 'primevue';
@@ -42,6 +43,11 @@ import TabPanel from 'primevue/tabpanel';
 import Tag from 'primevue/tag';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+
+// Configurar manejo de errores CSRF
+const { setupAxiosInterceptor, setupInertiaInterceptor } = useCSRF();
+setupAxiosInterceptor();
+setupInertiaInterceptor();
 
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName, // Se escribe así para que el título sea dinámico
