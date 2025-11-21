@@ -15,23 +15,12 @@ class Hotel extends Model
         'nombre',
         'direccion',
         'descripcion',
-        'estado',
-        'provincia_id',
-        'categoria_id'
+        'provincia_id'
     ];    // referencias
 
     public function provincia()
     {
         return $this->belongsTo(Provincia::class);
-    }
-
-    public function categoriaHotel()
-    {
-        return $this->belongsTo(CategoriaHotel::class, 'categoria_id');
-    }
-    public function detalleReservas()
-    {
-        return $this->hasMany(DetalleReservaHotel::class, 'hotel_id');
     }
 
     public function imagenes()

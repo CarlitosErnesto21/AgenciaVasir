@@ -16,7 +16,7 @@ class HotelController extends Controller
     public function index()
     {
         // Obtener todos los hoteles con sus relaciones
-        $hoteles = Hotel::with(['provincia', 'categoriaHotel', 'imagenes', 'provincia.pais'])->get();
+        $hoteles = Hotel::with(['provincia', 'imagenes', 'provincia.pais'])->get();
         return response()->json($hoteles);
     }
 
@@ -37,9 +37,7 @@ class HotelController extends Controller
             'nombre' => 'required|string|max:50',
             'direccion' => 'required|string|max:200',
             'descripcion' => 'required|string|max:255',
-            'estado' => 'required|string|max:20',
             'provincia_id' => 'required|exists:provincias,id',
-            'categoria_id' => 'required|exists:categorias_hoteles,id',
             'imagenes' => 'nullable|array|max:5',
             'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
@@ -67,7 +65,7 @@ class HotelController extends Controller
 
         return response()->json([
             'message' => 'Hotel creado exitosamente',
-            'hotel' => $hotel->load(['imagenes', 'categoriaHotel', 'provincia.pais']),
+            'hotel' => $hotel->load(['imagenes', 'provincia.pais']),
         ]);
     }
 
@@ -78,9 +76,7 @@ class HotelController extends Controller
             'nombre' => 'required|string|max:50',
             'direccion' => 'required|string|max:200',
             'descripcion' => 'required|string|max:255',
-            'estado' => 'required|string|max:20',
             'provincia_id' => 'required|exists:provincias,id',
-            'categoria_id' => 'required|exists:categorias_hoteles,id',
             'imagenes' => 'nullable|array',
             'imagenes.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048',
             'removed_images' => 'nullable|array',
@@ -137,7 +133,7 @@ class HotelController extends Controller
 
         return response()->json([
             'message' => 'Hotel actualizado exitosamente',
-            'hotel' => $hotele->load(['imagenes', 'categoriaHotel', 'provincia.pais']),
+            'hotel' => $hotele->load(['imagenes', 'provincia.pais']),
         ]);
     }
 
@@ -147,7 +143,7 @@ class HotelController extends Controller
     public function show(Hotel $hotel)
     {
         // Mostrar los detalles de un hotel específico con sus relaciones
-        $hotel->load(['provincia', 'categoriaHotel']);
+        $hotel->load(['provincia']);
         return response()->json($hotel);
     }
 
@@ -165,7 +161,7 @@ class HotelController extends Controller
     public function destroy($id)
     {
         $hotel = Hotel::findOrFail($id);
-        $hotel->loadMissing(['imagenes', 'provincia', 'categoriaHotel']);
+        $hotel->loadMissing(['imagenes', 'provincia']);
 
         foreach ($hotel->imagenes as $imagen) {
             // Eliminar usando Storage Laravel

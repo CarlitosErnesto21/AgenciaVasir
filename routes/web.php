@@ -32,7 +32,6 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('productos', fn() => Inertia::render('Catalogos/Productos'))->name('productos');
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
     Route::get('reservas', fn() => Inertia::render('Catalogos/Reservas'))->name('reservas');
-    Route::get('reservas-hoteles', fn() => Inertia::render('Catalogos/ReservasHoteles'))->name('reservasHoteles');
     Route::get('tours', fn() => Inertia::render('Catalogos/Tours'))->name('tours');
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('paquetes-visas', fn() => Inertia::render('Catalogos/PaquetesVisas'))->name('paquetesVisas');
@@ -42,7 +41,7 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('clientes/{cliente}/reservas', [ClienteController::class, 'reservas'])->name('clientes.reservas');
     Route::get('clientes/{cliente}/ventas', [ClienteController::class, 'ventas'])->name('clientes.ventas');
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
-    Route::get('categorias-hoteles', fn() => Inertia::render('Catalogos/CategoriaHoteles'))->name('catHoteles');
+
     Route::get('ventas', [VentaController::class, 'indexWeb'])->name('ventas');
     Route::get('inventario', fn() => Inertia::render('Catalogos/Inventarios'))->name('inventario');
     // Ruta para gestión de usuarios internos - Solo Administradores

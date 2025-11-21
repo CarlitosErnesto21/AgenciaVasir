@@ -68,8 +68,7 @@ const irARegistro = () => {
       </h3>
 
       <p class="text-gray-600 mb-2">
-        <span v-if="tourInfo && tourInfo.tipo === 'hotel'">Para realizar una reserva de hotel necesitas tener una cuenta en nuestra plataforma.</span>
-        <span v-else-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
+        <span v-if="tourInfo">Para realizar una reserva necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else-if="productoInfo">Para realizar una compra necesitas tener una cuenta en nuestra plataforma.</span>
         <span v-else>Para continuar necesitas tener una cuenta en nuestra plataforma.</span>
       </p>

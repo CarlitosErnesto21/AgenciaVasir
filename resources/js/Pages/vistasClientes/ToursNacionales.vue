@@ -757,7 +757,7 @@ const verMasInfo = (tour) => {
 
             <!-- Contenido -->
             <div class="p-2 md:p-8">
-              <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-8">
                 <div class="text-center bg-gradient-to-br from-white to-red-50 hover:from-red-50 hover:to-red-100 rounded-xl p-1 md:p-6  shadow-md hover:shadow-xl border-2 border-transparent hover:border-red-200 transform hover:-translate-y-2 hover:scale-105 transition-all duration-300">
                   <div class="text-lg md:text-5xl mb-4">
                     <FontAwesomeIcon :icon="faMapSigns" class="text-yellow-500"/>

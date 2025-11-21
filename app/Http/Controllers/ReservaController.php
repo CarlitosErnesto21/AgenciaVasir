@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Reserva;
 use App\Models\Cliente;
 use App\Models\DetalleReservaTour;
-use App\Models\DetalleReservaHotel;
 use App\Models\Tour;
-use App\Models\Hotel;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -75,7 +73,7 @@ class ReservaController extends Controller
             // Si no hay filtros, devolver formato transformado con relaciones completas
             if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id'])) {
                 $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour'])->get();
-                
+
                 // Transformar los datos igual que en el flujo paginado
                 $transformedData = $reservas->map(function ($reserva) {
                     $tourNombre = $reserva->detallesTours->first() ?
@@ -104,7 +102,7 @@ class ReservaController extends Controller
                         'menores_edad' => $reserva->menores_edad
                     ];
                 });
-                
+
                 return response()->json($transformedData);
             }
 
@@ -289,16 +287,7 @@ class ReservaController extends Controller
                 'empleado_id' => null // El empleado será asignado posteriormente
             ]);
 
-            // 6. Crear el detalle de reserva de hotel
-            $detalleReserva = \App\Models\DetalleReservaHotel::create([
-                'fecha_entrada' => $validated['fecha_entrada'],
-                'fecha_salida' => $validated['fecha_salida'],
-                'cantidad_persona' => $validated['cantidad_personas'],
-                'cantidad_habitacion' => $validated['cantidad_habitaciones'],
-                'subtotal' => $precio_estimado,
-                'reserva_id' => $reserva->id,
-                'hotel_id' => $hotel->id
-            ]);
+
 
             DB::commit();
 
@@ -308,7 +297,6 @@ class ReservaController extends Controller
                 'data' => [
                     'reserva' => $reserva,
                     'cliente' => $cliente,
-                    'detalle' => $detalleReserva,
                     'hotel' => $hotel
                 ]
             ]);
@@ -1142,152 +1130,7 @@ class ReservaController extends Controller
         }
     }
 
-    /**
-     * Obtener listado específico de reservas de hoteles para la vista administrativa
-     */
-    public function indexHoteles(Request $request): JsonResponse
-    {
-        try {
-            $query = Reserva::with(['cliente', 'cliente.user', 'detallesHoteles.hotel'])
-                ->whereHas('detallesHoteles'); // Solo reservas que tienen detalles de hotel
 
-            // Aplicar filtros
-            if ($request->filled('estado')) {
-                $query->where('estado', $request->estado);
-            }
 
-            if ($request->filled('fecha_inicio')) {
-                $query->whereDate('fecha', '>=', $request->fecha_inicio);
-            }
 
-            if ($request->filled('fecha_fin')) {
-                $query->whereDate('fecha', '<=', $request->fecha_fin);
-            }
-
-            if ($request->filled('busqueda')) {
-                $busqueda = $request->busqueda;
-                $query->whereHas('cliente.user', function ($q) use ($busqueda) {
-                    $q->where('name', 'like', "%{$busqueda}%")
-                      ->orWhere('email', 'like', "%{$busqueda}%");
-                })->orWhereHas('detallesHoteles.hotel', function ($q) use ($busqueda) {
-                    $q->where('nombre', 'like', "%{$busqueda}%");
-                });
-            }
-
-            $reservas = $query->orderBy('fecha', 'desc')->get();
-
-            // Transformar los datos para la respuesta
-            $transformedData = $reservas->map(function ($reserva) {
-                $detalleHotel = $reserva->detallesHoteles->first();
-                $hotel = $detalleHotel ? $detalleHotel->hotel : null;
-
-                return [
-                    'id' => $reserva->id,
-                    'fecha_reserva' => $reserva->fecha,
-                    'fecha_entrada' => $detalleHotel ? $detalleHotel->fecha_entrada : null,
-                    'fecha_salida' => $detalleHotel ? $detalleHotel->fecha_salida : null,
-                    'estado' => $reserva->estado,
-                    'cliente' => [
-                        'nombres' => $reserva->cliente && $reserva->cliente->user ?
-                                   $reserva->cliente->user->name : 'Cliente no asignado',
-                        'correo' => $reserva->cliente && $reserva->cliente->user ?
-                                  $reserva->cliente->user->email : 'Sin correo',
-                        'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
-                        'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
-                    ],
-                    'hotel' => [
-                        'nombre' => $hotel ? $hotel->nombre : 'Hotel no especificado',
-                        'direccion' => $hotel ? $hotel->direccion : null,
-                        'telefono' => $hotel ? $hotel->telefono : null,
-                    ],
-                    'detalles' => [
-                        'cantidad_personas' => $detalleHotel ? $detalleHotel->cantidad_persona : $reserva->mayores_edad,
-                        'cantidad_habitaciones' => $detalleHotel ? $detalleHotel->cantidad_habitacion : null,
-                    ],
-                    'total' => $reserva->total,
-                    'mayores_edad' => $reserva->mayores_edad,
-                    'menores_edad' => $reserva->menores_edad
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'data' => $transformedData
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener las reservas de hoteles',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Mostrar detalles específicos de una reserva de hotel
-     */
-    public function showHotel($id): JsonResponse
-    {
-        try {
-            $reserva = Reserva::with(['cliente', 'cliente.user', 'detallesHoteles.hotel', 'empleado'])
-                ->whereHas('detallesHoteles') // Solo si tiene detalles de hotel
-                ->findOrFail($id);
-
-            $detalleHotel = $reserva->detallesHoteles->first();
-            $hotel = $detalleHotel ? $detalleHotel->hotel : null;
-
-            $response = [
-                'id' => $reserva->id,
-                'fecha_reserva' => $reserva->fecha,
-                'fecha_entrada' => $detalleHotel ? $detalleHotel->fecha_entrada : null,
-                'fecha_salida' => $detalleHotel ? $detalleHotel->fecha_salida : null,
-                'estado' => $reserva->estado,
-                'cliente' => [
-                    'nombres' => $reserva->cliente && $reserva->cliente->user ?
-                               $reserva->cliente->user->name : 'Cliente no asignado',
-                    'correo' => $reserva->cliente && $reserva->cliente->user ?
-                              $reserva->cliente->user->email : 'Sin correo',
-                    'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
-                    'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
-                    'direccion' => $reserva->cliente ? $reserva->cliente->direccion : null,
-                    'fecha_nacimiento' => $reserva->cliente ? $reserva->cliente->fecha_nacimiento : null,
-                    'genero' => $reserva->cliente ? $reserva->cliente->genero : null,
-                ],
-                'hotel' => [
-                    'nombre' => $hotel ? $hotel->nombre : 'Hotel no especificado',
-                    'direccion' => $hotel ? $hotel->direccion : null,
-                    'telefono' => $hotel ? $hotel->telefono : null,
-                    'estrellas' => $hotel ? $hotel->estrellas : null,
-                    'descripcion' => $hotel ? $hotel->descripcion : null,
-                ],
-                'detalles' => [
-                    'cantidad_personas' => $detalleHotel ? $detalleHotel->cantidad_persona : $reserva->mayores_edad,
-                    'cantidad_habitaciones' => $detalleHotel ? $detalleHotel->cantidad_habitacion : null,
-                    'subtotal' => $detalleHotel ? $detalleHotel->subtotal : null,
-                ],
-                'total' => $reserva->total,
-                'mayores_edad' => $reserva->mayores_edad,
-                'menores_edad' => $reserva->menores_edad,
-                'empleado' => $reserva->empleado ? [
-                    'nombres' => $reserva->empleado->nombres,
-                    'apellidos' => $reserva->empleado->apellidos,
-                ] : null,
-                'created_at' => $reserva->created_at,
-                'updated_at' => $reserva->updated_at,
-            ];
-
-            return response()->json([
-                'success' => true,
-                'data' => $response
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener los detalles de la reserva de hotel',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
 }

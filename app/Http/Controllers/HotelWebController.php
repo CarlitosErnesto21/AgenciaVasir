@@ -16,7 +16,7 @@ class HotelWebController extends Controller
     {
         try {
             // Obtener el hotel con sus relaciones
-            $hotel = Hotel::with(['categoriaHotel', 'provincia', 'provincia.pais', 'imagenes'])
+            $hotel = Hotel::with(['provincia', 'provincia.pais', 'imagenes'])
                 ->where('id', $id)
                 ->firstOrFail();
 
@@ -26,13 +26,6 @@ class HotelWebController extends Controller
                 'nombre' => $hotel->nombre,
                 'descripcion' => $hotel->descripcion,
                 'direccion' => $hotel->direccion,
-                'telefono' => $hotel->telefono,
-                'email' => $hotel->email,
-                'estado' => $hotel->estado,
-                'categoria_hotel' => $hotel->categoriaHotel ? [
-                    'id' => $hotel->categoriaHotel->id,
-                    'nombre' => $hotel->categoriaHotel->nombre
-                ] : null,
                 'provincia' => $hotel->provincia ? [
                     'id' => $hotel->provincia->id,
                     'nombre' => $hotel->provincia->nombre

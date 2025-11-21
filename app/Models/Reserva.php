@@ -26,19 +26,14 @@ class Reserva extends Model
     {
         return $this->belongsTo(Empleado::class, 'empleado_id');
     }
-    
+
     public function cliente()
     {
         return $this->belongsTo(Cliente::class, 'cliente_id');
     }
-    
+
     public function detallesTours()
     {
         return $this->hasMany(DetalleReservaTour::class, 'reserva_id');
-    }
-    
-    public function detallesHoteles()
-    {
-        return $this->hasMany(DetalleReservaHotel::class, 'reserva_id');
     }
 }

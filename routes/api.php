@@ -8,7 +8,7 @@ use App\Http\Controllers\HotelController;
 use App\Http\Controllers\ReservaController;
 use App\Http\Controllers\TourController;
 use App\Http\Controllers\VentaController;
-use App\Http\Controllers\CategoriaHotelController;
+
 use App\Http\Controllers\CategoriaProductoController;
 use App\Http\Controllers\PaisController;
 use App\Http\Controllers\ProvinciaController;
@@ -119,12 +119,6 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/{id}/historial', [ReservaController::class, 'historial']);
         });
 
-        // Gestión específica de reservas de hoteles
-        Route::prefix('reservas-hoteles')->group(function () {
-            Route::get('/', [ReservaController::class, 'indexHoteles']);
-            Route::get('/{id}', [ReservaController::class, 'showHotel']);
-        });
-
         // Recursos CRUD principales
         Route::apiResource('paquetes-visas', PaqueteVisaController::class)->except(['index']);
         Route::apiResource('productos', ProductoController::class)->except(['index']);
@@ -152,7 +146,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('empleados/check-telefono', [EmpleadoController::class, 'checkTelefonoAvailability']);
         Route::apiResource('empleados', EmpleadoController::class);
         Route::put('empleados/{id}/password', [EmpleadoController::class, 'updatePassword']);
-        Route::apiResource('categorias-hoteles', CategoriaHotelController::class);
+
         Route::apiResource('categorias-productos', CategoriaProductoController::class)->except(['index']);
         Route::apiResource('paises', PaisController::class)->parameter('paises', 'pais');
         Route::apiResource('provincias', ProvinciaController::class)->parameter('provincias', 'provincia');

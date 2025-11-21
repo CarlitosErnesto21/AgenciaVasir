@@ -13,7 +13,7 @@ import Textarea from "primevue/textarea";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft, faCheck, faEye, faExclamationTriangle, faFilter, faGlobe, faImages, faPencil, faPlus, faSpinner, faTags, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faEye, faExclamationTriangle, faFilter, faGlobe, faImages, faListDots, faPencil, faPlus, faSpinner, faTags, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 import HotelModals from "./Components/HotelComponents/Modales.vue";
 import axios from "axios";
 import Carousel from "primevue/carousel";
@@ -28,6 +28,7 @@ const hotel = ref({
     nombre: "",
     direccion: "",
     descripcion: "",
+    estado: "",
     provincia: null,
     imagenes: [],
 });
@@ -48,6 +49,7 @@ const hasUnsavedChanges = ref(false);
 const originalHotelData = ref(null);
 
 // Variables para modales de hoteles
+const moreActionsDialog = ref(false);
 const showImageCarouselDialog = ref(false);
 const selectedHotel = ref(null);
 
@@ -66,14 +68,19 @@ const provincias = ref([]);
 const provinciasFiltradasPorPais = ref([]);
 const selectedPais = ref("");
 const selectedProvincia = ref("");
+const selectedEstado = ref("");
 
 // 🔍 Filtros
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     provincia: { value: null, matchMode: FilterMatchMode.EQUALS },
+    estado: { value: null, matchMode: FilterMatchMode.EQUALS },
 });
 
-
+const estados = ref([
+    { label: "Disponible", value: "DISPONIBLE" },
+    { label: "No Disponible", value: "NO_DISPONIBLE" },
+]);
 
 // 📄 Paginación
 const rowsPerPage = ref(10);
@@ -107,6 +114,11 @@ const filteredHoteles = computed(() => {
         filtered = filtered.filter(hotel =>
             hotel.provincia_id == filters.value.provincia.value
         );
+    }
+
+    // Filtro por estado
+    if (filters.value.estado.value) {
+        filtered = filtered.filter(hotel => hotel.estado === filters.value.estado.value);
     }
 
     return filtered;
@@ -157,6 +169,7 @@ watch([hotel, imagenPreviewList, removedImages], () => {
             const hasAnyData = hotel.value.nombre ||
                               hotel.value.direccion ||
                               hotel.value.descripcion ||
+                              hotel.value.estado ||
                               hotel.value.provincia ||
                               imagenPreviewList.value.length > 0;
 
@@ -172,6 +185,7 @@ function resetForm() {
         nombre: "",
         direccion: "",
         descripcion: "",
+        estado: "",
         provincia: null,
         imagenes: [],
     };
@@ -321,7 +335,7 @@ const fetchProvincias = async (paisId = null) => {
         const url = paisId ? `/api/provincias?pais_id=${paisId}` : "/api/provincias";
         const response = await axios.get(url);
         const provinciasList = response.data.data || response.data || [];
-
+        
         if (paisId) {
             provinciasFiltradasPorPais.value = provinciasList;
         } else {
@@ -348,7 +362,7 @@ const fetchProvincias = async (paisId = null) => {
 const onPaisChange = async () => {
     // Limpiar provincia seleccionada cuando cambie el país
     hotel.value.provincia = null;
-
+    
     if (selectedPais.value) {
         await fetchProvincias(selectedPais.value);
     } else {
@@ -361,10 +375,13 @@ const onProvinciaFilterChange = () => {
     forceSelectTruncation();
 };
 
-
+const onEstadoFilterChange = () => {
+    filters.value.estado.value = selectedEstado.value === "" ? null : selectedEstado.value;
+    forceSelectTruncation();
+};
 
 // 👀 Watchers para forzar truncado cuando cambien los valores
-watch([selectedProvincia], () => {
+watch([selectedProvincia, selectedEstado], () => {
     forceSelectTruncation();
 }, { deep: true });
 
@@ -377,8 +394,10 @@ const clearFilters = async () => {
 
         selectedPais.value = "";
         selectedProvincia.value = "";
+        selectedEstado.value = "";
         filters.value.global.value = null;
         filters.value.provincia.value = null;
+        filters.value.estado.value = null;
 
         toast.add({
             severity: "success",
@@ -419,13 +438,13 @@ const editHotel = async (h) => {
     hotel.value = { ...h };
 
     hotel.value.provincia = h.provincia ? h.provincia.id : null;
-
+    
     // Cargar el país correspondiente si hay provincia
     if (h.provincia && h.provincia.pais) {
         selectedPais.value = h.provincia.pais.id;
         await fetchProvincias(h.provincia.pais.id);
     }
-
+    
     imagenPreviewList.value = Array.isArray(h.imagenes)
         ? h.imagenes.map((img) => (typeof img === "string" ? img : img.nombre))
         : [];
@@ -478,7 +497,7 @@ const saveOrUpdate = async () => {
     }
 
     // Validar campos obligatorios
-    if (!selectedPais.value || !hotel.value.provincia || imagenPreviewList.value.length === 0) {
+    if (!hotel.value.estado || !selectedPais.value || !hotel.value.provincia || imagenPreviewList.value.length === 0) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
@@ -508,6 +527,7 @@ const saveOrUpdate = async () => {
         formData.append("nombre", hotel.value.nombre || "");
         formData.append("direccion", hotel.value.direccion || "");
         formData.append("descripcion", hotel.value.descripcion || "");
+        formData.append("estado", hotel.value.estado || "");
         formData.append("provincia_id", hotel.value.provincia || "");
 
 
@@ -655,8 +675,35 @@ const continueEditing = () => {
     unsavedChangesDialog.value = false;
 };
 
+// Funciones para manejar las acciones de modales
+const handleGenerateReport = (hotel) => {
+    toast.add({
+        severity: "info",
+        summary: "Generar Reporte",
+        detail: `Funcionalidad de generar reporte del hotel "${hotel.nombre}" en desarrollo.`,
+        life: 5000
+    });
+    moreActionsDialog.value = false;
+};
+
+const handleArchiveHotel = (hotel) => {
+    toast.add({
+        severity: "info",
+        summary: "Archivar Hotel",
+        detail: `Funcionalidad de archivar hotel "${hotel.nombre}" en desarrollo.`,
+        life: 5000
+    });
+    moreActionsDialog.value = false;
+};
+
 // Funciones para manejar los modales de hoteles
+const openMoreActionsModal = (hotelData) => {
+    selectedHotel.value = hotelData;
+    moreActionsDialog.value = true;
+};
+
 const handleViewDetails = (hotel) => {
+    moreActionsDialog.value = false;
     selectedHotel.value = hotel;
     showImageDialog.value = true;
 };
@@ -847,7 +894,10 @@ const validateDescripcion = () => {
     }
 };
 
-
+function getEstadoLabel(estado) {
+    const found = estados.value.find((e) => e.value === estado);
+    return found ? found.label : "";
+}
 
 function sanitizeDropdownInput(value) {
     return value.replace(/^\s+/, "").replace(/[^A-Za-zÁÉÍÓÚáéíóúÑñÜü\s]/g, "");
@@ -871,17 +921,17 @@ const handlePasteNombre = (event) => {
     const input = event.target;
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
     const upperCaseText = pastedText.toUpperCase();
-
+    
     const start = input.selectionStart;
     const end = input.selectionEnd;
     const currentText = hotel.value.nombre || '';
-
+    
     // Insertar texto en la posición del cursor
     const newText = currentText.substring(0, start) + upperCaseText + currentText.substring(end);
-
+    
     // Respetar límite de caracteres
     hotel.value.nombre = newText.length > 100 ? newText.substring(0, 100) : newText;
-
+    
     // Restaurar posición del cursor después del texto pegado
     setTimeout(() => {
         const newPosition = start + upperCaseText.length;
@@ -894,17 +944,17 @@ const handlePasteDescripcion = (event) => {
     const input = event.target;
     const pastedText = (event.clipboardData || window.clipboardData).getData('text');
     const upperCaseText = pastedText.toUpperCase();
-
+    
     const start = input.selectionStart;
     const end = input.selectionEnd;
     const currentText = hotel.value.descripcion || '';
-
+    
     // Insertar texto en la posición del cursor
     const newText = currentText.substring(0, start) + upperCaseText + currentText.substring(end);
-
+    
     // Respetar límite de caracteres
     hotel.value.descripcion = newText.length > 500 ? newText.substring(0, 500) : newText;
-
+    
     // Restaurar posición del cursor después del texto pegado
     setTimeout(() => {
         const newPosition = start + upperCaseText.length;
@@ -928,27 +978,27 @@ const handlePasteDescripcion = (event) => {
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
                     <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Hoteles</h3>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
-                        <Link
-                            :href="route('controlPaisesProvincias')"
-                            @click="handlePaisesClick"
-                            :class="{'opacity-50 cursor-not-allowed': isNavigatingToPaises}"
-                            class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2">
-                            <FontAwesomeIcon
-                                :icon="isNavigatingToPaises ? faSpinner : faGlobe"
-                                :class="{'animate-spin': isNavigatingToPaises, 'h-4': true}"
-                            />
-                            <span class="block sm:hidden">{{ isNavigatingToPaises ? 'Car...' : 'Países' }}</span>
-                            <span class="hidden sm:block">{{ isNavigatingToPaises ? 'Cargando...' : 'Control países' }}</span>
-                        </Link>
-                        <button
-                            class="bg-red-500 border flex justify-center border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
-                            @click="openNew">
-                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
-                            <span class="block sm:hidden">Agregar</span>
-                            <span class="hidden sm:block">Agregar hotel</span>
-                        </button>
-                    </div>
+                    <Link
+                        :href="route('controlPaisesProvincias')"
+                        @click="handlePaisesClick"
+                        :class="{'opacity-50 cursor-not-allowed': isNavigatingToPaises}"
+                        class="bg-blue-500 border border-blue-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2">
+                        <FontAwesomeIcon
+                            :icon="isNavigatingToPaises ? faSpinner : faGlobe"
+                            :class="{'animate-spin': isNavigatingToPaises, 'h-4': true}"
+                        />
+                        <span class="block sm:hidden">{{ isNavigatingToPaises ? 'Car...' : 'Países' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToPaises ? 'Cargando...' : 'Control países' }}</span>
+                    </Link>
+                    <button
+                        class="bg-red-500 border flex justify-center border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                        @click="openNew">
+                        <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
+                        <span class="block sm:hidden">Agregar</span>
+                        <span class="hidden sm:block">Agregar hotel</span>
+                    </button>
                 </div>
+            </div>
 
             <DataTable
                 :value="filteredHoteles"
@@ -1014,7 +1064,7 @@ const handlePasteDescripcion = (event) => {
                             <div>
                                 <InputText v-model="filters['global'].value" placeholder="🔍 Buscar hoteles..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-3">
+                            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3">
                                 <div>
                                     <select
                                         v-model="selectedProvincia"
@@ -1029,6 +1079,23 @@ const handlePasteDescripcion = (event) => {
                                             class="truncate text-gray-900 text-lg"
                                         >
                                             {{ provincia.nombre }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <select
+                                        v-model="selectedEstado"
+                                        @change="onEstadoFilterChange"
+                                        class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                                    >
+                                        <option value="" disabled selected hidden>Estado</option>
+                                        <option
+                                            v-for="estado in estados"
+                                            :key="estado.value"
+                                            :value="estado.value"
+                                            class="truncate text-gray-900 text-lg"
+                                        >
+                                            {{ estado.label }}
                                         </option>
                                     </select>
                                 </div>
@@ -1068,6 +1135,14 @@ const handlePasteDescripcion = (event) => {
                     </template>
                 </Column>
 
+                <Column field="estado" header="Estado" class="w-28">
+                    <template #body="slotProps">
+                        <span :class="'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + (slotProps.data.estado === 'DISPONIBLE' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800')">
+                            {{ getEstadoLabel(slotProps.data.estado) || slotProps.data.estado }}
+                        </span>
+                    </template>
+                </Column>
+
                 <Column :exportable="false" class="w-52 min-w-36">
                     <template #header>
                         <div class="text-center w-full font-bold">
@@ -1076,6 +1151,12 @@ const handlePasteDescripcion = (event) => {
                     </template>
                     <template #body="slotProps">
                         <div class="flex gap-2 justify-center items-center">
+                            <button
+                                class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                @click="openMoreActionsModal(slotProps.data)">
+                                <FontAwesomeIcon :icon="faListDots" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                <span class="hidden md:block text-white">Más</span>
+                            </button>
                             <button
                                class="flex bg-blue-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                                 @click="editHotel(slotProps.data)">
@@ -1093,7 +1174,7 @@ const handlePasteDescripcion = (event) => {
                 </Column>
             </DataTable>
 
-            <!-- Modal de formulario para agregar/editar hoteles -->
+            <!--Modal de formulario -->
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Hotel'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
                 <div class="space-y-4">
                     <!-- Nombre -->
@@ -1184,8 +1265,31 @@ const handlePasteDescripcion = (event) => {
                         </small>
                     </div>
 
-                    <!-- País -->
+                    <!-- Estado -->
                     <div class="w-full flex flex-col">
+                        <div class="flex items-center gap-4 sm:gap-5">
+                            <label for="estado" class="w-36 sm:w-32 flex items-center gap-1">
+                                Estado: <span class="text-red-500 font-bold">*</span>
+                            </label>
+                            <Select
+                                v-model="hotel.estado"
+                                :options="estados"
+                                optionLabel="label"
+                                optionValue="value"
+                                id="estado"
+                                name="estado"
+                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
+                                placeholder="Seleccionar"
+                                :class="{'p-invalid': submitted && !hotel.estado}"
+                            />
+                        </div>
+                        <small class="text-red-500 ml-28" v-if="submitted && !hotel.estado">
+                            El estado es obligatorio.
+                        </small>
+                    </div>
+
+                    <!-- Categoría -->
+                    <!-- País -->-full flex flex-col">
                         <div class="flex items-center gap-4 sm:gap-5">
                             <label for="pais" class="w-36 sm:w-32 flex items-center gap-1">
                                 País: <span class="text-red-500 font-bold">*</span>
@@ -1215,7 +1319,9 @@ const handlePasteDescripcion = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4 sm:gap-5">
                             <label for="provincia" class="w-36 sm:w-32 flex items-center gap-1">
-                                Depa/Provincia: <span class="text-red-500 font-bold">*</span>
+                                Depa/
+                                <br/>
+                                Provincia: <span class="text-red-500 font-bold">*</span>
                             </label>
                             <Select
                                 v-model="hotel.provincia"
@@ -1271,14 +1377,10 @@ const handlePasteDescripcion = (event) => {
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && imagenPreviewList.length === 0">Las imágenes son obligatorias (al menos una).</small>
                     </div>
-
-                    <!-- Vista previa de imágenes -->
-                    <div class="grid grid-cols-3 ml-2 sm:ml-5 gap-y-2" v-if="imagenPreviewList.length > 0">
+                    <div class="grid grid-cols-3 ml-2 sm:ml-5 gap-y-2">
                         <div v-for="(img, index) in imagenPreviewList" :key="index" class="relative w-24 sm:w-28 h-24 sm:h-28">
-                            <img :src="img.startsWith('data:image') ? img : IMAGE_PATH + img" alt="Vista previa" class="w-full h-full object-cover rounded border"/>
-                            <button @click="removeImage(index)" class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow" style="transform: translate(50%, -50%)">
-                                <i class="pi pi-times text-xs"></i>
-                            </button>
+                            <img :src=" img.startsWith('data:image') ? img : IMAGE_PATH + img " alt="Vista previa" class="w-full h-full object-cover rounded border"/>
+                            <button @click="removeImage(index)" class="absolute top-2 right-2 bg-gray-600/80 hover:bg-gray-700/80 text-white font-bold py-1 px-2 rounded-full shadow" style="transform: translate(50%, -50%)"> <i class="pi pi-times text-xs"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1306,10 +1408,10 @@ const handlePasteDescripcion = (event) => {
                     </div>
                 </template>
             </Dialog>
-        </div>
 
-        <!-- Componente de Modales de Hoteles -->
-        <HotelModals
+            <!-- Componente de Modales de Hoteles -->
+            <HotelModals
+                v-model:visible="moreActionsDialog"
                 v-model:details-visible="showImageDialog"
                 v-model:carousel-visible="showImageCarouselDialog"
                 v-model:delete-visible="deleteDialog"
@@ -1324,6 +1426,7 @@ const handlePasteDescripcion = (event) => {
                 @cancel-delete="() => deleteDialog = false"
                 @close-without-saving="closeDialogWithoutSaving"
                 @continue-editing="continueEditing"
+                @view-details="handleViewDetails"
                 @open-image-modal="openImageModal"
             />
         </div>

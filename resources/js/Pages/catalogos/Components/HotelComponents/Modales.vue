@@ -7,11 +7,6 @@ import { faCheck, faEye, faExclamationTriangle,  faPencil,  faSignOut, faSpinner
 
 // Props
 const props = defineProps({
-    // Modal Más Acciones
-    visible: {
-        type: Boolean,
-        default: false
-    },
     // Modal Detalles del Hotel
     detailsVisible: {
         type: Boolean,
@@ -62,9 +57,6 @@ const props = defineProps({
 
 // Emits
 const emit = defineEmits([
-    // Modal Más Acciones
-    'update:visible',
-    'viewDetails',
     // Modal Detalles del Hotel
     'update:detailsVisible',
     'openImageModal',
@@ -80,12 +72,6 @@ const emit = defineEmits([
     'closeWithoutSaving',
     'continueEditing'
 ]);
-
-// Computed para el v-model del modal Más Acciones
-const isVisible = computed({
-    get: () => props.visible,
-    set: (value) => emit('update:visible', value)
-});
 
 // Computed para el v-model del modal de Detalles
 const isDetailsVisible = computed({
@@ -123,31 +109,6 @@ watch(() => props.carouselIndex, (newIndex) => {
 watch(currentPageIndex, (newIndex) => {
     emit('update:carouselIndex', newIndex);
 });
-
-// Función para obtener el estado del hotel
-const getEstadoHotel = (hotel) => {
-    if (hotel.estado === 'activo') {
-        return {
-            label: 'Activo',
-            class: 'bg-green-100 text-green-800'
-        };
-    } else {
-        return {
-            label: 'Inactivo',
-            class: 'bg-red-100 text-red-800'
-        };
-    }
-};
-
-
-const viewDetails = () => {
-    emit('update:visible', false);
-    emit('viewDetails', props.hotel);
-};
-
-const closeModal = () => {
-    emit('update:visible', false);
-};
 
 // Función para abrir el modal de carrusel de imágenes
 const openImageModal = (index) => {
@@ -211,72 +172,6 @@ defineOptions({
 </script>
 
 <template>
-    <!-- Modal de Más Acciones -->
-    <Dialog
-        v-model:visible="isVisible"
-        header="Más Acciones"
-        :modal="true"
-        :style="dialogStyle"
-        :closable="false"
-        :draggable="false"
-    >
-        <div class="space-y-4">
-            <div class="text-center mb-4">
-                <h4 class="text-lg font-semibold text-gray-800">
-                   Hotel: <span class="text-blue-600">{{ hotel.nombre || 'Hotel' }}</span>
-                </h4>
-                <p class="text-sm text-gray-600 mt-1">Selecciona una acción a realizar</p>
-            </div>
-
-            <div class="grid grid-cols-1 gap-3">
-                <!-- Botón para ver detalles -->
-                <button
-                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="viewDetails"
-                >
-                    <FontAwesomeIcon :icon="faEye" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Ver Detalles</div>
-                        <div class="text-xs opacity-90">Información completa del hotel</div>
-                    </div>
-                </button>
-
-                
-                <!-- Botón para ver reservas -->
-                <Link
-                    :href="route('reservasHoteles')"
-                    class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="closeModal"
-                >
-                    <FontAwesomeIcon :icon="faMapLocationDot" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Ver Reservas</div>
-                        <div class="text-xs opacity-90">Historial de reservas del hotel</div>
-                    </div>
-                </Link>
-            </div>
-
-            <div class="mt-6 pt-4 border-t border-gray-200 text-center">
-                <p class="text-xs text-gray-500">
-                    💡 Selecciona una acción para continuar.
-                </p>
-            </div>
-        </div>
-
-        <template #footer>
-            <div class="flex justify-center w-full">
-                <button
-                    type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="closeModal"
-                >
-                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
-                    Cerrar
-                </button>
-            </div>
-        </template>
-    </Dialog>
-
     <!-- Modal de Detalles del Hotel -->
     <Dialog
         v-model:visible="isDetailsVisible"
@@ -292,18 +187,6 @@ defineOptions({
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <label class="text-sm font-semibold text-gray-700">Nombre:</label>
                     <p class="text-sm text-gray-900 mt-1">{{ hotel.nombre || 'Sin nombre' }}</p>
-                </div>
-                <div class="bg-gray-50 p-3 rounded-lg">
-                    <label class="text-sm font-semibold text-gray-700">Categoría:</label>
-                    <p class="text-sm text-gray-900 mt-1">{{ hotel.categoria_hotel?.nombre || 'Sin categoría' }}</p>
-                </div>
-                <div class="bg-gray-50 p-3 rounded-lg">
-                    <label class="text-sm font-semibold text-gray-700">Estado:</label>
-                    <div class="mt-1">
-                        <span :class="'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ' + getEstadoHotel(hotel).class">
-                            {{ getEstadoHotel(hotel).label }}
-                        </span>
-                    </div>
                 </div>
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <label class="text-sm font-semibold text-gray-700">Provincia:</label>
