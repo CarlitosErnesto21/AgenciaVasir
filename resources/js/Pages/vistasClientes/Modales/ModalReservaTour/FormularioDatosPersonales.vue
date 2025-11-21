@@ -515,9 +515,9 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
   <div class="space-y-6">
     <!-- Información del usuario (si está logueado) -->
     <div v-if="user" class="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg">
-      <h3 class="font-bold text-lg text-gray-800 mb-2">Información de tu cuenta:</h3>
-      <p class="text-sm text-gray-600 mb-1"><strong>Nombre:</strong> {{ user.name }}</p>
-      <p class="text-sm text-gray-600"><strong>Email:</strong> {{ user.email }}</p>
+      <h3 class="font-bold text-lg text-blue-500 mb-2">Información de tu cuenta:</h3>
+      <p class="text-sm text-blue-500 mb-1"><strong>Nombre:</strong> {{ user.name }}</p>
+      <p class="text-sm text-blue-500"><strong>Email:</strong> {{ user.email }}</p>
     </div>
 
     <!-- Mensaje informativo para datos precargados -->
@@ -547,7 +547,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
     <!-- Formulario de información personal -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Documento</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Documento de identidad</label>
         <select
           v-model="formularioLocal.tipo_documento"
           required
@@ -560,7 +560,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
         </select>
       </div>
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Número de Identificación</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Número de identificación</label>
         <input
           :value="formularioLocal.numero_identificacion"
           @input="manejarEntradaDocumento"
@@ -599,7 +599,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
 
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Fecha de nacimiento</label>
         <DatePicker
           v-model="formularioLocal.fecha_nacimiento"
           :maxDate="getFechaMaximaNacimiento()"
@@ -667,7 +667,7 @@ watch(() => props.formulario.telefono, (nuevoTelefono, telefonoAnterior) => {
         </p>
       </div>
       <div class="sm:col-span-1">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección</label>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Dirección de residencia</label>
         <input
           v-model="formularioLocal.direccion"
           type="text"

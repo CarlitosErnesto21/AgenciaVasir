@@ -255,7 +255,7 @@ const getImageUrl = (producto) => {
           </div>
 
           <!-- Lista de productos -->
-          <div v-else class="space-y-4">
+          <div v-else class="space-y-2">
             <div
               v-for="item in carritoStore.items"
               :key="item.id"
@@ -324,7 +324,7 @@ const getImageUrl = (producto) => {
         <div v-if="!carritoStore.isEmpty" class="px-6 py-3 border-t border-gray-100">
           <button
             @click="carritoStore.limpiarCarrito()"
-            class="w-full text-red-500 hover:text-red-700 hover:bg-red-50 py-2 px-4 text-sm transition-colors flex items-center justify-center gap-2 rounded-md border border-red-200 hover:border-red-300"
+            class="w-full bg-red-500 text-white hover:bg-red-600 py-2 px-4 text-sm transition-colors flex items-center justify-center gap-2 rounded-md border border-red-200 hover:border-red-300"
           >
             <FontAwesomeIcon :icon="faTrash" class="w-4 h-4" />
             Vaciar Carrito
@@ -627,8 +627,8 @@ const getImageUrl = (producto) => {
 /* Responsivo mejorado */
 @media (max-width: 768px) {
   .carrito-panel {
-    width: 85%;
-    max-width: 400px;
+    width: 95%;
+    max-width: 450px;
     right: 0;
     top: 0;
     bottom: 0;
@@ -638,20 +638,20 @@ const getImageUrl = (producto) => {
   }
 
   .producto-item {
-    padding: 10px;
+    padding: 12px;
   }
 
   .btn-checkout,
   .btn-continuar {
     font-size: 0.875rem;
-    padding: 10px 16px;
+    padding: 12px 18px;
   }
 }
 
 @media (max-width: 480px) {
   .carrito-panel {
-    width: 80%;
-    max-width: 350px;
+    width: 90%;
+    max-width: 420px;
     right: 0;
     top: 0;
     bottom: 0;
@@ -665,30 +665,32 @@ const getImageUrl = (producto) => {
   }
 
   .producto-item {
-    padding: 8px;
-    gap: 8px;
+    padding: 12px;
+    gap: 10px;
   }
 
   .producto-imagen {
-    width: 50px;
-    height: 50px;
+    width: 55px;
+    height: 55px;
   }
 
   .producto-info h4 {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.3;
   }
 
   .producto-info p {
-    font-size: 0.65rem;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .cantidad-controls {
-    gap: 4px;
+    gap: 6px;
   }
 
   .cantidad-btn {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
     font-size: 0.9rem;
   }
 }

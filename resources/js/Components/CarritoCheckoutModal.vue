@@ -24,15 +24,15 @@
         <h4>Error al procesar</h4>
         <p>{{ error }}</p>
         <div class="flex justify-center gap-4 w-full mt-4">
-          <button 
-            @click="closeModal" 
+          <button
+            @click="closeModal"
             class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
           >
             <FontAwesomeIcon :icon="faTimes" class="h-5" />
             Cancelar
           </button>
-          <button 
-            @click="retry" 
+          <button
+            @click="retry"
             class="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
           >
             <FontAwesomeIcon :icon="faExclamationTriangle" class="h-5" />
@@ -58,6 +58,33 @@
               <span>Total a pagar:</span>
               <span class="amount">${{ formatPrice(carritoStore.totalPrice) }}</span>
             </div>
+            <!-- Advertencia de límite de Wompi -->
+            <div v-if="carritoStore.totalPrice > 800" class="mt-3 p-3 rounded-lg" :class="carritoStore.totalPrice > 1000 ? 'bg-red-50 border border-red-200' : 'bg-yellow-50 border border-yellow-200'">
+              <div class="flex items-start">
+                <FontAwesomeIcon
+                  :icon="faExclamationTriangle"
+                  :class="carritoStore.totalPrice > 1000 ? 'text-red-500' : 'text-yellow-500'"
+                  class="h-4 w-4 mr-2 mt-0.5"
+                />
+                <div class="text-sm">
+                  <p v-if="carritoStore.totalPrice > 1000" class="text-red-800 font-medium">
+                    <strong>Monto excede el límite</strong>
+                  </p>
+                  <p v-else class="text-yellow-800 font-medium">
+                    <strong>Cerca del límite máximo</strong>
+                  </p>
+                  <p :class="carritoStore.totalPrice > 1000 ? 'text-red-700' : 'text-yellow-700'" class="mt-1">
+                    El límite máximo por transacción es de <strong>$1,000.00 USD</strong>.
+                    <span v-if="carritoStore.totalPrice > 1000">
+                      Por favor, reduce la cantidad de productos o contacta con nosotros para pagos mayores.
+                    </span>
+                    <span v-else>
+                      Tu total actual es de <strong>${{ formatPrice(carritoStore.totalPrice) }} USD</strong>.
+                    </span>
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -74,20 +101,27 @@
             </button>
             <button
               @click="procesarPagoWompi"
-              :disabled="procesandoPago"
+              :disabled="procesandoPago || carritoStore.totalPrice > 1000"
               class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              :class="carritoStore.totalPrice > 1000 ? 'bg-red-400 hover:bg-red-400 cursor-not-allowed' : ''"
             >
-              <FontAwesomeIcon 
-                v-if="!procesandoPago" 
-                :icon="faCreditCard" 
-                class="h-5" 
+              <FontAwesomeIcon
+                v-if="!procesandoPago"
+                :icon="faCreditCard"
+                class="h-5"
               />
-              <FontAwesomeIcon 
-                v-else 
-                :icon="faCreditCard" 
-                class="h-5 animate-spin" 
+              <FontAwesomeIcon
+                v-else
+                :icon="faCreditCard"
+                class="h-5 animate-spin"
               />
-              {{ procesandoPago ? 'Generando enlace...' : 'Pagar con Wompi' }}
+              {{
+                procesandoPago
+                  ? 'Generando enlace...'
+                  : carritoStore.totalPrice > 1000
+                    ? 'Monto excede límite'
+                    : 'Pagar con Wompi'
+              }}
             </button>
           </div>
         </div>
@@ -121,8 +155,8 @@
         <div class="success-actions">
           <p class="auto-close-notice">Esta ventana se cerrará automáticamente en unos segundos</p>
           <div class="flex justify-center gap-4 w-full mt-4">
-            <button 
-              @click="closeModal" 
+            <button
+              @click="closeModal"
               class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
             >
               <FontAwesomeIcon :icon="faTimes" class="h-5" />
@@ -175,6 +209,9 @@ const ventaCreada = ref(null)
 const paymentSuccess = ref(false)
 const error = ref(null)
 const procesandoPago = ref(false)
+
+// Constantes para Wompi
+const MAX_WOMPI_AMOUNT = 1000 // USD - Límite máximo por transacción
 
 // Datos del usuario y cliente
 const user = computed(() => page.props.auth?.user)
@@ -270,8 +307,22 @@ const handlePaymentError = (error) => {
   error.value = `Error en el pago: ${error.message || 'Error desconocido'}`
 }
 
+// Validar monto máximo para Wompi
+const validarMontoMaximo = () => {
+  if (carritoStore.totalPrice > MAX_WOMPI_AMOUNT) {
+    error.value = `El monto máximo por compra es de $${MAX_WOMPI_AMOUNT.toFixed(2)} USD. Total actual: $${carritoStore.totalPrice.toFixed(2)} USD. Por favor, reduce la cantidad de productos o contacta con nosotros para pagos mayores.`
+    return false
+  }
+  return true
+}
+
 // Procesar pago con Wompi El Salvador
 const procesarPagoWompi = async () => {
+  // ✅ VALIDAR MONTO ANTES DE PROCESAR
+  if (!validarMontoMaximo()) {
+    return
+  }
+
   procesandoPago.value = true
   error.value = null
 

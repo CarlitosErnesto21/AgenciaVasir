@@ -142,7 +142,7 @@
                   </div>
                   <div class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-users mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
-                    <span><strong>Cupos disponibles:</strong>
+                    <span><strong>Cupos disponibles:&nbsp;</strong>
                       <span :class="obtenerClaseCuposDetalle(tour)">
                         {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
                       </span>
@@ -271,23 +271,61 @@
                     </div>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
 
-                <!-- Información adicional -->
-                <div class="bg-blue-50 rounded-lg p-3 sm:p-4">
-                  <h3 class="text-base sm:text-lg font-semibold text-blue-900 mb-2">
-                    <i class="pi pi-info-circle mr-2 text-sm sm:text-base"></i>
-                    Información importante
-                  </h3>
-                  <ul class="text-blue-800 space-y-1 text-xs sm:text-sm">
-                    <li>• Somos una marca registrada ®️</li>
-                    <li>• Somos una Agencia respaldada por el MITUR y CORSATUR.</li>
-                    <li>• Poseemos Sello de Verificación de Protocolos de Bioseguridad. </li>
-                    <li>• Tours sujetos a completar cupo mínimo. </li>
-                    <li>• Reservás tu cupo con el 50% y el resto el día del tour.</li>
-                    <li>• Si por cualquier motivo como organizadores cancelamos el tour, te devolvemos el total de tu dinero.</li>
-                    <li>• Si no asistís en la fecha y hora indicada no hay devolución de tu reserva.</li>
-                    <li>• Para cancelaciones con menos de 72 horas antes del tour, no hay devolución de tu reserva.</li>
-                  </ul>
+          <!-- Información importante en 3 columnas - Solo desktop - Ancho completo -->
+          <div class="px-6 pb-6">
+            <div class="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 sm:p-6 border border-blue-200 shadow-sm">
+              <h3 class="text-lg sm:text-xl font-bold text-blue-900 mb-4 flex items-center">
+                <i class="pi pi-info-circle mr-3 text-blue-600 text-lg"></i>
+                Información Importante
+              </h3>
+
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Acreditaciones -->
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-green-500">
+                  <h4 class="font-semibold text-green-800 mb-2 text-sm flex items-center">
+                    <span class="mr-1">
+                        <FontAwesomeIcon :icon="faCertificate" class="text-green-500 mr-1"/>
+                    </span>
+                    Nuestras Acreditaciones
+                  </h4>
+                  <div class="space-y-1 text-green-700 text-xs">
+                    <p>• Somos una marca registrada ®️</p>
+                    <p>• Somos una Agencia respaldada por el MITUR y CORSATUR</p>
+                    <p>• Poseemos Sello de Verificación de Protocolos de Bioseguridad</p>
+                  </div>
+                </div>
+
+                <!-- Términos de Reserva -->
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-blue-500">
+                  <h4 class="font-semibold text-blue-800 mb-2 text-sm flex items-center">
+                    <span class="mr-1">
+                        <FontAwesomeIcon :icon="faCreditCard" class="text-blue-500 mr-1"/>
+                    </span>
+                    Términos de Reserva
+                  </h4>
+                  <div class="space-y-1 text-blue-700 text-xs">
+                    <p>• Tours sujetos a completar cupo mínimo</p>
+                    <p>• Reservás tu cupo con el 50% y el resto el día del tour</p>
+                  </div>
+                </div>
+
+                <!-- Políticas de Cancelación -->
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-orange-500">
+                  <h4 class="font-semibold text-orange-800 mb-2 text-sm flex items-center">
+                    <span class="mr-1">
+                        <FontAwesomeIcon :icon="faClipboardList" class="text-orange-500 mr-1"/>
+                    </span>
+                    Políticas de Cancelación
+                  </h4>
+                  <div class="space-y-1 text-orange-700 text-xs">
+                    <p class="font-medium text-green-600">• Si por cualquier motivo como organizadores cancelamos el tour, te devolvemos el total de tu dinero</p>
+                    <p class="font-medium text-red-600">• Si no asistís en la fecha y hora indicada no hay devolución de tu reserva</p>
+                    <p class="font-medium text-red-600">• Para cancelaciones con menos de 72 horas antes del tour, no hay devolución de tu reserva</p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -339,6 +377,8 @@ import { Link } from '@inertiajs/vue3'
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useToast } from 'primevue/usetoast'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import { faC, faCertificate, faClipboardList, faCreditCard } from '@fortawesome/free-solid-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
@@ -425,14 +465,17 @@ const obtenerTour = async () => {
   }
 }
 
-// Función para formatear fecha
+// Función para formatear fecha con hora
 const formatearFecha = (fecha) => {
   if (!fecha) return ''
   const date = new Date(fecha)
   return date.toLocaleDateString('es-ES', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true
   })
 }
 
@@ -443,12 +486,14 @@ const calcularDuracion = (fechaSalida, fechaRegreso) => {
   const salida = new Date(fechaSalida)
   const regreso = new Date(fechaRegreso)
 
-  // Normalizar las fechas para que solo considere el día (sin hora)
-  salida.setHours(0, 0, 0, 0)
-  regreso.setHours(0, 0, 0, 0)
-
+  // Calcular diferencia en milisegundos considerando las horas exactas
   const diffTime = regreso.getTime() - salida.getTime()
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24)) + 1 // +1 porque incluimos el día de salida
+
+  // Si la diferencia es negativa o cero, es el mismo día o error
+  if (diffTime <= 0) return '1 día'
+
+  // Calcular días completos
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays === 1 ? '1 día' : `${diffDays} días`
 }

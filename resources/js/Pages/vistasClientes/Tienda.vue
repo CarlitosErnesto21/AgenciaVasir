@@ -211,8 +211,7 @@ const clearFilters = () => {
   toast.add({
     severity: 'info',
     summary: 'Filtros limpiados',
-    detail: 'Se han removido todos los filtros',
-    life: 2000
+    life: 1000
   })
 }
 
@@ -221,9 +220,8 @@ const applyPriceFilter = () => {
   // Los filtros se aplican automáticamente por la reactividad
   toast.add({
     severity: 'success',
-    summary: 'Filtros aplicados',
-    detail: `Mostrando ${allFilteredProducts.value.length} productos`,
-    life: 2000
+    summary: `Mostrando ${allFilteredProducts.value.length} productos`,
+    life: 1000
   })
 }
 
@@ -263,8 +261,7 @@ const comprarProducto = (productoData) => {
   if (producto.stock_actual <= 0) {
     toast.add({
       severity: 'warn',
-      summary: 'Sin stock',
-      detail: `El producto "${producto.nombre}" no está disponible`,
+      summary: `El producto "${producto.nombre}" no está disponible`,
       life: 3000
     })
     return
@@ -338,7 +335,6 @@ const recargarDatos = async () => {
   toast.add({
     severity: 'success',
     summary: 'Datos actualizados',
-    detail: 'La información se ha actualizado correctamente',
     life: 2000
   })
 }
