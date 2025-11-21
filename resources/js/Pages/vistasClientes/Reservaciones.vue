@@ -1314,8 +1314,8 @@ watch(() => reservaForm.value.cliente_data.fecha_nacimiento, (nuevaFecha) => {
         </div>
 
         <!-- Sección de Aerolíneas  -->
-        <div class="w-full mb-8">
-          <div class="bg-gradient-to-br from-white via-purple-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg sm:shadow-xl border border-gray-200 hover:shadow-2xl transition-all duration-300">
+        <div class="w-full mb-8 mt-6">
+          <div class="bg-gradient-to-br from-white via-purple-50 to-indigo-50 rounded-lg sm:rounded-xl p-4 sm:p-6 md:p-8 shadow-lg sm:shadow-xl border-2 border-gray-200 hover:shadow-2xl transition-all duration-300">
             <!-- Header responsivo -->
             <div class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white text-center py-3 sm:py-4 md:py-6 rounded-lg sm:rounded-xl mb-4 sm:mb-6 md:mb-8">
               <h3 class="text-base sm:text-lg md:text-xl lg:text-2xl font-bold flex items-center justify-center gap-2">

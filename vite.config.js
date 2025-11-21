@@ -26,14 +26,14 @@ export default defineConfig({
 
 
 // //Configuración del servidor de desarrollo solo para pruebas en red local
-//     server: {
-//         host: '0.0.0.0',
-//         port: 5173,
-//         cors: true,
-//         hmr: {
-//             host: '192.168.1.5'
-//         }
-//     },
+    server: {
+        host: '0.0.0.0',
+        port: 5173,
+        cors: true,
+        hmr: {
+            host: '192.168.1.5'
+        }
+    },
 
     // Optimizaciones para build en Railway
     build: {

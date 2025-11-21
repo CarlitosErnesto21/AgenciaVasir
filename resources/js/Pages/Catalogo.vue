@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3'
 import { ref, onMounted, onBeforeUnmount, computed, watch } from 'vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser, faSign, faSignIn } from '@fortawesome/free-solid-svg-icons'
+import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSignInAlt, faUserPlus, faChevronDown, faHome, faUsers, faShoppingCart, faBoxOpen, faGlobe, faCalendarCheck, faMap, faLocationDot, faGlobeAmericas, faStore, faMapLocationDot, faVolcano, faHotel, faBus, faTimes, faArrowLeft, faArrowRight, faHouseChimneyUser, faSign, faSignIn, faPlane } from '@fortawesome/free-solid-svg-icons'
 import { faFacebook, faInstagram, faTiktok, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useCarritoStore } from '@/stores/carrito'
 import Toast from 'primevue/toast'
@@ -167,8 +167,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faHotel" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Hoteles</span>
+                    <FontAwesomeIcon :icon="faPlane" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center">Hoteles y Boletos Aéreos</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -489,8 +489,8 @@ watch(isAuthenticated, (newValue, oldValue) => {
             ]"
             @click="isSidebarOpen = false"
           >
-            <FontAwesomeIcon :icon="faHotel" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
-            <span class="font-semibold">Hoteles</span>
+            <FontAwesomeIcon :icon="faPlane" class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300" />
+            <span class="font-semibold">Hoteles y Boletos Aéreos</span>
           </Link>
           <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
 
