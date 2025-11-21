@@ -164,15 +164,13 @@ const formatearFecha = (fecha) => {
   });
 };
 
-// Función para formatear fecha con hora
+// Función para formatear fecha 
 const formatearFechaHora = (fecha) => {
   if (!fecha) return 'N/A';
-  return new Date(fecha).toLocaleString('es-ES', {
+  return new Date(fecha).toLocaleDateString('es-ES', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    year: 'numeric'
   });
 };
 
@@ -459,7 +457,7 @@ const cerrarModalReprogramar = () => {
           </div>
           <div>
             <span class="font-medium text-gray-700">Fecha:</span>
-            <span class="ml-2">{{ formatearFechaHora(reserva.fecha_reserva) }}</span>
+            <span class="ml-2">{{ formatearFecha(reserva.fecha_reserva) }}</span>
           </div>
           <div>
             <span class="font-medium text-gray-700">Estado:</span>

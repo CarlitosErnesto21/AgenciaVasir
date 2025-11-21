@@ -65,10 +65,47 @@ class ReservaController extends Controller
                 });
             }
 
-            // Si no hay filtros, devolver formato simple (compatibilidad hacia atrás)
-            if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page'])) {
-                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado'])->get();
-                return response()->json($reservas);
+            // Filtro por tour específico
+            if ($request->filled('tour_id')) {
+                $query->whereHas('detallesTours.tour', function ($q) use ($request) {
+                    $q->where('id', $request->tour_id);
+                });
+            }
+
+            // Si no hay filtros, devolver formato transformado con relaciones completas
+            if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id'])) {
+                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour'])->get();
+                
+                // Transformar los datos igual que en el flujo paginado
+                $transformedData = $reservas->map(function ($reserva) {
+                    $tourNombre = $reserva->detallesTours->first() ?
+                                 $reserva->detallesTours->first()->tour->nombre : 'N/A';
+
+                    return [
+                        'id' => $reserva->id,
+                        'fecha_reserva' => $reserva->fecha,
+                        'estado' => $reserva->estado,
+                        'cliente' => [
+                            'nombres' => $reserva->cliente && $reserva->cliente->user ?
+                                       $reserva->cliente->user->name : 'Cliente no asignado',
+                            'correo' => $reserva->cliente && $reserva->cliente->user ?
+                                      $reserva->cliente->user->email : 'Sin correo',
+                            'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
+                            'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
+                            'user' => $reserva->cliente && $reserva->cliente->user ? [
+                                'name' => $reserva->cliente->user->name,
+                                'email' => $reserva->cliente->user->email
+                            ] : null
+                        ],
+                        'entidad_nombre' => $tourNombre,
+                        'tipo' => 'Tour',
+                        'total' => $reserva->total,
+                        'mayores_edad' => $reserva->mayores_edad,
+                        'menores_edad' => $reserva->menores_edad
+                    ];
+                });
+                
+                return response()->json($transformedData);
             }
 
             $reservas = $query->orderBy('fecha', 'desc')

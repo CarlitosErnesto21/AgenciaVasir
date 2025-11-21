@@ -245,7 +245,6 @@
 
         <!-- Programa de lealtad -->
         <div style="background-color: #f1f3f4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6c757d; text-align: center;">
-            <h4 style="margin-top: 0; color: #495057;">🏆 Programa de Clientes VIP</h4>
             <p style="margin: 10px 0; font-size: 14px; color: #6c757d;">
                 Con cada reservación acumulas puntos para descuentos futuros.<br>
                 <strong>¡Pregúntanos sobre nuestro programa de lealtad!</strong>

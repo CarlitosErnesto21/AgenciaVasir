@@ -27,7 +27,8 @@ const filtros = ref({
   fechaDesde: null,
   fechaHasta: null,
   estadoReserva: '', // Siempre vacío por defecto
-  estadoTour: null
+  estadoTour: null,
+  tourSeleccionado: '' // Nuevo filtro para buscar por tour específico
 })
 
 // Estados para modales
@@ -138,6 +139,19 @@ const estadisticas = computed(() => {
   }
 })
 
+// Computed para información del tour seleccionado
+const infoTourSeleccionado = computed(() => {
+  if (!filtros.value.tourSeleccionado || filtros.value.tourSeleccionado === '') return null
+  
+  const tour = tours.value.find(t => t.id == filtros.value.tourSeleccionado)
+  const reservasDelTour = reservasFiltradas.value.length
+  
+  return {
+    nombre: tour?.nombre || 'Tour no encontrado',
+    totalReservas: reservasDelTour
+  }
+})
+
 // Estilo responsive para el diálogo
 const dialogStyle = computed(() => {
     if (windowWidth.value < 640) {
@@ -156,7 +170,8 @@ const cargarReservas = async () => {
     const params = {
       busqueda: filtros.value.busqueda || undefined,
       fecha_inicio: filtros.value.fechaDesde || undefined,
-      fecha_fin: filtros.value.fechaHasta || undefined
+      fecha_fin: filtros.value.fechaHasta || undefined,
+      tour_id: filtros.value.tourSeleccionado || undefined
     }
     const response = await axios.get('/api/reservas', { params, withCredentials: true })
     reservas.value = Array.isArray(response.data) ? response.data : (response.data.data || [])
@@ -190,7 +205,8 @@ const cargarReservasWithToasts = async () => {
     const params = {
       busqueda: filtros.value.busqueda || undefined,
       fecha_inicio: filtros.value.fechaDesde || undefined,
-      fecha_fin: filtros.value.fechaHasta || undefined
+      fecha_fin: filtros.value.fechaHasta || undefined,
+      tour_id: filtros.value.tourSeleccionado || undefined
     }
 
     const response = await axios.get('/api/reservas', { params, withCredentials: true })
@@ -554,7 +570,8 @@ const limpiarFiltros = async () => {
       fechaDesde: null,
       fechaHasta: null,
       estadoReserva: '', // Limpiar filtro de estado
-      estadoTour: null
+      estadoTour: null,
+      tourSeleccionado: '' // Limpiar filtro de tour
     }
 
     toast.add({
@@ -789,7 +806,7 @@ const handleVerDetalles = (reserva) => {
 }
 
 // Watch para recargar cuando cambien algunos filtros
-watch(() => [filtros.value.busqueda, filtros.value.fechaDesde, filtros.value.fechaHasta], () => {
+watch(() => [filtros.value.busqueda, filtros.value.fechaDesde, filtros.value.fechaHasta, filtros.value.tourSeleccionado], () => {
   // Debounce para la búsqueda
   clearTimeout(window.searchTimeout)
   window.searchTimeout = setTimeout(() => {
@@ -1040,6 +1057,24 @@ onMounted(() => {
                   </option>
                 </select>
               </div>
+              
+              <div class="col-span-1">
+                <select
+                  v-model="filtros.tourSeleccionado"
+                  class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                  :disabled="loadingTours"
+                >
+                  <option value="" disabled selected hidden>Filtrar por Tour</option>
+                  <option
+                    v-for="tour in tours"
+                    :key="tour.id"
+                    :value="tour.id"
+                    class="truncate text-gray-900"
+                  >
+                    {{ tour.nombre }}
+                  </option>
+                </select>
+              </div>
 
               <div class="col-span-1 hidden md:block">
                 <DatePicker
@@ -1079,6 +1114,20 @@ onMounted(() => {
                   class="flex-1 h-9 text-sm rounded-md border border-blue-300"
                   showIcon
                 />
+              </div>
+            </div>
+            
+            <!-- Indicador del tour seleccionado -->
+            <div v-if="infoTourSeleccionado" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2">
+                  <span class="text-blue-600 font-medium">🏝️ Mostrando reservas para:</span>
+                  <span class="text-blue-800 font-semibold">{{ infoTourSeleccionado.nombre }}</span>
+                </div>
+                <div class="text-blue-600">
+                  <span class="font-medium">{{ infoTourSeleccionado.totalReservas }}</span>
+                  <span>{{ infoTourSeleccionado.totalReservas === 1 ? ' reserva encontrada' : ' reservas encontradas' }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1129,9 +1178,6 @@ onMounted(() => {
                 <template #body="slotProps">
                   <div class="text-xs sm:text-sm">
                     <div class="font-medium">{{ formatearFecha(slotProps.data.fecha_reserva) }}</div>
-                    <div class="text-xs text-gray-500 hidden sm:block">
-                      {{ new Date(slotProps.data.fecha_reserva).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' }) }}
-                    </div>
                   </div>
                 </template>
               </Column>
