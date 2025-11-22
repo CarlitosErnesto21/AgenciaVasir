@@ -26,25 +26,28 @@ php artisan migrate:fresh --force --seed
 echo "📁 Configurando almacenamiento..."
 php setup-storage.php
 
-# Limpiar carpetas de storage públicas
-echo "🗑️ Limpiando carpetas de storage públicas..."
+# Eliminar carpetas de storage públicas completamente
+echo "🗑️ Eliminando carpetas de storage públicas..."
 
-# Mostrar contenido antes de limpiar
-echo "📊 Contenido antes de limpiar:"
-ls -la public/storage/hoteles/ 2>/dev/null || echo "  hoteles/ no existe o está vacía"
-ls -la public/storage/productos/ 2>/dev/null || echo "  productos/ no existe o está vacía"
-ls -la public/storage/tours/ 2>/dev/null || echo "  tours/ no existe o está vacía"
-
-# Limpiar las carpetas
-rm -rf public/storage/hoteles/* 2>/dev/null || echo "  hoteles/ ya estaba vacía"
-rm -rf public/storage/productos/* 2>/dev/null || echo "  productos/ ya estaba vacía"
-rm -rf public/storage/tours/* 2>/dev/null || echo "  tours/ ya estaba vacía"
-
-# Verificar que se limpiaron
-echo "📊 Contenido después de limpiar:"
+# Mostrar contenido antes de eliminar
+echo "📊 Contenido antes de eliminar:"
 ls -la public/storage/hoteles/ 2>/dev/null || echo "  hoteles/ no existe"
 ls -la public/storage/productos/ 2>/dev/null || echo "  productos/ no existe"
 ls -la public/storage/tours/ 2>/dev/null || echo "  tours/ no existe"
+ls -la public/storage/paquetesvisas/ 2>/dev/null || echo "  paquetesvisas/ no existe"
+
+# Eliminar las carpetas completamente
+rm -rf public/storage/hoteles 2>/dev/null || echo "  hoteles/ ya no existía"
+rm -rf public/storage/productos 2>/dev/null || echo "  productos/ ya no existía"
+rm -rf public/storage/tours 2>/dev/null || echo "  tours/ ya no existía"
+rm -rf public/storage/paquetesvisas 2>/dev/null || echo "  paquetesvisas/ ya no existía"
+
+# Verificar que se eliminaron
+echo "📊 Contenido después de eliminar:"
+ls -la public/storage/hoteles/ 2>/dev/null || echo "  hoteles/ eliminada correctamente"
+ls -la public/storage/productos/ 2>/dev/null || echo "  productos/ eliminada correctamente"
+ls -la public/storage/tours/ 2>/dev/null || echo "  tours/ eliminada correctamente"
+ls -la public/storage/paquetesvisas/ 2>/dev/null || echo "  paquetesvisas/ eliminada correctamente"
 
 echo "✅ Proceso de limpieza completado!"
 
