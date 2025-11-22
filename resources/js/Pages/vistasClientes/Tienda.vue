@@ -348,14 +348,14 @@ const recargarDatos = async () => {
     <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 w-full pt-20 md:pt-28 lg:pt-32 xl:pt-36">
       <!-- Header Professional - Full Width -->
       <div class="w-full mb-4 -mt-0 md:-mt-3">
-        <div class="bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-4 sm:py-6 relative shadow-xl">
+        <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6 relative shadow-xl">
           <!-- Botón del carrito en la esquina superior derecha -->
           <div class="absolute top-4 right-4">
             <CarritoButton />
           </div>
 
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-            <FontAwesomeIcon :icon="faStore" class="mr-3" /> Productos
+            <FontAwesomeIcon :icon="faStore" class="mr-2 text-yellow-300" /> Productos
           </h1>
           <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
         </div>

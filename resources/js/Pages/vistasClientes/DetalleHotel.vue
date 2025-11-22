@@ -177,6 +177,7 @@ import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
+const config = computed(() => page.props.config || {})
 
 const toast = useToast()
 
@@ -275,8 +276,24 @@ const contactarHotel = () => {
     }
   }
 
+  // Obtener el teléfono del administrador desde la configuración compartida
+  const adminPhone = config.value?.admin_phone
+  
+  // Verificar si es un número válido (no el texto "no disponible")
+  if (!adminPhone || adminPhone.includes('no disponible')) {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+    return
+  }
+
+  // Limpiar el número para WhatsApp (solo dígitos)
+  const numeroWhatsApp = adminPhone.replace(/\D/g, '')
   const mensaje = `Hola, estoy interesado/a en obtener más información sobre el hotel "${hotel.value.nombre}" ubicado en ${hotel.value.direccion}. ¿Podrían proporcionarme detalles sobre disponibilidad, precios y servicios? Gracias.`
-  const whatsappUrl = `https://wa.me/50379858777?text=${encodeURIComponent(mensaje)}`
+  const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`
   window.open(whatsappUrl, '_blank')
 }
 

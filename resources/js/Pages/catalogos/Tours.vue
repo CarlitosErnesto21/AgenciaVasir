@@ -5,7 +5,7 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faHandPointUp, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
@@ -678,15 +678,29 @@ const saveOrUpdate = async () => {
             formData.append("incluye", ""); // Enviar cadena vacía para limpiar el campo
         }
         formData.append("punto_salida", tour.value.punto_salida || "");
-        // Formatear fecha_salida correctamente
+        // Formatear fecha_salida correctamente (mantener zona horaria local)
         if (tour.value.fecha_salida instanceof Date) {
-            formData.append("fecha_salida", tour.value.fecha_salida.toISOString().slice(0, 19).replace('T', ' '));
+            const fecha = tour.value.fecha_salida;
+            const year = fecha.getFullYear();
+            const month = String(fecha.getMonth() + 1).padStart(2, '0');
+            const day = String(fecha.getDate()).padStart(2, '0');
+            const hours = String(fecha.getHours()).padStart(2, '0');
+            const minutes = String(fecha.getMinutes()).padStart(2, '0');
+            const seconds = String(fecha.getSeconds()).padStart(2, '0');
+            formData.append("fecha_salida", `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
         } else if (tour.value.fecha_salida) {
             formData.append("fecha_salida", tour.value.fecha_salida);
         }
-        // Formatear fecha_regreso correctamente
+        // Formatear fecha_regreso correctamente (mantener zona horaria local)
         if (horaRegresoCalendar.value instanceof Date) {
-            formData.append("fecha_regreso", horaRegresoCalendar.value.toISOString().slice(0, 19).replace('T', ' '));
+            const fecha = horaRegresoCalendar.value;
+            const year = fecha.getFullYear();
+            const month = String(fecha.getMonth() + 1).padStart(2, '0');
+            const day = String(fecha.getDate()).padStart(2, '0');
+            const hours = String(fecha.getHours()).padStart(2, '0');
+            const minutes = String(fecha.getMinutes()).padStart(2, '0');
+            const seconds = String(fecha.getSeconds()).padStart(2, '0');
+            formData.append("fecha_regreso", `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`);
         } else if (horaRegresoCalendar.value) {
             formData.append("fecha_regreso", horaRegresoCalendar.value);
         }
@@ -1462,7 +1476,13 @@ const onPricePaste = (event) => {
 
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Tours</h3>
+                    <div class="w-full">
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Tours</h3>
+                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                            Haz clic en cualquier fila para ver los detalles.
+                        </p>
+                    </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link
                         :href="route('transportes')"
@@ -1474,14 +1494,13 @@ const onPricePaste = (event) => {
                             :class="{'animate-spin': isNavigatingToTransportes, 'h-4': true}"
                         />
                         <span class="block sm:hidden">{{ isNavigatingToTransportes ? 'Cargando...' : 'Transportes' }}</span>
-                        <span class="hidden sm:block">{{ isNavigatingToTransportes ? 'Cargando...' : 'Control Transportes' }}</span>
+                        <span class="hidden sm:block">{{ isNavigatingToTransportes ? 'Cargando...' : 'Transportes' }}</span>
                     </Link>
                     <button
                         class="bg-red-500 flex border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                         @click="openNew">
                         <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
-                        <span class="block sm:hidden">Agregar</span>
-                        <span class="hidden sm:block">Agregar Tour</span>
+                        <span>Agregar</span>
                     </button>
                 </div>
             </div>

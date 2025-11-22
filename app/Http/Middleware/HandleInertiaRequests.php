@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Empleado;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 use Illuminate\Support\Facades\Auth;
@@ -65,7 +67,32 @@ class HandleInertiaRequests extends Middleware
 
             // Compartir configuración del sistema
             'config' => [
-                'mail_from_address' => env('MAIL_FROM_ADDRESS', 'vasirtours19@gmail.com'),
+                'admin_phone' => function () {
+                    // Buscar ÚNICAMENTE usuario con rol Administrador que tenga empleado con teléfono
+                    $adminUser = User::whereHas('roles', function ($query) {
+                        $query->where('name', 'Administrador');
+                    })->with('empleado')->first();
+
+                    if ($adminUser && $adminUser->empleado && !empty($adminUser->empleado->telefono)) {
+                        return $adminUser->empleado->telefono;
+                    }
+
+                    // Si no encuentra administrador con teléfono, retornar mensaje descriptivo
+                    return 'Teléfono no disponible';
+                },
+                'admin_email' => function () {
+                    // Buscar ÚNICAMENTE usuario con rol Administrador
+                    $adminUser = User::whereHas('roles', function ($query) {
+                        $query->where('name', 'Administrador');
+                    })->first();
+
+                    if ($adminUser && !empty($adminUser->email)) {
+                        return $adminUser->email;
+                    }
+
+                    // Si no encuentra administrador con email, retornar mensaje descriptivo
+                    return 'Email no disponible';
+                },
             ],
         ]);
     }

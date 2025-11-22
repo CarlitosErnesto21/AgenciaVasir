@@ -15,7 +15,7 @@ const toast = useToast()
 // Obtener datos de la página
 const page = usePage()
 const config = computed(() => page.props.config || {})
-const adminEmail = computed(() => config.value.mail_from_address || 'vasirtours19@gmail.com')
+const adminEmail = computed(() => config.value.admin_email || 'vasirtours19@gmail.com')
 const busquedaFAQ = ref('')
 
 // Estado para controlar qué FAQ está abierta
@@ -128,10 +128,20 @@ function abrirWhatsApp(tipo = 'general') {
     }
   }
 
-  const numeroWhatsApp = '50379858777'
-  const mensaje = generarMensajeWhatsApp(tipo)
-  const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
-  window.open(url, '_blank')
+  // Verificar si el teléfono del administrador está disponible
+  if (config.value.admin_phone && !config.value.admin_phone.includes('no disponible')) {
+    const numeroWhatsApp = config.value.admin_phone.replace(/\D/g, '')
+    const mensaje = generarMensajeWhatsApp(tipo)
+    const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
+    window.open(url, '_blank')
+  } else {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+  }
 }
 
 // Función para abrir email con mensaje personalizado
@@ -154,8 +164,18 @@ function abrirEmail() {
     }
   }
 
-  const url = `mailto:${adminEmail.value}`
-  window.open(url, '_blank')
+  // Verificar si el email está disponible
+  if (adminEmail.value && !adminEmail.value.includes('no disponible')) {
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${adminEmail.value}&su=Consulta sobre servicios de VASIR&body=Hola,%0A%0AMe interesa conocer más información sobre sus servicios de:%0A- Tours nacionales e internacionales%0A- Boletos aéreos%0A- Reservaciones de hoteles%0A- Artículos de viaje%0A%0APor favor, contáctenme para brindarme más detalles.%0A%0AGracias.`
+    window.open(url, '_blank')
+  } else {
+    toast.add({
+      severity: 'warn',
+      summary: 'Email no disponible',
+      detail: 'El email del administrador no está disponible. Por favor, contáctenos por WhatsApp o redes sociales.',
+      life: 5000
+    })
+  }
 }
 
 function toggleFAQ(id) {
@@ -181,9 +201,9 @@ const faqsFiltradas = computed(() => {
   <Catalogo>
     <Toast />
     <!-- Header Professional - Ancho completo de la pantalla -->
-    <div class="w-full bg-gradient-to-r from-red-600 via-red-500 to-blue-600 text-white text-center py-4 sm:py-6 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8 shadow-xl">
+    <div class="w-full bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8 shadow-xl">
       <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-        <FontAwesomeIcon :icon="faPhone" class="text-white mr-2" />
+        <FontAwesomeIcon :icon="faPhone" class="text-yellow-300 mr-2" />
         Contáctanos</h1>
       <p class="text-base sm:text-lg text-red-100 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
     </div>

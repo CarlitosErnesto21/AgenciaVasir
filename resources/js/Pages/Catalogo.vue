@@ -6,9 +6,11 @@ import { faList, faUser, faDoorOpen, faPhone, faEnvelope, faMapMarkerAlt, faSign
 import { faFacebook, faInstagram, faTiktok, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useCarritoStore } from '@/stores/carrito'
 import Toast from 'primevue/toast'
+import { useToast } from 'primevue/usetoast'
 
 const carrito = useCarritoStore()
 const page = usePage()
+const toast = useToast()
 const isSidebarOpen = ref(false)
 const toursOpen = ref(false)
 const toursOpenAside = ref(false)
@@ -109,6 +111,76 @@ watch(isAuthenticated, (newValue, oldValue) => {
     carrito.limpiarCarritoAlCerrarSesion()
   }
 }, { immediate: false })
+
+// Función para abrir WhatsApp con restricciones de rol
+function abrirWhatsApp() {
+  // Verificar si el usuario está autenticado y su rol
+  const user = page.props.auth?.user
+
+  // Verificar si el usuario tiene roles de Administrador o Empleado
+  if (user && user.roles && user.roles.length > 0) {
+    const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
+
+    if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Esta acción está disponible solo para clientes. Los administradores y empleados no pueden realizar consultas de WhatsApp como clientes.',
+        life: 5000
+      })
+      return
+    }
+  }
+
+  // Verificar si el teléfono del administrador está disponible
+  if (config.value.admin_phone && !config.value.admin_phone.includes('no disponible')) {
+    const numeroWhatsApp = config.value.admin_phone.replace(/\D/g, '')
+    const mensaje = encodeURIComponent('Hola VASIR, me gustaría recibir información sobre sus servicios turísticos. ¿Podrían ayudarme?')
+    const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
+    window.open(url, '_blank')
+  } else {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+  }
+}
+
+// Función para abrir email con restricciones de rol
+function abrirEmail() {
+  // Verificar si el usuario está autenticado y su rol
+  const user = page.props.auth?.user
+
+  // Verificar si el usuario tiene roles de Administrador o Empleado
+  if (user && user.roles && user.roles.length > 0) {
+    const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
+
+    if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Acceso Restringido',
+        detail: 'Esta acción está disponible solo para clientes. Los administradores y empleados no pueden realizar consultas por email como clientes.',
+        life: 5000
+      })
+      return
+    }
+  }
+
+  // Verificar si el email está disponible
+  if (config.value.admin_email && !config.value.admin_email.includes('no disponible')) {
+    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${config.value.admin_email}&su=Consulta sobre servicios de VASIR&body=Hola,%0A%0AMe interesa conocer más información sobre sus servicios de:%0A- Tours nacionales e internacionales%0A- Boletos aéreos%0A- Reservaciones de hoteles%0A- Artículos de viaje%0A%0APor favor, contáctenme para brindarme más detalles.%0A%0AGracias.`
+    window.open(url, '_blank')
+  } else {
+    toast.add({
+      severity: 'warn',
+      summary: 'Email no disponible',
+      detail: 'El email del administrador no está disponible. Por favor, contáctenos por WhatsApp o redes sociales.',
+      life: 5000
+    })
+  }
+}
 </script>
 
 <template>
@@ -649,13 +721,18 @@ watch(isAuthenticated, (newValue, oldValue) => {
               <FontAwesomeIcon :icon="faWhatsapp" class="w-5 h-5 text-green-300 mt-1 flex-shrink-0" />
               <div class="flex-1 min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
-                  <a href="tel:+50379858777" class="text-red-100 hover:text-white underline decoration-dotted transition-colors">
-                    +503 7985 8777
-                  </a>
-                  <span class="text-red-200">o al</span>
-                  <a href="tel:+50323279199" class="text-red-100 hover:text-white underline decoration-dotted transition-colors">
-                    +503 2327 9199
-                  </a>
+                  <template v-if="config.admin_phone && !config.admin_phone.includes('no disponible')">
+                    <button @click="abrirWhatsApp"
+                       class="text-red-100 hover:text-white underline decoration-dotted transition-colors cursor-pointer">
+                      {{ config.admin_phone }}
+                    </button>
+                  </template>
+                  <template v-else>
+                    <span class="text-red-200 italic">
+                      {{ config.admin_phone || 'Teléfono no disponible' }}
+                    </span>
+                    <span class="text-red-300 text-sm">(Contacte por redes sociales)</span>
+                  </template>
                 </div>
               </div>
             </div>
@@ -664,11 +741,20 @@ watch(isAuthenticated, (newValue, oldValue) => {
               <FontAwesomeIcon :icon="faEnvelope" class="w-5 h-5 text-blue-300 mt-1 flex-shrink-0" />
               <div class="flex-1 min-w-0">
                 <span class="text-red-200 text-sm">Email:</span>
-                <a :href="`https://mail.google.com/mail/?view=cm&fs=1&to=${config.mail_from_address || 'vasirtours19@gmail.com'}`"
-                   class="block text-red-100 hover:text-white underline decoration-dotted transition-colors break-words"
-                   target="_blank" rel="noopener">
-                  {{ config.mail_from_address || 'vasirtours19@gmail.com' }}
-                </a>
+                <div class="flex flex-wrap items-center gap-2">
+                  <template v-if="config.admin_email && !config.admin_email.includes('no disponible')">
+                    <button @click="abrirEmail"
+                       class="block text-red-100 hover:text-white underline decoration-dotted transition-colors break-words cursor-pointer">
+                      {{ config.admin_email }}
+                    </button>
+                  </template>
+                  <template v-else>
+                    <span class="text-red-200 italic">
+                      {{ config.admin_email || 'Email no disponible' }}
+                    </span>
+                    <span class="text-red-300 text-sm">(Contacte por redes sociales)</span>
+                  </template>
+                </div>
               </div>
             </div>
 

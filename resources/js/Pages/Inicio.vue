@@ -7,7 +7,7 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Toast from 'primevue/toast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft, faChevronRight, faPlane } from '@fortawesome/free-solid-svg-icons'
+import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft, faChevronRight, faPlane, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useToast } from 'primevue/usetoast'
 import { usePage } from '@inertiajs/vue3'
@@ -90,7 +90,7 @@ const servicios = ref([
     botonColor: '!border-2 !border-blue-600 !text-blue-600 hover:!bg-blue-600 hover:!text-white'
   },
   {
-    titulo: 'Reservaciones de Hoteles',
+    titulo: 'Reservaciones de Hoteles y Boletos Aéreos',
     tituloColor: 'text-red-600',
     descripcion: 'Reserva en hoteles seleccionados con las mejores tarifas y comodidades.',
     icono: faHotel,
@@ -246,11 +246,11 @@ const generarMensajeWhatsApp = (tipo = 'general', nombrePaquete = '') => {
 const abrirWhatsApp = (tipo = 'general', nombrePaquete = '') => {
   // Verificar si el usuario está autenticado y su rol
   const user = page.props.auth?.user
-  
+
   // Verificar si el usuario tiene roles de Administrador o Empleado
   if (user && user.roles && user.roles.length > 0) {
     const userRoles = user.roles.map(role => typeof role === 'string' ? role : role.name || role.rol)
-    
+
     if (userRoles.includes('Administrador') || userRoles.includes('Empleado')) {
       toast.add({
         severity: 'warn',
@@ -262,7 +262,22 @@ const abrirWhatsApp = (tipo = 'general', nombrePaquete = '') => {
     }
   }
 
-  const numeroWhatsApp = '50379858777'
+  // Obtener el teléfono del administrador desde la configuración compartida
+  const adminPhone = page.props.config?.admin_phone
+  
+  // Verificar si es un número válido (no el texto "no disponible")
+  if (!adminPhone || adminPhone.includes('no disponible')) {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+    return
+  }
+
+  // Limpiar el número para WhatsApp (solo dígitos)
+  const numeroWhatsApp = adminPhone.replace(/\D/g, '')
   const mensaje = generarMensajeWhatsApp(tipo, nombrePaquete)
   const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
   window.open(url, '_blank')
@@ -324,7 +339,7 @@ onUnmounted(() => {
   <Catalogo>
     <!-- Toast para notificaciones -->
     <Toast class="z-[9999]" />
-    
+
     <div class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 min-h-screen pt-20 md:pt-28 lg:pt-28 xl:pt-32">
       <template v-if="loading">
         <div class="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
@@ -522,13 +537,13 @@ onUnmounted(() => {
                         <div class="p-4 sm:p-6 flex flex-col">
                           <!-- Título y descripción -->
                           <div>
-                            <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 mb-2 sm:mb-3 leading-tight group-hover:text-blue-800 transition-colors duration-300">
+                            <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 mb-2 sm:mb-3 group-hover:text-blue-800 transition-colors duration-300 leading-relaxed line-clamp-1">
                               {{ paquete.nombre }}
                             </h3>
 
                             <!-- Descripción con altura mínima -->
                             <div class="mb-4 min-h-[2rem] sm:min-h-[2.5rem]">
-                              <p v-if="paquete.descripcion" class="text-gray-600 text-sm sm:text-base leading-tight overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-clamp: 2;">
+                              <p v-if="paquete.descripcion" class="text-gray-600 text-sm sm:text-base leading-tight overflow-hidden" style="display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; line-clamp: 1;">
                                 {{ paquete.descripcion }}
                               </p>
                             </div>
@@ -549,12 +564,10 @@ onUnmounted(() => {
                             </div>
                           </div>
 
-                          <!-- Mensaje para ver detalles -->
-                          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-2 mt-2">
-                            <p class="text-blue-700 text-xs sm:text-sm font-medium text-center">
-                              💡 Dar clic para ver todos los detalles
-                            </p>
-                          </div>
+                            <!-- Texto informativo -->
+                            <div class="mt-1 mb-1 text-center">
+                                <p class="text-xs text-gray-500 italic">Toca en cualquier parte para ver más detalles</p>
+                            </div>
                         </div>
                       </div>
 
@@ -768,8 +781,9 @@ onUnmounted(() => {
           </button>
           <button
             @click="cerrarModal"
-            class="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-600 transition-all duration-300 shadow-lg hover:shadow-xl"
+            class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
           >
+            <FontAwesomeIcon :icon="faTimes" class="mr-2" />
             Cerrar
           </button>
         </div>

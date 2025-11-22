@@ -331,13 +331,13 @@ defineOptions({
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <label class="text-sm font-semibold text-gray-700">Fecha de Salida:</label>
                     <p class="text-lg text-gray-900 mt-1">
-                        {{ tour.fecha_salida ? new Date(tour.fecha_salida).toLocaleString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No definida' }}
+                        {{ tour.fecha_salida ? new Date(tour.fecha_salida).toLocaleString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'No definida' }}
                     </p>
                 </div>
                 <div class="bg-gray-50 p-3 rounded-lg">
                     <label class="text-sm font-semibold text-gray-700">Fecha de Regreso:</label>
                     <p class="text-lg text-gray-900 mt-1">
-                        {{ tour.fecha_regreso ? new Date(tour.fecha_regreso).toLocaleString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'No definida' }}
+                        {{ tour.fecha_regreso ? new Date(tour.fecha_regreso).toLocaleString('es-ES', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'No definida' }}
                     </p>
                 </div>
             </div>

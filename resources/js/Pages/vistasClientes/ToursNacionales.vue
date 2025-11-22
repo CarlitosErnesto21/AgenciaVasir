@@ -353,12 +353,9 @@ const mostrarGaleria = (tour) => {
   selectedTourImages.value = obtenerTodasLasImagenes(tour.imagenes)
   currentImageIndex.value = 0
   showImageDialog.value = true
-  isGalleryAutoPlaying.value = true
+  isGalleryAutoPlaying.value = false
 
-  // Iniciar carrusel automático en la galería si hay múltiples imágenes
-  if (selectedTourImages.value.length > 1) {
-    iniciarCarruselGaleria()
-  }
+  // No iniciar carrusel automático en la galería
 }
 
 // Función para alternar play/pausa del carrusel
@@ -388,31 +385,19 @@ const detenerCarruselGaleria = () => {
   }
 }
 
-// Funciones para navegar en el carrusel (modificadas para reiniciar el timer)
+// Funciones para navegar en el carrusel (navegación manual únicamente)
 const siguienteImagen = () => {
   currentImageIndex.value = (currentImageIndex.value + 1) % selectedTourImages.value.length
-  // Reiniciar el timer automático solo si está activado
-  if (showImageDialog.value && selectedTourImages.value.length > 1 && isGalleryAutoPlaying.value) {
-    iniciarCarruselGaleria()
-  }
 }
 
 const imagenAnterior = () => {
   currentImageIndex.value = currentImageIndex.value === 0
     ? selectedTourImages.value.length - 1
     : currentImageIndex.value - 1
-  // Reiniciar el timer automático solo si está activado
-  if (showImageDialog.value && selectedTourImages.value.length > 1 && isGalleryAutoPlaying.value) {
-    iniciarCarruselGaleria()
-  }
 }
 
 const irAImagen = (index) => {
   currentImageIndex.value = index
-  // Reiniciar el timer automático solo si está activado
-  if (showImageDialog.value && selectedTourImages.value.length > 1 && isGalleryAutoPlaying.value) {
-    iniciarCarruselGaleria()
-  }
 }
 
 // Función para limpiar búsqueda
@@ -453,7 +438,7 @@ const verMasInfo = (tour) => {
       <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
           <!-- <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" /> -->
-          <FontAwesomeIcon :icon="faVolcano" class="w-8 h-8 sm:w-12 sm:h-12 text-white drop-shadow-lg" />
+          <FontAwesomeIcon :icon="faVolcano" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 drop-shadow-lg" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Tours Nacionales
           </h1>
@@ -606,7 +591,7 @@ const verMasInfo = (tour) => {
                     <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-1.5 border border-blue-100">
                       <div class="flex items-center gap-1 mb-0.5">
                         <FontAwesomeIcon :icon="faCalendarAlt" class="w-3 h-3 text-red-500 flex-shrink-0" />
-                        <p class="text-xs font-bold bg-gradient-to-r from-red-600 to-red-600 bg-clip-text text-transparent">Fecha</p>
+                        <p class="text-xs font-bold bg-gradient-to-r from-red-600 to-red-600 bg-clip-text text-transparent">Fecha y hora de salida</p>
                       </div>
                       <p class="text-xs text-gray-700 font-semibold">{{ formatearFecha(tour.fecha_salida) }}</p>
                     </div>
@@ -615,7 +600,7 @@ const verMasInfo = (tour) => {
                         <svg class="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <p class="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Cupos</p>
+                        <p class="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Cupos disponibles</p>
                       </div>
                       <p class="text-xs font-bold" :class="obtenerClaseCupos(tour)">
                         {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
@@ -801,23 +786,13 @@ const verMasInfo = (tour) => {
         }"
       >
         <template #header>
-          <div class="w-full bg-gradient-to-r from-red-600 to-blue-600 text-white p-4 rounded-lg flex items-center justify-between">
-            <h3 class="text-md md:text-xl font-bold bg-gradient-to-r from-white to-red-100 bg-clip-text text-transparent">Imágenes del tour</h3>
+          <div class="w-full text-blue-500 p-4 rounded-lg flex items-center justify-between">
+            <h3 class="text-md md:text-xl font-bold">Imágenes del tour</h3>
             <div class="flex items-center gap-3">
-              <button
-                v-if="selectedTourImages.length > 1"
-                @click="toggleGalleryAutoPlay"
-                class="flex items-center gap-2 px-2 py-2 bg-gradient-to-r from-white/20 to-white/10 backdrop-blur-sm hover:from-white/30 hover:to-white/20 text-white rounded-xl transition-all text-sm font-medium border border-white/20 shadow-lg"
-                :title="isGalleryAutoPlaying ? 'Pausar carrusel automático' : 'Reanudar carrusel automático'"
-              >
-                <FontAwesomeIcon :icon="faPlay" class="w-4 h-4" v-if="isGalleryAutoPlaying"/>
-                <FontAwesomeIcon :icon="faPause" class="w-4 h-4" v-else/>
-                <span>{{ isGalleryAutoPlaying ? 'Pausar' : 'Reproducir' }}</span>
-              </button>
               <!-- Botón de cerrar personalizado y visible -->
               <button
                 @click="showImageDialog = false"
-                class="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-red-500/80 to-red-600/80 backdrop-blur-sm hover:from-red-600/90 hover:to-red-700/90 text-white rounded-full transition-all border border-red-300/30 shadow-lg transform hover:scale-110"
+                class="flex items-center justify-center w-8 h-8 bg-gradient-to-r from-gray-500/80 to-gray-600/80 backdrop-blur-sm hover:from-gray-600/90 hover:to-gray-700/90 text-white rounded-full transition-all border border-gray-300/30 shadow-lg transform hover:scale-110"
                 title="Cerrar galería"
               >
                 <FontAwesomeIcon :icon="faXmark" class="w-4 h-4" />

@@ -13,7 +13,7 @@ import Textarea from "primevue/textarea";
 import DataTable from "primevue/datatable";
 import Column from "primevue/column";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft, faCheck, faEye, faExclamationTriangle, faFilter, faGlobe, faImages, faPencil, faPlus, faSpinner, faTags, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faEye, faExclamationTriangle, faFilter, faGlobe, faHandPointUp, faImages, faPencil, faPlus, faSpinner, faTags, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 import HotelModals from "./Components/HotelComponents/Modales.vue";
 import axios from "axios";
 import Carousel from "primevue/carousel";
@@ -51,6 +51,16 @@ const originalHotelData = ref(null);
 const showImageCarouselDialog = ref(false);
 const selectedHotel = ref(null);
 
+// Variables para agregar país
+const showAddCountryDialog = ref(false);
+const newCountry = ref({ nombre: "" });
+const isAddingCountry = ref(false);
+
+// Variables para agregar provincia
+const showAddProvinceDialog = ref(false);
+const newProvince = ref({ nombre: "", pais_id: null });
+const isAddingProvince = ref(false);
+
 // Variables de loading
 const isNavigatingToPaises = ref(false);
 const isDeleting = ref(false);
@@ -86,7 +96,43 @@ const fileInput = ref(null);
 const url = "/api/hoteles";
 const IMAGE_PATH = "/storage/hoteles/";
 
-// 🔍 Hoteles filtrados
+// 🔍 Función para truncar texto
+const truncateText = (text, maxLength = 13) => {
+    if (!text) return text;
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+};
+
+// 🔍 Países y provincias con nombres truncados para los selects
+const paisesConTruncado = computed(() => {
+    return paises.value.map(pais => ({
+        ...pais,
+        nombreTruncado: truncateText(pais.nombre, 13),
+        nombre: pais.nombre // Mantenemos el nombre completo para búsquedas
+    }));
+});
+
+const provinciasConTruncado = computed(() => {
+    return provincias.value.map(provincia => ({
+        ...provincia,
+        nombreTruncado: truncateText(provincia.nombre, 13),
+        nombre: provincia.nombre // Mantenemos el nombre completo para búsquedas
+    }));
+});
+
+const provinciasFiltradasPorPaisConTruncado = computed(() => {
+    if (!selectedPais.value) return [];
+    return provinciasConTruncado.value.filter(provincia =>
+        provincia.pais_id === selectedPais.value
+    );
+});
+
+// 🔍 Nombre del país seleccionado para mostrar en el modal de provincia
+const nombrePaisSeleccionado = computed(() => {
+    if (!selectedPais.value) return '';
+    const pais = paises.value.find(p => p.id === selectedPais.value);
+    return pais ? pais.nombre : '';
+});// 🔍 Hoteles filtrados
 const filteredHoteles = computed(() => {
     let filtered = hoteles.value;
 
@@ -394,6 +440,210 @@ const clearFilters = async () => {
 const handlePaisesClick = () => {
     isNavigatingToPaises.value = true;
     // El estado de loading se resetea automáticamente cuando se cambia de página
+};
+
+// Funciones para agregar país
+const openAddCountryDialog = () => {
+    newCountry.value = { nombre: "" };
+    showAddCountryDialog.value = true;
+};
+
+const saveCountry = async () => {
+    // Validaciones
+    if (!newCountry.value.nombre || newCountry.value.nombre.trim() === "") {
+        toast.add({
+            severity: "warn",
+            summary: "Campo requerido",
+            detail: "El nombre del país es obligatorio",
+            life: 4000
+        });
+        return;
+    }
+
+    if (newCountry.value.nombre.trim().length > 50) {
+        toast.add({
+            severity: "warn",
+            summary: "Límite excedido",
+            detail: "El nombre no puede tener más de 50 caracteres",
+            life: 4000
+        });
+        return;
+    }
+
+    // Nota: La validación de caracteres se hace en tiempo real con convertirAMayusculaPais
+
+    try {
+        isAddingCountry.value = true;
+
+        const response = await axios.post("/api/paises", {
+            nombre: newCountry.value.nombre.trim().toUpperCase()
+        });
+
+        // Recargar países
+        await fetchPaises();
+
+        // Seleccionar automáticamente el país recién creado
+        selectedPais.value = response.data.pais.id;
+
+        // Si hay país seleccionado, cargar sus provincias
+        if (selectedPais.value) {
+            await fetchProvincias(selectedPais.value);
+        }
+
+        showAddCountryDialog.value = false;
+
+        toast.add({
+            severity: "success",
+            summary: "País creado",
+            detail: "El país se ha agregado correctamente",
+            life: 3000
+        });
+    } catch (error) {
+        if (error.response?.status === 422) {
+            const errors = error.response.data.errors;
+            if (errors?.nombre) {
+                toast.add({
+                    severity: "error",
+                    summary: "Ya existe",
+                    detail: errors.nombre[0],
+                    life: 5000
+                });
+            } else {
+                toast.add({
+                    severity: "error",
+                    summary: "Error de validación",
+                    detail: error.response.data.message || "Datos inválidos",
+                    life: 5000
+                });
+            }
+        } else {
+            toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: "No se pudo crear el país. Intente nuevamente.",
+                life: 4000
+            });
+        }
+    } finally {
+        isAddingCountry.value = false;
+    }
+};
+
+const closeAddCountryDialog = () => {
+    showAddCountryDialog.value = false;
+    newCountry.value = { nombre: "" };
+};
+
+// Funciones para agregar provincia
+const openAddProvinceDialog = () => {
+    newProvince.value = {
+        nombre: "",
+        pais_id: selectedPais.value || null // Preseleccionar el país si hay uno seleccionado
+    };
+    showAddProvinceDialog.value = true;
+};
+
+const saveProvince = async () => {
+    // Validaciones idénticas a ControlPaisesProvincias
+    if (!newProvince.value.nombre || newProvince.value.nombre.trim() === "") {
+        toast.add({
+            severity: "warn",
+            summary: "Campo requerido",
+            detail: "El nombre de la provincia es obligatorio",
+            life: 4000
+        });
+        return;
+    }
+
+    if (newProvince.value.nombre.trim().length > 50) {
+        toast.add({
+            severity: "warn",
+            summary: "Límite excedido",
+            detail: "El nombre no puede tener más de 50 caracteres",
+            life: 4000
+        });
+        return;
+    }
+
+    if (!newProvince.value.pais_id) {
+        toast.add({
+            severity: "warn",
+            summary: "Campo requerido",
+            detail: "Debe seleccionar un país para la provincia",
+            life: 4000
+        });
+        return;
+    }
+
+    // Nota: La validación de caracteres se hace en tiempo real con convertirAMayusculaProvincia
+
+    try {
+        isAddingProvince.value = true;
+
+        const response = await axios.post("/api/provincias", {
+            nombre: newProvince.value.nombre.trim().toUpperCase(),
+            pais_id: newProvince.value.pais_id
+        });
+
+        // Recargar TODAS las provincias para actualizar la lista global
+        await fetchProvincias();
+
+        // También actualizar las provincias filtradas del país actual si hay un país seleccionado
+        if (selectedPais.value) {
+            await fetchProvincias(selectedPais.value);
+        }
+
+        // Seleccionar automáticamente la nueva provincia
+        const nuevaProvincia = response.data.provincia;
+        if (nuevaProvincia) {
+            selectedProvincia.value = nuevaProvincia.id;
+            hotel.value.provincia = nuevaProvincia.id;
+        }
+
+        toast.add({
+            severity: "success",
+            summary: "Éxito",
+            detail: "Provincia agregada correctamente",
+            life: 3000
+        });
+
+        showAddProvinceDialog.value = false;
+        newProvince.value = { nombre: "", pais_id: null };
+    } catch (error) {
+        console.error("Error al agregar provincia:", error);
+        if (error.response?.status === 422) {
+            const errors = error.response.data.errors;
+            if (errors?.nombre) {
+                toast.add({
+                    severity: "error",
+                    summary: "Ya existe",
+                    detail: errors.nombre[0],
+                    life: 5000
+                });
+            } else {
+                toast.add({
+                    severity: "error",
+                    summary: "Error de validación",
+                    detail: error.response.data.message || "Datos inválidos",
+                    life: 5000
+                });
+            }
+        } else {
+            toast.add({
+                severity: "error",
+                summary: "Error",
+                detail: "No se pudo agregar la provincia. Intente nuevamente.",
+                life: 5000
+            });
+        }
+    } finally {
+        isAddingProvince.value = false;
+    }
+};
+
+const closeAddProvinceDialog = () => {
+    showAddProvinceDialog.value = false;
+    newProvince.value = { nombre: "", pais_id: null };
 };
 
 
@@ -865,6 +1115,80 @@ function onFilterDropdown(field, event) {
     }
 }
 
+// Funciones para validación de países (igual que ControlPaisesProvincias)
+const convertirAMayusculaPais = (texto) => {
+    // Eliminar números y caracteres especiales, solo permitir letras y espacios
+    const textoLimpio = texto.replace(/[^A-Za-zÀ-ÿ\s]/g, '');
+    // Convertir a mayúsculas
+    return textoLimpio.toUpperCase();
+};
+
+const handleInputCountry = (event) => {
+    const textoConvertido = convertirAMayusculaPais(event.target.value);
+    newCountry.value.nombre = textoConvertido;
+};
+
+const validarKeypressCountry = (event) => {
+    // Permitir solo letras (incluye tildes), espacios, backspace, delete, etc.
+    const regex = /^[A-Za-zÀ-ÿ\s]$/;
+    const isControlKey = event.ctrlKey || event.metaKey;
+    const isNavigationKey = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.key);
+
+    if (!regex.test(event.key) && !isControlKey && !isNavigationKey) {
+        event.preventDefault();
+    }
+};
+
+const handleCountryPaste = (event) => {
+    event.preventDefault();
+
+    // Obtener texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+
+    // Limpiar y convertir el texto pegado
+    const textoLimpio = convertirAMayusculaPais(pastedText);
+
+    // Aplicar el texto limpio al campo
+    newCountry.value.nombre = textoLimpio;
+};
+
+// Funciones para validación de provincias (igual que ControlPaisesProvincias)
+const convertirAMayusculaProvincia = (texto) => {
+    // Eliminar números y caracteres especiales, solo permitir letras y espacios
+    const textoLimpio = texto.replace(/[^A-Za-zÀ-ÿ\s]/g, '');
+    // Convertir a mayúsculas
+    return textoLimpio.toUpperCase();
+};
+
+const handleInputProvince = (event) => {
+    const textoConvertido = convertirAMayusculaProvincia(event.target.value);
+    newProvince.value.nombre = textoConvertido;
+};
+
+const validarKeypressProvince = (event) => {
+    // Permitir solo letras (incluye tildes), espacios, backspace, delete, etc.
+    const regex = /^[A-Za-zÀ-ÿ\s]$/;
+    const isControlKey = event.ctrlKey || event.metaKey;
+    const isNavigationKey = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.key);
+
+    if (!regex.test(event.key) && !isControlKey && !isNavigationKey) {
+        event.preventDefault();
+    }
+};
+
+const handleProvincePaste = (event) => {
+    event.preventDefault();
+
+    // Obtener texto del portapapeles
+    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+
+    // Limpiar y convertir el texto pegado
+    const textoLimpio = convertirAMayusculaProvincia(pastedText);
+
+    // Aplicar el texto limpio al campo
+    newProvince.value.nombre = textoLimpio;
+};
+
 // Funciones para manejar paste (pegar) y convertir a mayúsculas
 const handlePasteNombre = (event) => {
     event.preventDefault();
@@ -926,7 +1250,13 @@ const handlePasteDescripcion = (event) => {
 
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Hoteles</h3>
+                    <div class="w-full">
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Hoteles</h3>
+                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                            Haz clic en cualquier fila para ver los detalles.
+                        </p>
+                    </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <Link
                             :href="route('controlPaisesProvincias')"
@@ -938,14 +1268,13 @@ const handlePasteDescripcion = (event) => {
                                 :class="{'animate-spin': isNavigatingToPaises, 'h-4': true}"
                             />
                             <span class="block sm:hidden">{{ isNavigatingToPaises ? 'Car...' : 'Países' }}</span>
-                            <span class="hidden sm:block">{{ isNavigatingToPaises ? 'Cargando...' : 'Control países' }}</span>
+                            <span class="hidden sm:block">{{ isNavigatingToPaises ? 'Cargando...' : 'Países' }}</span>
                         </Link>
                         <button
                             class="bg-red-500 border flex justify-center border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                             @click="openNew">
                             <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
-                            <span class="block sm:hidden">Agregar</span>
-                            <span class="hidden sm:block">Agregar hotel</span>
+                            <span>Agregar</span>
                         </button>
                     </div>
                 </div>
@@ -1186,25 +1515,35 @@ const handlePasteDescripcion = (event) => {
 
                     <!-- País -->
                     <div class="w-full flex flex-col">
-                        <div class="flex items-center gap-4 sm:gap-5">
+                        <div class="flex items-center gap-2">
                             <label for="pais" class="w-36 sm:w-32 flex items-center gap-1">
                                 País: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <Select
-                                v-model="selectedPais"
-                                :options="paises"
-                                optionLabel="nombre"
-                                optionValue="id"
-                                id="pais"
-                                name="pais"
-                                :filter="true"
-                                filterPlaceholder="Buscar país..."
-                                :showClear="true"
-                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
-                                placeholder="Seleccionar país"
-                                :class="{'p-invalid': submitted && !selectedPais}"
-                                @change="onPaisChange"
-                            />
+                            <div class="flex-1 flex items-center gap-2">
+                                <Select
+                                    v-model="selectedPais"
+                                    :options="paisesConTruncado"
+                                    optionLabel="nombreTruncado"
+                                    optionValue="id"
+                                    id="pais"
+                                    name="pais"
+                                    :filter="true"
+                                    filterPlaceholder="Buscar país..."
+                                    :showClear="true"
+                                    class="flex-1 rounded-md border-2 border-gray-400 hover:border-gray-500"
+                                    placeholder="Seleccionar país"
+                                    :class="{'p-invalid': submitted && !selectedPais}"
+                                    @change="onPaisChange"
+                                />
+                                <button
+                                    type="button"
+                                    @click="openAddCountryDialog"
+                                    class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-md transition-colors duration-200 flex items-center gap-1 text-sm"
+                                    title="Agregar nuevo país"
+                                >
+                                    <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !selectedPais">
                             El país es obligatorio.
@@ -1215,25 +1554,36 @@ const handlePasteDescripcion = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4 sm:gap-5">
                             <label for="provincia" class="w-36 sm:w-32 flex items-center gap-1">
-                                Depa/Provincia: <span class="text-red-500 font-bold">*</span>
+                                Depart.: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <Select
-                                v-model="hotel.provincia"
-                                :options="provinciasFiltradasPorPais"
-                                optionLabel="nombre"
-                                optionValue="id"
-                                id="provincia"
-                                name="provincia"
-                                :filter="true"
-                                filterPlaceholder="Buscar departamento/provincia..."
-                                :showClear="true"
-                                :disabled="!selectedPais"
-                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
-                                :placeholder="selectedPais ? 'Seleccionar departamento/provincia' : 'Primero seleccione un país'"
-                                :class="{'p-invalid': submitted && !hotel.provincia}"
-                                @input="onInputDropdown('provincia', $event)"
-                                @filter="onFilterDropdown('provincia', $event)"
-                            />
+                            <div class="w-full flex items-center gap-2">
+                                <Select
+                                    v-model="hotel.provincia"
+                                    :options="provinciasFiltradasPorPaisConTruncado"
+                                    optionLabel="nombreTruncado"
+                                    optionValue="id"
+                                    id="provincia"
+                                    name="provincia"
+                                    :filter="true"
+                                    filterPlaceholder="Buscar depa/provi..."
+                                    :showClear="true"
+                                    :disabled="!selectedPais"
+                                    class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
+                                    :placeholder="selectedPais ? 'Seleccionar depa/provi...' : 'Seleccione un país'"
+                                    :class="{'p-invalid': submitted && !hotel.provincia}"
+                                    @input="onInputDropdown('provincia', $event)"
+                                    @filter="onFilterDropdown('provincia', $event)"
+                                />
+                                <button
+                                    type="button"
+                                    @click="openAddProvinceDialog"
+                                    :disabled="!selectedPais"
+                                    class="bg-green-500 hover:bg-green-600 text-white p-2 rounded-md transition-colors duration-200 flex items-center gap-1 text-sm disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    title="Agregar nueva provincia"
+                                >
+                                    <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !hotel.provincia">
                             El departamento/provincia es obligatorio.
@@ -1326,6 +1676,152 @@ const handlePasteDescripcion = (event) => {
                 @continue-editing="continueEditing"
                 @open-image-modal="openImageModal"
             />
+
+        <!-- Modal para agregar país -->
+        <Dialog
+            v-model:visible="showAddCountryDialog"
+            header="Agregar País"
+            :modal="true"
+            :style="dialogStyle"
+            :closable="false"
+            :draggable="false"
+        >
+            <div class="space-y-4">
+                <div class="w-full flex flex-col">
+                    <label for="nombrePais" class="text-sm font-medium text-gray-700 mb-2">
+                        Nombre del País: <span class="text-red-500">*</span>
+                    </label>
+                    <InputText
+                        v-model="newCountry.nombre"
+                        id="nombrePais"
+                        name="nombrePais"
+                        maxlength="50"
+                        class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md uppercase"
+                        :class="{'p-invalid': !newCountry.nombre || newCountry.nombre.trim() === ''}"
+                        placeholder="NOMBRE DEL PAÍS"
+                        @keypress="validarKeypressCountry"
+                        @input="handleInputCountry"
+                        @paste="handleCountryPaste"
+                    />
+                    <small class="text-red-500 mt-1" v-if="newCountry.nombre && newCountry.nombre.length < 3">
+                        El nombre debe tener al menos 3 caracteres. Actual: {{ newCountry.nombre.length }}/3
+                    </small>
+                    <small class="text-orange-500 mt-1" v-if="newCountry.nombre && newCountry.nombre.length >= 40 && newCountry.nombre.length <= 50">
+                        Caracteres restantes: {{ 50 - newCountry.nombre.length }}
+                    </small>
+                    <small class="text-gray-500 text-xs mt-1">
+                        Solo se permiten letras y espacios. Máximo 50 caracteres.
+                    </small>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-center gap-4 w-full mt-6">
+                    <button
+                        class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @click="saveCountry"
+                        :disabled="!newCountry.nombre?.trim() || newCountry.nombre.trim().length < 3 || newCountry.nombre.trim().length > 50 || isAddingCountry"
+                    >
+                        <FontAwesomeIcon
+                            :icon="isAddingCountry ? faSpinner : faCheck"
+                            :class="[
+                                'h-5 text-white',
+                                { 'animate-spin': isAddingCountry }
+                            ]"
+                        />
+                        <span v-if="!isAddingCountry">Guardar</span>
+                        <span v-else>Guardando...</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="closeAddCountryDialog"
+                        :disabled="isAddingCountry"
+                    >
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
+                    </button>
+                </div>
+            </template>
+        </Dialog>
+
+        <!-- Modal para agregar provincia -->
+        <Dialog
+            v-model:visible="showAddProvinceDialog"
+            header="Agregar Provincia"
+            :modal="true"
+            :style="dialogStyle"
+            :closable="false"
+            :draggable="false"
+        >
+            <div class="space-y-4">
+                <div class="w-full flex flex-col">
+                    <label class="text-sm font-medium text-gray-700 mb-2">
+                        País seleccionado:
+                    </label>
+                    <div class="w-full h-10 px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-800 font-medium flex items-center">
+                        <span class="truncate">{{ nombrePaisSeleccionado }}</span>
+                    </div>
+                    <small class="text-gray-500 text-xs mt-1">
+                        La nueva provincia se agregará a este país
+                    </small>
+                </div>
+
+                <div class="w-full flex flex-col">
+                    <label for="nombreProvincia" class="text-sm font-medium text-gray-700 mb-2">
+                        Nombre de la Provincia: <span class="text-red-500">*</span>
+                    </label>
+                    <InputText
+                        v-model="newProvince.nombre"
+                        id="nombreProvincia"
+                        name="nombreProvincia"
+                        maxlength="50"
+                        class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md uppercase"
+                        :class="{'p-invalid': !newProvince.nombre || newProvince.nombre.trim() === ''}"
+                        placeholder="NOMBRE DE LA PROVINCIA"
+                        @keypress="validarKeypressProvince"
+                        @input="handleInputProvince"
+                        @paste="handleProvincePaste"
+                    />
+                    <small class="text-red-500 mt-1" v-if="newProvince.nombre && newProvince.nombre.length < 3">
+                        El nombre debe tener al menos 3 caracteres. Actual: {{ newProvince.nombre.length }}/3
+                    </small>
+                    <small class="text-orange-500 mt-1" v-if="newProvince.nombre && newProvince.nombre.length >= 40 && newProvince.nombre.length <= 50">
+                        Caracteres restantes: {{ 50 - newProvince.nombre.length }}
+                    </small>
+                    <small class="text-gray-500 text-xs mt-1">
+                        Solo se permiten letras y espacios. Máximo 50 caracteres.
+                    </small>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-center gap-4 w-full mt-6">
+                    <button
+                        class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @click="saveProvince"
+                        :disabled="!newProvince.nombre?.trim() || !newProvince.pais_id || newProvince.nombre.trim().length < 3 || newProvince.nombre.trim().length > 50 || isAddingProvince"
+                    >
+                        <FontAwesomeIcon
+                            :icon="isAddingProvince ? faSpinner : faCheck"
+                            :class="[
+                                'h-5 text-white',
+                                { 'animate-spin': isAddingProvince }
+                            ]"
+                        />
+                        <span v-if="!isAddingProvince">Guardar</span>
+                        <span v-else>Guardando...</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="closeAddProvinceDialog"
+                        :disabled="isAddingProvince"
+                    >
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
+                    </button>
+                </div>
+            </template>
+        </Dialog>
         </div>
     </AuthenticatedLayout>
 </template>
@@ -1408,6 +1904,59 @@ const handlePasteDescripcion = (event) => {
         font-size: 0.875rem !important;
         max-width: calc(100% - 2rem) !important;
     }
+}
+
+/* Truncado específico para Select de país y provincia */
+.p-select .p-inputtext,
+.p-select .p-select-label,
+.p-select .p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+}
+
+/* Truncado en las opciones del dropdown */
+.p-select-overlay .p-select-option {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+}
+
+.p-select-overlay .p-select-option-label {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
+}
+
+/* CSS específico para truncate-select */
+.truncate-select {
+    max-width: 100% !important;
+    overflow: hidden !important;
+}
+
+.truncate-select .p-select-label {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 5rem) !important;
+    display: inline-block !important;
+}
+
+.truncate-select .p-inputtext {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 5rem) !important;
+}
+
+.truncate-select .p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 5rem) !important;
 }
 /* Fin de los estilos para el select */
 

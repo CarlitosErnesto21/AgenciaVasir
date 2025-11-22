@@ -123,7 +123,22 @@ function abrirWhatsApp(tipo = 'general') {
     }
   }
 
-  const numeroWhatsApp = '50379858777'
+  // Obtener el teléfono del administrador desde la configuración compartida
+  const adminPhone = config.value?.admin_phone
+  
+  // Verificar si es un número válido (no el texto "no disponible")
+  if (!adminPhone || adminPhone.includes('no disponible')) {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+    return
+  }
+
+  // Limpiar el número para WhatsApp (solo dígitos)
+  const numeroWhatsApp = adminPhone.replace(/\D/g, '')
   const mensaje = generarMensajeWhatsApp(tipo)
   const url = `https://wa.me/${numeroWhatsApp}?text=${mensaje}`
   window.open(url, '_blank')
@@ -148,8 +163,24 @@ const contactarHotel = (hotel) => {
     }
   }
 
+  // Obtener el teléfono del administrador desde la configuración compartida
+  const adminPhone = config.value?.admin_phone
+  
+  // Verificar si es un número válido (no el texto "no disponible")
+  if (!adminPhone || adminPhone.includes('no disponible')) {
+    toast.add({
+      severity: 'info',
+      summary: 'WhatsApp no disponible',
+      detail: 'El contacto de WhatsApp no está disponible en este momento. Puede contactarnos por nuestras redes sociales.',
+      life: 5000
+    })
+    return
+  }
+
+  // Limpiar el número para WhatsApp (solo dígitos)
+  const numeroWhatsApp = adminPhone.replace(/\D/g, '')
   const mensaje = `Hola, estoy interesado/a en obtener más información sobre el hotel "${hotel.nombre}" ubicado en ${hotel.direccion}. ¿Podrían proporcionarme detalles sobre disponibilidad, precios y servicios? Gracias.`
-  const whatsappUrl = `https://wa.me/50379858777?text=${encodeURIComponent(mensaje)}`
+  const whatsappUrl = `https://wa.me/${numeroWhatsApp}?text=${encodeURIComponent(mensaje)}`
   window.open(whatsappUrl, '_blank')
 }
 
@@ -470,7 +501,7 @@ const irAImagen = (index) => {
                       </div>
                       <div class="flex-1 min-w-0">
                         <p class="text-xs font-bold text-gray-800 mb-0.5">Ubicación</p>
-                        <p class="text-xs text-gray-600 leading-relaxed line-clamp-2">{{ hotel.direccion }}</p>
+                        <p class="text-xs text-gray-600 leading-relaxed line-clamp-1">{{ hotel.direccion }}</p>
                       </div>
                     </div>
 
@@ -481,7 +512,7 @@ const irAImagen = (index) => {
                           <div class="w-2.5 h-2.5 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
                           <span class="text-xs font-semibold text-gray-700">País</span>
                         </div>
-                        <span class="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 px-2.5 py-0.5 bg-white rounded-full shadow-sm border border-blue-100">
+                        <span class="text-xs font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600 px-2.5 py-0.5 bg-white rounded-full shadow-sm border border-blue-100 leading-relaxed line-clamp-1">
                           {{ hotel.provincia?.pais?.nombre || 'No especificado' }}
                         </span>
                       </div>
@@ -505,7 +536,7 @@ const irAImagen = (index) => {
 
                       <div class="flex items-center justify-center gap-2 relative z-10">
                         <FontAwesomeIcon :icon="faWhatsapp" class="w-4 h-4" />
-                        <span class="font-bold">Reservar WhatsApp</span>
+                        <span class="font-bold">Reservar ahora</span>
                       </div>
                     </Button>
                   </div>

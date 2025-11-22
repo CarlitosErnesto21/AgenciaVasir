@@ -711,7 +711,7 @@ const handleToursClick = () => {
                             class="bg-red-500 border border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2"
                             @click="openNew">
                             <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
-                            <span>Agregar transporte</span>
+                            <span>Agregar</span>
                         </button>
                     </div>
                 </div>

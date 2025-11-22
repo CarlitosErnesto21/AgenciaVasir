@@ -5,7 +5,7 @@ import { ref, onMounted, onBeforeUnmount, computed, watch, nextTick } from "vue"
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faImages, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faFilter, faHandPointUp, faImages, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import InputText from 'primevue/inputtext';
@@ -887,11 +887,11 @@ const onNombrePaste = (event) => {
 const onDescripcionInput = (event) => {
     const inputValue = event.target.value;
     const upperCaseValue = inputValue.toUpperCase();
-    
+
     if (inputValue !== upperCaseValue) {
         const cursorPosition = event.target.selectionStart;
         paquete.value.descripcion = upperCaseValue;
-        
+
         // Mantener la posición del cursor
         nextTick(() => {
             event.target.value = upperCaseValue;
@@ -913,14 +913,19 @@ const onDescripcionInput = (event) => {
 
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Paquetes</h3>
+                    <div class="w-full">
+                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Paquetes</h3>
+                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
+                            Haz clic en cualquier fila para ver los detalles.
+                        </p>
+                    </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
                             class="bg-red-500 border flex border-red-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
                             @click="openNew">
                             <FontAwesomeIcon :icon="faPlus" class="h-4 w-4 mr-1 text-white" />
-                            <span class="block sm:hidden">Agregar</span>
-                            <span class="hidden sm:block">Agregar paquete</span>
+                            <span>Agregar</span>
                         </button>
                     </div>
                 </div>
@@ -1491,7 +1496,7 @@ const onDescripcionInput = (event) => {
 
                 <!-- Incluye -->
                 <div v-if="selectedPaquete.incluye" class="space-y-2">
-                    <h4 class="text-md font-semibold text-gray-900">✅ Incluye:</h4>
+                    <h4 class="text-md font-semibold text-gray-900">Incluye:</h4>
                     <div class="bg-green-50 p-4 rounded-lg">
                         <ul class="space-y-1">
                             <li v-for="item in textoALista(selectedPaquete.incluye)" :key="item" class="flex items-start gap-2 text-sm text-gray-700">
@@ -1504,7 +1509,7 @@ const onDescripcionInput = (event) => {
 
                 <!-- No Incluye -->
                 <div v-if="selectedPaquete.no_incluye" class="space-y-2">
-                    <h4 class="text-md font-semibold text-gray-900">❌ No Incluye:</h4>
+                    <h4 class="text-md font-semibold text-gray-900">No Incluye:</h4>
                     <div class="bg-red-50 p-4 rounded-lg">
                         <ul class="space-y-1">
                             <li v-for="item in textoALista(selectedPaquete.no_incluye)" :key="item" class="flex items-start gap-2 text-sm text-gray-700">
