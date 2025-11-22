@@ -580,8 +580,8 @@ class PagoController extends Controller
         $startTime = microtime(true);
         $requestId = uniqid('webhook_', true);
 
-        // 🚨 LOGGING MEJORADO - Registrar TODOS los webhooks que llegan
-        Log::info("=== WEBHOOK RECIBIDO ===", [
+        // 🚨 LOGGING DIRECTO (backup si Laravel logging falla)
+        $logData = [
             'request_id' => $requestId,
             'timestamp' => now()->toDateTimeString(),
             'ip' => $request->ip(),
@@ -590,7 +590,17 @@ class PagoController extends Controller
             'url' => $request->fullUrl(),
             'headers' => $request->headers->all(),
             'raw_content' => $request->getContent()
-        ]);
+        ];
+
+        // Logging directo a archivo
+        file_put_contents(
+            storage_path('logs/webhooks.log'),
+            '[' . date('Y-m-d H:i:s') . '] === WEBHOOK RECIBIDO === ' . json_encode($logData) . PHP_EOL,
+            FILE_APPEND | LOCK_EX
+        );
+
+        // También intentar Laravel logging
+        Log::info("=== WEBHOOK RECIBIDO ===", $logData);
 
         try {
             Log::info("Iniciando procesamiento de webhook", [
