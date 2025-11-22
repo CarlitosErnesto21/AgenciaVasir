@@ -55,6 +55,11 @@ class Venta extends Model
         return $this->estado === 'cancelada';
     }
 
+    public function estaPendiente(): bool
+    {
+        return $this->estado === 'pendiente';
+    }
+
     // ⭐ VALIDACIONES DE INTEGRIDAD CON PAGOS
     public function tienePagoAprobado(): bool
     {
@@ -103,6 +108,7 @@ class Venta extends Model
     public function getEstadoLegibleAttribute(): string
     {
         $estados = [
+            'pendiente' => 'Pendiente de Pago',
             'completada' => 'Completada',
             'cancelada' => 'Cancelada'
         ];

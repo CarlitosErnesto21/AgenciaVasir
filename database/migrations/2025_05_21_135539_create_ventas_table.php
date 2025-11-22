@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->date('fecha');
             $table->decimal('total', 8, 2);
-            $table->enum('estado', ['completada', 'cancelada'])->default('completada');
+            $table->enum('estado', ['pendiente', 'completada', 'cancelada'])->default('pendiente');
 
             // Llave foránea a la tabla clientes
             $table->unsignedBigInteger('cliente_id');

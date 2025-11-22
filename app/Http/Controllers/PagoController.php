@@ -6,6 +6,7 @@ use App\Services\WompiService;
 use App\Models\Pago;
 use App\Models\Venta;
 use App\Models\Reserva;
+use App\Models\StockReservation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -216,17 +217,17 @@ class PagoController extends Controller
                 }
             }
 
-            // Crear la venta (Wompi se encarga del método de pago)
+            // ✅ NUEVO FLUJO: Crear venta como PENDIENTE (sin reducir stock aún)
             $venta = Venta::create([
                 'fecha' => now(),
                 'cliente_id' => $cliente->id,
-                'estado' => 'completada',
+                'estado' => 'pendiente', // ⚠️ CAMBIO CRÍTICO: Pendiente hasta confirmar pago
                 'total' => 0
             ]);
 
             $total = 0;
 
-            // Crear detalles de venta Y procesar inventario
+            // Crear detalles de venta SIN reducir stock todavía
             foreach ($request->productos as $item) {
                 $producto = \App\Models\Producto::find($item['id']);
                 $subtotal = $item['cantidad'] * $item['precio'];
@@ -239,28 +240,16 @@ class PagoController extends Controller
                     'subtotal' => $subtotal
                 ]);
 
-                // ✅ REDUCIR STOCK AUTOMÁTICAMENTE
-                $producto->decrement('stock_actual', $item['cantidad']);
+                // 🔄 NO REDUCIR STOCK NI CREAR MOVIMIENTO DE INVENTARIO AÚN
+                // Esto se hará cuando se confirme el pago vía webhook
 
-                // ✅ REGISTRAR MOVIMIENTO DE INVENTARIO
-                \App\Models\Inventario::create([
-                    'fecha_movimiento' => now(),
-                    'cantidad' => $item['cantidad'],
-                    'tipo_movimiento' => 'SALIDA',
-                    'motivo' => 'venta',
-                    'observacion' => "Venta #{$venta->id} - {$producto->nombre}",
-                    'user_id' => Auth::id() ?: 1,
-                    'producto_id' => $producto->id,
-                    'venta_id' => $venta->id
-                ]);
-
-                Log::info('✅ Stock actualizado', [
+                Log::info('🛍️ Detalle de venta creado (stock no reducido aún)', [
                     'producto_id' => $producto->id,
                     'producto_nombre' => $producto->nombre,
-                    'cantidad_vendida' => $item['cantidad'],
-                    'stock_anterior' => $producto->stock_actual + $item['cantidad'],
+                    'cantidad_solicitada' => $item['cantidad'],
                     'stock_actual' => $producto->stock_actual,
-                    'venta_id' => $venta->id
+                    'venta_id' => $venta->id,
+                    'estado_venta' => 'pendiente'
                 ]);
 
                 $total += $subtotal;
@@ -271,10 +260,20 @@ class PagoController extends Controller
 
             DB::commit();
 
+            Log::info('🛍️ Venta creada como PENDIENTE desde carrito', [
+                'venta_id' => $venta->id,
+                'cliente_id' => $cliente->id,
+                'total' => $venta->total,
+                'productos_count' => count($request->productos),
+                'estado' => 'pendiente',
+                'stock_reducido' => 'NO - Pendiente de confirmación de pago'
+            ]);
+
             return response()->json([
                 'success' => true,
                 'venta' => $venta->load(['cliente', 'detalleVentas.producto']),
-                'message' => 'Venta creada exitosamente desde carrito'
+                'message' => 'Venta creada como pendiente. El stock se reducirá cuando se confirme el pago.',
+                'warning' => 'La venta quedará cancelada automáticamente si no se completa el pago en 30 minutos.'
             ]);
 
         } catch (Exception $e) {
@@ -735,8 +734,8 @@ class PagoController extends Controller
                 return false;
             }
 
-            // Obtener el API Secret de Wompi
-            $apiSecret = config('services.wompi.private_key'); // Ajustar según tu config
+            // Obtener el API Secret de Wompi (CLIENT_SECRET para El Salvador)
+            $apiSecret = config('wompi.client_secret', env('WOMPI_CLIENT_SECRET'));
 
             if (!$apiSecret) {
                 Log::error('API Secret de Wompi no configurado');
@@ -769,30 +768,63 @@ class PagoController extends Controller
     }
 
     /**
-     * ✅ NUEVO: Sincronización segura de estados entre pago y venta/reserva
+     * ✅ NUEVO: Sincronización segura de estados entre pago, venta/reserva y STOCK
      */
     private function sincronizarEstadosConPago($pago, $newStatus, $requestId)
     {
         try {
             if ($newStatus === 'approved') {
-                // ✅ PAGO APROBADO
+                // ✅ PAGO APROBADO - CONFIRMAR RESERVAS Y REDUCIR STOCK
+
+                // 1. Confirmar reservas de stock por referencia
+                $reservasConfirmadas = StockReservation::confirmarReservasPorReferencia($pago->referencia_wompi);
+
+                Log::info('🎉 Pago aprobado - Reservas confirmadas y stock reducido', [
+                    'request_id' => $requestId,
+                    'pago_id' => $pago->id,
+                    'referencia_wompi' => $pago->referencia_wompi,
+                    'total_reservas_confirmadas' => $reservasConfirmadas->count()
+                ]);
+
+                // 2. Si hay venta asociada, actualizar a completada y crear movimientos de inventario
                 if ($pago->venta_id) {
                     $venta = $pago->venta;
-                    // ✅ Las ventas ya se crean como 'completada', solo loggeamos
-                    Log::info('Pago aprobado - Venta ya completada', [
-                        'request_id' => $requestId,
-                        'venta_id' => $venta->id,
-                        'pago_id' => $pago->id,
-                        'venta_estado' => $venta->estado
-                    ]);
+
+                    // Cambiar estado de venta de pendiente a completada
+                    if ($venta->estado === 'pendiente') {
+                        $venta->update(['estado' => 'completada']);
+
+                        // Crear movimientos de inventario para cada detalle
+                        foreach ($venta->detalleVentas as $detalle) {
+                            \App\Models\Inventario::create([
+                                'fecha_movimiento' => now(),
+                                'cantidad' => $detalle->cantidad,
+                                'tipo_movimiento' => 'SALIDA',
+                                'motivo' => 'venta_confirmada',
+                                'observacion' => "Venta #{$venta->id} confirmada por pago Wompi - {$detalle->producto->nombre}",
+                                'user_id' => 1, // Sistema
+                                'producto_id' => $detalle->producto_id,
+                                'venta_id' => $venta->id
+                            ]);
+                        }
+
+                        Log::info('✅ Venta confirmada y movimientos de inventario creados', [
+                            'request_id' => $requestId,
+                            'venta_id' => $venta->id,
+                            'pago_id' => $pago->id,
+                            'estado_anterior' => 'pendiente',
+                            'estado_nuevo' => 'completada'
+                        ]);
+                    }
                 }
 
+                // 3. Si hay reserva de tour asociada
                 if ($pago->reserva_id) {
                     $reserva = $pago->reserva;
                     if ($reserva->estado === 'pendiente') {
                         $reserva->update(['estado' => 'confirmada']);
 
-                        Log::info('Reserva confirmada por pago aprobado', [
+                        Log::info('Reserva de tour confirmada por pago aprobado', [
                             'request_id' => $requestId,
                             'reserva_id' => $reserva->id,
                             'pago_id' => $pago->id
@@ -801,21 +833,49 @@ class PagoController extends Controller
                 }
 
             } elseif (in_array($newStatus, ['declined', 'error', 'failed', 'voided'])) {
-                // ✅ PAGO RECHAZADO/FALLIDO
+                // ❌ PAGO RECHAZADO/FALLIDO - CANCELAR RESERVAS
+
+                // 1. Cancelar reservas de stock (liberar stock reservado)
+                $reservasCanceladas = StockReservation::cancelarReservasPorReferencia(
+                    $pago->referencia_wompi,
+                    "Pago {$newStatus} - Wompi webhook"
+                );
+
+                Log::info('❌ Pago rechazado - Reservas de stock canceladas', [
+                    'request_id' => $requestId,
+                    'pago_id' => $pago->id,
+                    'referencia_wompi' => $pago->referencia_wompi,
+                    'motivo' => $newStatus,
+                    'total_reservas_canceladas' => $reservasCanceladas->count()
+                ]);
+
+                // 2. Si hay venta asociada, cancelar
                 if ($pago->venta_id) {
                     $venta = $pago->venta;
-                    if (!$venta->estaCancelada()) {
+                    if ($venta->estado === 'pendiente') {
                         $venta->update(['estado' => 'cancelada']);
 
-                        Log::info('Venta cancelada por pago rechazado', [
+                        Log::info('❌ Venta cancelada por pago rechazado', [
                             'request_id' => $requestId,
                             'venta_id' => $venta->id,
                             'pago_id' => $pago->id,
                             'razon' => $newStatus
                         ]);
+                    }
+                }
 
-                        // TODO: Restaurar inventario si se había procesado
-                        // $this->inventarioService->cancelarVenta($venta);
+                // 3. Si hay reserva de tour asociada
+                if ($pago->reserva_id) {
+                    $reserva = $pago->reserva;
+                    if ($reserva->estado === 'pendiente') {
+                        $reserva->update(['estado' => 'cancelada']);
+
+                        Log::info('❌ Reserva de tour cancelada por pago rechazado', [
+                            'request_id' => $requestId,
+                            'reserva_id' => $reserva->id,
+                            'pago_id' => $pago->id,
+                            'razon' => $newStatus
+                        ]);
                     }
                 }
 
@@ -973,7 +1033,7 @@ class PagoController extends Controller
                 ], 400);
             }
 
-            // ✅ CREAR REGISTRO DE PAGO EN BASE DE DATOS
+            // ✅ CREAR REGISTRO DE PAGO Y RESERVAS DE STOCK
             try {
                 DB::beginTransaction();
 
@@ -990,7 +1050,43 @@ class PagoController extends Controller
                     'productos_detalle' => json_encode($validated['productos'])
                 ]);
 
-                Log::info('✅ Registro de pago creado', [
+                // 🔒 CREAR RESERVAS DE STOCK (NUEVO)
+                try {
+                    $reservas = StockReservation::crearReservasParaCarrito(
+                        $validated['productos'],
+                        $paymentData['reference'],
+                        30 // 30 minutos de expiración
+                    );
+
+                    // Asociar reservas con el pago
+                    foreach ($reservas as $reserva) {
+                        $reserva->update(['pago_id' => $pago->id]);
+                    }
+
+                    Log::info('✅ Reservas de stock creadas', [
+                        'pago_id' => $pago->id,
+                        'referencia_wompi' => $pago->referencia_wompi,
+                        'total_reservas' => $reservas->count(),
+                        'expiran_en' => now()->addMinutes(30)->toISOString()
+                    ]);
+
+                } catch (\Exception $reservaError) {
+                    // Si falla la creación de reservas, cancelar todo
+                    DB::rollBack();
+
+                    Log::error('❌ Error creando reservas de stock', [
+                        'error' => $reservaError->getMessage(),
+                        'pago_id' => $pago->id ?? null,
+                        'referencia' => $paymentData['reference']
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Error reservando stock: ' . $reservaError->getMessage()
+                    ], 400);
+                }
+
+                Log::info('✅ Registro de pago y reservas creados', [
                     'pago_id' => $pago->id,
                     'referencia_wompi' => $pago->referencia_wompi,
                     'venta_id' => $pago->venta_id,

@@ -42,6 +42,11 @@ class Producto extends Model
         return $this->belongsTo(CategoriaProducto::class, 'categoria_id');
     }
 
+    public function reservasStock(): HasMany
+    {
+        return $this->hasMany(StockReservation::class);
+    }
+
     // ✅ AGREGAR ESTA RELACIÓN POLIMÓRFICA:
     public function imagenes(): MorphMany
     {
@@ -82,6 +87,15 @@ class Producto extends Model
     {
         $imagen = $this->imagenes()->first();
         return $imagen ? asset('images/productos/' . $imagen->nombre) : null;
+    }
+
+    public function getStockDisponibleAttribute(): int
+    {
+        $reservasActivas = $this->reservasStock()
+            ->where('estado', 'activa')
+            ->sum('cantidad_reservada');
+        
+        return max(0, $this->stock_actual - $reservasActivas);
     }
 
     public function tieneImagenes(): bool

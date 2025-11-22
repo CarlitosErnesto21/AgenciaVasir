@@ -11,6 +11,16 @@
 
       <!-- Tarjetas de estadísticas -->
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-gradient-to-r from-yellow-400 to-yellow-600 text-white rounded-lg p-4 shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="text-yellow-100 text-sm">Ventas Pendientes</div>
+              <div class="text-2xl font-bold">{{ estadisticas.pendientes }}</div>
+            </div>
+            <FontAwesomeIcon :icon="faClock" class="text-3xl text-yellow-200" />
+          </div>
+        </div>
+
         <div class="bg-gradient-to-r from-green-400 to-green-600 text-white rounded-lg p-4 shadow-md">
           <div class="flex items-center justify-between">
             <div>
@@ -20,8 +30,6 @@
             <FontAwesomeIcon :icon="faCheck" class="text-3xl text-green-200" />
           </div>
         </div>
-
-
 
         <div class="bg-gradient-to-r from-red-400 to-red-600 text-white rounded-lg p-4 shadow-md">
           <div class="flex items-center justify-between">
@@ -562,6 +570,7 @@ import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import {
   faCheck,
+  faClock,
   faExclamationTriangle,
   faFilter,
   faPencil,
@@ -644,6 +653,7 @@ const filtros = ref({
 });
 
 const estadosOptions = ref([
+  { name: 'Pendiente', value: 'pendiente' },
   { name: 'Completada', value: 'completada' },
   { name: 'Cancelada', value: 'cancelada' }
 ]);
@@ -683,10 +693,10 @@ const ventasFiltradas = computed(() => {
     filtered = filtered.filter(venta => new Date(venta.fecha) <= fechaHasta);
   }
 
-  // 📋 Ordenamiento: Completadas primero, luego por fecha más reciente
+  // 📋 Ordenamiento: Pendientes primero, luego completadas, luego canceladas
   return filtered.sort((a, b) => {
-    // Prioridad 1: Estado (completadas primero)
-    const estadoPrioridad = { 'completada': 1, 'cancelada': 2 };
+    // Prioridad 1: Estado (pendientes primero para atención inmediata)
+    const estadoPrioridad = { 'pendiente': 1, 'completada': 2, 'cancelada': 3 };
     const prioridadA = estadoPrioridad[a.estado.toLowerCase()] || 4;
     const prioridadB = estadoPrioridad[b.estado.toLowerCase()] || 4;
 
@@ -1002,6 +1012,8 @@ const formatCurrency = (amount) => {
 
 const getEstadoClass = (estado) => {
   switch (estado) {
+    case 'pendiente':
+      return 'bg-yellow-100 text-yellow-800';
     case 'completada':
       return 'bg-green-100 text-green-800';
     case 'cancelada':
@@ -1013,6 +1025,8 @@ const getEstadoClass = (estado) => {
 
 const getEstadoLabel = (estado) => {
   switch (estado) {
+    case 'pendiente':
+      return 'Pendiente de Pago';
     case 'completada':
       return 'Completada';
     case 'cancelada':

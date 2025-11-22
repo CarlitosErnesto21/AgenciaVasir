@@ -25,6 +25,13 @@ class Kernel extends ConsoleKernel
                  ->withoutOverlapping()
                  ->onOneServer()
                  ->appendOutputTo(storage_path('logs/scheduled-reservas-finalizacion-daily.log'));
+
+        // 🆕 LIMPIAR RESERVAS DE STOCK EXPIRADAS cada 15 minutos
+        $schedule->command('reservations:clean-expired')
+                 ->everyFifteenMinutes()
+                 ->withoutOverlapping()
+                 ->onOneServer()
+                 ->appendOutputTo(storage_path('logs/scheduled-stock-reservations-cleanup.log'));
     }
 
     /**

@@ -255,7 +255,7 @@ class VentaController extends Controller
      */
     public function porEstado($estado)
     {
-        $estadosValidos = ['completada', 'cancelada'];
+        $estadosValidos = ['pendiente', 'completada', 'cancelada'];
 
         if (!in_array($estado, $estadosValidos)) {
             return response()->json([
@@ -290,6 +290,7 @@ class VentaController extends Controller
     {
         $estadisticas = [
             'total_ventas' => Venta::count(),
+            'pendientes' => Venta::where('estado', 'pendiente')->count(),
             'completadas' => Venta::where('estado', 'completada')->count(),
             'canceladas' => Venta::where('estado', 'cancelada')->count(),
             'con_pago_aprobado' => Venta::conPagoAprobado()->count(),

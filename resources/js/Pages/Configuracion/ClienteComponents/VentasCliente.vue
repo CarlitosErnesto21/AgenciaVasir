@@ -325,6 +325,8 @@ const formatDate = (date) => {
 
 const getEstadoClass = (estado) => {
     switch (estado) {
+        case 'pendiente':
+            return 'bg-yellow-100 text-yellow-800';
         case 'completada':
             return 'bg-green-100 text-green-800';
         case 'cancelada':
@@ -336,6 +338,8 @@ const getEstadoClass = (estado) => {
 
 const getEstadoLabel = (estado) => {
     switch (estado) {
+        case 'pendiente':
+            return 'Pendiente de Pago';
         case 'completada':
             return 'Completada';
         case 'cancelada':

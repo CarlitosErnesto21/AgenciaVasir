@@ -63,7 +63,8 @@ class TestWebhookManual extends Command
         $request->headers->set('X-Event', 'transaction.updated');
 
         // Ejecutar webhook
-        $controller = new PagoController();
+        $wompiService = app(\App\Services\WompiService::class);
+        $controller = new PagoController($wompiService);
 
         try {
             $response = $controller->webhook($request);
