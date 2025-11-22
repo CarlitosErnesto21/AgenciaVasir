@@ -65,6 +65,9 @@ Route::middleware('auth:sanctum')->post('/clientes/validar-documento', [ClienteC
 // Ruta para validar nombre único de usuarios
 Route::middleware('auth:sanctum')->post('/users/validar-nombre', [ApiAuthController::class, 'validarNombre']);
 
+// Ruta para validar email único de usuarios
+Route::middleware('auth:sanctum')->post('/users/validar-email', [ApiAuthController::class, 'validarEmail']);
+
 // ═══════════════════════════════════════════════════════════
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
 // ═══════════════════════════════════════════════════════════

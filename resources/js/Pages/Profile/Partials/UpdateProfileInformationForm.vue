@@ -229,6 +229,22 @@ watch(() => form.name, async (newValue) => {
     }
 });
 
+// Watcher para validar email en tiempo real
+watch(() => form.email, async (newValue) => {
+    if (newValue && newValue.trim().length >= 5) {
+        // Verificar formato válido antes de validar duplicados
+        if (emailRegex.test(newValue.trim())) {
+            await validarEmailUnico(newValue.trim());
+        } else {
+            emailValidation.value.mensaje = '';
+            emailValidation.value.isValid = true;
+        }
+    } else {
+        emailValidation.value.mensaje = '';
+        emailValidation.value.isValid = true;
+    }
+});
+
 // Watchers para limpiar errores cuando se completan los campos
 watch(() => form.fecha_nacimiento, (newValue) => {
     if (newValue) {
@@ -304,6 +320,11 @@ const documentoValidation = ref({
 });
 
 const nombreValidation = ref({
+    isValid: true,
+    mensaje: ''
+});
+
+const emailValidation = ref({
     isValid: true,
     mensaje: ''
 });
@@ -428,6 +449,46 @@ const validarNombreUnico = async (nombre) => {
             nombreValidation.value.mensaje = 'Error de autenticación';
         } else {
             nombreValidation.value.mensaje = 'Error al validar nombre';
+        }
+    }
+};
+
+// Validar que el email no esté duplicado
+const validarEmailUnico = async (email) => {
+    if (!email || email.trim().length < 5) return;
+
+    try {
+        // Verificar si es el mismo email que ya tenía el usuario
+        const emailActual = user.email;
+        const esMismoEmail = email.trim().toLowerCase() === emailActual.toLowerCase();
+
+        if (esMismoEmail) {
+            emailValidation.value.mensaje = '✓ Este es tu email actual';
+            emailValidation.value.isValid = true;
+            return;
+        }
+
+        const response = await axios.post('/api/users/validar-email', {
+            email: email.trim().toLowerCase(),
+            usuario_id: user.id // Excluir el usuario actual
+        });
+
+        if (response.data.disponible) {
+            emailValidation.value.mensaje = '✓ Email disponible';
+            emailValidation.value.isValid = true;
+        } else {
+            emailValidation.value.isValid = false;
+            emailValidation.value.mensaje = response.data.message || 'Este email ya está registrado por otro usuario';
+        }
+    } catch (error) {
+        console.error('[UpdateProfile] Error validando email:', error);
+        emailValidation.value.isValid = false;
+        if (error.response?.status === 403) {
+            emailValidation.value.mensaje = 'No tienes permisos para validar este email';
+        } else if (error.response?.status === 401) {
+            emailValidation.value.mensaje = 'Error de autenticación';
+        } else {
+            emailValidation.value.mensaje = 'Error al validar email';
         }
     }
 };
@@ -590,6 +651,17 @@ const submitForm = () => {
             summary: 'Error en Email',
             detail: emailErrors.value[0],
             life: 4000
+        });
+        return;
+    }
+
+    // Verificar si el email no está validado por duplicados
+    if (form.email && !emailValidation.value.isValid) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Email no disponible',
+            detail: emailValidation.value.mensaje || 'Este email no está disponible. Por favor, use un email diferente.',
+            life: 5000
         });
         return;
     }
@@ -768,7 +840,18 @@ watch(
                             </svg>
                         </div>
                     </div>
-                    <InputError class="text-red-600 text-sm" :message="form.errors.email" />
+                    <!-- Mensaje de validación en tiempo real del email -->
+                    <small
+                        v-if="emailValidation.mensaje"
+                        :class="[
+                            'block mt-1',
+                            emailValidation.isValid ? 'text-green-600' : 'text-red-500'
+                        ]"
+                    >
+                        {{ emailValidation.mensaje }}
+                    </small>
+                    <!-- Solo mostrar errores de formulario si no hay mensaje de validación en tiempo real -->
+                    <InputError v-if="form.errors.email && !emailValidation.mensaje" class="text-red-600 text-sm" :message="form.errors.email" />
                 </div>
 
             </div>
@@ -884,20 +967,46 @@ watch(
                                 id="cargo"
                                 v-model="form.cargo"
                                 type="text"
-                                class="mt-1 block w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none outline-none rounded-md px-2 py-2"
+                                class="mt-1 block w-full border-2 rounded-md px-2 py-2 focus:ring-0 focus:shadow-none outline-none"
+                                :class="{
+                                    'border-gray-400 hover:border-gray-500 focus:border-gray-500 bg-white': !roles.some(r => r.name === 'Empleado'),
+                                    'border-gray-300 bg-gray-50 cursor-not-allowed': roles.some(r => r.name === 'Empleado')
+                                }"
                                 maxlength="25"
                                 @input="validateCargo"
                                 @keydown="(e) => { if (!/^[a-zA-Z\s]$/.test(e.key) && !e.ctrlKey && !e.metaKey && !['Backspace','Delete','Tab','Enter','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)) e.preventDefault(); }"
                                 @paste="(e) => { e.preventDefault(); const t = (e.clipboardData || window.clipboardData).getData('text').toUpperCase().replace(/[^A-Z\s]/g, ''); const input = e.target; const start = input.selectionStart; const end = input.selectionEnd; const current = form.cargo || ''; const nv = current.substring(0, start) + t + current.substring(end); form.cargo = nv.substring(0, 25); nextTick(() => { input.setSelectionRange(start + t.length, start + t.length); }); }"
+                                :disabled="roles.some(r => r.name === 'Empleado')"
+                                :readonly="roles.some(r => r.name === 'Empleado')"
                                 required
                             />
+
+                            <!-- Mensaje informativo para empleados -->
+                            <div v-if="roles.some(r => r.name === 'Empleado')" class="mt-2 bg-blue-50 border border-blue-200 rounded-md p-3">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-blue-800 text-sm font-medium">
+                                            Solo el Administrador puede modificar tu cargo
+                                        </p>
+                                        <p class="text-blue-700 text-xs mt-1">
+                                            Si necesitas cambiar tu cargo, contacta al Administrador de tu empresa.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div v-if="form.errors.cargo" class="mt-1">
                                 <small class="text-red-500 block">{{ form.errors.cargo }}</small>
                             </div>
-                            <small class="text-gray-500 mt-1" v-if="form.cargo && form.cargo.length > 0 && cargoErrors.length === 0">
+                            <small class="text-gray-500 mt-1" v-if="form.cargo && form.cargo.length > 0 && cargoErrors.length === 0 && !roles.some(r => r.name === 'Empleado')">
                                 Caracteres: {{ form.cargo.length }}/25
                             </small>
-                            <small class="text-orange-500 mt-1" v-if="form.cargo && form.cargo.length >= 20 && form.cargo.length <= 25 && cargoErrors.length === 0">
+                            <small class="text-orange-500 mt-1" v-if="form.cargo && form.cargo.length >= 20 && form.cargo.length <= 25 && cargoErrors.length === 0 && !roles.some(r => r.name === 'Empleado')">
                                 Caracteres restantes: {{ 25 - form.cargo.length }}
                             </small>
                         </div>

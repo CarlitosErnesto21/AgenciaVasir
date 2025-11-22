@@ -1,9 +1,12 @@
 
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue';
 import { useForm } from '@inertiajs/vue3';
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
+import { useToast } from 'primevue/usetoast';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faInfoCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
 	empleado: {
@@ -16,12 +19,37 @@ const props = defineProps({
 	}
 });
 
-import { useToast } from 'primevue/usetoast';
+
 const emit = defineEmits(['close']);
 const toast = useToast();
 
+// Manejo del tamaño de ventana para estilos responsivos
+const windowWidth = ref(window.innerWidth);
+
+const updateWindowWidth = () => {
+	windowWidth.value = window.innerWidth;
+};
+
+onMounted(() => {
+	window.addEventListener('resize', updateWindowWidth);
+});
+
+onUnmounted(() => {
+	window.removeEventListener('resize', updateWindowWidth);
+});
+
+const dialogStyle = computed(() => {
+	if (windowWidth.value < 640) {
+		return { width: '95vw', maxWidth: '380px' };
+	} else if (windowWidth.value < 768) {
+		return { width: '400px' };
+	} else {
+		return { width: '450px' };
+	}
+});
+
 const form = useForm({
-	cargo: props.empleado?.cargo || '',
+	cargo: props.empleado?.cargo || 'PROPIETARIA',
 	telefono: props.empleado?.telefono || '',
 	user_id: props.userId,
 });
@@ -145,9 +173,32 @@ const submit = () => {
 </script>
 
 <template>
-	<div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-		<div class="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+	<div class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+		<div class="bg-white rounded-lg shadow-lg p-6" :style="dialogStyle">
 			<h2 class="text-2xl font-bold mb-4 text-blue-600">Completa tus datos de Administrador</h2>
+
+			<!-- Mensaje informativo -->
+			<div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+				<div class="flex">
+					<div class="flex-shrink-0">
+						<svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+							<path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+						</svg>
+					</div>
+					<div class="ml-3">
+						<p class="text-sm text-blue-700">
+							<strong>Información importante:</strong> Estos datos se solicitarán solo una vez.
+							Puedes modificar el cargo sugerido si es necesario.
+						</p>
+						<p class="text-xs text-blue-600 mt-2">
+							<FontAwesomeIcon :icon="faLightbulb" class="mr-1 text-yellow-400"/>
+                            Posteriormente podrás modificar toda la información en:
+							<span class="font-medium">Mi Perfil → Editar Perfil → Información Personal</span>
+						</p>
+					</div>
+				</div>
+			</div>
+
 			<form @submit.prevent="submit" class="space-y-5">
 				<!-- Cargo -->
 				<div class="w-full flex flex-col">

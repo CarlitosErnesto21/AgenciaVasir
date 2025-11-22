@@ -183,29 +183,6 @@ const updatePassword = () => {
                 </div>
             </div>
 
-            <!-- Requisitos de contraseña compactos -->
-            <div class="bg-gray-50 rounded-xl p-3 sm:p-4 border border-gray-100 shadow-sm">
-                <h4 class="text-sm font-semibold text-gray-700 mb-2">Requisitos:</h4>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm text-gray-600">
-                    <div class="flex items-center">
-                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                        Mínimo 8 caracteres
-                    </div>
-                    <div class="flex items-center">
-                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                        Una mayúscula
-                    </div>
-                    <div class="flex items-center">
-                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                        Un número
-                    </div>
-                    <div class="flex items-center col-span-1 sm:col-span-3">
-                        <span class="w-2 h-2 bg-red-500 rounded-full mr-2"></span>
-                        Sin espacios ni puntos
-                    </div>
-                </div>
-            </div>
-
             <!-- Botones de acción -->
             <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-8 border-t border-gray-100 mt-2">
                 <PrimaryButton

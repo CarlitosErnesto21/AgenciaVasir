@@ -86,4 +86,53 @@ class ApiAuthController extends Controller
             'message' => 'Nombre disponible'
         ]);
     }
+
+    /**
+     * Validar si un email de usuario es único y válido
+     */
+    public function validarEmail(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email:rfc,dns|max:255',
+                'usuario_id' => 'nullable|integer|exists:users,id'
+            ]);
+        } catch (ValidationException $e) {
+            // Si la validación del formato o DNS falla, retornar error específico
+            $errors = $e->errors();
+            if (isset($errors['email'])) {
+                return response()->json([
+                    'disponible' => false,
+                    'message' => 'El email no es válido o el dominio no existe'
+                ]);
+            }
+            
+            return response()->json([
+                'disponible' => false,
+                'message' => 'Error de validación'
+            ]);
+        }
+
+        $email = strtolower(trim($request->email));
+        $usuarioId = $request->usuario_id;
+
+        // Verificar si el email ya existe (excluyendo al usuario actual si se proporciona)
+        $existeEmail = User::where('email', $email)
+            ->when($usuarioId, function ($query, $usuarioId) {
+                return $query->where('id', '!=', $usuarioId);
+            })
+            ->exists();
+
+        if ($existeEmail) {
+            return response()->json([
+                'disponible' => false,
+                'message' => 'Este email ya está registrado por otro usuario'
+            ]);
+        }
+
+        return response()->json([
+            'disponible' => true,
+            'message' => 'Email disponible'
+        ]);
+    }
 }
