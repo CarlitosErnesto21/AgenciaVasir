@@ -626,7 +626,8 @@ class PagoController extends Controller
 
             $data = json_decode($payload, true);
 
-            if (!$data || !isset($data['data']['transaction'])) {
+            // 🇸🇻 ADAPTACIÓN PARA WOMPI EL SALVADOR
+            if (!$data) {
                 Log::error('Webhook con payload inválido', [
                     'request_id' => $requestId,
                     'payload' => $payload
@@ -634,9 +635,41 @@ class PagoController extends Controller
                 return response()->json(['error' => 'Invalid payload'], 400);
             }
 
-            $transactionData = $data['data']['transaction'];
-            $transactionId = $transactionData['id'];
-            $newStatus = strtolower($transactionData['status']);
+            // Detectar formato: Wompi Colombia vs Wompi El Salvador
+            if (isset($data['data']['transaction'])) {
+                // Formato Wompi Colombia
+                $transactionData = $data['data']['transaction'];
+                $transactionId = $transactionData['id'];
+                $newStatus = strtolower($transactionData['status']);
+                $reference = $transactionData['reference'] ?? null;
+            } elseif (isset($data['IdTransaccion']) && isset($data['ResultadoTransaccion'])) {
+                // 🇸🇻 Formato Wompi El Salvador
+                $transactionId = $data['IdTransaccion'];
+                $resultadoTransaccion = $data['ResultadoTransaccion'];
+                $reference = $data['IdExterno'] ?? null;
+
+                // Mapear estados de El Salvador a nuestros estados
+                $newStatus = match($resultadoTransaccion) {
+                    'ExitosaAprobada' => 'approved',
+                    'ExitosaRechazada', 'Rechazada', 'Fallida' => 'declined',
+                    'Pendiente' => 'pending',
+                    default => 'pending'
+                };
+
+                Log::info('Webhook Wompi El Salvador detectado', [
+                    'request_id' => $requestId,
+                    'transaction_id' => $transactionId,
+                    'resultado_original' => $resultadoTransaccion,
+                    'estado_mapeado' => $newStatus,
+                    'reference' => $reference
+                ]);
+            } else {
+                Log::error('Formato de webhook no reconocido', [
+                    'request_id' => $requestId,
+                    'payload_keys' => array_keys($data)
+                ]);
+                return response()->json(['error' => 'Invalid payload format'], 400);
+            }
 
             Log::info('Procesando webhook válido', [
                 'request_id' => $requestId,
@@ -649,8 +682,7 @@ class PagoController extends Controller
             $pago = Pago::where('wompi_transaction_id', $transactionId)->first();
 
             // Si no se encuentra por transaction_id, buscar por referencia (para payment links)
-            if (!$pago && !empty($transactionData['reference'])) {
-                $reference = $transactionData['reference'];
+            if (!$pago && !empty($reference)) {
                 $pago = Pago::where('referencia_wompi', $reference)->first();
 
                 Log::info('Búsqueda por referencia', [
