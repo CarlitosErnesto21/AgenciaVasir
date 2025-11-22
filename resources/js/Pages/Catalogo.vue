@@ -360,7 +360,7 @@ function abrirEmail() {
                         class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-sm md:text-base transform hover:scale-105"
                     >
                         <FontAwesomeIcon :icon="faSignIn" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                        <span class="hidden lg:block text-sm">Iniciar Sesión</span>
+                        <span class="hidden lg:block text-xs">Iniciar Sesión</span>
                         <span class="block lg:hidden text-sm">Entrar</span>
                     </Link>
                     <Link
