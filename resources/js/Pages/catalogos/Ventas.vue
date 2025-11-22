@@ -711,6 +711,7 @@ const ventasFiltradas = computed(() => {
 
 const estadisticas = computed(() => {
   const stats = {
+    pendientes: 0,
     completadas: 0,
     canceladas: 0,
     totalVendido: 0
@@ -718,6 +719,9 @@ const estadisticas = computed(() => {
 
   ventas.value.forEach(venta => {
     switch (venta.estado) {
+      case 'pendiente':
+        stats.pendientes++;
+        break;
       case 'completada':
         stats.completadas++;
         stats.totalVendido += parseFloat(venta.total || 0);
