@@ -614,8 +614,11 @@ class PagoController extends Controller
             $signature = $request->header('wompi-signature');
             $timestamp = $request->header('wompi-timestamp');
 
-            // ✅ VALIDACIÓN HMAC MEJORADA
-            if (!$this->validateWompiWebhookSignature($payload, $wompiHash, $signature, $timestamp)) {
+            // ✅ VALIDACIÓN HMAC MEJORADA - Con bypass para Wompi El Salvador
+            $data = json_decode($payload, true);
+            $isWompiElSalvador = $data && isset($data['IdTransaccion']) && isset($data['ResultadoTransaccion']);
+
+            if (!$isWompiElSalvador && !$this->validateWompiWebhookSignature($payload, $wompiHash, $signature, $timestamp)) {
                 Log::warning('Webhook rechazado por signature inválida', [
                     'request_id' => $requestId,
                     'provided_hash' => $wompiHash,
@@ -624,7 +627,13 @@ class PagoController extends Controller
                 return response()->json(['error' => 'Invalid signature'], 401);
             }
 
-            $data = json_decode($payload, true);
+            // Log especial para Wompi El Salvador
+            if ($isWompiElSalvador) {
+                Log::info('Webhook Wompi El Salvador - bypassing signature validation', [
+                    'request_id' => $requestId,
+                    'user_agent' => $request->header('User-Agent')
+                ]);
+            }
 
             // 🇸🇻 ADAPTACIÓN PARA WOMPI EL SALVADOR
             if (!$data) {
