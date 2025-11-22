@@ -564,7 +564,7 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
 import { Head, router } from "@inertiajs/vue3";
-import { ref, onMounted, computed, watch, nextTick } from "vue";
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
@@ -1040,23 +1040,46 @@ const getEstadoLabel = (estado) => {
   }
 };
 
-// 🔄 Mostrar toasts de carga al entrar a la vista
+// 🔄 Auto-refresh de ventas y toasts de carga
+let refreshInterval = null;
+
+const refreshVentas = () => {
+  // Recargar datos usando Inertia
+  router.reload({
+    only: ['ventas'],
+    preserveScroll: true,
+    preserveState: true
+  });
+};
+
 onMounted(() => {
-  // Siempre mostrar el toast de carga al entrar a la vista
+  // Toast de carga inicial
   toast.add({
     severity: "info",
     summary: "Cargando ventas...",
     life: 2000
   });
 
-  // Simular el tiempo de carga y mostrar el toast de éxito
+  // Toast de éxito después de cargar
   setTimeout(() => {
     toast.add({
       severity: "success",
       summary: "Ventas cargadas",
       life: 2000
     });
-  }, 1000); // Delay más realista para mostrar ambos toasts
+  }, 1000);
+
+  // 🔄 Auto-refresh cada 30 segundos para actualizar estados de pago
+  refreshInterval = setInterval(() => {
+    refreshVentas();
+  }, 30000); // 30 segundos
+});
+
+// Limpiar interval al salir del componente
+onUnmounted(() => {
+  if (refreshInterval) {
+    clearInterval(refreshInterval);
+  }
 });
 
 </script>
