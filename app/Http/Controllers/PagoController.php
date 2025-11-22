@@ -580,6 +580,18 @@ class PagoController extends Controller
         $startTime = microtime(true);
         $requestId = uniqid('webhook_', true);
 
+        // 🚨 LOGGING MEJORADO - Registrar TODOS los webhooks que llegan
+        Log::info("=== WEBHOOK RECIBIDO ===", [
+            'request_id' => $requestId,
+            'timestamp' => now()->toDateTimeString(),
+            'ip' => $request->ip(),
+            'user_agent' => $request->header('User-Agent'),
+            'method' => $request->method(),
+            'url' => $request->fullUrl(),
+            'headers' => $request->headers->all(),
+            'raw_content' => $request->getContent()
+        ]);
+
         try {
             Log::info("Iniciando procesamiento de webhook", [
                 'request_id' => $requestId,
