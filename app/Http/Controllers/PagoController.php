@@ -684,7 +684,7 @@ class PagoController extends Controller
                 'request_id' => $requestId,
                 'transaction_id' => $transactionId,
                 'status' => $newStatus,
-                'amount' => $transactionData['amount'] ?? null
+                'amount' => (isset($data['data']['transaction']) && isset($data['data']['transaction']['amount'])) ? $data['data']['transaction']['amount'] : null
             ]);
 
             // ✅ BUSCAR PAGO CON VALIDACIONES MEJORADAS
@@ -717,7 +717,7 @@ class PagoController extends Controller
                 Log::warning('Webhook para transacción no encontrada (ni por ID ni por referencia)', [
                     'request_id' => $requestId,
                     'transaction_id' => $transactionId,
-                    'reference' => $transactionData['reference'] ?? 'N/A'
+                    'reference' => $reference ?? 'N/A'
                 ]);
                 return response()->json(['error' => 'Transaction not found'], 404);
             }
@@ -733,13 +733,13 @@ class PagoController extends Controller
             }
 
             // ✅ PROCESAR EN TRANSACCIÓN PARA CONSISTENCIA
-            DB::transaction(function () use ($pago, $newStatus, $transactionData, $requestId) {
+            DB::transaction(function () use ($pago, $newStatus, $data, $requestId) {
                 $oldStatus = $pago->estado;
 
                 // Actualizar el pago
                 $pago->update([
                     'estado' => $newStatus,
-                    'response_data' => $transactionData,
+                    'response_data' => json_encode($data),
                     'updated_at' => now()
                 ]);
 
