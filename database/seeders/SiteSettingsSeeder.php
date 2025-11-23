@@ -30,29 +30,6 @@ class SiteSettingsSeeder extends Seeder
                 'type' => 'textarea',
                 'label' => 'Descripción de la Empresa',
                 'description' => 'Descripción principal que aparece en el encabezado de la página Sobre Nosotros'
-            ],
-            [
-                'key' => 'respaldos_automaticos',
-                'value' => 'false',
-                'type' => 'boolean',
-                'label' => 'Respaldos Automáticos',
-                'description' => 'Activar o desactivar los respaldos automáticos de la base de datos'
-            ],
-            
-            // ✅ CONFIGURACIONES PARA ADMIN AUTOMÁTICO
-            [
-                'key' => 'first_admin_created',
-                'value' => 'false',
-                'type' => 'boolean',
-                'label' => 'Primer Administrador Creado',
-                'description' => 'Indica si ya se ha creado el primer administrador del sistema'
-            ],
-            [
-                'key' => 'auto_admin_registration',
-                'value' => 'true',
-                'type' => 'boolean',
-                'label' => 'Registro Automático de Admin',
-                'description' => 'Permite que el primer usuario registrado sea automáticamente administrador'
             ]
         ];
 

@@ -82,7 +82,6 @@ return [
         'category' => 'Categoría',
         'type' => 'Tipo',
         'notes' => 'Notas',
-        'comments' => 'Comentarios',
         'title' => 'Título',
         'subject' => 'Asunto',
         'message' => 'Mensaje',

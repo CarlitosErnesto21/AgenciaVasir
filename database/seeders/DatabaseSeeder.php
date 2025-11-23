@@ -12,7 +12,7 @@ class DatabaseSeeder extends Seeder
 
     public function run()
     {
-        $this->command->info('🌱 Iniciando seeders de VASIR...');
+        $this->command->info('Iniciando seeders de VASIR...');
 
         $this->call([
             ControlSeeder::class,
@@ -20,6 +20,6 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
         ]);
 
-        $this->command->info('🎊 ¡Base de datos inicializada correctamente!');
+        $this->command->info('¡Base de datos inicializada correctamente!');
     }
 }
