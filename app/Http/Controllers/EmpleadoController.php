@@ -455,6 +455,12 @@ class EmpleadoController extends Controller
                 'password' => Hash::make($request->password),
             ]);
 
+            // 🔐 Invalidar todas las sesiones del usuario por seguridad
+            // Esto cierra automáticamente las sesiones activas del usuario
+            DB::table('sessions')
+                ->where('user_id', $empleado->user->id)
+                ->delete();
+
             // Enviar email de confirmación de cambio de contraseña
             $changeDetails = [
                 'timestamp' => now()->format('d/m/Y H:i:s'),
@@ -471,7 +477,7 @@ class EmpleadoController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Contraseña actualizada exitosamente'
+                'message' => 'Contraseña actualizada exitosamente. Las sesiones del usuario han sido cerradas por seguridad.'
             ]);
 
         } catch (ValidationException $e) {

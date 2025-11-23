@@ -575,6 +575,8 @@ const openMoreActionsModal = (empleadoData) => {
 const handleChangePassword = (emp) => {
     moreActionsDialog.value = false;
     selectedEmpleado.value = emp;
+    
+    // 📝 Limpiar completamente cualquier dato de contraseña previo
     empleado.value = {
         id: emp.id,
         nombre: emp.nombre,
@@ -584,6 +586,10 @@ const handleChangePassword = (emp) => {
         password: "",
         password_confirmation: ""
     };
+    
+    // 🔄 Resetear estado de formulario
+    submitted.value = false;
+    
     passwordDialog.value = true;
 };
 
@@ -628,9 +634,12 @@ const updatePassword = async (passwordData) => {
         toast.add({
             severity: "success",
             summary: "¡Éxito!",
-            detail: "La contraseña ha sido actualizada correctamente.",
-            life: 5000
+            detail: "La contraseña ha sido actualizada correctamente. Las sesiones del usuario han sido cerradas por seguridad.",
+            life: 6000
         });
+        
+        // 🔄 Recargar la lista de empleados para reflejar cualquier cambio
+        await fetchEmpleadosWithToasts();
 
     } catch (err) {
         if (err.response?.status === 422) {

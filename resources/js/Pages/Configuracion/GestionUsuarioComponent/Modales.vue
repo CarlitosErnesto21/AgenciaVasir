@@ -2,7 +2,7 @@
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faCheck, faExclamationTriangle, faKey, faEnvelope, faEye, faTrashCan, faXmark, faSpinner, faUsers, faPencil } from "@fortawesome/free-solid-svg-icons";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 
 // Props recibidas desde el componente padre
 const props = defineProps({
@@ -90,6 +90,13 @@ const handleChangePassword = () => {
     emit('change-password', props.empleado);
 };
 
+// 🔄 Limpiar formulario cuando se abre el modal de contraseña
+watch(() => props.passwordVisible, (newValue) => {
+    if (newValue) {
+        resetPasswordForm(); // Limpiar campos al abrir
+    }
+});
+
 const handleSendCredentials = () => {
     emit('send-credentials', props.empleado);
 };
@@ -120,6 +127,15 @@ const handleUpdatePassword = () => {
         return;
     }
     emit('update-password', passwordData.value);
+};
+
+// 🔄 Función para limpiar el formulario cuando se cierra el modal
+const handlePasswordModalClose = (value) => {
+    if (!value) {
+        // 📝 Limpiar campos cuando se cierra el modal
+        resetPasswordForm();
+    }
+    emit('update:password-visible', value);
 };
 
 // Watchers para sincronizar con el componente padre
@@ -338,7 +354,7 @@ const updatePasswordVisible = (value) => {
     <!-- Modal de cambio de contraseña -->
     <Dialog
         :visible="passwordVisible"
-        @update:visible="updatePasswordVisible"
+        @update:visible="handlePasswordModalClose"
         header="Cambiar Contraseña"
         :modal="true"
         :style="dialogStyle"
