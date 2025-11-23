@@ -132,7 +132,7 @@
                      style="height: 60px; width: auto; margin-bottom: 10px;">
                 <div style="font-size: 28px; font-weight: bold; color: #ff0000; margin-top: 10px;"></div>
             </div>
-            <p>Tu Agencia de Viajes de Confianza</p>
+            <p>Viajes y Turismo</p>
             <div class="success-badge">
                 CONTRASEÑA ACTUALIZADA
             </div>

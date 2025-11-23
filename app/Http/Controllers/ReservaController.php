@@ -614,10 +614,20 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Obtener la fecha de salida del tour si existe
+            $fechaSalida = null;
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalida = $primerDetalle->tour->fecha_salida;
+                }
+            }
+
             // Preparar datos para el email
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
+                'fecha_salida' => $fechaSalida,
                 'tipo' => $this->obtenerTipoReserva($reserva),
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
@@ -918,10 +928,20 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Obtener la fecha de regreso del tour si existe
+            $fechaRegreso = null;
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaRegreso = $primerDetalle->tour->fecha_regreso;
+                }
+            }
+
             // Preparar datos para el email de finalización
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
+                'fecha_regreso' => $fechaRegreso,
                 'tipo' => $this->obtenerTipoReserva($reserva),
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
@@ -993,10 +1013,20 @@ class ReservaController extends Controller
                     if ($debeFinalizarse) {
                         $reserva->update(['estado' => 'FINALIZADA']);
 
+                        // Obtener la fecha de regreso del tour si existe
+                        $fechaRegreso = null;
+                        if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                            $primerDetalle = $reserva->detallesTours->first();
+                            if ($primerDetalle && $primerDetalle->tour) {
+                                $fechaRegreso = $primerDetalle->tour->fecha_regreso;
+                            }
+                        }
+
                         // Enviar email de finalización
                         $reservationData = [
                             'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                             'fecha_reserva' => $reserva->fecha,
+                            'fecha_regreso' => $fechaRegreso,
                             'tipo' => $this->obtenerTipoReserva($reserva),
                             'mayores_edad' => $reserva->mayores_edad,
                             'menores_edad' => $reserva->menores_edad,

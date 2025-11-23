@@ -5,6 +5,8 @@ namespace App\Mail;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\User;
+use App\Models\Empleado;
 
 class ReservationCompletedMail extends Mailable
 {
@@ -12,24 +14,37 @@ class ReservationCompletedMail extends Mailable
 
     public $reservationData;
     public $clientData;
+    public $adminData;
+    public $companyName;
 
     public function __construct($reservationData, $clientData)
     {
         $this->reservationData = $reservationData;
         $this->clientData = $clientData;
+
+        // Obtener datos del administrador
+        $adminUser = User::role('Administrador')->first();
+        $adminEmployee = $adminUser ? Empleado::where('user_id', $adminUser->id)->first() : null;
+
+        $this->adminData = [
+            'email' => $adminUser->email ?? config('mail.from.address'),
+            'phone' => $adminEmployee->telefono ?? null,
+            'name' => $adminEmployee ? ($adminEmployee->nombres . ' ' . $adminEmployee->apellidos) : 'VASIR',
+        ];
+
+        $this->companyName = 'VASIR';
     }
 
     public function build()
     {
-        return $this->subject('¡Tu experiencia ha finalizado! - VASIR Agencia de Viajes')
+        return $this->subject('¡Tu experiencia ha finalizado! - VASIR')
                     ->view('emails.reservation-completed')
                     ->with([
                         'reservation' => $this->reservationData,
                         'client' => $this->clientData,
-                        'companyName' => 'VASIR',
-                        'supportEmail' => config('mail.from.address'),
-                        'companyPhone' => '+503 7985 8777',
-                        'companyAddress' => 'Tu dirección de la agencia',
+                        'companyName' => $this->companyName,
+                        'supportEmail' => $this->adminData['email'],
+                        'adminData' => $this->adminData,
                     ]);
     }
 }

@@ -84,7 +84,7 @@
         }
         .contact-btn {
             display: inline-block;
-            background-color: #ff0000;
+            background-color: #002fff;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -93,7 +93,7 @@
             font-weight: bold;
         }
         .contact-btn:hover {
-            background-color: #b30000;
+            background-color: #0225c0;;
         }
         .footer {
             text-align: center;
@@ -121,98 +121,128 @@
                      alt="{{ $companyName }}"
                      style="height: 60px; width: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
             </div>
-            <p>Tu Agencia de Viajes de Confianza</p>
+            <p>Viajes y Turismo</p>
         </div>
 
         <!-- Badge de confirmación -->
         <div style="text-align: center;">
             <div class="success-badge">
-                ✅ ¡RESERVACIÓN CONFIRMADA!
+                ¡RESERVACIÓN CONFIRMADA!
             </div>
         </div>
 
         <div>
             <h2>¡Hola {{ $client['name'] ?? $client['nombres'] ?? 'Estimado cliente' }}!</h2>
-            <p>¡Excelentes noticias! Tu reservación ha sido <strong style="color: #28a745;">CONFIRMADA</strong>. 
+            <p>¡Excelentes noticias! Tu reservación ha sido <strong style="color: #28a745;">CONFIRMADA</strong>.
                Estamos emocionados de acompañarte en esta nueva aventura.</p>
         </div>
 
         <!-- Detalles de la reservación -->
         <div class="reservation-details">
-            <h3 style="margin-top: 0; color: #28a745;">📋 Detalles de tu Reservación</h3>
-            
+            <h3 style="margin-top: 0; color: #28a745;">Detalles de tu Reservación</h3>
+
             <div class="detail-row">
-                <span class="detail-label">🎯 Servicio:</span>
+                <span class="detail-label">Servicio:</span>
                 <span class="detail-value">{{ $reservation['entidad_nombre'] ?? 'N/A' }}</span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">📅 Fecha:</span>
-                <span class="detail-value">{{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}</span>
+                <span class="detail-label">Fecha de salida:</span>
+                <span class="detail-value">
+                    @if(isset($reservation['fecha_salida']) && $reservation['fecha_salida'])
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida'])) }}
+                    @else
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}
+                        <small style="display: block; color: #6c757d; font-size: 12px;">
+                            (Fecha de reservación)
+                        </small>
+                    @endif
+                </span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">🏷️ Tipo:</span>
+                <span class="detail-label">Tipo: </span>
                 <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['tipo'] ?? 'N/A' }}</span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">👥 Personas:</span>
+                <span class="detail-label">Personas:</span>
                 <span class="detail-value">
                     {{ ($reservation['mayores_edad'] ?? 0) + ($reservation['menores_edad'] ?? 0) }} personas
                     ({{ $reservation['mayores_edad'] ?? 0 }} adultos, {{ $reservation['menores_edad'] ?? 0 }} niños)
                 </span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">💰 Total:</span>
+                <span class="detail-label">Total: </span>
                 <span class="detail-value">${{ number_format($reservation['total'] ?? 0, 2) }}</span>
             </div>
         </div>
 
         <!-- Información importante -->
         <div class="info-section">
-            <h3 style="margin-top: 0;">📝 Información Importante</h3>
+            <h3 style="margin-top: 0;">Información Importante</h3>
             <ul style="margin: 10px 0; padding-left: 20px;">
                 <li>Tu reservación está confirmada y garantizada</li>
-                <li>Te contactaremos 24-48 horas antes para coordinar detalles finales</li>
                 <li>Si necesitas hacer cambios, contáctanos lo antes posible</li>
-                @if(($reservation['tipo'] ?? '') === 'tours')
-                <li>Recuerda llegar 15 minutos antes del punto de encuentro</li>
+                <li>Recuerda llegar 10 minutos antes del punto de encuentro</li>
                 <li>Lleva documento de identidad y ropa cómoda</li>
-                @elseif(($reservation['tipo'] ?? '') === 'hoteles')
-                <li>Presenta tu confirmación al momento del check-in</li>
-                <li>Horario de check-in: 3:00 PM / Check-out: 12:00 PM</li>
-                @endif
+            </ul>
+        </div>
+
+        <!-- Nuestras Acreditaciones -->
+        <div class="info-section" style="background-color: #e8f5e8; border-left: 4px solid #28a745;">
+            <h3 style="margin-top: 0; color: #155724;">Nuestras Acreditaciones</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #155724;">
+                <li>Somos una marca registrada ®</li>
+                <li>Somos una Agencia respaldada por el MITUR y CORSATUR</li>
+                <li>Poseemos Sello de Verificación de Protocolos de Bioseguridad</li>
+            </ul>
+        </div>
+
+        <!-- Términos de Reserva -->
+        <div class="info-section" style="background-color: #f0f8ff; border-left: 4px solid #007bff;">
+            <h3 style="margin-top: 0; color: #0056b3;">Términos de Reserva</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #0056b3;">
+                <li>Tours sujetos a completar cupo mínimo</li>
+                <li>Reservás tu cupo con el 50% y el resto el día del tour</li>
             </ul>
         </div>
 
         <!-- Políticas de cancelación -->
         <div class="warning-section">
-            <h4 style="margin-top: 0; color: #856404;">⚠️ Políticas de Cancelación</h4>
-            <p style="margin: 5px 0; font-size: 14px;">
-                • Cancelaciones con más de 72 horas: Sin penalización<br>
-                • Cancelaciones 24-72 horas: 50% de penalización<br>
-                • Cancelaciones con menos de 24 horas: 100% de penalización
-            </p>
+            <h3 style="margin-top: 0; color: #856404;">Políticas de Cancelación</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #856404;">
+                <li>Si por cualquier motivo como organizadores cancelamos el tour, te devolvemos el total de tu dinero</li>
+                <li>Si no asistís en la fecha y hora indicada no hay devolución de tu reserva</li>
+                <li>Para cancelaciones con menos de 72 horas antes del tour, no hay devolución de tu reserva</li>
+            </ul>
         </div>
 
         <!-- Botón de contacto -->
         <div style="text-align: center; margin: 30px 0;">
             <p><strong>¿Tienes alguna pregunta o necesitas asistencia?</strong></p>
-            <a href="tel:+50379858777" class="contact-btn">
-                📞 Contáctanos Ahora
-            </a>
+            @if($adminData['phone'])
+                <a href="tel:{{ $adminData['phone'] }}" class="contact-btn" style="color: white !important">
+                    Contáctanos Ahora
+                </a>
+            @else
+                <a href="mailto:{{ $adminData['email'] }}" class="contact-btn" style="color: white !important">
+                    Contáctanos por Email
+                </a>
+            @endif
         </div>
 
         <!-- Sección de contacto y redes sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <h3>¡Mantente conectado con nosotros!</h3>
             <p>Síguenos en nuestras redes sociales para más ofertas y destinos:</p>
             <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000; text-decoration: none;">+503 7985 8777</a> | <a href="tel:+50323279199" style="color: #ff0000; text-decoration: none;">+503 2327 9199</a><br>
-                📧 <strong>Email:</strong> <a href="mailto:{{ $supportEmail }}" style="color: #ff0000; text-decoration: none;">{{ $supportEmail }}</a><br>
-                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+                @if($adminData['phone'])
+                    <strong>Teléfono:</strong> <a href="tel:{{ $adminData['phone'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a><br>
+                @endif
+                <strong>Email:</strong> <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a><br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
 
             <!-- Iconos de redes sociales -->
@@ -242,16 +272,18 @@
                                  style="width: 35px; height: 35px; border: none;">
                         </a>
                     </td>
+                    @if($adminData['phone'])
                     <td style="padding: 6px; text-align: center;">
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer"
+                        <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $adminData['phone']) }}" target="_blank" rel="noopener noreferrer"
                            style="text-decoration: none;">
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
                                  alt="WhatsApp"
                                  style="width: 35px; height: 35px; border: none;">
                         </a>
                     </td>
+                    @endif
                     <td style="padding: 6px; text-align: center;">
-                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer"
+                        <a href="mailto:{{ $adminData['email'] }}" target="_blank" rel="noopener noreferrer"
                            style="text-decoration: none;">
                             <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
                                  alt="Gmail"
@@ -264,7 +296,7 @@
 
         <div class="footer">
             <p>¡Gracias por elegir {{ $companyName }} para tu aventura!</p>
-            <p><strong>¡Prepárate para vivir experiencias inolvidables! ✈️🏨🎯</strong></p>
+            <p><strong>¡Prepárate para vivir experiencias inolvidables!</strong></p>
             <hr>
             <p><small>
                 Este correo confirma tu reservación. Guárdalo como comprobante.

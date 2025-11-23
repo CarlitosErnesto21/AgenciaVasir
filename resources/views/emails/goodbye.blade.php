@@ -84,6 +84,7 @@
 
                 <div style="font-size: 28px; font-weight: bold; color: #ff0000; margin-top: 10px;"></div>
             </div>
+            <p>Viajes y Turismo</p>
             <p style="color: #ff6b6b; font-size: 16px;">¡Hasta pronto, {{ $user->name }}!</p>
         </div>
 
