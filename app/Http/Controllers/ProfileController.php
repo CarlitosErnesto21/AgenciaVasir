@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Mail\GoodbyeUserMail;
+use App\Mail\EmailChangedNotificationMail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -54,9 +55,12 @@ class ProfileController extends Controller
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
         $user = $request->user();
+        $oldEmail = $user->email; // Guardar email original
         $user->fill($request->validated());
 
+        $emailChanged = false;
         if ($user->isDirty('email')) {
+            $emailChanged = true;
             $user->email_verified_at = null;
         }
 
@@ -99,6 +103,28 @@ class ProfileController extends Controller
                     'telefono' => $request->input('telefono'),
                 ]);
             }
+        }
+
+        // Si se cambió el email, enviar notificación y cerrar sesión
+        if ($emailChanged) {
+            try {
+                // Enviar notificación al EMAIL ANTERIOR (por seguridad)
+                Mail::to($oldEmail)->send(new EmailChangedNotificationMail($user, $oldEmail, $user->email, true));
+                
+                // Enviar confirmación al EMAIL NUEVO
+                Mail::to($user->email)->send(new EmailChangedNotificationMail($user, $oldEmail, $user->email, false));
+            } catch (\Exception $e) {
+                Log::error('Error al enviar email de cambio de correo: ' . $e->getMessage());
+            }
+
+            // Cerrar sesión automáticamente por seguridad
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            // Redireccionar al login con mensaje
+            return redirect()->route('login')->with('status',
+                'Tu email ha sido actualizado correctamente. Por seguridad, hemos cerrado tu sesión. Inicia sesión con tu nuevo email.');
         }
 
         return Redirect::route('profile.edit')->with('status', 'Información actualizada correctamente');

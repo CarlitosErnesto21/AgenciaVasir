@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Mail\PasswordChangedConfirmationMail;
+use App\Mail\PasswordChangedNotificationMail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -36,24 +37,29 @@ class PasswordController extends Controller
             'password.confirmed' => 'Las contraseñas no coinciden.'
         ]);
 
-        $request->user()->update([
+        $user = $request->user();
+
+        // Actualizar la contraseña
+        $user->update([
             'password' => Hash::make($validated['password']),
         ]);
 
-        // Enviar email de confirmación de cambio de contraseña
-        $changeDetails = [
-            'timestamp' => now()->format('d/m/Y H:i:s'),
-            'ip' => $request->ip(),
-            'user_agent' => $request->userAgent(),
-        ];
-
+        // Enviar email de notificación de cambio de contraseña (directo, sin cola)
         try {
-            Mail::to($request->user()->email)->send(new PasswordChangedConfirmationMail($request->user(), $changeDetails));
+            Mail::to($user->email)->send(new PasswordChangedNotificationMail($user));
         } catch (\Exception $e) {
             // Log del error pero no interrumpir el proceso
-            Log::error('Error enviando email de confirmación de cambio de contraseña: ' . $e->getMessage());
+            Log::error('Error enviando email de notificación de cambio de contraseña: ' . $e->getMessage());
         }
 
-        return back();
+        // Cerrar sesión automáticamente para mayor seguridad
+        Auth::logout();
+
+        // Invalidar la sesión actual
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        // Redirigir al login con mensaje de éxito
+        return redirect()->route('login')->with('status', 'Contraseña actualizada exitosamente. Por seguridad, debes iniciar sesión nuevamente.');
     }
 }

@@ -23,8 +23,8 @@ class StaffLoginNotificationMail extends Mailable
     public function build()
     {
         $subject = $this->user->hasRole('Administrador')
-            ? '🔐 Inicio de Sesión Administrador - VASIR'
-            : '👨‍💼 Inicio de Sesión Empleado - VASIR';
+            ? 'Inicio de Sesión Administrador - VASIR'
+            : 'Inicio de Sesión Empleado - VASIR';
 
         return $this->subject($subject)
                     ->view('emails.staff-login')

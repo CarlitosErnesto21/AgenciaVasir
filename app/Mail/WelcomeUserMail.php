@@ -3,6 +3,7 @@
 namespace App\Mail;
 
 use App\Models\User;
+use App\Models\Empleado;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -13,6 +14,8 @@ class WelcomeUserMail extends Mailable
 
     public $userData;
     public $verificationUrl;
+    public $adminData;
+    public $companyName;
 
     public function __construct($userData, $verificationUrl = null)
     {
@@ -28,6 +31,19 @@ class WelcomeUserMail extends Mailable
         }
 
         $this->verificationUrl = $verificationUrl;
+        $this->companyName = 'VASIR';
+
+        // Obtener datos del administrador - IGUAL que otros emails
+        $adminUser = User::role('Administrador')->first();
+        $adminEmployee = $adminUser ? Empleado::where('user_id', $adminUser->id)->first() : null;
+
+        $this->adminData = [
+            'email' => $adminUser->email ?? config('mail.from.address'),
+            'phone' => $adminEmployee->telefono ?? null,
+            'name' => $adminEmployee ? 
+                (trim(($adminEmployee->nombres ?? '') . ' ' . ($adminEmployee->apellidos ?? '')) ?: ($adminEmployee->nombre ?? $adminUser->name)) : 
+                'VASIR',
+        ];
     }
 
     public function build()
@@ -38,13 +54,14 @@ class WelcomeUserMail extends Mailable
             'email' => $this->userData['email'],
         ];
 
-        return $this->subject('¡Bienvenido a VASIR - Agencia de Viajes!')
+        return $this->subject('¡Bienvenido a VASIR!')
                     ->view('emails.welcome')
                     ->with([
                         'user' => $tempUser,
                         'verificationUrl' => $this->verificationUrl,
-                        'companyName' => 'VASIR',
-                        'supportEmail' => config('mail.from.address'),
+                        'companyName' => $this->companyName,
+                        'adminData' => $this->adminData,
+                        'supportEmail' => $this->adminData['email'],
                     ]);
     }
 }

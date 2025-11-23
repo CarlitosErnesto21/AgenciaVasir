@@ -5,6 +5,7 @@ use App\Http\Middleware\RutasAdmin;
 use App\Http\Middleware\CustomSignedMiddleware;
 use App\Http\Middleware\TrustedProxies;
 use App\Http\Middleware\ValidateVentaPagoIntegrity;
+use App\Http\Middleware\ExtendSessionForLongProcesses;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -35,7 +36,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->web(append: [
             HandleInertiaRequests::class,
-            AddLinkHeadersForPreloadedAssets::class
+            AddLinkHeadersForPreloadedAssets::class,
+            ExtendSessionForLongProcesses::class
         ]);
 
         $middleware->api(prepend: [
@@ -49,7 +51,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'custom.signed' => CustomSignedMiddleware::class,
-            'venta.integrity' => ValidateVentaPagoIntegrity::class
+            'venta.integrity' => ValidateVentaPagoIntegrity::class,
+            'extend.session' => ExtendSessionForLongProcesses::class
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

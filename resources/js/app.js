@@ -8,7 +8,7 @@ import { ZiggyVue } from '../../vendor/tightenco/ziggy';
 import Swal from 'sweetalert2';
 import PrimeVue from 'primevue/config';
 import { createPinia } from 'pinia';
-import { useCSRF } from './composables/useCSRF';
+import CSRFPlugin from './Plugins/CSRFPlugin.js';
 
 import Aura from '@primeuix/themes/aura';
 import { ToastService } from 'primevue';
@@ -44,11 +44,6 @@ import Tag from 'primevue/tag';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
-// Configurar manejo de errores CSRF
-const { setupAxiosInterceptor, setupInertiaInterceptor } = useCSRF();
-setupAxiosInterceptor();
-setupInertiaInterceptor();
-
 createInertiaApp({
     title: (title) => title ? `${title} - ${appName}` : appName, // Se escribe así para que el título sea dinámico
     resolve: (name) =>
@@ -61,6 +56,7 @@ createInertiaApp({
             .use(plugin)
             .use(ZiggyVue)
             .use(createPinia()) // Configurar Pinia para el estado global
+            .use(CSRFPlugin) // Plugin para manejo automático de tokens CSRF
             //configuración global de SweetAlert2
             app.config.globalProperties.$swal = Swal;
             app.use(PrimeVue, {

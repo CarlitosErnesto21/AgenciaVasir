@@ -2,6 +2,8 @@
 
 namespace App\Mail;
 
+use App\Models\User;
+use App\Models\Empleado;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -15,6 +17,7 @@ class ReservationRescheduledMail extends Mailable
     public $rescheduleReason;
     public $newDate;
     public $observations;
+    public $adminData;
 
     public function __construct($reservationData, $clientData, $rescheduleReason, $newDate, $observations = null)
     {
@@ -23,6 +26,16 @@ class ReservationRescheduledMail extends Mailable
         $this->rescheduleReason = $rescheduleReason;
         $this->newDate = $newDate;
         $this->observations = $observations;
+        
+        // Obtener datos del administrador
+        $adminUser = User::role('Administrador')->first();
+        $adminEmployee = $adminUser ? Empleado::where('user_id', $adminUser->id)->first() : null;
+
+        $this->adminData = [
+            'email' => $adminUser->email ?? config('mail.from.address'),
+            'phone' => $adminEmployee->telefono ?? null,
+            'name' => $adminEmployee ? ($adminEmployee->nombres . ' ' . $adminEmployee->apellidos) : 'VASIR Team',
+        ];
     }
 
     public function build()
@@ -36,8 +49,9 @@ class ReservationRescheduledMail extends Mailable
                         'newDate' => $this->newDate,
                         'observations' => $this->observations,
                         'companyName' => 'VASIR',
-                        'supportEmail' => config('mail.from.address'),
-                        'companyPhone' => '+503 7985 8777',
+                        'adminData' => $this->adminData,
+                        'supportEmail' => $this->adminData['email'],
+                        'companyPhone' => $this->adminData['phone'],
                         'companyAddress' => 'Tu dirección de la agencia',
                     ]);
     }

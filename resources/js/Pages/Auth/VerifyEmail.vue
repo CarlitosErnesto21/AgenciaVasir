@@ -1,9 +1,10 @@
 <!-- filepath: c:\Users\ernes\Documents\modulos\proyecto_graduacion\AgenciaVasir\resources\js\Pages\Auth\VerifyEmail.vue -->
 <script setup>
 import { computed } from 'vue';
-import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faCheckCircle, faExclamationTriangle, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
     status: {
@@ -12,6 +13,18 @@ const props = defineProps({
     email: {
         type: String,
     },
+    errors: {
+        type: Object,
+        default: () => ({}),
+    },
+    resendCount: {
+        type: Number,
+        default: 0,
+    },
+    isAuthenticated: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const form = useForm({
@@ -19,12 +32,17 @@ const form = useForm({
 });
 
 const submit = () => {
-    form.post(route('verification.send'));
+    // Usar ruta apropiada según el estado de autenticación
+    const routeName = props.isAuthenticated ? 'verification.send' : 'verification.send.public';
+    form.post(route(routeName));
 };
 
 const verificationLinkSent = computed(
     () => props.status === 'verification-link-sent',
 );
+
+const hasLimitError = computed(() => !!props.errors.limit || props.resendCount >= 3);
+const remainingAttempts = computed(() => Math.max(0, 3 - props.resendCount));
 </script>
 
 <template>
@@ -87,16 +105,38 @@ const verificationLinkSent = computed(
                     >
                         <div class="flex items-start space-x-2 sm:space-x-3">
                             <div class="flex-shrink-0">
-                                <svg class="h-4 w-4 sm:h-5 sm:w-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                </svg>
+                                <FontAwesomeIcon :icon="faCheckCircle" class="h-4 w-4 sm:h-5 sm:w-5 text-green-400" />
                             </div>
                             <div class="flex-1">
                                 <p class="text-xs sm:text-sm font-medium text-green-800">
-                                    ✅ Nuevo enlace enviado correctamente
+                                    Nuevo enlace enviado correctamente
                                 </p>
                                 <p class="text-xs text-green-700 mt-1">
                                     Revisa tu bandeja de entrada y spam
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ❌ Mensaje de error de límite -->
+                    <div
+                        v-if="hasLimitError"
+                        class="p-3 sm:p-4 bg-red-50 border-l-4 border-red-400 rounded-r-lg"
+                    >
+                        <div class="flex items-start space-x-2 sm:space-x-3">
+                            <div class="flex-shrink-0">
+                                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 sm:h-5 sm:w-5 text-red-400" />
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-xs sm:text-sm font-medium text-red-800">
+                                    Límite alcanzado
+                                </p>
+                                <p class="text-xs text-red-700 mt-1">
+                                    {{ errors.limit }}
+                                </p>
+                                <p class="text-xs text-red-700 mt-2 font-medium flex items-center">
+                                    <FontAwesomeIcon :icon="faLightbulb" class="mr-1.5 text-yellow-500" />
+                                    Te recomendamos volver a registrarte o contactar a soporte
                                 </p>
                             </div>
                         </div>
@@ -108,20 +148,26 @@ const verificationLinkSent = computed(
                     <!-- Botón principal responsive -->
                     <PrimaryButton
                         class="w-full bg-red-600 hover:bg-red-700 focus:ring-red-500 focus:ring-offset-2 text-white font-medium py-2.5 sm:py-3 lg:py-4 px-4 sm:px-6 rounded-lg transition-colors duration-200 flex items-center justify-center text-sm sm:text-base"
-                        :class="{ 'opacity-75 cursor-not-allowed': form.processing }"
-                        :disabled="form.processing"
+                        :class="{
+                            'opacity-75 cursor-not-allowed': form.processing || hasLimitError,
+                            'bg-gray-400 hover:bg-gray-400': hasLimitError
+                        }"
+                        :disabled="form.processing || hasLimitError"
                     >
                         <svg v-if="form.processing" class="animate-spin -ml-1 mr-2 sm:mr-3 h-4 w-4 sm:h-5 sm:w-5 text-white" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"/>
                         </svg>
                         <span v-if="form.processing" class="text-sm sm:text-base">Enviando...</span>
-                        <span v-else class="flex items-center">
-                            <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
-                            </svg>
-                            <span class="hidden sm:inline">Reenviar Email de Verificación</span>
-                            <span class="sm:hidden">Reenviar Email</span>
+                        <span v-else-if="hasLimitError" class="flex items-center text-sm sm:text-base">
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+                            <span class="hidden sm:inline">Límite Alcanzado (3/3)</span>
+                            <span class="sm:hidden">Límite Alcanzado</span>
+                        </span>
+                        <span v-else class="flex items-center text-sm sm:text-base">
+                            <FontAwesomeIcon :icon="faLightbulb" class="w-4 h-4 sm:w-5 sm:h-5 mr-1.5 sm:mr-2" />
+                            <span class="hidden sm:inline">Reenviar Email de Verificación ({{ remainingAttempts }}/3)</span>
+                            <span class="sm:hidden">Reenviar ({{ remainingAttempts }}/3)</span>
                         </span>
                     </PrimaryButton>
 
@@ -172,7 +218,7 @@ const verificationLinkSent = computed(
                         </div>
                         <div class="flex items-start text-xs sm:text-xs lg:text-sm text-gray-600">
                             <span class="text-red-500 mr-1.5 sm:mr-2 flex-shrink-0">•</span>
-                            <span>Puedes reenviar el email las veces que necesites</span>
+                            <span>Máximo <strong>3 reenvíos</strong> por sesión de registro</span>
                         </div>
                     </div>
                 </details>

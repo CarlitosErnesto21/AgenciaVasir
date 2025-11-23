@@ -33,6 +33,8 @@ class EmailVerificationPromptController extends Controller
             return Inertia::render('Auth/VerifyEmail', [
                 'status' => session('status'),
                 'email' => $request->user()->email,
+                'resendCount' => session('resend_count', 0),
+                'isAuthenticated' => true,
             ]);
         }
 
@@ -49,6 +51,8 @@ class EmailVerificationPromptController extends Controller
         return Inertia::render('Auth/VerifyEmail', [
             'status' => session('status'),
             'email' => $email,
+            'resendCount' => session('resend_count', 0),
+            'isAuthenticated' => false,
         ]);
     }
 
@@ -67,6 +71,14 @@ class EmailVerificationPromptController extends Controller
         if (!$pendingData || $pendingData['email'] !== $request->email) {
             return back()->withErrors([
                 'email' => 'No se encontraron datos de registro para este email.'
+            ]);
+        }
+
+        // Verificar límite de reenvíos (máximo 3)
+        $resendCount = session('resend_count', 0);
+        if ($resendCount >= 3) {
+            return back()->withErrors([
+                'limit' => 'Has alcanzado el límite máximo de 3 envíos de correo. Por favor, vuelve a intentar el registro o contacta a soporte si necesitas ayuda.'
             ]);
         }
 
@@ -89,6 +101,18 @@ class EmailVerificationPromptController extends Controller
         // Reenviar email
         Mail::to($request->email)->send(new WelcomeUserMail($userData, $verificationUrl));
 
+        // Incrementar contador de reenvíos
+        session(['resend_count' => $resendCount + 1]);
+
         return back()->with('status', 'verification-link-sent');
+    }
+
+    /**
+     * Reenviar email de verificación (público - sin autenticación)
+     */
+    public function resendPublic(Request $request): RedirectResponse
+    {
+        // Este método es idéntico al resend(), pero está disponible públicamente
+        return $this->resend($request);
     }
 }

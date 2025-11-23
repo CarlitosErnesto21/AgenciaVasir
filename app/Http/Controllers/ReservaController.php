@@ -747,10 +747,20 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Obtener la fecha de salida del tour si existe
+            $fechaSalida = null;
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalida = $primerDetalle->tour->fecha_salida;
+                }
+            }
+
             // Preparar datos para el email de rechazo
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
+                'fecha_salida' => $fechaSalida,
                 'tipo' => $this->obtenerTipoReserva($reserva),
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
@@ -829,6 +839,20 @@ class ReservaController extends Controller
             $motivo = $request->motivo;
             $observaciones = $request->observaciones;
 
+            // Obtener fecha de salida anterior ANTES de hacer cambios
+            $fechaSalidaAnterior = null;
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalidaAnterior = $primerDetalle->tour->fecha_salida;
+                    
+                    // Actualizar la fecha de salida del tour también
+                    $primerDetalle->tour->update([
+                        'fecha_salida' => $fechaNueva
+                    ]);
+                }
+            }
+
             $reserva->update([
                 'fecha' => $fechaNueva,
                 'estado' => 'REPROGRAMADA'
@@ -837,10 +861,21 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
+            // Obtener la nueva fecha de salida del tour (después de la actualización)
+            $fechaSalidaNueva = null;
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalidaNueva = $primerDetalle->tour->fecha_salida;
+                }
+            }
+
             // Preparar datos para el email de reprogramación
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
-                'fecha_reserva' => $fechaAnterior, // Enviamos la fecha anterior para comparar
+                'fecha_reserva' => $fechaAnterior, // Fecha de reservación anterior
+                'fecha_salida_anterior' => $fechaSalidaAnterior, // Fecha de salida anterior del tour
+                'fecha_salida_nueva' => $fechaSalidaNueva, // Fecha de salida nueva del tour
                 'tipo' => $this->obtenerTipoReserva($reserva),
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,

@@ -88,7 +88,7 @@
         }
         .dashboard-btn {
             display: inline-block;
-            background-color: {{ $isAdmin ? '#dc3545' : '#007bff' }};
+            background-color: {{ $isAdmin ? '#002fff' : '#002fff' }};
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -98,7 +98,7 @@
             text-align: center;
         }
         .dashboard-btn:hover {
-            background-color: {{ $isAdmin ? '#c82333' : '#0056b3' }};
+            background-color: {{ $isAdmin ? '#0225c0' : '#0225c0' }};
         }
         .footer {
             text-align: center;
@@ -123,15 +123,14 @@
                      style="height: 60px; width: auto; margin-bottom: 10px;">
                 <div style="font-size: 28px; font-weight: bold; color: #ff0000; margin-top: 10px;"></div>
             </div>
-            <p>Agencia de Viajes - Sistema Administrativo</p>
+            <p>Viajes y Turismo</p>
             <div class="role-badge">
-                {{ $isAdmin ? '🔐 ADMINISTRADOR' : '👨‍💼 EMPLEADO' }}
+                {{ $isAdmin ? 'ADMINISTRADOR' : 'EMPLEADO' }}
             </div>
         </div>
 
         <div class="welcome-message">
             <h2>
-                <span class="icon">{{ $isAdmin ? '🔐' : '👨‍💼' }}</span>
                 ¡Hola {{ $user->name }}!
             </h2>
             <p>
@@ -141,32 +140,32 @@
         </div>
 
         <div class="login-info">
-            <h3>📊 Detalles del Inicio de Sesión</h3>
+            <h3>Detalles del Inicio de Sesión</h3>
             <div class="info-item">
-                <span class="info-label">📧 Usuario:</span>
+                <span class="info-label">Correo electrónico:</span>
                 <span class="info-value">{{ $user->email }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🕐 Fecha y Hora:</span>
+                <span class="info-label">Fecha y Hora:</span>
                 <span class="info-value">{{ $loginDetails['timestamp'] ?? now()->format('d/m/Y H:i:s') }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🌐 Dirección IP:</span>
+                <span class="info-label">Dirección IP:</span>
                 <span class="info-value">{{ $loginDetails['ip'] ?? 'No disponible' }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">💻 Navegador:</span>
+                <span class="info-label">Navegador:</span>
                 <span class="info-value">{{ $loginDetails['user_agent'] ?? 'No disponible' }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🎯 Rol:</span>
+                <span class="info-label">Rol:</span>
                 <span class="info-value">{{ $isAdmin ? 'Administrador' : 'Empleado' }}</span>
             </div>
         </div>
 
         @if($isAdmin)
         <div class="security-section">
-            <div class="security-title">🛡️ Acceso de Administrador Detectado</div>
+            <div class="security-title">Acceso de Administrador Detectado</div>
             <div class="security-text">
                 <strong>Importante:</strong> Como administrador, tienes acceso completo al sistema.
                 Asegúrate de que este inicio de sesión sea legítimo. Si no fuiste tú,
@@ -176,51 +175,38 @@
         @endif
 
         <div style="text-align: center;">
-            <a href="{{ config('app.url') }}/dashboard" class="dashboard-btn">
-                🏠 Ir al Dashboard
+            <a href="{{ config('app.url') }}/dashboard" class="dashboard-btn" style="color: white !important">
+                Ir al Dashboard
             </a>
         </div>
 
         <div class="login-info">
-            <h3>🎯 Acciones Disponibles</h3>
+            <h3>Acciones Disponibles</h3>
             @if($isAdmin)
-            <ul style="color: #555; line-height: 1.8;">
-                <li>👥 Gestionar usuarios y empleados</li>
-                <li>📊 Ver reportes y estadísticas completas</li>
-                <li>⚙️ Configurar el sistema</li>
-                <li>🏨 Gestionar hoteles, tours y productos</li>
-                <li>💰 Supervisar ventas y reservas</li>
-                <li>🔐 Administrar roles y permisos</li>
-            </ul>
+                <ul style="color: #555; line-height: 1.8;">
+                    <li>Gestionar usuarios y empleados</li>
+                    <li>Ver reportes y estadísticas completas</li>
+                    <li>Configurar el sistema</li>
+                    <li>Gestionar hoteles, tours, productos y paquetes de viaje</li>
+                    <li>Supervisar ventas, reservas y generar informes de inventario</li>
+                    <li>y más...</li>
+                </ul>
             @else
-            <ul style="color: #555; line-height: 1.8;">
-                <li>📝 Gestionar reservas de clientes</li>
-                <li>🎫 Procesar ventas de tours</li>
-                <li>🏨 Administrar reservas de hoteles</li>
-                <li>📞 Atender consultas de clientes</li>
-                <li>📊 Ver reportes asignados</li>
-            </ul>
+                <ul style="color: #555; line-height: 1.8;">
+                    <li>Ver reportes y estadísticas completas</li>
+                    <li>Configurar el sistema</li>
+                    <li>Gestionar hoteles, tours, productos y paquetes de viaje</li>
+                    <li>Supervisar ventas, reservas y generar informes de inventario</li>
+                    <li>y más...</li>
+                </ul>
             @endif
-        </div>
-
-        <!-- Sección de Contacto -->
-        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <h3>📞 Contacto de Soporte</h3>
-            <p style="color: #666; margin-bottom: 15px;">
-                ¿Necesitas ayuda técnica o tienes alguna consulta?
-            </p>
-            <p style="font-size: 14px; color: #666;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000;">+503 7985 8777</a> |
-                <a href="tel:+50323279199" style="color: #ff0000;">+503 2327 9199</a><br>
-                📧 <strong>Email:</strong> <a href="mailto:{{ $supportEmail }}" style="color: #ff0000;">{{ $supportEmail }}</a>
-            </p>
         </div>
 
         <div class="footer">
             <p><strong>{{ $companyName }}</strong> - Sistema de Gestión</p>
             <p><small>
                 Este correo se envía automáticamente por seguridad.
-                Si no iniciaste sesión, contacta al administrador inmediatamente.
+                Si no iniciaste sesión, contacta con el equipo de soporte inmediatamente.
             </small></p>
             <hr style="margin: 15px 0;">
             <p><small>© {{ date('Y') }} VASIR. Todos los derechos reservados.</small></p>

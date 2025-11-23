@@ -39,7 +39,7 @@
         }
         .verify-btn {
             display: inline-block;
-            background-color: #ff0000;
+            background-color: #002fff;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -48,7 +48,7 @@
             font-weight: bold;
         }
         .verify-btn:hover {
-            background-color: #b30000;
+            background-color: #0225c0;
         }
         .info-section {
             background-color: #f8f9fa;
@@ -76,7 +76,7 @@
 
                 <div style="font-size: 28px; font-weight: bold; color: #ff0000; margin-top: 10px;"></div>
             </div>
-            <p>Tu Agencia de Viajes de Confianza</p>
+            <p>Viajes y Turismo</p>
         </div>
 
         <div class="welcome-message">
@@ -86,10 +86,10 @@
 
         @if($verificationUrl)
         <div class="info-section">
-            <h3>📧 Verificar tu cuenta</h3>
+            <h3>Verificar tu cuenta</h3>
             <p>Para completar tu registro y acceder a todas nuestras funcionalidades, por favor verifica tu dirección de correo electrónico:</p>
             <div style="text-align: center;">
-                <a href="{{ $verificationUrl }}" class="verify-btn">
+                <a href="{{ $verificationUrl }}" class="verify-btn" style="color: white !important">
                     Verificar mi correo electrónico
                 </a>
             </div>
@@ -98,23 +98,26 @@
         @endif
 
         <div class="info-section">
-            <h3>🎯 ¿Qué puedes hacer ahora?</h3>
+            <h3>¿Qué puedes hacer ahora?</h3>
             <ul>
-                <li>📱 Explorar nuestros destinos increíbles</li>
-                <li>✈️ Reservar vuelos al mejor precio</li>
-                <li>🏨 Encontrar hoteles de calidad</li>
-                <li>🚌 Organizar tours personalizados</li>
-                <li>💬 Contactar a nuestro equipo de expertos</li>
+                <li>Explorar nuestros destinos increíbles</li>
+                <li>Reservar vuelos al mejor precio</li>
+                <li>Encontrar hoteles de calidad</li>
+                <li>Comprar productos y paquetes de viaje</li>
+                <li>Y mucho más...</li>
             </ul>
         </div>
 
         <!-- Sección de Contacto y Redes Sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <h3>¡Mantente conectado con nosotros!</h3>
             <p>Síguenos en nuestras redes sociales y contáctanos directamente:</p>
             <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000; text-decoration: none;">+503 7985 8777</a> | <a href="tel:+50323279199" style="color: #ff0000; text-decoration: none;">+503 2327 9199</a><br>
-                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+                @if($adminData['phone'])
+                    <strong>Teléfono:</strong> <a href="tel:{{ str_replace([' ', '-', '(', ')'], '', $adminData['phone']) }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a><br>
+                @endif
+                <strong>Correo Electrónico:</strong> <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a><br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
 
             <!-- Iconos de redes sociales usando imágenes embebidas -->
@@ -149,16 +152,22 @@
                     </td>
                     <td style="padding: 6px; text-align: center;">
                         <!-- WhatsApp -->
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer"
-                           style="text-decoration: none;">
+                        @if($adminData['phone'])
+                            <a href="https://wa.me/{{ str_replace([' ', '-', '(', ')', '+'], '', $adminData['phone']) }}" target="_blank" rel="noopener noreferrer"
+                               style="text-decoration: none;">
+                                <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
+                                     alt="WhatsApp"
+                                     style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @else
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
-                                 alt="WhatsApp"
-                                 style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="WhatsApp no disponible"
+                                 style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @endif
                     </td>
                     <td style="padding: 6px; text-align: center;">
                         <!-- Gmail -->
-                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer"
+                        <a href="mailto:{{ $adminData['email'] }}" target="_blank" rel="noopener noreferrer"
                            style="text-decoration: none;">
                             <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
                                  alt="Gmail"
@@ -169,7 +178,7 @@
             </table>
             <div class="footer">
             <p>Gracias por confiar en {{ $companyName }}</p>
-            <p><strong>¡Comencemos a planear tu próxima aventura! 🚀</strong></p>
+            <p><strong>¡Comencemos a planear tu próxima aventura!</strong></p>
             <hr>
             <p><small>
                 Este correo fue enviado automáticamente. Si no creaste esta cuenta, puedes ignorar este mensaje.

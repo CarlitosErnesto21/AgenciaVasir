@@ -82,9 +82,16 @@
             margin: 20px 0;
             border-left: 4px solid #2196f3;
         }
+        .warning-section {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
         .contact-btn {
             display: inline-block;
-            background-color: #ff0000;
+            background-color: #002fff;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -93,7 +100,7 @@
             font-weight: bold;
         }
         .contact-btn:hover {
-            background-color: #b30000;
+            background-color: #0225c0;
         }
         .footer {
             text-align: center;
@@ -121,58 +128,67 @@
                      alt="{{ $companyName }}"
                      style="height: 60px; width: auto; margin-bottom: 10px; display: block; margin-left: auto; margin-right: auto;">
             </div>
-            <p>Tu Agencia de Viajes de Confianza</p>
+            <p>Viajes y Turismo</p>
         </div>
 
         <!-- Badge de rechazo -->
         <div style="text-align: center;">
             <div class="rejection-badge">
-                ❌ RESERVACIÓN NO CONFIRMADA
+                RESERVACIÓN NO CONFIRMADA
             </div>
         </div>
 
         <div>
             <h2>Hola {{ $client['name'] ?? $client['nombres'] ?? 'Estimado cliente' }},</h2>
-            <p>Lamentamos informarte que tu reservación no ha podido ser confirmada en este momento. 
+            <p>Lamentamos informarte que tu reservación no ha podido ser confirmada en este momento.
                A continuación encontrarás los detalles y el motivo de esta decisión.</p>
         </div>
 
         <!-- Detalles de la reservación -->
         <div class="reservation-details">
-            <h3 style="margin-top: 0; color: #dc3545;">📋 Detalles de la Reservación</h3>
-            
+            <h3 style="margin-top: 0; color: #dc3545;">Detalles de la Reservación</h3>
+
             <div class="detail-row">
-                <span class="detail-label">🎯 Servicio:</span>
+                <span class="detail-label">Servicio:</span>
                 <span class="detail-value">{{ $reservation['entidad_nombre'] ?? 'N/A' }}</span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">📅 Fecha:</span>
-                <span class="detail-value">{{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}</span>
+                <span class="detail-label">Fecha de salida:</span>
+                <span class="detail-value">
+                    @if(isset($reservation['fecha_salida']) && $reservation['fecha_salida'])
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida'])) }}
+                    @else
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}
+                        <small style="display: block; color: #6c757d; font-size: 12px;">
+                            (Fecha de reservación)
+                        </small>
+                    @endif
+                </span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">🏷️ Tipo:</span>
+                <span class="detail-label">Tipo:</span>
                 <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['tipo'] ?? 'N/A' }}</span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">👥 Personas:</span>
+                <span class="detail-label">Personas:</span>
                 <span class="detail-value">
                     {{ ($reservation['mayores_edad'] ?? 0) + ($reservation['menores_edad'] ?? 0) }} personas
                     ({{ $reservation['mayores_edad'] ?? 0 }} adultos, {{ $reservation['menores_edad'] ?? 0 }} niños)
                 </span>
             </div>
-            
+
             <div class="detail-row">
-                <span class="detail-label">💰 Total:</span>
+                <span class="detail-label">Total:</span>
                 <span class="detail-value">${{ number_format($reservation['total'] ?? 0, 2) }}</span>
             </div>
         </div>
 
         <!-- Motivo del rechazo -->
         <div class="reason-section">
-            <h3 style="margin-top: 0; color: #721c24;">📝 Motivo de la No Confirmación</h3>
+            <h3 style="margin-top: 0; color: #721c24;">Motivo de la No Confirmación</h3>
             <p style="margin: 10px 0; font-size: 14px; background-color: white; padding: 15px; border-radius: 5px;">
                 {{ $reason }}
             </p>
@@ -180,41 +196,61 @@
 
         <!-- Información sobre alternativas -->
         <div class="info-section">
-            <h3 style="margin-top: 0;">💡 ¿Qué puedes hacer ahora?</h3>
+            <h3 style="margin-top: 0;">¿Qué puedes hacer ahora?</h3>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>📞 <strong>Contáctanos</strong> para explorar otras opciones disponibles</li>
-                <li>📅 <strong>Consulta fechas alternativas</strong> para el mismo servicio</li>
-                <li>🔍 <strong>Explora otros destinos</strong> similares que podrían interesarte</li>
-                <li>💬 <strong>Habla con nuestros expertos</strong> para personalizar tu viaje</li>
-                <li>📧 <strong>Solicita ser notificado</strong> si se abren nuevos cupos</li>
+                <li><strong>Contáctanos</strong> para explorar otras opciones disponibles</li>
+                <li><strong>Consulta fechas alternativas</strong> para el mismo servicio</li>
+                <li><strong>Explora otros destinos</strong> similares que podrían interesarte</li>
+                <li><strong>Habla con nuestros expertos</strong> para personalizar tu viaje</li>
+                <li><strong>Solicita ser notificado</strong> si se abren nuevos cupos</li>
+            </ul>
+        </div>
+
+        <!-- Nuestras Acreditaciones -->
+        <div class="info-section" style="background-color: #e8f5e8; border-left: 4px solid #28a745;">
+            <h3 style="margin-top: 0; color: #155724;">Nuestras Acreditaciones</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #155724;">
+                <li>Somos una marca registrada ®</li>
+                <li>Somos una Agencia respaldada por el MITUR y CORSATUR</li>
+                <li>Poseemos Sello de Verificación de Protocolos de Bioseguridad</li>
+            </ul>
+        </div>
+
+        <!-- Políticas de cancelación -->
+        <div class="warning-section">
+            <h3 style="margin-top: 0; color: #856404;">Políticas de Cancelación</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #856404;">
+                <li>Si por cualquier motivo como organizadores cancelamos el tour, te devolvemos el total de tu dinero</li>
+                <li>Si no asistís en la fecha y hora indicada no hay devolución de tu reserva</li>
+                <li>Para cancelaciones con menos de 72 horas antes del tour, no hay devolución de tu reserva</li>
             </ul>
         </div>
 
         <!-- Botón de contacto -->
         <div style="text-align: center; margin: 30px 0;">
             <p><strong>¡No te preocupes! Estamos aquí para ayudarte a encontrar la mejor opción para tu viaje.</strong></p>
-            <a href="tel:{{ $companyPhone }}" class="contact-btn">
-                📞 Hablemos Ahora
-            </a>
-        </div>
-
-        <!-- Oferta especial -->
-        <div style="background-color: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; text-align: center;">
-            <h4 style="margin-top: 0; color: #856404;">🎁 Oferta Especial</h4>
-            <p style="margin: 5px 0; font-size: 14px; color: #856404;">
-                <strong>Como compensación, te ofrecemos un 10% de descuento en tu próxima reservación.</strong><br>
-                <small>Válido por 30 días. Contacta con nosotros y menciona este email.</small>
-            </p>
+            @if($adminData['phone'])
+                <a href="tel:{{ $adminData['phone'] }}" class="contact-btn" style="color: white !important">
+                    Hablemos Ahora
+                </a>
+            @else
+                <a href="mailto:{{ $adminData['email'] }}" class="contact-btn" style="color: white !important">
+                    Contáctanos por Email
+                </a>
+            @endif
         </div>
 
         <!-- Sección de contacto y redes sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <h3>¡Mantente conectado con nosotros!</h3>
             <p>Síguenos en nuestras redes sociales para más ofertas y destinos:</p>
             <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000; text-decoration: none;">+503 7985 8777</a> | <a href="tel:+50323279199" style="color: #ff0000; text-decoration: none;">+503 2327 9199</a><br>
-                📧 <strong>Email:</strong> <a href="mailto:{{ $supportEmail }}" style="color: #ff0000; text-decoration: none;">{{ $supportEmail }}</a><br>
-                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+                <strong>Contacto:</strong> {{ $adminData['name'] }}<br>
+                @if($adminData['phone'])
+                    <strong>Teléfono:</strong> <a href="tel:{{ $adminData['phone'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a><br>
+                @endif
+                <strong>Email:</strong> <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a><br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
 
             <!-- Iconos de redes sociales -->
@@ -244,16 +280,18 @@
                                  style="width: 35px; height: 35px; border: none;">
                         </a>
                     </td>
+                    @if($adminData['phone'])
                     <td style="padding: 6px; text-align: center;">
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer"
+                        <a href="https://wa.me/{{ str_replace(['+', ' ', '-'], '', $adminData['phone']) }}" target="_blank" rel="noopener noreferrer"
                            style="text-decoration: none;">
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
                                  alt="WhatsApp"
                                  style="width: 35px; height: 35px; border: none;">
                         </a>
                     </td>
+                    @endif
                     <td style="padding: 6px; text-align: center;">
-                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer"
+                        <a href="mailto:{{ $adminData['email'] }}" target="_blank" rel="noopener noreferrer"
                            style="text-decoration: none;">
                             <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
                                  alt="Gmail"
@@ -266,7 +304,7 @@
 
         <div class="footer">
             <p>Gracias por elegirnos, esperamos poder servirte pronto</p>
-            <p><strong>¡No te rindas en tus sueños de viajar! 🌍✈️</strong></p>
+            <p><strong>¡No te rindas en tus sueños de viajar!</strong></p>
             <hr>
             <p><small>
                 Este correo es una notificación automática sobre el estado de tu reservación.

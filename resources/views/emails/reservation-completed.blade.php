@@ -121,6 +121,13 @@
         .contact-btn:hover {
             background-color: #0225c0;
         }
+        .warning-section {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
         .footer {
             text-align: center;
             margin-top: 30px;
@@ -240,6 +247,25 @@
                 <li><strong>Recomiéndanos</strong> a tus familiares y amigos</li>
                 <li><strong>Explora nuevos destinos</strong> en nuestro catálogo</li>
                 <li><strong>Síguenos</strong> en redes sociales para más aventuras</li>
+            </ul>
+        </div>
+
+        <!-- Nuestras Acreditaciones -->
+        <div class="info-section" style="background-color: #e8f5e8; border-left: 4px solid #28a745;">
+            <h3 style="margin-top: 0; color: #155724;">Nuestras Acreditaciones</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #155724;">
+                <li>Somos una marca registrada ®</li>
+                <li>Somos una Agencia respaldada por el MITUR y CORSATUR</li>
+                <li>Poseemos Sello de Verificación de Protocolos de Bioseguridad</li>
+            </ul>
+        </div>
+
+        <!-- Términos de Reserva -->
+        <div class="info-section" style="background-color: #f0f8ff; border-left: 4px solid #007bff;">
+            <h3 style="margin-top: 0; color: #0056b3;">Términos de Reserva</h3>
+            <ul style="margin: 10px 0; padding-left: 20px; color: #0056b3;">
+                <li>Tours sujetos a completar cupo mínimo</li>
+                <li>Reservás tu cupo con el 50% y el resto el día del tour</li>
             </ul>
         </div>
 

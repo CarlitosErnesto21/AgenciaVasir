@@ -49,6 +49,11 @@ Route::post('verification-notification', [EmailVerificationPromptController::cla
     ->middleware(['auth', 'throttle:6,1'])
     ->name('verification.send');
 
+// Ruta pública para reenvío de verificación (usuarios no autenticados)
+Route::post('verification-notification-public', [EmailVerificationPromptController::class, 'resendPublic'])
+    ->middleware(['throttle:6,1'])
+    ->name('verification.send.public');
+
 // Ruta personalizada de verificación (pública)
 use App\Http\Controllers\Auth\CustomVerifyEmailController;
 Route::get('verify-email-custom/{email}/{hash}', [CustomVerifyEmailController::class, 'verify'])
