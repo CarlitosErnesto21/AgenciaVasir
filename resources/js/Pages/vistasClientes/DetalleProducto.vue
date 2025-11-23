@@ -1,6 +1,6 @@
 <template>
   <Catalogo>
-    <div class="min-h-screen bg-gray-50 py-4 sm:py-8 mt-32">
+    <div class="min-h-screen bg-gray-50 py-4 sm:py-8 mt-24 md:mt-32 lg:mt-32 xl:mt-32">
       <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 relative">
         <!-- Botón del carrito en la esquina superior derecha -->
         <div class="fixed top-20 sm:top-24 right-4 sm:right-6 z-[60]">

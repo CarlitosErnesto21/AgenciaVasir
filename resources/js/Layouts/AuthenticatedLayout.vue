@@ -5,7 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faRoute, faDoorOpen, faChevronDown, faUser, faHotel, faGear, faBoxesStacked,
             faClipboardList, faBox, faHouseChimneyUser, faBars, faFileInvoice, faUserPen,
             faTimes, faUsers, faCog, faStore,
-            faIdCard} from "@fortawesome/free-solid-svg-icons";
+            faIdCard,
+            faList} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { route } from "ziggy-js";
 
@@ -95,6 +96,14 @@ const handleGlobalClick = (e) => {
     // Cerrar menú de perfil
     if (showProfileMenu.value) {
         const menu = document.getElementById("profile-menu");
+        // Buscar el botón de perfil
+        const profileBtn = document.querySelector('.user-menu-dropdown > button');
+        // Si el target es el botón de perfil o cualquier descendiente, no cerrar
+        if (
+            profileBtn && (profileBtn === e.target || profileBtn.contains(e.target))
+        ) {
+            return;
+        }
         if (menu && !menu.contains(e.target)) {
             showProfileMenu.value = false;
         }
@@ -103,10 +112,10 @@ const handleGlobalClick = (e) => {
 
 const openProfileMenu = (e) => {
     e.stopPropagation();
-    showProfileMenu.value = true;
+    setTimeout(() => {
+        showProfileMenu.value = !showProfileMenu.value;
+    }, 0);
 };
-
-// Eliminada la declaración duplicada de toggleConfigDropdown
 
 // Watcher para manejar el scroll cuando se abre/cierra el sidebar móvil
 watch(isSidebarOpen, (newValue) => {
@@ -166,7 +175,7 @@ onBeforeUnmount(() => {
     <div class="min-h-screen flex flex-col bg-white">
         <Toast />
         <!-- Header principal profesional -->
-        <header class="bg-gradient-to-r from-white/98 via-red-50/95 to-white/98 backdrop-blur-xl text-black shadow-lg fixed top-0 left-0 w-full z-50 border-b border-red-100/50 overflow-visible">
+        <header class="bg-gradient-to-r from-white/98 via-red-50/95 to-white/98 backdrop-blur-xl text-black shadow-xl fixed top-0 left-0 w-full z-50 border-b-2 border-red-100/40 overflow-visible">
             <!-- Elementos decorativos de fondo -->
             <div class="absolute inset-0 bg-gradient-to-r from-red-100/20 via-transparent to-red-100/20"></div>
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-600 to-red-500 opacity-80"></div>
@@ -178,14 +187,13 @@ onBeforeUnmount(() => {
                     <button
                         @click="isSidebarOpen = !isSidebarOpen"
                         title="Abrir menú de navegación"
-                        class="block md:hidden rounded-xl p-2.5 sm:p-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 group backdrop-blur-sm transform hover:scale-105"
+                        class="block lg:hidden"
                         aria-label="Abrir menú de navegación"
                     >
                         <span class="sr-only">Abrir menú</span>
                         <FontAwesomeIcon
-                            :icon="faBars"
-                            class="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform duration-200"
-                        />
+                            :icon="faList"
+                            class="w-4 h-4 text-white hover:text-red-300 bg-red-600/80 hover:bg-red-600/90 p-2 rounded-full transform hover:scale-105 transition-transform duration-200" />
                     </button>
 
                     <!-- Logo con efecto profesional -->
@@ -197,8 +205,7 @@ onBeforeUnmount(() => {
                         <img
                             src="/images/logo.png"
                             alt="Logo VASIR"
-                            class="w-24 h-8 sm:w-28 sm:h-10 md:w-32 md:h-11 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
-                        />
+                            class="w-16 h-5 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                     </Link>
                 </div>
 
@@ -214,9 +221,8 @@ onBeforeUnmount(() => {
                             </span>
                             <FontAwesomeIcon
                                 :icon="faUser"
-                                class="w-4 h-4 sm:w-5 sm:h-5 text-red-600 group-hover:text-white transition-colors duration-200 drop-shadow-sm"
+                                class="w-4 h-4 text-red-600 group-hover:text-white transition-colors duration-200 drop-shadow-sm"
                             />
-                            <FontAwesomeIcon :icon="faChevronDown" class="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 transition-transform duration-200 ml-2" :class="{ 'rotate-180': showProfileMenu }" />
                         </button>
 
                         <!-- Menú de perfil profesional -->
@@ -229,41 +235,41 @@ onBeforeUnmount(() => {
                             <div
                                 v-if="showProfileMenu"
                                 id="profile-menu"
-                                class="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-100/50 z-[9999] overflow-hidden"
+                                class="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-100/50 z-[9999] overflow-hidden"
                                 style="box-shadow: 0 25px 50px -12px rgba(220, 38, 38, 0.25);"
+                                :class="showProfileMenu ? 'opacity-100 scale-100' : 'opacity-0 scale-95'"
                             >
                                 <!-- Elementos decorativos -->
                                 <div class="absolute inset-0 bg-gradient-to-br from-red-100/30 via-transparent to-red-100/30"></div>
 
                                 <!-- Header del perfil profesional -->
-                                <div class="relative px-6 py-5 bg-gradient-to-b from-red-600 via-red-500 to-red-400 text-white">
+                                <div class="relative px-5 py-5 bg-gradient-to-b from-red-600 via-red-500 to-red-400 text-white">
                                     <div class="flex items-center space-x-4">
                                         <div class="relative">
                                             <img
                                                 :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(
                                                     user.name
                                                 )}&background=dc2626&color=fff&size=96&bold=true`"
-                                                class="w-14 h-14 rounded-full border-3 border-white shadow-xl"
+                                                class="w-10 h-10 rounded-full border-2 border-white shadow-xl"
                                                 alt="Avatar del usuario"
                                             />
                                             <!-- Decoración de avatar -->
                                             <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-br from-red-400 to-red-600 border-2 border-white rounded-full shadow"></div>
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <h3 class="text-base font-bold text-white truncate">
-                                                {{ user.name }}
+                                            <h3 class="text-sm font-bold text-white truncate">
+                                                {{ user.name || 'Usuario' }}
                                             </h3>
-                                            <p class="text-sm text-red-100 truncate opacity-90">
+                                            <p class="text-xs text-red-100 truncate opacity-90">
                                                 {{ user.email }}
                                             </p>
                                         </div>
                                     </div>
                                     <div class="mt-4 flex items-center">
-                                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-white/20 text-white backdrop-blur-sm border border-white/20 shadow">
-                                            <svg class="w-2 h-2 mr-2 opacity-90" fill="currentColor" viewBox="0 0 8 8"><circle cx="4" cy="4" r="4"/></svg>
+                                        <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-white/10 text-white backdrop-blur-sm border border-white/20 shadow">
                                             {{ user?.roles && user.roles.length > 0
                                                 ? user.roles[0].name.charAt(0).toUpperCase() + user.roles[0].name.slice(1)
-                                                : "Invitado"
+                                                : "Sin Autorización"
                                             }}
                                         </span>
                                     </div>
@@ -273,38 +279,44 @@ onBeforeUnmount(() => {
                                 <div class="relative py-3 bg-white/95 backdrop-blur-sm">
                                     <Link
                                         :href="route('profile.edit')"
-                                        class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                                        class="flex items-center px-6 py-1 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                                     >
                                         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
                                             <FontAwesomeIcon :icon="faUserPen" class="w-4 h-4" />
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="font-semibold">Editar Perfil</span>
-                                            <span class="text-xs text-gray-500 mt-0.5">Actualizar información personal</span>
                                         </div>
                                     </Link>
+
+                                                                        <!-- Separador elegante -->
+                                    <div class="relative my-3 mx-6 pb-1">
+                                        <div class="absolute inset-0 flex items-center">
+                                            <div class="w-full border-t border-red-100"></div>
+                                        </div>
+                                    </div>
+
                                     <Link
                                         :href="route('inicio')"
-                                        class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                                        class="flex items-center px-6 py-1 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                                     >
                                         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
                                             <FontAwesomeIcon :icon="faStore" class="w-4 h-4" />
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="font-semibold">Páginas Públicas</span>
-                                            <span class="text-xs text-gray-500 mt-0.5">Serás redirigido a las vistas públicas.</span>
                                         </div>
                                     </Link>
 
                                     <!-- Separador elegante -->
-                                    <div class="relative my-3 mx-6">
+                                    <div class="relative my-3 mx-6 pb-1">
                                         <div class="absolute inset-0 flex items-center">
                                             <div class="w-full border-t border-red-100"></div>
                                         </div>
                                     </div>
 
                                     <button
-                                        class="flex items-center w-full px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                                        class="flex items-center w-full px-6 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                                         @click="logout"
                                     >
                                         <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 text-gray-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:text-red-600 group-hover:scale-110 transition-all duration-200 shadow-sm">
@@ -312,7 +324,6 @@ onBeforeUnmount(() => {
                                         </div>
                                         <div class="flex flex-col">
                                             <span class="font-semibold">Cerrar Sesión</span>
-                                            <span class="text-xs text-gray-500 mt-0.5">Salir de forma segura</span>
                                         </div>
                                     </button>
                                 </div>
@@ -332,7 +343,7 @@ onBeforeUnmount(() => {
         >
             <div
                 v-if="isSidebarOpen"
-                class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/60 via-red-900/30 to-black/60 backdrop-blur-sm md:hidden"
+                class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/60 via-red-900/30 to-black/60 backdrop-blur-sm lg:hidden"
                 @click="isSidebarOpen = false"
                 @touchmove.prevent
                 @scroll.prevent
@@ -349,7 +360,7 @@ onBeforeUnmount(() => {
             >
                 <aside
                     v-if="isSidebarOpen"
-                    class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-[9999] flex flex-col md:hidden border-r border-red-200"
+                    class="fixed top-0 left-0 h-full w-80 bg-white shadow-2xl z-[9999] flex flex-col lg:hidden border-r border-red-200"
                     @touchmove.stop
                 >
                     <!-- Elementos decorativos -->
@@ -367,7 +378,7 @@ onBeforeUnmount(() => {
                         </Link>
                         <button
                             @click="isSidebarOpen = false"
-                            class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-red-600 text-white hover:bg-red-700 hover:scale-110 transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2"
+                            class="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-gray-600/80 text-white hover:bg-gray-700/80 hover:scale-110 transition-all duration-200 shadow-lg focus:outline-none focus:ring-2 focus:ring-gray-400 focus:ring-offset-2"
                             aria-label="Cerrar menú"
                         >
                             <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
@@ -638,7 +649,7 @@ onBeforeUnmount(() => {
 
             <!-- Sidebar de escritorio profesional -->
             <aside
-                class="w-64 fixed top-16 left-0 h-[calc(100vh-64px)] bg-gradient-to-b from-red-600 via-red-500 to-red-400 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden md:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
+                class="w-64 fixed top-16 left-0 h-[calc(100vh-64px-44px)] bg-gradient-to-b from-red-600 via-red-600 to-red-500 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden lg:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
             >
                 <!-- Elementos decorativos -->
                 <div class="absolute inset-0 bg-gradient-to-br from-red-100/20 via-transparent to-red-100/20 pointer-events-none"></div>
@@ -932,23 +943,23 @@ onBeforeUnmount(() => {
 
             <!-- Contenido principal -->
             <div
-                class="flex-1 flex flex-col transition-all duration-300 md:ml-64"
+                class="flex-1 flex flex-col transition-all duration-300 lg:ml-64 lg:pb-[73px]"
             >
                 <!-- Área de contenido principal -->
                 <main class="flex-1 overflow-auto bg-white">
                     <slot />
                 </main>
-
-                <!-- Footer -->
-                <footer class="bg-red-600 border-t border-gray-200">
-                    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                        <div class="text-center text-white text-sm">
-                            <p>&copy; {{ new Date().getFullYear() }} VASIR. Todos los derechos reservados.</p>
-                        </div>
-                    </div>
-                </footer>
             </div>
         </div>
+
+        <!-- Footer fijo solo en escritorio -->
+        <footer class="bg-gradient-to-t from-red-600 to-red-500 border-b border-gray-200 w-full relative lg:fixed bottom-0 left-0 z-30">
+            <div class="w-full px-4 sm:px-6 lg:px-8 py-3">
+                <div class="text-center text-white text-sm">
+                    <p>&copy; {{ new Date().getFullYear() }} VASIR. Todos los derechos reservados.</p>
+                </div>
+            </div>
+        </footer>
     </div>
 </template>
 

@@ -4,7 +4,8 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay, faPlane, faSearch, faTimes, faExclamationTriangle, faHotel } from '@fortawesome/free-solid-svg-icons'
+import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay,
+    faPlane, faSearch, faTimes, faExclamationTriangle, faHotel } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -125,7 +126,7 @@ function abrirWhatsApp(tipo = 'general') {
 
   // Obtener el teléfono del administrador desde la configuración compartida
   const adminPhone = config.value?.admin_phone
-  
+
   // Verificar si es un número válido (no el texto "no disponible")
   if (!adminPhone || adminPhone.includes('no disponible')) {
     toast.add({
@@ -165,7 +166,7 @@ const contactarHotel = (hotel) => {
 
   // Obtener el teléfono del administrador desde la configuración compartida
   const adminPhone = config.value?.admin_phone
-  
+
   // Verificar si es un número válido (no el texto "no disponible")
   if (!adminPhone || adminPhone.includes('no disponible')) {
     toast.add({
@@ -357,16 +358,16 @@ const irAImagen = (index) => {
   <Catalogo>
     <Toast />
     <!-- Header Profesional con Stats Integradas - Ancho completo de la pantalla -->
-    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32">
+    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 pt-20 md:pt-24 lg:pt-28 xl:pt-28">
       <!-- Header con gradiente -->
       <div class="bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
           <FontAwesomeIcon :icon="faHotel" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 shadow-lg" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-            Hoteles Disponibles
+            Hoteles y Boletos Aéreos
           </h1>
         </div>
-        <p class="text-base sm:text-lg text-blue-100 px-4">Descubre los mejores hoteles para tu estadía perfecta.</p>
+        <p class="text-base sm:text-lg text-blue-100 px-4">Descubre los mejores hoteles para tu estadía perfecta y los boletos aéreos más convenientes</p>
       </div>
 
 

@@ -46,7 +46,7 @@
         }
         .return-btn {
             display: inline-block;
-            background-color: #ff0000;
+            background-color: #002fff;
             color: white;
             padding: 12px 30px;
             text-decoration: none;
@@ -55,7 +55,7 @@
             font-weight: bold;
         }
         .return-btn:hover {
-            background-color: #b30000;
+            background-color: #0225c0;
         }
         .footer {
             text-align: center;
@@ -88,12 +88,12 @@
         </div>
 
         <div class="goodbye-message">
-            <h2 style="color: #ff6b6b;">😢 Lamentamos verte partir</h2>
+            <h2 style="color: #ff6b6b;">Lamentamos verte partir</h2>
             <p>Hola <strong>{{ $user->name }}</strong>, hemos procesado tu solicitud de eliminación de cuenta.</p>
         </div>
 
         <div class="highlight">
-            <h3 style="margin-top: 0; color: #856404;">⚠️ Información importante</h3>
+            <h3 style="margin-top: 0; color: #856404;">Información importante</h3>
             <p style="margin-bottom: 0;">
                 Tu cuenta y todos los datos asociados han sido eliminados permanentemente de nuestros sistemas.
                 Esta acción no se puede deshacer.
@@ -101,46 +101,75 @@
         </div>
 
         <div class="info-section">
-            <h3>💔 ¿Qué significó para nosotros tenerte?</h3>
+            <h3>¿Qué significó para nosotros tenerte?</h3>
             <ul>
-                <li>🌟 Fuiste parte de nuestra familia de viajeros</li>
-                <li>✈️ Confiaste en nosotros para tus aventuras</li>
-                <li>🤝 Nos ayudaste a crecer y mejorar</li>
-                <li>🎯 Compartiste momentos especiales con nosotros</li>
+                <li>Fuiste parte de nuestra familia de viajeros</li>
+                <li>Confiaste en nosotros para tus aventuras</li>
+                <li>Nos ayudaste a crecer y mejorar</li>
+                <li>Compartiste momentos especiales con nosotros</li>
             </ul>
         </div>
 
         <div class="info-section">
-            <h3>🚪 ¿Cambias de opinión?</h3>
+            <h3>¿Cambias de opinión?</h3>
             <p>Si en el futuro decides volver a viajar con nosotros, siempre serás bienvenido/a. Podrás crear una nueva cuenta cuando gustes:</p>
             <div style="text-align: center;">
-                <a href="{{ config('app.url') }}/register" class="return-btn">
+                <a href="{{ config('app.url') }}/register" class="return-btn" style="color: white !important;">
                     Crear nueva cuenta
                 </a>
             </div>
         </div>
 
         <div class="info-section">
-            <h3>📝 Tus comentarios son importantes</h3>
+            <h3>Tus comentarios son importantes</h3>
             <p>Nos encantaría saber qué podríamos haber hecho mejor. Si tienes algún comentario o sugerencia, no dudes en contactarnos:</p>
 
+            <!-- Botones de contacto en línea -->
             <div style="text-align: center; margin: 20px 0;">
-                <a href="mailto:{{ $supportEmail }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px; background-color: #f8f9fa; padding: 15px 25px; border-radius: 8px; border: 2px solid #ff0000;">
-                    <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
-                         alt="Gmail"
-                         style="width: 40px; height: 40px; border: none;"
-                    >
-                </a>
+                <table align="center" style="border-collapse: collapse; margin: 0 auto;">
+                    <tr>
+                        <td style="padding: 10px; text-align: center; vertical-align: top;">
+                            @if(str_contains($adminPhones['email'], 'no disponible'))
+                                <div style="display: inline-flex; align-items: center; gap: 10px; background-color: #f8f9fa; padding: 15px 25px; border-radius: 8px; border: 2px solid #ccc; opacity: 0.5;">
+                                    <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
+                                         alt="Email no disponible"
+                                         style="width: 40px; height: 40px; border: none;">
+                                </div>
+                            @else
+                                <a href="mailto:{{ $adminPhones['email'] }}" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px; background-color: #f8f9fa; padding: 15px 25px; border-radius: 8px; border: 2px solid #ff0000;">
+                                    <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
+                                         alt="Gmail"
+                                         style="width: 40px; height: 40px; border: none;"
+                                    >
+                                </a>
+                            @endif
+                        </td>
+                        <td style="padding: 10px; text-align: center; vertical-align: top;">
+                            <a href="https://www.google.com/maps/place/VASIR/@14.0409885,-88.9412266,17z/data=!3m1!4b1!4m6!3m5!1s0x8f636570efc5e09d:0xe884d67df04d7ff5!8m2!3d14.0409885!4d-88.9412266!16s%2Fg%2F11vxh0qx3q" target="_blank" rel="noopener noreferrer" style="text-decoration: none; display: inline-flex; align-items: center; gap: 10px; background-color: #f8f9fa; padding: 15px 25px; border-radius: 8px; border: 2px solid #ff0000;">
+                                <img src="{{ $message->embed(public_path('images/maps-icon.png')) }}"
+                                     alt="Google Maps"
+                                     style="width: 40px; height: 40px; border: none;"
+                                >
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+                <p style="font-size: 12px; color: #666; margin-top: 8px; font-style: italic;">Contáctanos por email o visita nuestra ubicación</p>
             </div>
         </div>
 
         <!-- Sección de Contacto y Redes Sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <h3>¡Mantente conectado con nosotros!</h3>
             <p>Aunque hayas eliminado tu cuenta, siempre puedes seguirnos para estar al día con nuestras ofertas:</p>
             <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000; text-decoration: none;">+503 7985 8777</a> | <a href="tel:+50323279199" style="color: #ff0000; text-decoration: none;">+503 2327 9199</a><br>
-                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+                <strong>Teléfono:</strong>
+                @if(str_contains($adminPhones['phone1'], 'no disponible'))
+                    <span style="color: #999; font-style: italic;">{{ $adminPhones['phone1'] }}</span>
+                @else
+                    <a href="tel:{{ str_replace([' ', '-', '(', ')'], '', $adminPhones['phone1']) }}" style="color: #ff0000; text-decoration: none;">{{ $adminPhones['phone1'] }}</a>
+                @endif<br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
 
             <!-- Iconos de redes sociales usando imágenes embebidas -->
@@ -175,19 +204,25 @@
                     </td>
                     <td style="padding: 6px; text-align: center;">
                         <!-- WhatsApp -->
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer"
-                           style="text-decoration: none;">
+                        @if(str_contains($adminPhones['phone1'], 'no disponible'))
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
-                                 alt="WhatsApp"
-                                 style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="WhatsApp no disponible"
+                                 style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @else
+                            <a href="https://wa.me/{{ str_replace([' ', '-', '(', ')', '+'], '', $adminPhones['phone1']) }}" target="_blank" rel="noopener noreferrer"
+                               style="text-decoration: none;">
+                                <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
+                                     alt="WhatsApp"
+                                     style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @endif
                     </td>
                 </tr>
             </table>
 
         <div class="footer">
-            <p style="color: #ff6b6b; font-weight: bold;">¡Gracias por haber sido parte de {{ $companyName }}! 💙</p>
-            <p><strong>Te deseamos lo mejor en tus futuros viajes 🌍✈️</strong></p>
+            <p style="color: #ff6b6b; font-weight: bold;">¡Gracias por haber sido parte de {{ $companyName }}!</p>
+            <p><strong>Te deseamos lo mejor en tus futuros viajes</strong></p>
             <hr>
             <p><small>
                 Este correo confirma la eliminación exitosa de tu cuenta. Si no solicitaste esta eliminación,

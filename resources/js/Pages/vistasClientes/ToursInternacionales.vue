@@ -6,7 +6,8 @@ import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faCalendarAlt, faChevronLeft, faChevronRight, faCircleChevronRight, faImage, faMapLocation, faMapMarked, faMapMarkedAlt, faMapMarker, faMapMarkerAlt, faPause, faPlay, faXmark, faSearch, faTimes, faGlobe, faGlobeAmericas, faExclamationTriangle, faMapSigns, faLeaf, faHandshake } from '@fortawesome/free-solid-svg-icons'
+import { faCalendarAlt, faChevronLeft, faChevronRight, faImage, faMapMarkerAlt, faXmark, faSearch, faTimes,
+    faGlobeAmericas, faExclamationTriangle, faMapSigns, faLeaf, faHandshake } from '@fortawesome/free-solid-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)
@@ -442,7 +443,7 @@ const verMasInfo = (tour) => {
     <Toast />
 
     <!-- Header Profesional - Ancho completo de la pantalla -->
-    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32">
+    <div class="w-full bg-gradient-to-br from-white to-gray-50 shadow-xl overflow-hidden border-b border-gray-200 mb-3 sm:mb-4 pt-20 md:pt-24 lg:pt-28 xl:pt-28">
       <!-- Header con gradiente -->
       <div class="bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">

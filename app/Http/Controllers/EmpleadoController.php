@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\WelcomeUserMail;
+use App\Mail\PasswordChangedConfirmationMail;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Models\Role;
@@ -453,6 +454,20 @@ class EmpleadoController extends Controller
             $empleado->user->update([
                 'password' => Hash::make($request->password),
             ]);
+
+            // Enviar email de confirmación de cambio de contraseña
+            $changeDetails = [
+                'timestamp' => now()->format('d/m/Y H:i:s'),
+                'ip' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ];
+
+            try {
+                Mail::to($empleado->user->email)->send(new PasswordChangedConfirmationMail($empleado->user, $changeDetails));
+            } catch (\Exception $e) {
+                // Log del error pero no interrumpir el proceso
+                Log::error('Error enviando email de confirmación de cambio de contraseña (admin): ' . $e->getMessage());
+            }
 
             return response()->json([
                 'success' => true,

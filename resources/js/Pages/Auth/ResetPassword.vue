@@ -6,6 +6,8 @@ import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ref, computed } from 'vue';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faEnvelope, faLock, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
     email: {
@@ -15,6 +17,14 @@ const props = defineProps({
     token: {
         type: String,
         required: true,
+    },
+    success: {
+        type: Boolean,
+        default: false,
+    },
+    message: {
+        type: String,
+        default: '',
     },
 });
 
@@ -66,6 +76,10 @@ const isFormIncomplete = computed(() => {
 
 const submit = () => {
     form.post(route('password.store'), {
+        onSuccess: () => {
+            // El servidor ya redirige automáticamente al login con un mensaje de éxito
+            // Inertia maneja la redirección automáticamente
+        },
         onFinish: () => form.reset('password', 'password_confirmation'),
     });
 };
@@ -77,26 +91,16 @@ const submit = () => {
 
         <!-- ✅ Contenedor principal responsive -->
         <div class="w-full max-w-sm sm:max-w-md lg:max-w-lg">
-            <!-- ✅ Logo centrado -->
-            <div class="flex justify-center mb-6 sm:mb-8">
-                <Link href="/">
-                    <img
-                        src="/images/logo.png"
-                        alt="VASIR Logo"
-                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
-                        title="Ir al inicio"
-                    />
-                </Link>
-            </div>
-
             <!-- ✅ Tarjeta principal -->
             <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 lg:p-10 border border-gray-100">
-                <!-- ✅ Título con icono -->
+                <!-- ✅ Título con logo -->
                 <div class="text-center mb-4 sm:mb-6">
-                    <div class="mx-auto w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-green-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
+                    <div class="mx-auto w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 bg-white rounded-full flex items-center justify-center mb-3 sm:mb-4 shadow-lg border-2 border-green-100">
+                        <img
+                            src="/images/logo.png"
+                            alt="VASIR Logo"
+                            class="w-10 h-10 sm:w-12 sm:h-12 lg:w-14 lg:h-14 object-contain"
+                        />
                     </div>
                     <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                         Restablecer Contraseña
@@ -106,30 +110,49 @@ const submit = () => {
                     </p>
                 </div>
 
-                <!-- ✅ Mensaje informativo -->
-                <div class="mb-4 sm:mb-6">
-                    <div class="p-3 sm:p-4 bg-green-50 border-l-4 border-green-400 rounded-r-lg">
-                        <div class="flex items-start space-x-2 sm:space-x-3">
+                <!-- ✅ Mensaje de éxito -->
+                <div v-if="success" class="space-y-4 sm:space-y-6">
+                    <div class="p-4 sm:p-6 bg-green-50 border border-green-200 rounded-lg">
+                        <div class="flex items-start space-x-3">
                             <div class="flex-shrink-0">
-                                <svg class="h-4 w-4 sm:h-5 sm:w-5 text-green-400 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                 </svg>
                             </div>
                             <div class="flex-1">
-                                <p class="text-xs sm:text-sm lg:text-base text-green-800 leading-relaxed">
-                                    Tu enlace de recuperación es válido. Ingresa tu nueva contraseña para
-                                    <strong>{{ email }}</strong>
+                                <h3 class="text-sm sm:text-base font-medium text-green-800 mb-2">
+                                    ¡Contraseña Restablecida Exitosamente!
+                                </h3>
+                                <p class="text-xs sm:text-sm text-green-700 leading-relaxed">
+                                    {{ message }}
                                 </p>
                             </div>
                         </div>
                     </div>
+
+                    <div class="pt-4">
+                        <Link
+                            :href="route('login')"
+                            class="w-full bg-green-600 hover:bg-green-700 focus:ring-green-500 focus:ring-offset-2 text-white font-medium py-3 px-6 rounded-lg transition-colors duration-200 flex items-center justify-center text-sm sm:text-base"
+                        >
+                            <svg class="w-4 h-4 sm:w-5 sm:h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                            </svg>
+                            Ir a Iniciar Sesión
+                        </Link>
+                    </div>
                 </div>
 
                 <!-- ✅ Formulario -->
-                <form @submit.prevent="submit" class="space-y-4 sm:space-y-6">
+                <form v-if="!success" @submit.prevent="submit" class="space-y-4 sm:space-y-6">
                     <!-- Email (readonly) -->
                     <div>
-                        <InputLabel for="email" value="📧 Correo Electrónico" class="text-sm sm:text-base font-medium text-gray-700" />
+                        <InputLabel for="email" class="text-sm sm:text-base font-medium text-gray-700">
+                            <span class="flex items-center gap-2">
+                                <FontAwesomeIcon :icon="faEnvelope" class="text-gray-600" />
+                                Correo Electrónico
+                            </span>
+                        </InputLabel>
 
                         <TextInput
                             id="email"
@@ -145,7 +168,12 @@ const submit = () => {
 
                     <!-- Nueva contraseña -->
                     <div>
-                        <InputLabel for="password" value="🔒 Nueva Contraseña" class="text-sm sm:text-base font-medium text-gray-700" />
+                        <InputLabel for="password" class="text-sm sm:text-base font-medium text-gray-700">
+                            <span class="flex items-center gap-2">
+                                <FontAwesomeIcon :icon="faLock" class="text-gray-600" />
+                                Nueva Contraseña
+                            </span>
+                        </InputLabel>
 
                         <div class="relative">
                             <TextInput
@@ -180,7 +208,12 @@ const submit = () => {
 
                     <!-- Confirmar contraseña -->
                     <div>
-                        <InputLabel for="password_confirmation" value="🔒 Confirmar Contraseña" class="text-sm sm:text-base font-medium text-gray-700" />
+                        <InputLabel for="password_confirmation" class="text-sm sm:text-base font-medium text-gray-700">
+                            <span class="flex items-center gap-2">
+                                <FontAwesomeIcon :icon="faLock" class="text-gray-600" />
+                                Confirmar Contraseña
+                            </span>
+                        </InputLabel>
 
                         <div class="relative">
                             <TextInput
@@ -211,20 +244,6 @@ const submit = () => {
                         <div v-if="passwordConfirmationError" class="mt-2 text-xs text-red-500">
                             {{ passwordConfirmationError }}
                         </div>
-                    </div>
-
-                    <!-- ✅ Consejos de seguridad -->
-                    <div class="p-3 sm:p-4 bg-yellow-50 border-l-4 border-yellow-400 rounded-r-lg">
-                        <h4 class="text-xs sm:text-sm font-medium text-yellow-800 mb-2">
-                            💡 Consejos para una contraseña segura:
-                        </h4>
-                        <ul class="text-xs text-yellow-700 space-y-1">
-                            <li>• Mínimo 8 caracteres</li>
-                            <li>• Incluye una letra mayúscula y un número</li>
-                            <li>• No uses espacios ni puntos</li>
-                            <li>• Evita información personal</li>
-                            <li>• No reutilices contraseñas de otras cuentas</li>
-                        </ul>
                     </div>
 
                     <!-- ✅ Botón principal -->

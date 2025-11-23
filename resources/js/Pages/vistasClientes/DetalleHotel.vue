@@ -1,6 +1,6 @@
 <template>
   <Catalogo>
-    <div class="min-h-screen bg-gray-50 py-4 sm:py-8 mt-32">
+    <div class="min-h-screen bg-gray-50 py-4 sm:py-8 mt-24 md:mt-32 lg:mt-32 xl:mt-32">
       <div class="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8">
         <!-- Breadcrumb -->
         <nav class="mb-4 sm:mb-8">
@@ -278,7 +278,7 @@ const contactarHotel = () => {
 
   // Obtener el teléfono del administrador desde la configuración compartida
   const adminPhone = config.value?.admin_phone
-  
+
   // Verificar si es un número válido (no el texto "no disponible")
   if (!adminPhone || adminPhone.includes('no disponible')) {
     toast.add({

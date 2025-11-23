@@ -6,7 +6,8 @@ import { usePage } from '@inertiajs/vue3'
 import Toast from 'primevue/toast'
 import InputText from 'primevue/inputtext'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faMapLocationDot, faHotel, faQuestionCircle, faCreditCard, faBullseye, faRocket, faArrowRight, faEnvelope, faPlane, faLocation, faSearch, faPhone } from '@fortawesome/free-solid-svg-icons'
+import { faMapLocationDot, faHotel, faQuestionCircle, faCreditCard, faBullseye, faRocket, faArrowRight,
+    faEnvelope, faLocation, faSearch, faPhone } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 
 // Inicializar toast
@@ -201,7 +202,7 @@ const faqsFiltradas = computed(() => {
   <Catalogo>
     <Toast />
     <!-- Header Professional - Ancho completo de la pantalla -->
-    <div class="w-full bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6 mt-20 sm:mt-20 md:mt-28 lg:mt-32 xl:mt-32 mb-6 sm:mb-8 shadow-xl">
+    <div class="w-full bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6 mt-20 md:mt-24 lg:mt-28 xl:mt-28 mb-6 sm:mb-8 shadow-xl">
       <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
         <FontAwesomeIcon :icon="faPhone" class="text-yellow-300 mr-2" />
         Contáctanos</h1>

@@ -7,7 +7,9 @@ import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import Toast from 'primevue/toast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy, faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft, faChevronRight, faPlane, faTimes } from '@fortawesome/free-solid-svg-icons'
+import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy,
+    faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft,
+    faChevronRight, faPlane, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useToast } from 'primevue/usetoast'
 import { usePage } from '@inertiajs/vue3'
@@ -264,7 +266,7 @@ const abrirWhatsApp = (tipo = 'general', nombrePaquete = '') => {
 
   // Obtener el teléfono del administrador desde la configuración compartida
   const adminPhone = page.props.config?.admin_phone
-  
+
   // Verificar si es un número válido (no el texto "no disponible")
   if (!adminPhone || adminPhone.includes('no disponible')) {
     toast.add({
@@ -340,7 +342,7 @@ onUnmounted(() => {
     <!-- Toast para notificaciones -->
     <Toast class="z-[9999]" />
 
-    <div class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 min-h-screen pt-20 md:pt-28 lg:pt-28 xl:pt-32">
+    <div class="bg-gradient-to-br from-gray-50 via-gray-50 to-gray-50 min-h-screen pt-20 md:pt-24 lg:pt-28 xl:pt-28">
       <template v-if="loading">
         <div class="p-4 sm:p-6 md:p-8 max-w-7xl mx-auto">
           <div class="animate-pulse space-y-8">

@@ -17,6 +17,7 @@ class GoodbyeUserMail extends Mailable
     public $user;
     public $companyName;
     public $supportEmail;
+    public $adminPhones;
 
     /**
      * Create a new message instance.
@@ -26,6 +27,21 @@ class GoodbyeUserMail extends Mailable
         $this->user = $user;
         $this->companyName = config('app.name', 'VASIR');
         $this->supportEmail = config('mail.from.address', 'vasirtours19@gmail.com');
+
+        // Obtener teléfonos del administrador
+        $adminUser = User::whereHas('roles', function ($query) {
+            $query->where('name', 'Administrador');
+        })->with('empleado')->first();
+
+        $this->adminPhones = [
+            'phone1' => $adminUser && $adminUser->empleado && !empty($adminUser->empleado->telefono)
+                ? $adminUser->empleado->telefono
+                : 'Teléfono no disponible', // fallback
+            'website' => config('app.url', 'Sitio web no disponible'),
+            'email' => $adminUser && !empty($adminUser->email)
+                ? $adminUser->email
+                : 'Email no disponible' // fallback
+        ];
     }
 
     /**
@@ -49,6 +65,7 @@ class GoodbyeUserMail extends Mailable
                 'user' => $this->user,
                 'companyName' => $this->companyName,
                 'supportEmail' => $this->supportEmail,
+                'adminPhones' => $this->adminPhones,
             ],
         );
     }
@@ -70,11 +87,13 @@ class GoodbyeUserMail extends Mailable
      */
     public function build()
     {
-        return $this->view('emails.goodbye')
+        return $this->subject('¡Hasta pronto! - ' . $this->companyName)
+                    ->view('emails.goodbye')
                     ->with([
                         'user' => $this->user,
                         'companyName' => $this->companyName,
                         'supportEmail' => $this->supportEmail,
+                        'adminPhones' => $this->adminPhones,
                     ]);
     }
 }

@@ -345,7 +345,7 @@ const recargarDatos = async () => {
     <!-- Toast para notificaciones -->
     <Toast class="z-[9999]" />
 
-    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 w-full pt-20 md:pt-28 lg:pt-32 xl:pt-36">
+    <div class="bg-gradient-to-br from-gray-50 via-blue-50/30 to-red-50/30 w-full pt-20 md:pt-24 lg:pt-28 xl:pt-28">
       <!-- Header Professional - Full Width -->
       <div class="w-full mb-4 -mt-0 md:-mt-3">
         <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6 relative shadow-xl">

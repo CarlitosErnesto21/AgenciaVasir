@@ -56,7 +56,7 @@
         }
         .reset-btn {
             display: inline-block;
-            background-color: #ff0000;
+            background-color: #002fff;
             color: white;
             padding: 15px 35px;
             text-decoration: none;
@@ -66,7 +66,7 @@
             font-size: 16px;
         }
         .reset-btn:hover {
-            background-color: #b30000;
+            background-color: #0225c0;
         }
         .security-section {
             background-color: #f8d7da;
@@ -120,12 +120,12 @@
             </div>
             <p>Tu Agencia de Viajes de Confianza</p>
             <div class="security-badge">
-                🔒 RECUPERACIÓN DE CONTRASEÑA
+                RECUPERACIÓN DE CONTRASEÑA
             </div>
         </div>
 
         <div class="message-section">
-            <h2>🔑 Solicitud de Recuperación de Contraseña</h2>
+            <h2>Solicitud de Recuperación de Contraseña</h2>
             <p>
                 Hemos recibido una solicitud para restablecer la contraseña de tu cuenta
                 asociada a <strong>{{ $email }}</strong>.
@@ -133,7 +133,7 @@
         </div>
 
         <div class="reset-info">
-            <h3 style="color: #856404; margin-top: 0;">⚠️ Instrucciones Importantes</h3>
+            <h3 style="color: #856404; margin-top: 0;">Instrucciones Importantes</h3>
             <ul style="color: #856404;">
                 <li>Solo usa este enlace si solicitaste el cambio de contraseña</li>
                 <li>El enlace expira en <strong>{{ $expirationTime }} minutos</strong></li>
@@ -143,13 +143,13 @@
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ $resetUrl }}" class="reset-btn">
-                🔒 Restablecer mi Contraseña
+            <a href="{{ $resetUrl }}" class="reset-btn" style="color: white !important;">
+                Restablecer mi Contraseña
             </a>
         </div>
 
         <div class="security-section">
-            <div class="security-title">🛡️ Medidas de Seguridad</div>
+            <div class="security-title">Medidas de Seguridad</div>
             <div class="security-text">
                 <p><strong>Por tu seguridad:</strong></p>
                 <ul>
@@ -162,7 +162,7 @@
         </div>
 
         <div class="info-section">
-            <h3>🤔 ¿El botón no funciona?</h3>
+            <h3>¿El botón no funciona?</h3>
             <p>Si tienes problemas con el botón, copia y pega este enlace en tu navegador:</p>
             <div class="manual-link">
                 {{ $resetUrl }}
@@ -170,18 +170,28 @@
         </div>
 
         <div class="info-section">
-            <h3>📞 ¿Necesitas Ayuda?</h3>
+            <h3>¿Necesitas Ayuda?</h3>
             <p>Si no solicitaste este cambio o tienes problemas, contáctanos:</p>
             <p style="font-size: 14px; color: #666;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000;">+503 7985 8777</a> |
-                <a href="tel:+50323279199" style="color: #ff0000;">+503 2327 9199</a><br>
-                📧 <strong>Email:</strong> <a href="mailto:{{ $supportEmail }}" style="color: #ff0000;">{{ $supportEmail }}</a>
+                <strong>Teléfono:</strong> 
+                @if(str_contains($adminData['phone'], 'no disponible'))
+                    <span style="color: #999; font-style: italic;">{{ $adminData['phone'] }}</span>
+                @else
+                    <a href="tel:{{ str_replace([' ', '-', '(', ')'], '', $adminData['phone']) }}" style="color: #002fff; text-decoration: none;">{{ $adminData['phone'] }}</a>
+                @endif<br>
+                <strong>Correo Electrónico:</strong> 
+                @if(str_contains($adminData['email'], 'no disponible'))
+                    <span style="color: #999; font-style: italic;">{{ $adminData['email'] }}</span>
+                @else
+                    <a href="mailto:{{ $adminData['email'] }}" style="color: #002fff; text-decoration: none;">{{ $adminData['email'] }}</a>
+                @endif<br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #002fff; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
         </div>
 
         <!-- Sección de Redes Sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 Síguenos en nuestras redes</h3>
+            <h3>Síguenos en nuestras redes</h3>
             <table align="center" style="margin: 20px auto; border-collapse: collapse;">
                 <tr>
                     <td style="padding: 6px; text-align: center;">
@@ -203,16 +213,26 @@
                         </a>
                     </td>
                     <td style="padding: 6px; text-align: center;">
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer">
+                        @if(str_contains($adminData['phone'], 'no disponible'))
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
-                                 alt="WhatsApp" style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="WhatsApp no disponible" style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @else
+                            <a href="https://wa.me/{{ str_replace([' ', '-', '(', ')', '+'], '', $adminData['phone']) }}" target="_blank" rel="noopener noreferrer">
+                                <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
+                                     alt="WhatsApp" style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @endif
                     </td>
                     <td style="padding: 6px; text-align: center;">
-                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer">
+                        @if(str_contains($adminData['email'], 'no disponible'))
                             <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
-                                 alt="Gmail" style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="Gmail no disponible" style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @else
+                            <a href="mailto:{{ $adminData['email'] }}" target="_blank" rel="noopener noreferrer">
+                                <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
+                                     alt="Gmail" style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @endif
                     </td>
                 </tr>
             </table>

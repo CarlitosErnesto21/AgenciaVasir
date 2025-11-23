@@ -142,10 +142,10 @@ const estadisticas = computed(() => {
 // Computed para información del tour seleccionado
 const infoTourSeleccionado = computed(() => {
   if (!filtros.value.tourSeleccionado || filtros.value.tourSeleccionado === '') return null
-  
+
   const tour = tours.value.find(t => t.id == filtros.value.tourSeleccionado)
   const reservasDelTour = reservasFiltradas.value.length
-  
+
   return {
     nombre: tour?.nombre || 'Tour no encontrado',
     totalReservas: reservasDelTour
@@ -927,10 +927,7 @@ onMounted(() => {
       <div class="bg-white rounded-lg shadow-md">
         <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
           <div>
-            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Reservas por Estado</h3>
-            <p class="text-gray-500 text-sm text-center sm:text-start mt-1">
-              📊 Gestiona las reservas organizadas por su estado actual
-            </p>
+            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de reservas</h3>
             <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium">
                 <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
                 Haz clic en cualquier fila para ver los detalles.
@@ -1057,7 +1054,7 @@ onMounted(() => {
                   </option>
                 </select>
               </div>
-              
+
               <div class="col-span-1">
                 <select
                   v-model="filtros.tourSeleccionado"
@@ -1116,7 +1113,7 @@ onMounted(() => {
                 />
               </div>
             </div>
-            
+
             <!-- Indicador del tour seleccionado -->
             <div v-if="infoTourSeleccionado" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div class="flex items-center justify-between text-sm">

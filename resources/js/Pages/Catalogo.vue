@@ -196,24 +196,21 @@ function abrirEmail() {
                 <button
                     @click="isSidebarOpen = !isSidebarOpen"
                     title="Abrir menú de navegación"
-                    class="block lg:hidden"
+                    class="block xl:hidden"
                     aria-label="Abrir menú de navegación"
                 >
                     <span class="sr-only">Abrir menú</span>
-                    <FontAwesomeIcon :icon="faList" class="w-5 h-5 md:w-7 md:h-7  text-white hover:text-red-300 bg-red-600/80 hover:bg-red-600/90 p-2 rounded-full transform hover:scale-105 transition-transform duration-200" />
+                    <FontAwesomeIcon :icon="faList" class="w-4 h-4 text-white hover:text-red-300 bg-red-600/80 hover:bg-red-600/90 p-2 rounded-full transform hover:scale-105 transition-transform duration-200" />
                 </button>
 
                 <!-- Logo con efecto -->
                 <Link :href="route('inicio')" title="Ir a la página de inicio" class="flex items-center cursor-pointer select-none group">
-                    <img src="/images/logo.png" alt="Logo VASIR" class="w-22 h-7 md:w-32 md:h-10 lg:w-28 lg:h-10 xl:w-44 xl:h-14 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
+                    <img src="/images/logo.png" alt="Logo VASIR" class="w-16 h-5 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                 </Link>
             </div>
 
             <!-- Menú de navegación con desplegable (solo desktop) -->
-            <nav class="hidden lg:flex items-center bg-white/80 backdrop-blur-sm rounded-full lg:py-3 lg:px-5 xl:py-4 xl:px-6 shadow-xl border border-red-100/50">
-              <!-- Indicador decorativo -->
-              <div class="w-1 h-1 rounded-full bg-gradient-to-r from-red-500 to-blue-500 animate-pulse"></div>
-
+            <nav class="hidden xl:flex items-center bg-white/80 backdrop-blur-sm rounded-full lg:py-3 lg:px-5 xl:py-2 xl:px-6 shadow-xl border border-red-100/50">
                 <Link
                     :href="route('inicio')"
                     :class=" [
@@ -223,8 +220,8 @@ function abrirEmail() {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faHome" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Inicio</span>
+                    <FontAwesomeIcon :icon="faHome" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center text-sm">Inicio</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -239,8 +236,8 @@ function abrirEmail() {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faPlane" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Hoteles y Boletos Aéreos</span>
+                    <FontAwesomeIcon :icon="faPlane" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center text-sm">Hoteles y Boletos Aéreos</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -256,11 +253,11 @@ function abrirEmail() {
                                 : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                         ]"
                         type="button">
-                        <FontAwesomeIcon :icon="faMapLocationDot" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                        Tours
+                        <FontAwesomeIcon :icon="faMapLocationDot" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                        <span class="text-sm">Tours</span>
                         <FontAwesomeIcon
                             :icon="faChevronDown"
-                            :class="['w-5 h-4 ml-3 transition-all duration-300 group-hover:scale-110', toursOpen ? 'rotate-180' : '']"
+                            :class="['w-3 h-3 ml-1 transition-all duration-300 group-hover:scale-110', toursOpen ? 'rotate-180' : '']"
                         />
                     </button>
 
@@ -281,8 +278,8 @@ function abrirEmail() {
                                         : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                                 ]"
                             >
-                                <FontAwesomeIcon :icon="faVolcano" class="w-5 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                Tours Nacionales
+                                <FontAwesomeIcon :icon="faVolcano" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                                <span class="text-sm">Tours Nacionales</span>
                             </Link>
                             <Link
                                 :href="route('tours-internacionales')"
@@ -293,8 +290,8 @@ function abrirEmail() {
                                         : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                                 ]"
                             >
-                                <FontAwesomeIcon :icon="faGlobeAmericas" class="w-5 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                Tours Internacionales
+                                <FontAwesomeIcon :icon="faGlobeAmericas" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                                <span class="text-sm">Tours Internacionales</span>
                             </Link>
                         </div>
                     </div>
@@ -312,8 +309,8 @@ function abrirEmail() {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faStore" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Tienda</span>
+                    <FontAwesomeIcon :icon="faStore" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center text-sm">Tienda</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -328,8 +325,8 @@ function abrirEmail() {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faUsers" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Sobre Nosotros</span>
+                    <FontAwesomeIcon :icon="faUsers" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center text-sm">Sobre Nosotros</span>
                 </Link>
 
                 <!-- Separador visual -->
@@ -344,12 +341,9 @@ function abrirEmail() {
                             : 'text-red-700 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-400 hover:text-white hover:shadow-lg'
                     ]"
                 >
-                    <FontAwesomeIcon :icon="faEnvelope" class="w-5 h-4 mr-1 group-hover:scale-110 transition-transform duration-300" />
-                    <span class="text-center">Contactos</span>
+                    <FontAwesomeIcon :icon="faEnvelope" class="w-3 h-3 mr-1 group-hover:scale-110 transition-transform duration-300" />
+                    <span class="text-center text-sm">Contactos</span>
                 </Link>
-
-                <!-- Indicador decorativo final -->
-                <div class="hidden lg:block w-1 h-1 rounded-full bg-gradient-to-r from-blue-500 to-red-500 animate-pulse"></div>
             </nav>
 
             <!-- Contenedor derecho: Auth -->
@@ -357,33 +351,33 @@ function abrirEmail() {
                 <template v-if="!isAuthenticated">
                     <Link
                         :href="route('login')"
-                        class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-sm md:text-base transform hover:scale-105"
+                        class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-xs md:text-base transform hover:scale-105"
                     >
-                        <FontAwesomeIcon :icon="faSignIn" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                        <FontAwesomeIcon :icon="faSignIn" class="w-3 sm:w-5 mr-1 text-xs" />
                         <span class="hidden lg:block text-xs">Iniciar Sesión</span>
-                        <span class="block lg:hidden text-sm">Entrar</span>
+                        <span class="block lg:hidden text-xs">Entrar</span>
                     </Link>
                     <Link
                         :href="route('register')"
-                        class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl text-red-700 hover:text-white font-semibold shadow-lg hover:shadow-xl border-2 border-red-600 bg-white/90 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-sm md:text-base transform hover:scale-105"
+                        class="flex items-center justify-center px-3 py-2 md:px-5 md:py-3 lg:px-2 lg:py-3 xl:px-5 xl:py-3 rounded-xl text-red-700 hover:text-white font-semibold shadow-lg hover:shadow-xl border-2 border-red-600 bg-white/90 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-300 focus:ring-offset-2 text-xs md:text-base transform hover:scale-105"
                     >
-                        <FontAwesomeIcon :icon="faUserPlus" class="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                        <span class="hidden lg:block text-sm">Registrarse</span>
-                        <span class="block lg:hidden text-sm">Nuevo</span>
+                        <FontAwesomeIcon :icon="faUserPlus" class="w-3 sm:w-5 mr-1 text-xs" />
+                        <span class="hidden lg:block text-xs">Registrarse</span>
+                        <span class="block lg:hidden text-xs">Nuevo</span>
                     </Link>
                 </template>
                 <template v-else>
                   <div class="relative user-menu-dropdown">
                     <button @click="toggleUserMenu"
-                      class="flex items-center px-4 py-2 md:px-4 md:py-3 rounded-xl bg-white/80 backdrop-blur-sm hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white transition-all duration-200 shadow-lg border border-red-100/50 group focus:outline-none focus:ring-2 focus:ring-red-300/50"
+                      class="flex items-center px-3 py-2 rounded-xl bg-white/80 backdrop-blur-sm hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white transition-all duration-200 shadow-lg border border-red-100/50 group focus:outline-none focus:ring-2 focus:ring-red-300/50"
                       :title="user?.email"
                     >
-                      <span class=" font-semibold text-md sm:text-base text-gray-700 mr-2 group-hover:text-white transition-colors duration-200">
-                        Perfil
+                      <span class=" font-semibold text-sm text-gray-700 mr-2 group-hover:text-white transition-colors duration-200">
+                        Mi Perfil
                       </span>
                       <FontAwesomeIcon
                         :icon="faUser"
-                        class="w-5 h-5 sm:w-5 sm:h-5 md:w-5 text-red-600 group-hover:text-white transition-colors duration-200 drop-shadow-sm"
+                        class="w-4 h-4 text-red-600 group-hover:text-white transition-colors duration-200 drop-shadow-sm"
                       />
                     </button>
                     <transition
@@ -394,40 +388,39 @@ function abrirEmail() {
                     >
                       <div
                         v-show="userMenuOpen"
-                        class="absolute right-0 mt-3 w-80 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-100/50 z-[9999] overflow-hidden"
+                        class="absolute right-0 mt-3 w-64 bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-red-100/50 z-[9999] overflow-hidden"
                         style="box-shadow: 0 25px 50px -12px rgba(220, 38, 38, 0.25);"
                         :class="userMenuOpen ? 'opacity-100 scale-100' : 'opacity-0 scale-95'"
                       >
                         <!-- Elementos decorativos -->
                         <div class="absolute inset-0 bg-gradient-to-br from-red-100/30 via-transparent to-red-100/30"></div>
                         <!-- Header del perfil profesional -->
-                        <div class="relative px-6 py-5 bg-gradient-to-b from-red-600 via-red-500 to-red-400 text-white">
+                        <div class="relative px-5 py-5 bg-gradient-to-b from-red-600 via-red-500 to-red-400 text-white">
                           <div class="flex items-center space-x-4">
                             <div class="relative">
                               <img
                                 :src="`https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || user?.email)}&background=dc2626&color=fff&size=96&bold=true`"
-                                class="w-14 h-14 rounded-full border-3 border-white shadow-xl"
+                                class="w-10 h-10 rounded-full border-2 border-white shadow-xl"
                                 alt="Avatar del usuario"
                               />
-                              <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-br from-red-400 to-red-600 border-2 border-white rounded-full shadow"></div>
+                              <div class="absolute -bottom-1 -right-1 w-4 h-4 bg-gradient-to-br from-green-400 to-green-600 border-2 border-white rounded-full shadow"></div>
                             </div>
                             <div class="flex-1 min-w-0">
-                              <h3 class="text-base font-bold text-white truncate">
+                              <h3 class="text-sm font-bold text-white truncate">
                                 {{ user?.name || 'Usuario' }}
                               </h3>
-                              <p class="text-sm text-red-100 truncate opacity-90">
+                              <p class="text-xs text-red-100 truncate opacity-90">
                                 {{ user?.email }}
                               </p>
                             </div>
                           </div>
-                          <!-- Sin rol -->
                         </div>
                         <!-- Opciones del menú profesional -->
                         <div class="relative py-3 bg-white/95 backdrop-blur-sm">
                           <Link
                             v-if="isCliente"
                             :href="route('profile.edit')"
-                            class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                            class="flex items-center px-6 py-1 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                             @click="userMenuOpen = false"
                           >
                             <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
@@ -435,13 +428,12 @@ function abrirEmail() {
                             </div>
                             <div class="flex flex-col">
                               <span class="font-semibold">Editar Perfil</span>
-                              <span class="text-xs text-gray-500 mt-0.5">Actualizar información personal</span>
                             </div>
                           </Link>
                           <Link
                             v-if="isAdminOrEmpleado"
                             :href="route('dashboard')"
-                            class="flex items-center px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                            class="flex items-center px-6 py-1 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                             @click="userMenuOpen = false"
                           >
                             <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-red-100 to-red-50 text-red-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:scale-110 transition-all duration-200 shadow-sm">
@@ -449,18 +441,18 @@ function abrirEmail() {
                             </div>
                             <div class="flex flex-col">
                               <span class="font-semibold">Dashboard administrativo</span>
-                              <span class="text-xs text-gray-500 mt-0.5">Serás redirigido al dashboard administrativo.</span>
                             </div>
                           </Link>
 
-                          <div class="relative my-3 mx-6">
+                          <div class="relative my-3 mx-6 pb-1">
                             <div class="absolute inset-0 flex items-center">
                               <div class="w-full border-t border-red-100"></div>
                             </div>
                           </div>
+
                           <button
                             v-if="isCliente"
-                            class="flex items-center w-full px-6 py-3.5 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
+                            class="flex items-center w-full px-6 py-2 text-sm font-medium text-gray-700 hover:bg-red-50 hover:text-red-700 transition-all duration-200 group hover:scale-[1.02] transform"
                             @click="logout"
                           >
                             <div class="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-gray-100 to-gray-50 text-gray-600 mr-4 group-hover:from-red-200 group-hover:to-red-100 group-hover:text-red-600 group-hover:scale-110 transition-all duration-200 shadow-sm">
@@ -468,7 +460,6 @@ function abrirEmail() {
                             </div>
                             <div class="flex flex-col">
                               <span class="font-semibold">Cerrar Sesión</span>
-                              <span class="text-xs text-gray-500 mt-0.5">Salir de forma segura</span>
                             </div>
                           </button>
                         </div>
@@ -490,7 +481,7 @@ function abrirEmail() {
       <!-- Overlay con glassmorphism mejorado -->
       <div
         v-if="isSidebarOpen"
-        class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm lg:hidden"
+        class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm xl:hidden"
         @click="isSidebarOpen = false"
         @touchmove.prevent
         @scroll.prevent
@@ -504,7 +495,7 @@ function abrirEmail() {
     >
       <aside
         v-if="isSidebarOpen"
-        class="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white/95 via-blue-50/90 to-red-50/95 backdrop-blur-xl shadow-2xl z-[9999] flex flex-col lg:hidden border-r border-white/30 overflow-hidden"
+        class="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white/95 via-blue-50/90 to-red-50/95 backdrop-blur-xl shadow-2xl z-[9999] flex flex-col xl:hidden border-r border-white/30 overflow-hidden"
         @touchmove.stop
       >
         <!-- Elementos decorativos de fondo -->
@@ -514,7 +505,7 @@ function abrirEmail() {
         <!-- Header del sidebar -->
         <div class="relative flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-red-100/50 bg-white/80 backdrop-blur-sm">
             <Link :href="route('inicio')" class="flex items-center group" @click="isSidebarOpen = false">
-              <img src="/images/logo.png" class="w-20 h-7 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
+              <img src="/images/logo.png" class="w-16 h-5 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
             </Link>
               <button
                 @click="isSidebarOpen = false"

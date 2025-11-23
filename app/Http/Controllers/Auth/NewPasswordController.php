@@ -34,7 +34,7 @@ class NewPasswordController extends Controller
      *
      * @throws \Illuminate\Validation\ValidationException
      */
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request): RedirectResponse|Response
     {
         $request->validate([
             'token' => 'required',
@@ -77,11 +77,15 @@ class NewPasswordController extends Controller
             }
         );
 
-        // If the password was successfully reset, we will redirect the user back to
-        // the application's home authenticated view. If there is an error we can
-        // redirect them back to where they came from with their error message.
+        // If the password was successfully reset, we will show a success message
+        // and inform the user that a confirmation email has been sent.
         if ($status == Password::PASSWORD_RESET) {
-            return redirect()->route('login')->with('status', __($status));
+            return Inertia::render('Auth/ResetPassword', [
+                'email' => $request->email,
+                'token' => $request->token,
+                'success' => true,
+                'message' => 'Tu contraseña ha sido restablecida exitosamente. Hemos enviado un correo de confirmación a tu email.'
+            ]);
         }
 
         throw ValidationException::withMessages([

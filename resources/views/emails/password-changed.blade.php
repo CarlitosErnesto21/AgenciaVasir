@@ -79,7 +79,7 @@
         }
         .login-btn {
             display: inline-block;
-            background-color: #28a745;
+            background-color: #002fff;
             color: white;
             padding: 15px 35px;
             text-decoration: none;
@@ -89,7 +89,7 @@
             font-size: 16px;
         }
         .login-btn:hover {
-            background-color: #218838;
+            background-color: #0225c0;
         }
         .security-section {
             background-color: #fff3cd;
@@ -134,12 +134,12 @@
             </div>
             <p>Tu Agencia de Viajes de Confianza</p>
             <div class="success-badge">
-                ✅ CONTRASEÑA ACTUALIZADA
+                CONTRASEÑA ACTUALIZADA
             </div>
         </div>
 
         <div class="message-section">
-            <h2>🎉 ¡Contraseña Actualizada Exitosamente!</h2>
+            <h2>¡Contraseña Actualizada Exitosamente!</h2>
             <p>
                 Hola <strong>{{ $user->name }}</strong>, tu contraseña ha sido cambiada correctamente
                 para la cuenta <strong>{{ $user->email }}</strong>.
@@ -147,7 +147,7 @@
         </div>
 
         <div class="success-info">
-            <h3 style="color: #155724; margin-top: 0;">✅ Cambio Completado</h3>
+            <h3 style="color: #155724; margin-top: 0;">Cambio Completado</h3>
             <p style="color: #155724; margin-bottom: 0;">
                 Tu nueva contraseña ya está activa y puedes usarla para iniciar sesión.
                 Todas las sesiones anteriores han sido cerradas por seguridad.
@@ -155,37 +155,37 @@
         </div>
 
         <div class="change-details">
-            <h3>📊 Detalles del Cambio</h3>
+            <h3>Detalles del Cambio</h3>
             <div class="info-item">
-                <span class="info-label">👤 Usuario:</span>
+                <span class="info-label">Nombre Completo:</span>
                 <span class="info-value">{{ $user->name }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">📧 Email:</span>
+                <span class="info-label">Correo Electrónico:</span>
                 <span class="info-value">{{ $user->email }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🕐 Fecha y Hora:</span>
+                <span class="info-label">Fecha y Hora:</span>
                 <span class="info-value">{{ $changeDetails['timestamp'] ?? now()->format('d/m/Y H:i:s') }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">🌐 Dirección IP:</span>
+                <span class="info-label">Dirección IP:</span>
                 <span class="info-value">{{ $changeDetails['ip'] ?? 'No disponible' }}</span>
             </div>
             <div class="info-item">
-                <span class="info-label">💻 Navegador:</span>
+                <span class="info-label">Navegador:</span>
                 <span class="info-value">{{ $changeDetails['user_agent'] ?? 'No disponible' }}</span>
             </div>
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="{{ $loginUrl }}" class="login-btn">
-                🔑 Iniciar Sesión Ahora
+            <a href="{{ $loginUrl }}" class="login-btn" style="color: white !important;">
+                Iniciar Sesión Ahora
             </a>
         </div>
 
         <div class="security-section">
-            <div class="security-title">🛡️ Recomendaciones de Seguridad</div>
+            <div class="security-title">Recomendaciones de Seguridad</div>
             <div class="security-text">
                 <p><strong>Para mantener tu cuenta segura:</strong></p>
                 <ul>
@@ -198,21 +198,31 @@
         </div>
 
         <div class="info-section">
-            <h3>🚨 ¿No fuiste tú?</h3>
+            <h3>¿No fuiste tú?</h3>
             <p>
                 Si NO cambiaste tu contraseña, alguien más puede haber accedido a tu cuenta.
                 <strong>Contacta inmediatamente a nuestro soporte:</strong>
             </p>
             <p style="font-size: 14px; color: #666;">
-                📞 <strong>Teléfonos:</strong> <a href="tel:+50379858777" style="color: #ff0000;">+503 7985 8777</a> |
-                <a href="tel:+50323279199" style="color: #ff0000;">+503 2327 9199</a><br>
-                📧 <strong>Email:</strong> <a href="mailto:{{ $supportEmail }}" style="color: #ff0000;">{{ $supportEmail }}</a>
+                <strong>Teléfono:</strong>
+                @if(str_contains($adminData['phone'], 'no disponible'))
+                    <span style="color: #999; font-style: italic;">{{ $adminData['phone'] }}</span>
+                @else
+                    <a href="tel:{{ str_replace([' ', '-', '(', ')'], '', $adminData['phone']) }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a>
+                @endif<br>
+                <strong>Correo Electrónico:</strong>
+                @if(str_contains($adminData['email'], 'no disponible'))
+                    <span style="color: #999; font-style: italic;">{{ $adminData['email'] }}</span>
+                @else
+                    <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a>
+                @endif<br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
         </div>
 
         <!-- Sección de Redes Sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 Síguenos en nuestras redes</h3>
+            <h3>Síguenos en nuestras redes</h3>
             <table align="center" style="margin: 20px auto; border-collapse: collapse;">
                 <tr>
                     <td style="padding: 6px; text-align: center;">
@@ -234,16 +244,26 @@
                         </a>
                     </td>
                     <td style="padding: 6px; text-align: center;">
-                        <a href="https://wa.me/50379858777" target="_blank" rel="noopener noreferrer">
+                        @if(str_contains($adminData['phone'], 'no disponible'))
                             <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
-                                 alt="WhatsApp" style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="WhatsApp no disponible" style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @else
+                            <a href="https://wa.me/{{ str_replace([' ', '-', '(', ')', '+'], '', $adminData['phone']) }}" target="_blank" rel="noopener noreferrer">
+                                <img src="{{ $message->embed(public_path('images/whatsapp-icon.png')) }}"
+                                     alt="WhatsApp" style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @endif
                     </td>
                     <td style="padding: 6px; text-align: center;">
-                        <a href="mailto:{{ $supportEmail }}" target="_blank" rel="noopener noreferrer">
+                        @if(str_contains($adminData['email'], 'no disponible'))
                             <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
-                                 alt="Gmail" style="width: 35px; height: 35px; border: none;">
-                        </a>
+                                 alt="Gmail no disponible" style="width: 35px; height: 35px; border: none; opacity: 0.5;">
+                        @else
+                            <a href="mailto:{{ $adminData['email'] }}" target="_blank" rel="noopener noreferrer">
+                                <img src="{{ $message->embed(public_path('images/gmail-icon.png')) }}"
+                                     alt="Gmail" style="width: 35px; height: 35px; border: none;">
+                            </a>
+                        @endif
                     </td>
                 </tr>
             </table>

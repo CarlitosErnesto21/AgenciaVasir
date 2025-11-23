@@ -8,6 +8,8 @@ import {
   faCheck, faXmark, faCalendarDays, faEye,
   faExclamationTriangle, faInfoCircle, faSpinner, faTimes
 } from '@fortawesome/free-solid-svg-icons';
+import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
+import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
 
 // Props
 const props = defineProps({
@@ -156,16 +158,6 @@ const getColorEstadoTour = (estado) => {
 
 // Función para formatear fecha
 const formatearFecha = (fecha) => {
-  if (!fecha) return 'N/A';
-  return new Date(fecha).toLocaleDateString('es-ES', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric'
-  });
-};
-
-// Función para formatear fecha 
-const formatearFechaHora = (fecha) => {
   if (!fecha) return 'N/A';
   return new Date(fecha).toLocaleDateString('es-ES', {
     day: '2-digit',
@@ -423,19 +415,55 @@ const cerrarModalReprogramar = () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
           <div class="break-words">
             <span class="font-medium text-gray-700">Nombre:</span>
-            <span class="ml-2">{{ (reserva.cliente?.user?.name) || (reserva.cliente?.nombres) || 'N/A' }}</span>
-          </div>
-          <div class="break-words">
-            <span class="font-medium text-gray-700">Email:</span>
-            <span class="ml-2">{{ (reserva.cliente?.user?.email) || (reserva.cliente?.correo) || 'N/A' }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Teléfono:</span>
-            <span class="ml-2">{{ reserva.cliente?.telefono || 'Sin teléfono registrado' }}</span>
+            <span class="ml-2">{{ (reserva.cliente?.user?.name) || (reserva.cliente?.nombres) || 'Problema al obtener nombre o no existe' }}</span>
           </div>
           <div>
             <span class="font-medium text-gray-700">Documento:</span>
-            <span class="ml-2">{{ reserva.cliente?.numero_identificacion || 'Sin documento registrado' }}</span>
+            <span class="ml-2">{{ reserva.cliente?.numero_identificacion || 'Problema al obtener documento o no existe' }}</span>
+          </div>
+          <div class="break-words">
+            <span class="font-medium text-gray-700">Email:</span>
+            <span class="ml-2">
+              <template v-if="(reserva.cliente?.user?.email) || (reserva.cliente?.correo)">
+                <div class="flex flex-col">
+                  <a
+                    :href="`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(reserva.cliente?.user?.email || reserva.cliente?.correo)}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-blue-600 hover:underline flex items-center gap-1"
+                  >
+                    <FontAwesomeIcon :icon="faEnvelope" class="h-4 w-4 mr-1" />
+                    {{ reserva.cliente?.user?.email || reserva.cliente?.correo }}
+                  </a>
+                  <span class="text-xs text-blue-700 mt-1">Toca para escribir por Gmail</span>
+                </div>
+              </template>
+              <template v-else>
+                Problema al obtener email o no existe
+              </template>
+            </span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Teléfono:</span>
+            <span class="ml-2">
+              <template v-if="reserva.cliente?.telefono">
+                <div class="flex flex-col">
+                  <a
+                    :href="`https://wa.me/${reserva.cliente.telefono.replace(/[^\d]/g, '')}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="text-green-600 hover:underline flex items-center gap-1"
+                  >
+                    <FontAwesomeIcon :icon="faWhatsapp" class="h-4 w-4 mr-1" />
+                    {{ reserva.cliente.telefono }}
+                  </a>
+                  <span class="text-xs text-green-700 mt-1">Toca para contactar por WhatsApp</span>
+                </div>
+              </template>
+              <template v-else>
+                Problema al obtener teléfono o no existe
+              </template>
+            </span>
           </div>
         </div>
       </div>
@@ -449,20 +477,16 @@ const cerrarModalReprogramar = () => {
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
           <div class="break-words">
             <span class="font-medium text-gray-700">Servicio:</span>
-            <span class="ml-2">{{ reserva.entidad_nombre || 'N/A' }}</span>
+            <span class="ml-2">{{ reserva.entidad_nombre || 'Problema al obtener servicio o no existe' }}</span>
           </div>
           <div>
-            <span class="font-medium text-gray-700">Tipo:</span>
-            <span class="ml-2 capitalize">{{ reserva.tipo || 'N/A' }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Fecha:</span>
-            <span class="ml-2">{{ formatearFecha(reserva.fecha_reserva) }}</span>
+            <span class="font-medium text-gray-700">Reservado:</span>
+            <span class="ml-2">{{ formatearFecha(reserva.fecha_reserva) || 'Problema al obtener fecha o no existe' }}</span>
           </div>
           <div>
             <span class="font-medium text-gray-700">Estado:</span>
             <span :class="getColorEstadoReserva(reserva.estado)" class="ml-2 px-2 py-1 rounded-full text-xs font-medium">
-              {{ estadosReservas.find(e => e.value === reserva.estado)?.label || reserva.estado }}
+              {{ estadosReservas.find(e => e.value === reserva.estado)?.label || reserva.estado || 'Problema al obtener estado o no existe' }}
             </span>
           </div>
         </div>
