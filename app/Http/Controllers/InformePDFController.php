@@ -34,13 +34,14 @@ class InformePDFController extends Controller
             $fechaInicio = Carbon::createFromFormat('Y-m', $mes)->startOfMonth();
             $fechaFin = Carbon::createFromFormat('Y-m', $mes)->endOfMonth();
 
-            // Obtener los detalles de reservas de tours para el mes especificado
+            // Obtener los detalles de reservas de tours FINALIZADOS para el mes especificado
             $detallesReservas = DetalleReservaTour::with(['tour', 'reserva'])
                 ->whereHas('tour', function($query) use ($fechaInicio, $fechaFin) {
-                    $query->whereBetween('fecha_salida', [$fechaInicio, $fechaFin]);
+                    $query->whereBetween('fecha_salida', [$fechaInicio, $fechaFin])
+                          ->where('estado', 'FINALIZADO'); // Solo tours finalizados
                 })
                 ->whereHas('reserva', function($query) {
-                    $query->where('estado', 'CONFIRMADA');
+                    $query->where('estado', 'FINALIZADA'); // Solo reservas finalizadas de tours finalizados
                 })
                 ->get();
 
@@ -60,30 +61,10 @@ class InformePDFController extends Controller
                 ];
             }
 
-            // Si no hay reservas confirmadas, verificar si hay tours disponibles
+            // Si no hay tours finalizados con reservas, agregar a meses sin datos
             if (empty($tours)) {
-                $toursDisponibles = Tour::whereBetween('fecha_salida', [$fechaInicio, $fechaFin])
-                    ->where('estado', 'DISPONIBLE')
-                    ->get();
-
-                // Si tampoco hay tours disponibles, agregar a meses sin datos
-                if ($toursDisponibles->isEmpty()) {
-                    $mesesSinDatos[] = Carbon::createFromFormat('Y-m', $mes)->translatedFormat('F Y');
-                    continue;
-                }
-
-                // Si hay tours disponibles pero sin ventas, mostrarlos con ceros
-                foreach ($toursDisponibles as $tour) {
-                    $tours[] = [
-                        'fecha' => Carbon::parse($tour->fecha_salida)->format('d/m/Y'),
-                        'nombre' => $tour->nombre,
-                        'cupos_vendidos' => 0,
-                        'menores' => 0,
-                        'mayores' => 0,
-                        'precio' => $tour->precio,
-                        'subtotal' => 0,
-                    ];
-                }
+                $mesesSinDatos[] = Carbon::createFromFormat('Y-m', $mes)->translatedFormat('F Y');
+                continue;
             }
 
             // Solo agregar el mes si tiene datos
@@ -118,7 +99,7 @@ class InformePDFController extends Controller
         $fecha_hora = Carbon::now('America/El_Salvador')->format('Ymd_His');
 
         $data = [
-            'titulo' => 'Informe de Cupos Vendidos Mensuales por Tour',
+            'titulo' => 'Informe de Cupos Vendidos',
             'mesesData' => $mesesData,
             'mesesSinDatos' => $mesesSinDatos,
             'fecha_emision' => $fecha_emision,

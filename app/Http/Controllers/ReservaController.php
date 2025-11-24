@@ -6,6 +6,7 @@ use App\Models\Reserva;
 use App\Models\Cliente;
 use App\Models\DetalleReservaTour;
 use App\Models\Tour;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
@@ -14,6 +15,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\ReservationConfirmedMail;
 use App\Mail\ReservationRejectedMail;
+use App\Mail\NewReservationClientMail;
+use App\Mail\NewReservationStaffMail;
 use App\Mail\ReservationRescheduledMail;
 use App\Mail\ReservationCompletedMail;
 use Carbon\Carbon;
@@ -330,7 +333,7 @@ class ReservaController extends Controller
 
             // 5. Crear la reserva (sin empleado asignado inicialmente)
             $reserva = Reserva::create([
-                'fecha' => $validated['fecha_entrada'],
+                'fecha' => Carbon::now(), // Fecha y hora actual cuando se hace la reserva
                 'estado' => Reserva::PENDIENTE,
                 'mayores_edad' => $validated['cantidad_personas'],
                 'menores_edad' => 0, // Para hoteles no manejamos menores por separado
@@ -603,6 +606,60 @@ class ReservaController extends Controller
 
             // Debug log
             Log::info("Después de reserva - Tour {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservadosTotal}, disponibles={$cuposDisponiblesActualizados}");
+
+            // Enviar correos de notificación
+            try {
+                // Preparar datos para los correos
+                $reservationData = [
+                    'id' => $reserva->id,
+                    'estado' => $reserva->estado,
+                    'mayores_edad' => $reserva->mayores_edad,
+                    'menores_edad' => $reserva->menores_edad,
+                    'precio_total' => $detalleReserva->precio_total,
+                    'created_at' => $reserva->created_at
+                ];
+
+                $clientData = [
+                    'nombres' => $cliente->nombres,
+                    'apellidos' => $cliente->apellidos,
+                    'email' => $user->email,
+                    'telefono' => $cliente->telefono,
+                    'tipo_documento' => $cliente->tipo_documento,
+                    'numero_identificacion' => $cliente->numero_identificacion,
+                    'fecha_nacimiento' => $cliente->fecha_nacimiento,
+                    'genero' => $cliente->genero,
+                    'direccion' => $cliente->direccion
+                ];
+
+                $tourData = [
+                    'nombre' => $tour->nombre,
+                    'categoria' => $tour->categoria,
+                    'estado' => $tour->estado,
+                    'fecha_salida' => $tour->fecha_salida,
+                    'fecha_regreso' => $tour->fecha_regreso,
+                    'cupo_min' => $tour->cupo_min,
+                    'cupo_max' => $tour->cupo_max,
+                    'precio_adulto' => $tour->precio_adulto,
+                    'precio_menor' => $tour->precio_menor,
+                    'cupos_disponibles' => $cuposDisponiblesActualizados
+                ];
+
+                // 1. Enviar correo al cliente
+                Mail::to($user->email)->send(new NewReservationClientMail($reservationData, $clientData, $tourData));
+                Log::info("Correo de nueva reserva enviado al cliente: {$user->email}");
+
+                // 2. Enviar correos a empleados y administradores
+                $staffUsers = User::role(['Empleado', 'Administrador'])->get();
+
+                foreach ($staffUsers as $staffUser) {
+                    Mail::to($staffUser->email)->send(new NewReservationStaffMail($reservationData, $clientData, $tourData, $staffUser));
+                    Log::info("Correo de notificación de nueva reserva enviado a staff: {$staffUser->email}");
+                }
+
+            } catch (\Exception $emailException) {
+                // Los correos fallan pero la reserva ya se creó exitosamente
+                Log::error("Error enviando correos de nueva reserva: " . $emailException->getMessage());
+            }
 
             return response()->json([
                 'success' => true,
@@ -908,12 +965,23 @@ class ReservaController extends Controller
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
 
-            // Obtener la fecha de salida del tour si existe
+            // Obtener las fechas del tour si existe
             $fechaSalida = null;
+            $fechaRegreso = null;
             if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
                 $primerDetalle = $reserva->detallesTours->first();
                 if ($primerDetalle && $primerDetalle->tour) {
                     $fechaSalida = $primerDetalle->tour->fecha_salida;
+                    $fechaRegreso = $primerDetalle->tour->fecha_regreso;
+                }
+            }
+
+            // Obtener categoría del tour
+            $categoria = 'N/A';
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $categoria = $primerDetalle->tour->categoria;
                 }
             }
 
@@ -922,7 +990,8 @@ class ReservaController extends Controller
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_salida' => $fechaSalida,
-                'tipo' => $this->obtenerTipoReserva($reserva),
+                'fecha_regreso' => $fechaRegreso,
+                'categoria' => $categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total
@@ -1019,16 +1088,17 @@ class ReservaController extends Controller
                 ], 400);
             }
 
-            // Ser más flexible con los estados
+            // Ser más flexible con los estados - Incluir REPROGRAMADA para permitir cancelación
             $estadosPermitidos = [
                 'PENDIENTE', 'Pendiente', 'pendiente',
-                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
+                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado',
+                'REPROGRAMADA', 'Reprogramada', 'reprogramada'
             ];
 
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
-                    'message' => "No se puede rechazar una reserva en estado: {$reserva->estado}"
+                    'message' => "No se puede rechazar una reserva en estado: {$reserva->estado}. Los estados permitidos son: PENDIENTE, CONFIRMADA, REPROGRAMADA"
                 ], 400);
             }
 
@@ -1094,12 +1164,21 @@ class ReservaController extends Controller
                 }
             }
 
+            // Obtener categoría del tour
+            $categoria = 'N/A';
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $categoria = $primerDetalle->tour->categoria;
+                }
+            }
+
             // Preparar datos para el email de rechazo
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_salida' => $fechaSalida,
-                'tipo' => $this->obtenerTipoReserva($reserva),
+                'categoria' => $categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total
@@ -1224,12 +1303,21 @@ class ReservaController extends Controller
                 }
             }
 
+            // Obtener categoría del tour
+            $categoria = 'N/A';
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $categoria = $primerDetalle->tour->categoria;
+                }
+            }
+
             // Preparar datos para el email de finalización
             $reservationData = [
                 'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_regreso' => $fechaRegreso,
-                'tipo' => $this->obtenerTipoReserva($reserva),
+                'categoria' => $categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total
@@ -1309,12 +1397,21 @@ class ReservaController extends Controller
                             }
                         }
 
+                        // Obtener categoría del tour
+                        $categoria = 'N/A';
+                        if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                            $primerDetalle = $reserva->detallesTours->first();
+                            if ($primerDetalle && $primerDetalle->tour) {
+                                $categoria = $primerDetalle->tour->categoria;
+                            }
+                        }
+
                         // Enviar email de finalización
                         $reservationData = [
                             'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
                             'fecha_reserva' => $reserva->fecha,
                             'fecha_regreso' => $fechaRegreso,
-                            'tipo' => $this->obtenerTipoReserva($reserva),
+                            'categoria' => $categoria,
                             'mayores_edad' => $reserva->mayores_edad,
                             'menores_edad' => $reserva->menores_edad,
                             'total' => $reserva->total

@@ -339,10 +339,10 @@ class TourController extends Controller
         try {
             // Si es reprogramación, actualizar las fechas también
             if ($validated['estado'] === Tour::REPROGRAMADA) {
-                // Validar cupo mínimo antes de reprogramar el tour
+                // Validar cupo mínimo antes de reprogramar el tour - incluir CONFIRMADAS y REPROGRAMADAS
                 $personasConfirmadas = $tour->detalleReservas()
                     ->whereHas('reserva', function($query) {
-                        $query->where('estado', 'CONFIRMADA');
+                        $query->whereIn('estado', ['CONFIRMADA', 'REPROGRAMADA']);
                     })
                     ->get()
                     ->sum(function($detalle) {
@@ -352,7 +352,7 @@ class TourController extends Controller
                 if ($personasConfirmadas < $tour->cupo_min) {
                     return response()->json([
                         'success' => false,
-                        'message' => "No se puede reprogramar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                        'message' => "No se puede reprogramar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas (incluye reservas confirmadas y reprogramadas)."
                     ], 422);
                 }
 
@@ -386,20 +386,23 @@ class TourController extends Controller
 
                 $mensaje = "Tour reprogramado exitosamente. {$reservasActualizadas} reserva(s) actualizada(s) automáticamente";
             } elseif ($validated['estado'] === Tour::EN_CURSO) {
-                // Validar cupo mínimo antes de iniciar el tour
+                // Validar cupo mínimo antes de iniciar el tour - incluir CONFIRMADAS y REPROGRAMADAS
                 $personasConfirmadas = $tour->detalleReservas()
                     ->whereHas('reserva', function($query) {
-                        $query->where('estado', 'CONFIRMADA');
+                        $query->whereIn('estado', ['CONFIRMADA', 'REPROGRAMADA']);
                     })
                     ->get()
                     ->sum(function($detalle) {
                         return ($detalle->reserva->mayores_edad ?? 0) + ($detalle->reserva->menores_edad ?? 0);
                     });
 
+                // Debug información
+                Log::info("Validando cupo para iniciar tour {$tour->id}: personas={$personasConfirmadas}, cupo_min={$tour->cupo_min}");
+
                 if ($personasConfirmadas < $tour->cupo_min) {
                     return response()->json([
                         'success' => false,
-                        'message' => "No se puede iniciar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                        'message' => "No se puede iniciar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas (incluye reservas confirmadas y reprogramadas)."
                     ], 422);
                 }
 
@@ -417,7 +420,7 @@ class TourController extends Controller
                 if ($tour->estado !== Tour::EN_CURSO) {
                     $personasConfirmadas = $tour->detalleReservas()
                         ->whereHas('reserva', function($query) {
-                            $query->where('estado', 'CONFIRMADA');
+                            $query->whereIn('estado', ['CONFIRMADA', 'REPROGRAMADA']);
                         })
                         ->get()
                         ->sum(function($detalle) {
@@ -427,7 +430,7 @@ class TourController extends Controller
                     if ($personasConfirmadas < $tour->cupo_min) {
                         return response()->json([
                             'success' => false,
-                            'message' => "No se puede finalizar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                            'message' => "No se puede finalizar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas (incluye reservas confirmadas y reprogramadas)."
                         ], 422);
                     }
                 }
@@ -659,10 +662,10 @@ class TourController extends Controller
 
         foreach ($reservas as $reserva) {
             try {
-                // Actualizar la reserva a estado REPROGRAMADA y nueva fecha
+                // Actualizar solo el estado a REPROGRAMADA
+                // NUNCA modificar la fecha - esa es cuándo se hizo la reserva originalmente
                 $reserva->update([
-                    'estado' => Reserva::REPROGRAMADA,
-                    'fecha' => $nuevaFechaSalida
+                    'estado' => Reserva::REPROGRAMADA
                 ]);
 
                 $contadorActualizadas++;
@@ -705,7 +708,9 @@ class TourController extends Controller
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_salida_anterior' => $fechaAnteriorSalida,
                 'fecha_salida_nueva' => $nuevaFechaSalida,
-                'tipo' => 'Tour',
+                'fecha_regreso_anterior' => $fechaAnteriorRegreso,
+                'fecha_regreso_nueva' => $tour->fecha_regreso,
+                'categoria' => $tour->categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total
@@ -863,7 +868,7 @@ class TourController extends Controller
                 'entidad_nombre' => $tour->nombre,
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_salida' => $tour->fecha_salida,
-                'tipo' => 'Tour',
+                'categoria' => $tour->categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total,
@@ -900,7 +905,7 @@ class TourController extends Controller
             $reservationData = [
                 'entidad_nombre' => $tour->nombre,
                 'fecha_reserva' => $reserva->fecha,
-                'tipo' => 'Tour',
+                'categoria' => $tour->categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total,
@@ -937,7 +942,7 @@ class TourController extends Controller
                 'entidad_nombre' => $tour->nombre,
                 'fecha_reserva' => $reserva->fecha,
                 'fecha_salida' => $tour->fecha_salida,
-                'tipo' => 'Tour',
+                'categoria' => $tour->categoria,
                 'mayores_edad' => $reserva->mayores_edad,
                 'menores_edad' => $reserva->menores_edad,
                 'total' => $reserva->total,

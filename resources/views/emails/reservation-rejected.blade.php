@@ -170,8 +170,8 @@
             </div>
 
             <div class="detail-row">
-                <span class="detail-label">Tipo:</span>
-                <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['tipo'] ?? 'N/A' }}</span>
+                <span class="detail-label">Categoría:</span>
+                <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['categoria'] ?? 'N/A' }}</span>
             </div>
 
             <div class="detail-row">

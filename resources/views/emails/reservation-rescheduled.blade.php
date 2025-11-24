@@ -190,8 +190,8 @@
             </div>
 
             <div class="detail-row">
-                <span class="detail-label">Tipo:</span>
-                <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['tipo'] ?? 'N/A' }}</span>
+                <span class="detail-label">Categoría:</span>
+                <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['categoria'] ?? 'N/A' }}</span>
             </div>
 
             <div class="detail-row">
@@ -208,12 +208,15 @@
             </div>
         </div>
 
-        <!-- Cambio de fecha -->
+        <!-- Cambio de fechas -->
         <div class="date-change-section">
-            <h3 style="margin-top: 0; color: #856404;">📅 Cambio de Fecha de Salida</h3>
+            <h3 style="margin-top: 0; color: #856404;">📅 Cambio de Fechas del Tour</h3>
+
+            <!-- Fecha de Salida -->
+            <h4 style="color: #856404; margin-bottom: 10px;">🚌 Fecha de Salida</h4>
             <div class="date-comparison">
                 <div class="date-box old-date">
-                    <h4 style="margin: 0; font-size: 14px;">FECHA ANTERIOR</h4>
+                    <h5 style="margin: 0; font-size: 14px;">FECHA ANTERIOR</h5>
                     <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
                         @if(isset($reservation['fecha_salida_anterior']) && $reservation['fecha_salida_anterior'])
                             {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida_anterior'])) }}
@@ -222,7 +225,7 @@
                 </div>
                 <div class="arrow">→</div>
                 <div class="date-box new-date">
-                    <h4 style="margin: 0; font-size: 14px;">NUEVA FECHA</h4>
+                    <h5 style="margin: 0; font-size: 14px;">NUEVA FECHA</h5>
                     <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
                         @if(isset($reservation['fecha_salida_nueva']) && $reservation['fecha_salida_nueva'])
                             {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida_nueva'])) }}
@@ -230,6 +233,26 @@
                     </div>
                 </div>
             </div>
+
+            @if(isset($reservation['fecha_regreso_anterior']) && $reservation['fecha_regreso_anterior'] && isset($reservation['fecha_regreso_nueva']) && $reservation['fecha_regreso_nueva'])
+            <!-- Fecha de Regreso -->
+            <h4 style="color: #856404; margin: 20px 0 10px 0;">🏠 Fecha de Regreso</h4>
+            <div class="date-comparison">
+                <div class="date-box old-date">
+                    <h5 style="margin: 0; font-size: 14px;">FECHA ANTERIOR</h5>
+                    <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_regreso_anterior'])) }}
+                    </div>
+                </div>
+                <div class="arrow">→</div>
+                <div class="date-box new-date">
+                    <h5 style="margin: 0; font-size: 14px;">NUEVA FECHA</h5>
+                    <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
+                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_regreso_nueva'])) }}
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- Motivo de la reprogramación -->

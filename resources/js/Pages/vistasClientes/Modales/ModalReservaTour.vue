@@ -49,6 +49,9 @@ const reservaForm = ref({
   cupos_menores: 0
 })
 
+// Estado para el loading del botón
+const isConfirmingReserva = ref(false)
+
 // Estado para controlar si hay datos precargados del cliente
 const tieneClienteExistente = ref(false)
 
@@ -175,6 +178,9 @@ const manejarToast = (toastConfig) => {
 
 // Función para confirmar la reserva
 const confirmarReserva = async () => {
+  // Evitar múltiples envíos si ya se está procesando
+  if (isConfirmingReserva.value) return
+
   // Validar formulario usando el componente hijo
   if (formularioDatosRef.value?.validateForm) {
     if (!formularioDatosRef.value.validateForm()) {
@@ -191,6 +197,9 @@ const confirmarReserva = async () => {
     })
     return
   }
+
+  // Activar loading
+  isConfirmingReserva.value = true
 
   try {
     const response = await axios.post('/reservas/tour', {
@@ -274,6 +283,9 @@ const confirmarReserva = async () => {
         life: 4000
       })
     }
+  } finally {
+    // Desactivar loading siempre al final
+    isConfirmingReserva.value = false
   }
 }
 
@@ -350,10 +362,19 @@ watch(() => props.visible, async (newValue) => {
         <button
           @click="confirmarReserva"
           type="button"
+          :disabled="isConfirmingReserva"
           class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <FontAwesomeIcon :icon="faCheck" class="h-5 text-white" />
-          Confirmar
+          <FontAwesomeIcon 
+            v-if="!isConfirmingReserva"
+            :icon="faCheck" 
+            class="h-5 text-white" 
+          />
+          <div 
+            v-else
+            class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
+          ></div>
+          {{ isConfirmingReserva ? 'Procesando...' : 'Confirmar' }}
         </button>
         <button
           @click="cerrarModal"

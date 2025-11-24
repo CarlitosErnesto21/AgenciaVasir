@@ -222,13 +222,6 @@
     <div class="main-header">
         <div class="logo-header">
             <img src="{{ public_path('images/logo.png') }}" alt="Logo VASIR" class="logo-img">
-            <div class="business-details">
-                <div class="business-info">
-                    Dirección: Chalatenango, El Salvador<br>
-                    Teléfono: +503 7985 8777<br>
-                    Correo: {{ config('mail.from.address', 'vasirtours19@gmail.com') }}
-                </div>
-            </div>
         </div>
         <div class="fecha">
             Fecha de emisión: {{ $fecha_emision }}
@@ -238,7 +231,7 @@
     <div class="header">
         <div class="titulo">{{ $titulo }}</div>
         <div class="descripcion">
-            Informe mensual de cupos vendidos, segmentados por menores y mayores de edad, para cada tour disponible.
+            Informe mensual de cupos vendidos de tours finalizados, segmentados por menores y mayores de edad.
         </div>
     </div>
     <!-- Data Tables -->

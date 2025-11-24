@@ -110,8 +110,9 @@ const estadosTours = [
 const cumpleCupoMinimo = computed(() => {
   if (!tourActual.value) return false
 
-  const personasConfirmadas = reservasFiltradas.value
-    .filter(reserva => reserva.estado === 'CONFIRMADA')
+  // Contar personas de reservas CONFIRMADAS y REPROGRAMADAS (ambas son válidas)
+  const personasActivas = reservasFiltradas.value
+    .filter(reserva => ['CONFIRMADA', 'REPROGRAMADA'].includes(reserva.estado))
     .reduce((total, reserva) => {
       const adultos = reserva.mayores_edad || 0
       const menores = reserva.menores_edad || 0
@@ -120,7 +121,7 @@ const cumpleCupoMinimo = computed(() => {
 
   const cupoMinimo = tourActual.value.cupo_min || 0
 
-  return personasConfirmadas >= cupoMinimo
+  return personasActivas >= cupoMinimo
 })
 
 // Computed para verificar si el tour tiene reservas activas (para habilitar/deshabilitar cancelación)
@@ -143,6 +144,29 @@ const todasReservasConfirmadas = computed(() => {
   const hayConfirmadas = reservas.value.some(reserva => reserva.estado === 'CONFIRMADA')
 
   return !hayPendientes && hayConfirmadas
+})
+
+// Computed específico para habilitar botón EN CURSO
+const puedeIniciarCurso = computed(() => {
+  if (!tourActual.value || !reservas.value || reservas.value.length === 0) return false
+
+  // Para tours REPROGRAMADA: no debe haber reservas PENDIENTES y debe cumplir cupo mínimo
+  if (tourActual.value.estado === 'REPROGRAMADA') {
+    const hayPendientes = reservas.value.some(reserva => reserva.estado === 'PENDIENTE')
+    return !hayPendientes && cumpleCupoMinimo.value
+  }
+
+  // Para tours DISPONIBLE: debe cumplir cupo mínimo
+  if (tourActual.value.estado === 'DISPONIBLE') {
+    return cumpleCupoMinimo.value
+  }
+
+  // Para tours COMPLETO: debe tener todas las reservas confirmadas (sin pendientes)
+  if (tourActual.value.estado === 'COMPLETO') {
+    return todasReservasConfirmadas.value && cumpleCupoMinimo.value
+  }
+
+  return false
 })// Computed para filtrar reservas (simplificado para un tour específico)
 const reservasFiltradas = computed(() => {
   let filtered = reservas.value
@@ -218,7 +242,6 @@ const cargarTour = async (id) => {
 const obtenerTourIdDesdeUrl = () => {
   const urlParams = new URLSearchParams(window.location.search)
   const tourParam = urlParams.get('tour')
-  console.log('Tour ID obtenido de URL:', tourParam)
   return tourParam
 }
 
@@ -309,6 +332,7 @@ const ejecutarCambioEstado = async (nuevoEstado) => {
 
   } catch (error) {
     console.error('Error actualizando estado:', error)
+    console.error('Respuesta del servidor:', error.response?.data)
 
     // Manejo específico para errores de validación (422)
     if (error.response?.status === 422) {
@@ -316,7 +340,7 @@ const ejecutarCambioEstado = async (nuevoEstado) => {
         severity: 'warn',
         summary: 'Validación fallida',
         detail: error.response.data.message || 'No se pudo actualizar el estado',
-        life: 6000
+        life: 8000
       })
     } else {
       toast.add({
@@ -416,12 +440,13 @@ const handleReprogramarTour = async () => {
     return
   }
 
-  // Validar que fecha de regreso sea posterior a fecha de salida
-  if (datosReprogramacion.value.fechaRegreso <= datosReprogramacion.value.fechaSalida) {
+  // Validar que la fecha de regreso sea al menos 1 hora después de la salida
+  const diferenciaHoras = (datosReprogramacion.value.fechaRegreso - datosReprogramacion.value.fechaSalida) / (1000 * 60 * 60)
+  if (diferenciaHoras < 1) {
     toast.add({
       severity: 'warn',
       summary: 'Fechas inválidas',
-      detail: 'La fecha de regreso debe ser posterior a la fecha de salida',
+      detail: 'La fecha y hora de regreso debe ser al menos 1 hora después de la salida',
       life: 4000
     })
     return
@@ -433,7 +458,14 @@ const handleReprogramarTour = async () => {
     // Formatear fechas para envío al servidor
     const formatearFechaISO = (fecha) => {
       if (fecha instanceof Date) {
-        return fecha.toISOString().slice(0, 19).replace('T', ' ')
+        // Usar zona horaria local en lugar de UTC
+        const year = fecha.getFullYear()
+        const month = String(fecha.getMonth() + 1).padStart(2, '0')
+        const day = String(fecha.getDate()).padStart(2, '0')
+        const hours = String(fecha.getHours()).padStart(2, '0')
+        const minutes = String(fecha.getMinutes()).padStart(2, '0')
+        const seconds = String(fecha.getSeconds()).padStart(2, '0')
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
       }
       return fecha
     }
@@ -774,8 +806,9 @@ const getMinDate = () => {
 // Computed para fecha mínima de regreso segura
 const minDateRegreso = computed(() => {
   if (datosReprogramacion.value.fechaSalida instanceof Date) {
+    // Permitir misma fecha, solo agregamos 1 hora mínima de diferencia
     const minDate = new Date(datosReprogramacion.value.fechaSalida)
-    minDate.setDate(minDate.getDate() + 1) // Al menos un día después
+    minDate.setHours(minDate.getHours() + 1) // Al menos una hora después
     return minDate
   }
   return new Date()
@@ -822,22 +855,22 @@ const handleRechazarReserva = async (data) => {
   rechazandoReserva.value = true
   procesando.value = true
   try {
-    await axios.put(`/api/reservas/${data.reserva.id}/rechazar`, {
+    const response = await axios.put(`/api/reservas/${data.reserva.id}/rechazar`, {
       motivo: data.motivo
     })
 
-    // Actualizar estado local
+    // Eliminar la reserva de la lista local (el backend siempre elimina al rechazar)
     const index = reservas.value.findIndex(r => r.id === data.reserva.id)
     if (index !== -1) {
-      reservas.value[index].estado = 'CANCELADA'
+      reservas.value.splice(index, 1) // Eliminar de la lista
     }
 
     modalRechazar.value = false
     modalMasAcciones.value = false
     toast.add({
       severity: 'success',
-      summary: '¡Cancelada!',
-      detail: `Reserva de ${data.reserva.cliente?.user?.name || data.reserva.cliente?.nombres} cancelada correctamente`,
+      summary: '¡Eliminada!',
+      detail: `Reserva de ${data.reserva.cliente?.user?.name || data.reserva.cliente?.nombres} eliminada correctamente`,
       life: 4000
     })
   } catch (error) {
@@ -911,15 +944,10 @@ watch([filtros], () => {
 // Cargar datos iniciales para tour específico
 onMounted(async () => {
   try {
-    console.log('Montando componente Reservas.vue')
-    console.log('URL actual:', window.location.href)
-
     // Obtener ID del tour desde URL
     tourId.value = obtenerTourIdDesdeUrl()
-    console.log('Tour ID establecido:', tourId.value)
 
     if (!tourId.value) {
-      console.warn('No se encontró tour ID en la URL')
       toast.add({
         severity: 'warn',
         summary: 'Tour no especificado',
@@ -933,9 +961,7 @@ onMounted(async () => {
     }
 
     // Cargar tour y sus reservas
-    console.log('Cargando tour y reservas...')
     await Promise.all([cargarTour(tourId.value), cargarReservas()])
-    console.log('Tour y reservas cargados exitosamente')
     forceSelectTruncation()
   } catch (error) {
     console.error('Error cargando datos iniciales:', error)
@@ -1017,6 +1043,12 @@ onUnmounted(() => {
                 Tour completo - Debe confirmar TODAS las reservas pendientes para poder poner el tour en curso
               </span>
             </p>
+            <p v-if="tourActual.estado === 'REPROGRAMADA' && !puedeIniciarCurso" class="text-sm text-purple-600 flex items-center gap-2 bg-purple-50 p-3 rounded-md border border-purple-200">
+              <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-purple-500" />
+              <span class="font-medium">
+                Tour reprogramado - Confirme las reservas pendientes para habilitarlo en curso
+              </span>
+            </p>
             <p v-if="!tieneReservasActivas && (tourActual.estado === 'DISPONIBLE' || tourActual.estado === 'REPROGRAMADA')" class="text-sm text-gray-600 flex items-center gap-2 bg-gray-50 p-2 rounded-md">
               <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-gray-500" />
               <span>
@@ -1036,19 +1068,11 @@ onUnmounted(() => {
               v-if="tourActual.estado !== 'EN_CURSO' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'CANCELADA'"
               :class="[
                 'rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0 transition-all duration-200',
-                (
-                  (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
-                  (tourActual.estado === 'REPROGRAMADA' && cumpleCupoMinimo) ||
-                  (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas && cumpleCupoMinimo)
-                )
+                puedeIniciarCurso
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 cursor-pointer hover:shadow-lg hover:scale-105'
                   : 'bg-gray-400 cursor-not-allowed opacity-60'
               ]"
-              @click="(
-                (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
-                (tourActual.estado === 'REPROGRAMADA' && cumpleCupoMinimo) ||
-                (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas && cumpleCupoMinimo)
-              ) ? cambiarEstadoDirecto('EN_CURSO') : null"
+              @click="puedeIniciarCurso ? cambiarEstadoDirecto('EN_CURSO') : null"
             >
               <div class="flex items-center gap-2 text-white">
                 <div class="flex-1">
@@ -1080,7 +1104,7 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Reprogramar (con modal) -->
+            <!-- Reprogramar (con modal) - NO mostrar cuando está REPROGRAMADA -->
             <div
               v-if="tourActual.estado !== 'REPROGRAMADA' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'CANCELADA' && tourActual.estado !== 'EN_CURSO'"
               :class="[
@@ -1109,21 +1133,23 @@ onUnmounted(() => {
               </div>
             </div>
 
-            <!-- Cancelar (con modal) -->
+            <!-- Cancelar (con modal) - También disponible para REPROGRAMADA -->
             <div
               v-if="tourActual.estado !== 'CANCELADA' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'EN_CURSO'"
               :class="[
                 'rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0 transition-all duration-200',
                 (
                   tieneReservasActivas ||
-                  (tourActual.estado === 'COMPLETO')
+                  (tourActual.estado === 'COMPLETO') ||
+                  (tourActual.estado === 'REPROGRAMADA')
                 )
                   ? 'bg-gradient-to-r from-red-500 to-red-600 cursor-pointer hover:shadow-lg hover:scale-105'
                   : 'bg-gray-400 cursor-not-allowed opacity-60'
               ]"
               @click="(
                 tieneReservasActivas ||
-                (tourActual.estado === 'COMPLETO')
+                (tourActual.estado === 'COMPLETO') ||
+                (tourActual.estado === 'REPROGRAMADA')
               ) ? cambiarEstadoDirecto('CANCELADA') : null"
               :title="(
                 !tieneReservasActivas && tourActual.estado !== 'COMPLETO'

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reservación Confirmada - {{ $companyName }}</title>
+    <title>Reserva Creada - {{ $companyName }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -22,7 +22,7 @@
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #28a745;
+            border-bottom: 3px solid #007bff;
             padding-bottom: 20px;
             margin-bottom: 30px;
         }
@@ -33,7 +33,7 @@
             margin-bottom: 10px;
         }
         .success-badge {
-            background-color: #28a745;
+            background-color: #007bff;
             color: white;
             padding: 15px 25px;
             border-radius: 50px;
@@ -47,7 +47,7 @@
             padding: 20px;
             border-radius: 8px;
             margin: 20px 0;
-            border-left: 4px solid #28a745;
+            border-left: 4px solid #007bff;
         }
         .detail-row {
             display: flex;
@@ -59,7 +59,7 @@
             border-bottom: none;
             font-weight: bold;
             font-size: 16px;
-            color: #28a745;
+            color: #007bff;
         }
         .detail-label {
             font-weight: bold;
@@ -93,7 +93,7 @@
             font-weight: bold;
         }
         .contact-btn:hover {
-            background-color: #0225c0;;
+            background-color: #0225c0;
         }
         .footer {
             text-align: center;
@@ -124,62 +124,109 @@
             <p>Viajes y Turismo</p>
         </div>
 
-        <!-- Badge de confirmación -->
+        <!-- Badge de nueva reserva -->
         <div style="text-align: center;">
             <div class="success-badge">
-                ¡RESERVACIÓN CONFIRMADA!
+                ¡RESERVA CREADA EXITOSAMENTE!
             </div>
         </div>
 
         <div>
-            <h2>¡Hola {{ $client['name'] ?? $client['nombres'] ?? 'Estimado cliente' }}!</h2>
-            <p>¡Excelentes noticias! Tu reservación ha sido <strong style="color: #28a745;">CONFIRMADA</strong>.
-               Estamos emocionados de acompañarte en esta nueva aventura.</p>
+            <h2>¡Hola {{ $client['nombres'] ?? $client['name'] ?? 'Estimado cliente' }}!</h2>
+            <p>¡Gracias por elegir VASIR! Tu reserva ha sido <strong style="color: #007bff;">CREADA EXITOSAMENTE</strong> y está siendo procesada por nuestro equipo.</p>
+            <p style="color: #856404; background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                <strong>Importante:</strong> Tu reserva está pendiente de confirmación. Recibirás un correo adicional una vez que nuestro equipo la revise y confirme.
+            </p>
         </div>
 
-        <!-- Detalles de la reservación -->
+        <!-- Detalles de la reserva -->
         <div class="reservation-details">
-            <h3 style="margin-top: 0; color: #28a745;">Detalles de tu Reservación</h3>
+            <h3 style="margin-top: 0; color: #007bff;">Detalles de tu Reserva</h3>
 
             <div class="detail-row">
-                <span class="detail-label">Servicio:</span>
-                <span class="detail-value">{{ $reservation['entidad_nombre'] ?? 'N/A' }}</span>
+                <span class="detail-label">Tour:</span>
+                <span class="detail-value">{{ $tour['nombre'] ?? 'N/A' }}</span>
             </div>
 
             <div class="detail-row">
                 <span class="detail-label">Fecha de salida:</span>
                 <span class="detail-value">
-                    @if(isset($reservation['fecha_salida']) && $reservation['fecha_salida'])
-                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida'])) }}
+                    @if(isset($tour['fecha_salida']) && $tour['fecha_salida'])
+                        {{ \Carbon\Carbon::parse($tour['fecha_salida'])->format('d/m/Y H:i') }}
+                    @else
+                        N/A
                     @endif
                 </span>
             </div>
 
-            @if(isset($reservation['fecha_regreso']) && $reservation['fecha_regreso'])
+            @if(isset($tour['fecha_regreso']) && $tour['fecha_regreso'])
             <div class="detail-row">
                 <span class="detail-label">Fecha de regreso:</span>
                 <span class="detail-value">
-                    {{ date('d/m/Y H:i', strtotime($reservation['fecha_regreso'])) }}
+                    {{ \Carbon\Carbon::parse($tour['fecha_regreso'])->format('d/m/Y H:i') }}
                 </span>
             </div>
             @endif
 
             <div class="detail-row">
-                <span class="detail-label">Categoría: </span>
-                <span class="detail-value" style="text-transform: capitalize;">{{ $reservation['categoria'] ?? 'N/A' }}</span>
+                <span class="detail-label">Categoría:</span>
+                <span class="detail-value" style="text-transform: capitalize;">{{ $tour['categoria'] ?? 'N/A' }}</span>
             </div>
 
             <div class="detail-row">
-                <span class="detail-label">Personas:</span>
+                <span class="detail-label">Adultos:</span>
+                <span class="detail-value">{{ $reservation['mayores_edad'] ?? 0 }} personas</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Niños:</span>
+                <span class="detail-value">{{ $reservation['menores_edad'] ?? 0 }} personas</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Total personas:</span>
+                <span class="detail-value">{{ ($reservation['mayores_edad'] ?? 0) + ($reservation['menores_edad'] ?? 0) }} personas</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Precio total:</span>
+                <span class="detail-value">${{ number_format($reservation['precio_total'] ?? 0, 2) }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Estado:</span>
+                <span class="detail-value" style="color: #856404; font-weight: bold;">{{ $reservation['estado'] ?? 'PENDIENTE' }}</span>
+            </div>
+        </div>
+
+        <!-- Información del cliente registrada -->
+        <div class="reservation-details" style="border-left: 4px solid #28a745;">
+            <h3 style="margin-top: 0; color: #28a745;">Información Registrada</h3>
+
+            <div class="detail-row">
+                <span class="detail-label">Nombre:</span>
+                <span class="detail-value">{{ $client['nombres'] ?? 'N/A' }} {{ $client['apellidos'] ?? '' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Documento:</span>
+                <span class="detail-value">{{ $client['tipo_documento'] ?? 'N/A' }}: {{ $client['numero_identificacion'] ?? 'N/A' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Teléfono:</span>
+                <span class="detail-value">{{ $client['telefono'] ?? 'N/A' }}</span>
+            </div>
+
+            <div class="detail-row">
+                <span class="detail-label">Fecha de nacimiento:</span>
                 <span class="detail-value">
-                    {{ ($reservation['mayores_edad'] ?? 0) + ($reservation['menores_edad'] ?? 0) }} personas
-                    ({{ $reservation['mayores_edad'] ?? 0 }} adultos, {{ $reservation['menores_edad'] ?? 0 }} niños)
+                    @if(isset($client['fecha_nacimiento']) && $client['fecha_nacimiento'])
+                        {{ \Carbon\Carbon::parse($client['fecha_nacimiento'])->format('d/m/Y') }}
+                    @else
+                        N/A
+                    @endif
                 </span>
-            </div>
-
-            <div class="detail-row">
-                <span class="detail-label">Total: </span>
-                <span class="detail-value">${{ number_format($reservation['total'] ?? 0, 2) }}</span>
             </div>
         </div>
 
@@ -210,6 +257,7 @@
             <ul style="margin: 10px 0; padding-left: 20px; color: #0056b3;">
                 <li>Tours sujetos a completar cupo mínimo</li>
                 <li>Reservás tu cupo con el 50% y el resto el día del tour</li>
+                <li>La confirmación de tu reserva está sujeta a disponibilidad</li>
             </ul>
         </div>
 
@@ -300,10 +348,10 @@
 
         <div class="footer">
             <p>¡Gracias por elegir {{ $companyName }} para tu aventura!</p>
-            <p><strong>¡Prepárate para vivir experiencias inolvidables!</strong></p>
+            <p><strong>¡Estamos procesando tu reserva y te contactaremos pronto!</strong></p>
             <hr>
             <p><small>
-                Este correo confirma tu reservación. Guárdalo como comprobante.
+                Este correo confirma que hemos recibido tu solicitud de reserva. Guárdalo como comprobante.
             </small></p>
             <hr style="margin: 15px 0;">
             <p><small>© {{ date('Y') }} VASIR. Todos los derechos reservados.</small></p>

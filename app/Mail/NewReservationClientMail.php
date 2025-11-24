@@ -2,26 +2,27 @@
 
 namespace App\Mail;
 
-use App\Models\User;
-use App\Models\Empleado;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
+use App\Models\User;
+use App\Models\Empleado;
 
-class ReservationInProgressMail extends Mailable
+class NewReservationClientMail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public $reservationData;
     public $clientData;
-    public $observations;
+    public $tourData;
     public $adminData;
+    public $companyName;
 
-    public function __construct($reservationData, $clientData, $observations = null)
+    public function __construct($reservationData, $clientData, $tourData)
     {
         $this->reservationData = $reservationData;
         $this->clientData = $clientData;
-        $this->observations = $observations;
+        $this->tourData = $tourData;
 
         // Obtener datos del administrador
         $adminUser = User::role('Administrador')->first();
@@ -30,23 +31,23 @@ class ReservationInProgressMail extends Mailable
         $this->adminData = [
             'email' => $adminUser->email ?? config('mail.from.address'),
             'phone' => $adminEmployee->telefono ?? null,
-            'name' => $adminEmployee ? ($adminEmployee->nombres . ' ' . $adminEmployee->apellidos) : 'VASIR Team',
+            'name' => $adminEmployee ? ($adminEmployee->nombres . ' ' . $adminEmployee->apellidos) : 'VASIR',
         ];
+
+        $this->companyName = 'VASIR';
     }
 
     public function build()
     {
-        return $this->subject('¡Tu aventura ha comenzado! - VASIR')
-                    ->view('emails.reservation-inprogress')
+        return $this->subject('¡Reserva Creada Exitosamente! - VASIR')
+                    ->view('emails.new-reservation-client')
                     ->with([
                         'reservation' => $this->reservationData,
                         'client' => $this->clientData,
-                        'observations' => $this->observations,
-                        'companyName' => 'VASIR',
-                        'adminData' => $this->adminData,
+                        'tour' => $this->tourData,
+                        'companyName' => $this->companyName,
                         'supportEmail' => $this->adminData['email'],
-                        'companyPhone' => $this->adminData['phone'],
-                        'companyAddress' => 'Tu dirección de la agencia',
+                        'adminData' => $this->adminData,
                     ]);
     }
 }
