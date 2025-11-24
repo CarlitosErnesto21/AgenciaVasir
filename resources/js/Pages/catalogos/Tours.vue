@@ -1,6 +1,6 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head, Link } from "@inertiajs/vue3";
+import { Head, Link, router } from "@inertiajs/vue3";
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
@@ -8,7 +8,6 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faBusSimple, faCheck, faHandPointUp, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
-import CambiarEstado from "./Components/TourComponents/CambiarEstado.vue";
 import axios from "axios";
 
 const toast = useToast();
@@ -68,16 +67,15 @@ const categoriasOptions = ref([
 ]);
 const estadosOptions = ref([
     { label: 'Disponible', value: 'DISPONIBLE' },
-    { label: 'Agotado', value: 'AGOTADO' },
+    { label: 'Completo', value: 'COMPLETO' },
     { label: 'En Curso', value: 'EN_CURSO' },
-    { label: 'Completado', value: 'COMPLETADO' },
-    { label: 'Cancelado', value: 'CANCELADO' },
-    { label: 'Suspendido', value: 'SUSPENDIDO' },
-    { label: 'Reprogramado', value: 'REPROGRAMADO' }
+    { label: 'Finalizado', value: 'FINALIZADO' },
+    { label: 'Cancelada', value: 'CANCELADA' },
+    { label: 'Reprogramada', value: 'REPROGRAMADA' }
 ]);
 const showImageDialog = ref(false);
 const showImageCarouselDialog = ref(false);
-const showCambiarEstadoDialog = ref(false);
+// Removido showCambiarEstadoDialog ya que no se usará más
 const selectedTour = ref(null);
 const selectedImages = ref([]);
 const carouselIndex = ref(0);
@@ -1218,9 +1216,8 @@ const handleDuplicateTour = (tour) => {
 };
 
 const handleChangeStatus = (tour) => {
+    // Esta función ya no se usará, pero la mantenemos por compatibilidad
     moreActionsDialog.value = false;
-    selectedTour.value = tour;
-    showCambiarEstadoDialog.value = true;
 };
 
 const handleGenerateReport = (tour) => {
@@ -1243,6 +1240,11 @@ const handleArchiveTour = (tour) => {
     moreActionsDialog.value = false;
 };
 
+const handleViewReservations = (tour) => {
+    // Navegar a la vista de reservas modificada con el ID del tour
+    router.visit(`/catalogos/reservas?tour=${tour.id}`);
+};
+
 // Función para ver detalles desde el modal de Más Acciones
 const handleViewDetails = (tour) => {
     moreActionsDialog.value = false;
@@ -1262,15 +1264,7 @@ const onRowClick = (event) => {
     }
 };
 
-// Función para manejar la actualización de estado
-const handleEstadoActualizado = async (tourActualizado) => {
-    // Actualizar el tour en la lista
-    const index = tours.value.findIndex(t => t.id === tourActualizado.id);
-    if (index !== -1) {
-        tours.value[index] = tourActualizado;
-    }
-    showCambiarEstadoDialog.value = false;
-};
+// Función handleEstadoActualizado removida - ya no se necesita aquí
 
 // Función para prevenir teclas no válidas en campos de cupos
 const onCupoKeyDown = (event) => {
@@ -1714,11 +1708,10 @@ const onPricePaste = (event) => {
                         <span
                             :class="{
                                 'bg-green-100 text-green-800': slotProps.data.estado === 'DISPONIBLE',
-                                'bg-red-100 text-red-800': slotProps.data.estado === 'AGOTADO' || slotProps.data.estado === 'CANCELADO',
+                                'bg-red-100 text-red-800': slotProps.data.estado === 'COMPLETO' || slotProps.data.estado === 'CANCELADA',
                                 'bg-blue-100 text-blue-800': slotProps.data.estado === 'EN_CURSO',
-                                'bg-gray-100 text-gray-800': slotProps.data.estado === 'COMPLETADO',
-                                'bg-orange-100 text-orange-800': slotProps.data.estado === 'SUSPENDIDO',
-                                'bg-purple-100 text-purple-800': slotProps.data.estado === 'REPROGRAMADO'
+                                'bg-gray-100 text-gray-800': slotProps.data.estado === 'FINALIZADO',
+                                'bg-purple-100 text-purple-800': slotProps.data.estado === 'REPROGRAMADA'
                             }"
                             class="px-2 py-1 rounded-full text-xs font-medium"
                         >
@@ -2044,16 +2037,11 @@ const onPricePaste = (event) => {
                 @close-without-saving="closeDialogWithoutSaving"
                 @continue-editing="continueEditing"
                 @view-details="handleViewDetails"
+                @view-reservations="handleViewReservations"
                 @open-image-modal="openImageModal"
             />
 
-            <!-- Modal de Cambiar Estado -->
-            <CambiarEstado
-                v-model:visible="showCambiarEstadoDialog"
-                :tour="selectedTour"
-                :dialog-style="dialogStyle"
-                @estado-actualizado="handleEstadoActualizado"
-            />
+            <!-- Modal de Cambiar Estado removido - ahora se maneja desde ReservasPorTour -->
             </div>
         </div>
     </AuthenticatedLayout>

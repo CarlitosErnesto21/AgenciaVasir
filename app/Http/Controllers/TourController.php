@@ -4,9 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\Tour;
 use App\Models\Transporte;
+use App\Models\Reserva;
+use App\Models\DetalleReservaTour;
+use App\Mail\ReservationRescheduledMail;
+use App\Mail\ReservationCompletedMail;
+use App\Mail\ReservationInProgressMail;
+use App\Mail\ReservationRejectedMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 
 class TourController extends Controller
 {
@@ -18,23 +26,23 @@ class TourController extends Controller
         if (empty($nombre)) {
             return $nombre;
         }
-        
+
         // Convertir a mayúsculas
         $nombre = mb_strtoupper($nombre, 'UTF-8');
-        
+
         // Remover caracteres especiales (mantener solo letras, números, espacios y tildes)
         // Permite: A-Z, 0-9, espacios, y vocales acentuadas (ÁÉÍÓÚ), Ñ
         $nombre = preg_replace('/[^A-ZÁÉÍÓÚÑ0-9\s]/u', '', $nombre);
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         $nombre = preg_replace('/\s+/', ' ', $nombre);
-        
+
         // Eliminar espacios al inicio y al final
         $nombre = trim($nombre);
-        
+
         return $nombre;
     }
-    
+
     /**
      * Valida y formatea el punto de salida
      */
@@ -43,16 +51,16 @@ class TourController extends Controller
         if (empty($puntoSalida)) {
             return $puntoSalida;
         }
-        
+
         // Convertir a mayúsculas
         $puntoSalida = mb_strtoupper($puntoSalida, 'UTF-8');
-        
+
         // Reemplazar múltiples espacios consecutivos con uno solo
         $puntoSalida = preg_replace('/\s+/', ' ', $puntoSalida);
-        
+
         // Eliminar espacios al inicio y al final
         $puntoSalida = trim($puntoSalida);
-        
+
         return $puntoSalida;
     }
 
@@ -177,7 +185,7 @@ class TourController extends Controller
         // Agregar cupos_disponibles
         $cuposReservados = $tour->detalleReservas()
             ->whereHas('reserva', function($query) {
-                $query->where('estado', '!=', 'cancelada');
+                $query->where('estado', '!=', Reserva::CANCELADA);
             })
             ->sum('cupos_reservados');
 
@@ -319,46 +327,158 @@ class TourController extends Controller
         $tour = Tour::findOrFail($id);
 
         $validated = $request->validate([
-            'estado' => 'required|in:DISPONIBLE,AGOTADO,EN_CURSO,COMPLETADO,CANCELADO,SUSPENDIDO,REPROGRAMADO',
-            'fecha_salida' => 'required_if:estado,REPROGRAMADO|nullable|date|after:now',
+            'estado' => 'required|in:' . implode(',', Tour::ESTADOS),
+            'fecha_salida' => 'required_if:estado,' . Tour::REPROGRAMADA . '|nullable|date|after:now',
             'fecha_regreso' => 'required_if:estado,REPROGRAMADO|nullable|date|after:fecha_salida',
             'motivo_reprogramacion' => 'required_if:estado,REPROGRAMADO|nullable|string|max:255',
+            'motivo_cancelacion' => 'required_if:estado,CANCELADA|nullable|string|max:500',
+            'cancelar_reservas' => 'nullable|boolean',
             'observaciones' => 'nullable|string|max:500'
         ]);
 
         try {
             // Si es reprogramación, actualizar las fechas también
-            if ($validated['estado'] === 'REPROGRAMADO') {
+            if ($validated['estado'] === Tour::REPROGRAMADA) {
+                // Validar cupo mínimo antes de reprogramar el tour
+                $personasConfirmadas = $tour->detalleReservas()
+                    ->whereHas('reserva', function($query) {
+                        $query->where('estado', 'CONFIRMADA');
+                    })
+                    ->get()
+                    ->sum(function($detalle) {
+                        return ($detalle->reserva->mayores_edad ?? 0) + ($detalle->reserva->menores_edad ?? 0);
+                    });
+
+                if ($personasConfirmadas < $tour->cupo_min) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No se puede reprogramar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                    ], 422);
+                }
+
+                // Guardar fechas anteriores para el log y emails
+                $fechaAnteriorSalida = $tour->fecha_salida;
+                $fechaAnteriorRegreso = $tour->fecha_regreso;
+
+                // Parsear las fechas del frontend como hora local de El Salvador
+                // El frontend ahora envía fechas en formato local "Y-m-d H:i:s"
+                $fechaSalidaLocal = Carbon::createFromFormat('Y-m-d H:i:s', $validated['fecha_salida'], config('app.timezone'));
+                $fechaRegresoLocal = Carbon::createFromFormat('Y-m-d H:i:s', $validated['fecha_regreso'], config('app.timezone'));
+
                 $tour->update([
                     'estado' => $validated['estado'],
-                    'fecha_salida' => $validated['fecha_salida'],
-                    'fecha_regreso' => $validated['fecha_regreso']
+                    'fecha_salida' => $fechaSalidaLocal,
+                    'fecha_regreso' => $fechaRegresoLocal
                 ]);
 
-                // Log de la reprogramación
-                Log::info('Tour reprogramado', [
-                    'tour_id' => $tour->id,
-                    'tour_nombre' => $tour->nombre,
-                    'fecha_anterior_salida' => $tour->getOriginal('fecha_salida'),
-                    'fecha_anterior_regreso' => $tour->getOriginal('fecha_regreso'),
-                    'nueva_fecha_salida' => $validated['fecha_salida'],
-                    'nueva_fecha_regreso' => $validated['fecha_regreso'],
-                    'motivo' => $validated['motivo_reprogramacion'],
-                    'observaciones' => $validated['observaciones'] ?? null
-                ]);
+                // Recargar el tour para ver qué se guardó realmente
+                $tour->refresh();
 
-                $mensaje = 'Tour reprogramado exitosamente';
-            } else {
-                // Solo cambiar el estado
+                // Actualizar todas las reservas asociadas al tour
+                $reservasActualizadas = $this->actualizarReservasPorTour(
+                    $tour,
+                    $fechaSalidaLocal,
+                    $validated['motivo_reprogramacion'],
+                    $validated['observaciones'] ?? '',
+                    $fechaAnteriorSalida,
+                    $fechaAnteriorRegreso
+                );
+
+                $mensaje = "Tour reprogramado exitosamente. {$reservasActualizadas} reserva(s) actualizada(s) automáticamente";
+            } elseif ($validated['estado'] === Tour::EN_CURSO) {
+                // Validar cupo mínimo antes de iniciar el tour
+                $personasConfirmadas = $tour->detalleReservas()
+                    ->whereHas('reserva', function($query) {
+                        $query->where('estado', 'CONFIRMADA');
+                    })
+                    ->get()
+                    ->sum(function($detalle) {
+                        return ($detalle->reserva->mayores_edad ?? 0) + ($detalle->reserva->menores_edad ?? 0);
+                    });
+
+                if ($personasConfirmadas < $tour->cupo_min) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "No se puede iniciar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                    ], 422);
+                }
+
+                // Cambiar estado del tour
                 $tour->update([
                     'estado' => $validated['estado']
                 ]);
 
-                Log::info('Estado de tour actualizado', [
-                    'tour_id' => $tour->id,
-                    'tour_nombre' => $tour->nombre,
-                    'estado_anterior' => $tour->getOriginal('estado'),
-                    'nuevo_estado' => $validated['estado']
+                // Actualizar todas las reservas asociadas a EN_CURSO y enviar emails
+                $reservasActualizadas = $this->iniciarReservasPorTour($tour, $validated['observaciones'] ?? '');
+
+                $mensaje = "Tour iniciado exitosamente. {$reservasActualizadas} reserva(s) actualizada(s) y email(s) enviado(s) automáticamente";
+            } elseif ($validated['estado'] === Tour::FINALIZADO) {
+                // Solo validar cupo mínimo si el tour no está ya en curso
+                if ($tour->estado !== Tour::EN_CURSO) {
+                    $personasConfirmadas = $tour->detalleReservas()
+                        ->whereHas('reserva', function($query) {
+                            $query->where('estado', 'CONFIRMADA');
+                        })
+                        ->get()
+                        ->sum(function($detalle) {
+                            return ($detalle->reserva->mayores_edad ?? 0) + ($detalle->reserva->menores_edad ?? 0);
+                        });
+
+                    if ($personasConfirmadas < $tour->cupo_min) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "No se puede finalizar el tour. Se requiere un mínimo de {$tour->cupo_min} personas confirmadas, actualmente hay {$personasConfirmadas} confirmadas."
+                        ], 422);
+                    }
+                }
+
+                // Cambiar estado del tour
+                $tour->update([
+                    'estado' => $validated['estado']
+                ]);
+
+                // Actualizar todas las reservas asociadas a FINALIZADA y enviar emails
+                $reservasActualizadas = $this->finalizarReservasPorTour($tour, $validated['observaciones'] ?? '');
+
+                $mensaje = "Tour finalizado exitosamente. {$reservasActualizadas} reserva(s) actualizada(s) y email(s) enviado(s) automáticamente";
+            } elseif ($validated['estado'] === Tour::CANCELADA) {
+                // Validar que no se pueda cancelar un tour en curso
+                if ($tour->estado === Tour::EN_CURSO) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede cancelar un tour que ya está en curso.'
+                    ], 422);
+                }
+
+                // Validar que el tour tenga reservas activas para poder cancelar
+                $reservasActivas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+                    $query->where('tour_id', $tour->id);
+                })
+                ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::EN_CURSO, Reserva::REPROGRAMADA])
+                ->count();
+
+                if ($reservasActivas === 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'No se puede cancelar un tour que no tiene reservas activas. Un tour sin reservas ya está disponible para nuevas reservaciones.'
+                    ], 422);
+                }
+
+                // Cancelar todas las reservas asociadas y enviar emails PRIMERO
+                $reservasCanceladas = $this->cancelarReservasPorTour($tour, $validated['motivo_cancelacion'] ?? 'Tour cancelado');
+
+                // Después de eliminar las reservas, el tour debe volver a DISPONIBLE
+                // ya que no tiene reservas y todos los cupos están libres
+                $tour->update([
+                    'estado' => Tour::DISPONIBLE,
+                    'cupos_disponibles' => $tour->cupo_max
+                ]);
+
+                $mensaje = "Tour cancelado exitosamente. {$reservasCanceladas} reserva(s) eliminada(s) permanentemente y email(s) enviado(s). El tour volvió al estado DISPONIBLE";
+            } else {
+                // Solo cambiar el estado
+                $tour->update([
+                    'estado' => $validated['estado']
                 ]);
 
                 $mensaje = 'Estado del tour actualizado exitosamente';
@@ -370,7 +490,65 @@ class TourController extends Controller
             // Agregar cupos_disponibles
             $cuposReservados = $tour->detalleReservas()
                 ->whereHas('reserva', function($query) {
-                    $query->where('estado', '!=', 'cancelada');
+                    $query->where('estado', '!=', Reserva::CANCELADA);
+                })
+                ->sum('cupos_reservados');
+
+            $cuposDisponibles = max(0, $tour->cupo_max - $cuposReservados);
+            $tour->cupos_disponibles = $cuposDisponibles;
+
+            // Preparar respuesta con datos específicos según el estado
+            $responseData = [
+                'message' => $mensaje,
+                'tour' => $tour,
+            ];
+
+            // Agregar datos específicos según el estado cambiado
+            if ($validated['estado'] === Tour::REPROGRAMADA && isset($reservasActualizadas)) {
+                $responseData['reservas_reprogramadas'] = $reservasActualizadas;
+            } elseif ($validated['estado'] === Tour::FINALIZADO && isset($reservasActualizadas)) {
+                $responseData['reservas_finalizadas'] = $reservasActualizadas;
+            } elseif ($validated['estado'] === Tour::CANCELADA && isset($reservasCanceladas)) {
+                $responseData['reservas_canceladas'] = $reservasCanceladas;
+            }
+
+            return response()->json($responseData);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Error al cambiar el estado del tour',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Finalizar un tour y todas sus reservas asociadas
+     */
+    public function finalizarTour(Request $request, $id)
+    {
+        $tour = Tour::findOrFail($id);
+
+        $validated = $request->validate([
+            'observaciones' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            // Cambiar el estado del tour a FINALIZADO
+            $tour->update([
+                'estado' => Tour::FINALIZADO
+            ]);
+
+            // Actualizar todas las reservas asociadas al tour
+            $reservasActualizadas = $this->finalizarReservasPorTour($tour, $validated['observaciones'] ?? '');
+
+            // Recargar el tour con sus relaciones
+            $tour = $tour->fresh(['transporte', 'imagenes']);
+
+            // Agregar cupos_disponibles
+            $cuposReservados = $tour->detalleReservas()
+                ->whereHas('reserva', function($query) {
+                    $query->where('estado', '!=', Reserva::CANCELADA);
                 })
                 ->sum('cupos_reservados');
 
@@ -378,19 +556,13 @@ class TourController extends Controller
             $tour->cupos_disponibles = $cuposDisponibles;
 
             return response()->json([
-                'message' => $mensaje,
+                'message' => "Tour finalizado exitosamente. {$reservasActualizadas} reserva(s) finalizada(s) automáticamente",
                 'tour' => $tour,
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Error al cambiar estado de tour', [
-                'tour_id' => $id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
             return response()->json([
-                'message' => 'Error al cambiar el estado del tour',
+                'message' => 'Error al finalizar el tour',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -462,5 +634,333 @@ class TourController extends Controller
             'tour' => $tour,
             'tipo' => 'internacional'
         ]);
+    }
+
+    /**
+     * Actualizar todas las reservas asociadas a un tour cuando se reprograma
+     */
+    private function actualizarReservasPorTour(
+        Tour $tour,
+        $nuevaFechaSalida,
+        $motivo,
+        $observaciones,
+        $fechaAnteriorSalida,
+        $fechaAnteriorRegreso
+    ): int {
+        // Obtener todas las reservas activas (no canceladas/rechazadas) asociadas al tour
+        $reservas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+            $query->where('tour_id', $tour->id);
+        })
+        ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::REPROGRAMADA])
+        ->with(['cliente.user', 'detallesTours.tour'])
+        ->get();
+
+        $contadorActualizadas = 0;
+
+        foreach ($reservas as $reserva) {
+            try {
+                // Actualizar la reserva a estado REPROGRAMADA y nueva fecha
+                $reserva->update([
+                    'estado' => Reserva::REPROGRAMADA,
+                    'fecha' => $nuevaFechaSalida
+                ]);
+
+                $contadorActualizadas++;
+
+                // Enviar email de notificación al cliente
+                $this->enviarEmailReprogramacion(
+                    $reserva,
+                    $tour,
+                    $nuevaFechaSalida,
+                    $motivo,
+                    $observaciones,
+                    $fechaAnteriorSalida,
+                    $fechaAnteriorRegreso
+                );
+
+            } catch (\Exception $e) {
+                // Error silencioso al actualizar reserva
+            }
+        }
+
+        return $contadorActualizadas;
+    }
+
+    /**
+     * Enviar email de notificación de reprogramación al cliente
+     */
+    private function enviarEmailReprogramacion(
+        Reserva $reserva,
+        Tour $tour,
+        $nuevaFechaSalida,
+        $motivo,
+        $observaciones,
+        $fechaAnteriorSalida,
+        $fechaAnteriorRegreso
+    ): void {
+        try {
+            // Preparar datos para el email
+            $reservationData = [
+                'entidad_nombre' => $tour->nombre,
+                'fecha_reserva' => $reserva->fecha,
+                'fecha_salida_anterior' => $fechaAnteriorSalida,
+                'fecha_salida_nueva' => $nuevaFechaSalida,
+                'tipo' => 'Tour',
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email si hay dirección de correo
+            if ($clientData['email']) {
+                Mail::to($clientData['email'])
+                    ->send(new ReservationRescheduledMail(
+                        $reservationData,
+                        $clientData,
+                        $motivo,
+                        $nuevaFechaSalida,
+                        $observaciones
+                    ));
+            }
+
+        } catch (\Exception $e) {
+            // Error silencioso al enviar email
+        }
+    }
+
+    /**
+     * Iniciar todas las reservas asociadas a un tour cuando se inicia
+     */
+    private function iniciarReservasPorTour(Tour $tour, $observaciones): int
+    {
+        // Obtener todas las reservas activas asociadas al tour
+        $reservas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+            $query->where('tour_id', $tour->id);
+        })
+        ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::REPROGRAMADA])
+        ->with(['cliente.user', 'detallesTours.tour'])
+        ->get();
+
+        $contadorActualizadas = 0;
+
+        foreach ($reservas as $reserva) {
+            try {
+                // Actualizar la reserva a estado EN_CURSO
+                $reserva->update([
+                    'estado' => Reserva::EN_CURSO
+                ]);
+
+                $contadorActualizadas++;
+
+                // Enviar email de notificación al cliente
+                $this->enviarEmailInicioTour($reserva, $tour, $observaciones);
+
+            } catch (\Exception $e) {
+                // Error silencioso al actualizar reserva
+            }
+        }
+
+        return $contadorActualizadas;
+    }
+
+    /**
+     * Finalizar todas las reservas asociadas a un tour cuando se finaliza
+     */
+    private function finalizarReservasPorTour(Tour $tour, $observaciones): int
+    {
+        // Obtener todas las reservas activas asociadas al tour
+        $reservas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+            $query->where('tour_id', $tour->id);
+        })
+        ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::EN_CURSO, Reserva::REPROGRAMADA])
+        ->with(['cliente.user', 'detallesTours.tour'])
+        ->get();
+
+        $contadorActualizadas = 0;
+
+        foreach ($reservas as $reserva) {
+            try {
+                // Actualizar la reserva a estado FINALIZADA
+                $reserva->update([
+                    'estado' => Reserva::FINALIZADA
+                ]);
+
+                $contadorActualizadas++;
+
+                // Enviar email de notificación al cliente
+                $this->enviarEmailFinalizacion($reserva, $tour, $observaciones);
+
+            } catch (\Exception $e) {
+                // Error silencioso al actualizar reserva
+            }
+        }
+
+        return $contadorActualizadas;
+    }
+
+    /**
+     * Cancelar todas las reservas asociadas a un tour cuando se cancela
+     */
+    private function cancelarReservasPorTour(Tour $tour, $motivo): int
+    {
+        // Obtener todas las reservas activas asociadas al tour
+        $reservas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+            $query->where('tour_id', $tour->id);
+        })
+        ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::EN_CURSO, Reserva::REPROGRAMADA])
+        ->with(['cliente.user', 'detallesTours.tour'])
+        ->get();
+
+        $contadorCanceladas = 0;
+
+        foreach ($reservas as $reserva) {
+            try {
+                // Enviar email de notificación al cliente ANTES de eliminar
+                $this->enviarEmailCancelacion($reserva, $tour, $motivo);
+
+                // ELIMINAR la reserva completamente en lugar de solo cambiar estado
+                $reservaId = $reserva->id;
+
+                // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+                DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+
+                // Luego eliminar la reserva
+                $reserva->delete();
+
+                $contadorCanceladas++;
+
+                Log::info('Reserva eliminada por cancelación de tour', [
+                    'reserva_id' => $reservaId,
+                    'tour_id' => $tour->id,
+                    'motivo' => $motivo
+                ]);
+
+            } catch (\Exception $e) {
+                Log::error('Error al cancelar/eliminar reserva por tour', [
+                    'reserva_id' => $reserva->id ?? 'unknown',
+                    'tour_id' => $tour->id,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        return $contadorCanceladas;
+    }
+
+    /**
+     * Enviar email de notificación de inicio de tour al cliente
+     */
+    private function enviarEmailInicioTour(Reserva $reserva, Tour $tour, $observaciones): void
+    {
+        try {
+            // Preparar datos para el email
+            $reservationData = [
+                'entidad_nombre' => $tour->nombre,
+                'fecha_reserva' => $reserva->fecha,
+                'fecha_salida' => $tour->fecha_salida,
+                'tipo' => 'Tour',
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total,
+                'observaciones' => $observaciones
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email si hay dirección de correo
+            if ($clientData['email']) {
+                Mail::to($clientData['email'])
+                    ->send(new ReservationInProgressMail(
+                        $reservationData,
+                        $clientData,
+                        $observaciones
+                    ));
+            }
+
+        } catch (\Exception $e) {
+            // Error silencioso al enviar email
+        }
+    }
+
+    /**
+     * Enviar email de notificación de finalización al cliente
+     */
+    private function enviarEmailFinalizacion(Reserva $reserva, Tour $tour, $observaciones): void
+    {
+        try {
+            // Preparar datos para el email
+            $reservationData = [
+                'entidad_nombre' => $tour->nombre,
+                'fecha_reserva' => $reserva->fecha,
+                'tipo' => 'Tour',
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total,
+                'observaciones' => $observaciones
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email si hay dirección de correo
+            if ($clientData['email']) {
+                Mail::to($clientData['email'])
+                    ->send(new ReservationCompletedMail(
+                        $reservationData,
+                        $clientData
+                    ));
+            }
+
+        } catch (\Exception $e) {
+            // Error silencioso al enviar email
+        }
+    }
+
+    /**
+     * Enviar email de notificación de cancelación al cliente
+     */
+    private function enviarEmailCancelacion(Reserva $reserva, Tour $tour, $motivo): void
+    {
+        try {
+            // Preparar datos para el email
+            $reservationData = [
+                'entidad_nombre' => $tour->nombre,
+                'fecha_reserva' => $reserva->fecha,
+                'fecha_salida' => $tour->fecha_salida,
+                'tipo' => 'Tour',
+                'mayores_edad' => $reserva->mayores_edad,
+                'menores_edad' => $reserva->menores_edad,
+                'total' => $reserva->total,
+                'motivo' => $motivo
+            ];
+
+            $clientData = [
+                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
+                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
+            ];
+
+            // Enviar email si hay dirección de correo
+            if ($clientData['email']) {
+                Mail::to($clientData['email'])
+                    ->send(new ReservationRejectedMail(
+                        $reservationData,
+                        $clientData,
+                        $motivo
+                    ));
+            }
+
+        } catch (\Exception $e) {
+            // Error silencioso al enviar email
+        }
     }
 }

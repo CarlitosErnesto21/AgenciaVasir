@@ -69,6 +69,7 @@ const emit = defineEmits([
     'generateReport',
     'archive',
     'viewDetails',
+    'viewReservations',
     // Modal Detalles del Tour
     'update:detailsVisible',
     'openImageModal',
@@ -152,6 +153,11 @@ const archiveTour = () => {
 const viewDetails = () => {
     emit('update:visible', false);
     emit('viewDetails', props.tour);
+};
+
+const viewReservations = () => {
+    emit('update:visible', false);
+    emit('viewReservations', props.tour);
 };
 
 const closeModal = () => {
@@ -251,17 +257,16 @@ defineOptions({
                     </div>
                 </button>
 
-
-                <!-- Botón para cambiar estado -->
+                <!-- Botón para ver reservas -->
                 <button
                     type="button"
-                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="changeStatus"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    @click="viewReservations"
                 >
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-5 w-5" />
+                    <FontAwesomeIcon :icon="faPlus" class="h-5 w-5" />
                     <div class="text-left">
-                        <div class="font-medium">Cambiar Estado</div>
-                        <div class="text-xs opacity-90">Modificar el estado del tour</div>
+                        <div class="font-medium">Ver Reservas</div>
+                        <div class="text-xs opacity-90">Gestionar reservas de este tour</div>
                     </div>
                 </button>
             </div>

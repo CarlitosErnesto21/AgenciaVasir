@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('reservas', function (Blueprint $table) {
             $table->id();
             $table->date('fecha');
-            $table->enum('estado', ['PENDIENTE', 'CONFIRMADA', 'RECHAZADA', 'REPROGRAMADA', 'FINALIZADA'])->default('PENDIENTE');
+            $table->enum('estado', ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO', 'FINALIZADA', 'CANCELADA', 'REPROGRAMADA'])->default('PENDIENTE');
             $table->integer('mayores_edad');
             $table->integer('menores_edad')->nullable();
             $table->decimal('total', 7, 2);

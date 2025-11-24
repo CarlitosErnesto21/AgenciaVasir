@@ -111,7 +111,13 @@
             <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
               <!-- Información principal -->
               <div class="order-2 xl:order-1">
-                <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-3 sm:mb-4">{{ tour.nombre }}</h1>
+                <div class="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 mb-3 sm:mb-4">
+                  <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900">{{ tour.nombre }}</h1>
+                  <span v-if="esTourCompleto(tour)" class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-bold bg-red-600 text-white animate-pulse shadow-md">
+                    <i class="pi pi-times-circle mr-2"></i>
+                    {{ tour.estado === 'EN_CURSO' ? 'EN CURSO' : 'COMPLETO' }}
+                  </span>
+                </div>
 
                 <div class="mb-4 sm:mb-6">
                   <span class="inline-flex items-center px-3 py-1 rounded-full text-xs sm:text-sm font-medium bg-blue-100 text-blue-800">
@@ -140,13 +146,31 @@
                     <i class="pi pi-car mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
                     <span><strong>Transporte:</strong> {{ tour.transporte.nombre }}</span>
                   </div>
-                  <div class="flex items-start text-gray-600 text-sm sm:text-base">
-                    <i class="pi pi-users mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
-                    <span><strong>Cupos disponibles:&nbsp;</strong>
-                      <span :class="obtenerClaseCuposDetalle(tour)">
-                        {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
+                  <div :class="[
+                    'flex items-start text-sm sm:text-base p-3 rounded-lg border-l-4 transition-all duration-300',
+                    esTourCompleto(tour)
+                      ? 'bg-red-50 border-red-500 text-red-700'
+                      : 'bg-green-50 border-green-500 text-green-700'
+                  ]">
+                    <i :class="[
+                      'mr-2 sm:mr-3 mt-0.5 text-sm sm:text-base',
+                      esTourCompleto(tour) ? 'pi pi-times-circle text-red-600' : 'pi pi-users text-green-600'
+                    ]"></i>
+                    <div>
+                      <span class="font-semibold">
+                        {{ esTourCompleto(tour) ? 'Estado del Tour:' : 'Cupos disponibles:' }}&nbsp;
                       </span>
-                    </span>
+                      <div :class="[
+                        'font-bold',
+                        esTourCompleto(tour) ? 'text-red-600' : obtenerClaseCuposDetalle(tour)
+                      ]">
+                        {{ esTourCompleto(tour)
+                          ? getMensajeEstadoTour(tour)
+                          : `${tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0} cupos disponibles`
+                        }}
+                      </div>
+                      {{ esTourCompleto(tour) ? getDescripcionEstado(tour) : '' }}
+                    </div>
                   </div>
                 </div>
 
@@ -161,17 +185,17 @@
                 <!-- Botón de reserva -->
                 <button
                   @click="reservarTour"
-                  :disabled="(tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0) === 0"
+                  :disabled="esTourCompleto(tour)"
                   :class="[
                     'w-full font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base',
-                    (tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0) === 0
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
+                    esTourCompleto(tour)
+                      ? 'bg-gray-400 text-white cursor-not-allowed opacity-60'
                       : tipo === 'nacional'
-                        ? 'bg-red-600 hover:bg-red-700 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
+                        ? 'bg-red-600 hover:bg-red-700 text-white transform hover:scale-105'
+                        : 'bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105'
                   ]"
                 >
-                  {{ (tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0) === 0 ? 'Sin Cupos Disponibles' : 'Reservar Tour' }}
+                  {{ esTourCompleto(tour) ? (tour.estado === 'EN_CURSO' ? 'Tour en Curso' : 'Tour Completo - Sin Cupos') : 'Reservar Tour' }}
                 </button>
               </div>
 
@@ -496,6 +520,32 @@ const calcularDuracion = (fechaSalida, fechaRegreso) => {
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
   return diffDays === 1 ? '1 día' : `${diffDays} días`
+}
+
+// Función para verificar si un tour está completo o no disponible para reservar
+const esTourCompleto = (tour) => {
+  const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
+  return cuposDisponibles <= 0 || tour.estado === 'COMPLETO' || tour.estado === 'EN_CURSO'
+}
+
+// Función para obtener el mensaje del estado del tour
+const getMensajeEstadoTour = (tour) => {
+  if (tour.estado === 'EN_CURSO') {
+    return 'EN CURSO - Tour iniciado'
+  } else if (tour.estado === 'COMPLETO' || (tour.cupos_disponibles !== null && tour.cupos_disponibles <= 0)) {
+    return 'COMPLETO - 0 cupos disponibles'
+  }
+  return 'DISPONIBLE'
+}
+
+// Función para obtener descripción del estado
+const getDescripcionEstado = (tour) => {
+  if (tour.estado === 'EN_CURSO') {
+    return 'Este tour ya ha comenzado y no acepta nuevas reservas.'
+  } else if (esTourCompleto(tour)) {
+    return 'Este tour ha alcanzado su capacidad máxima.'
+  }
+  return ''
 }
 
 // Función para convertir texto a lista

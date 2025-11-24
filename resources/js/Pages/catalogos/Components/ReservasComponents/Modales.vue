@@ -1,8 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, ref, watch, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
-import DatePicker from 'primevue/datepicker';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faCheck, faXmark, faCalendarDays, faEye,
@@ -28,11 +27,7 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  // Modal para reprogramar reserva
-  reprogramarVisible: {
-    type: Boolean,
-    default: false
-  },
+  // ELIMINADO: Modal para reprogramar reserva - ya no se usa
   // Datos de la reserva seleccionada
   reserva: {
     type: Object,
@@ -61,14 +56,6 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  reprogramandoReserva: {
-    type: Boolean,
-    default: false
-  },
-  finalizandoReserva: {
-    type: Boolean,
-    default: false
-  },
   // Estados disponibles para reservas
   estadosReservas: {
     type: Array,
@@ -86,11 +73,9 @@ const emit = defineEmits([
   'update:visible',
   'update:detallesVisible',
   'update:rechazarVisible',
-  'update:reprogramarVisible',
+  // ELIMINADO: 'update:reprogramarVisible', 'reprogramar', 'finalizar' - ya no se usan
   'confirmar',
   'rechazar',
-  'reprogramar',
-  'finalizar',
   'verDetalles'
 ]);
 
@@ -112,30 +97,24 @@ const isRechazarVisible = computed({
   set: (value) => emit('update:rechazarVisible', value)
 });
 
-// Computed para v-model del modal Reprogramar
-const isReprogramarVisible = computed({
-  get: () => props.reprogramarVisible,
-  set: (value) => emit('update:reprogramarVisible', value)
-});
+// ELIMINADO: isReprogramarVisible y variables de reprogramación - ya no se usan
 
 // Estado local para los formularios
 const motivoRechazo = ref('');
-const fechaNuevaReprogramacion = ref(null);
-const motivoReprogramacion = ref('');
-const observacionesReprogramacion = ref('');
 
 // Funciones para obtener acciones disponibles según el estado
+// NOTA: Se eliminó 'reprogramar' - ahora solo se reprograma desde el TOUR
 const getAccionesDisponibles = (reserva) => {
   if (!reserva || !reserva.estado) return [];
 
   switch (reserva.estado) {
     case 'PENDIENTE':
-      return ['confirmar', 'rechazar', 'reprogramar', 'detalles'];
+      return ['confirmar', 'rechazar', 'detalles'];
     case 'CONFIRMADA':
-      return ['rechazar', 'reprogramar', 'finalizar', 'detalles'];
+      return ['rechazar', 'detalles'];
     case 'REPROGRAMADA':
-      return ['rechazar', 'finalizar', 'detalles'];
-    case 'RECHAZADA':
+      return ['rechazar', 'detalles'];
+    case 'CANCELADA':
       return ['detalles'];
     case 'FINALIZADA':
       return ['detalles'];
@@ -156,17 +135,31 @@ const getColorEstadoTour = (estado) => {
   return estadoObj?.color || 'bg-gray-100 text-gray-800';
 };
 
-// Función para formatear fecha
+// Función para formatear fecha con información de hora cuando sea relevante
 const formatearFecha = (fecha) => {
   if (!fecha) return 'N/A';
-  return new Date(fecha).toLocaleDateString('es-ES', {
+
+  const fechaObj = new Date(fecha);
+
+  // Si la hora es 00:00, mostrar solo la fecha
+  if (fechaObj.getHours() === 0 && fechaObj.getMinutes() === 0) {
+    return fechaObj.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  }
+
+  // Si tiene hora específica, mostrar fecha y hora en formato AM/PM
+  return fechaObj.toLocaleString('es-ES', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   });
-};
-
-// Función para obtener fecha mínima (hoy)
+};// Función para obtener fecha mínima (hoy)
 const getMinDate = () => {
   return new Date();
 };
@@ -190,27 +183,7 @@ const rechazarReserva = () => {
   });
 };
 
-const abrirModalReprogramar = () => {
-  fechaNuevaReprogramacion.value = null;
-  motivoReprogramacion.value = '';
-  observacionesReprogramacion.value = '';
-  isVisible.value = false;
-  isReprogramarVisible.value = true;
-};
-
-const reprogramarReserva = () => {
-  emit('reprogramar', {
-    reserva: props.reserva,
-    fechaNueva: fechaNuevaReprogramacion.value,
-    motivo: motivoReprogramacion.value,
-    observaciones: observacionesReprogramacion.value
-  });
-};
-
-const finalizarReserva = () => {
-  emit('finalizar', props.reserva);
-  // No cerrar el modal aquí, se cerrará cuando termine el proceso
-};
+// ELIMINADO: abrirModalReprogramar, reprogramarReserva y finalizarReserva - ya no se usan
 
 const verDetalles = () => {
   isVisible.value = false;
@@ -220,9 +193,17 @@ const verDetalles = () => {
 // Limpiar formularios al cerrar modales
 const limpiarFormularios = () => {
   motivoRechazo.value = '';
-  fechaNuevaReprogramacion.value = null;
-  motivoReprogramacion.value = '';
-  observacionesReprogramacion.value = '';
+};
+
+// Función para controlar el scroll del body
+const bloquearScroll = () => {
+  document.body.style.overflow = 'hidden';
+  document.body.style.paddingRight = '15px'; // Compensar por scrollbar
+};
+
+const restaurarScroll = () => {
+  document.body.style.overflow = '';
+  document.body.style.paddingRight = '';
 };
 
 // Watch para limpiar formularios cuando se cierran los modales
@@ -231,10 +212,46 @@ const cerrarModalRechazar = () => {
   limpiarFormularios();
 };
 
-const cerrarModalReprogramar = () => {
-  isReprogramarVisible.value = false;
-  limpiarFormularios();
-};
+// Watchers para controlar el scroll cuando se abran/cierren los modales
+watch(isVisible, (newValue) => {
+  if (newValue) {
+    bloquearScroll();
+  } else {
+    // Solo restaurar scroll si ningún otro modal está abierto
+    if (!isDetallesVisible.value && !isRechazarVisible.value) {
+      restaurarScroll();
+    }
+  }
+});
+
+watch(isDetallesVisible, (newValue) => {
+  if (newValue) {
+    bloquearScroll();
+  } else {
+    // Solo restaurar scroll si ningún otro modal está abierto
+    if (!isVisible.value && !isRechazarVisible.value) {
+      restaurarScroll();
+    }
+  }
+});
+
+watch(isRechazarVisible, (newValue) => {
+  if (newValue) {
+    bloquearScroll();
+  } else {
+    // Solo restaurar scroll si ningún otro modal está abierto
+    if (!isVisible.value && !isDetallesVisible.value) {
+      restaurarScroll();
+    }
+  }
+});
+
+// Limpiar scroll al desmontar el componente
+onUnmounted(() => {
+  restaurarScroll();
+});
+
+// ELIMINADO: cerrarModalReprogramar - ya no se usa
 </script>
 
 <template>
@@ -326,59 +343,8 @@ const cerrarModalReprogramar = () => {
           </div>
         </button>
 
-        <!-- Botón para reprogramar -->
-        <button
-          v-if="getAccionesDisponibles(reserva).includes('reprogramar')"
-          class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="abrirModalReprogramar"
-          :disabled="reprogramandoReserva"
-        >
-          <FontAwesomeIcon
-            v-if="reprogramandoReserva"
-            :icon="faSpinner"
-            class="h-5 w-5 animate-spin"
-          />
-          <FontAwesomeIcon
-            v-else
-            :icon="faCalendarDays"
-            class="h-5 w-5"
-          />
-          <div class="text-left flex-1">
-            <div class="font-medium">
-              {{ reprogramandoReserva ? 'Reprogramando...' : 'Reprogramar Reserva' }}
-            </div>
-            <div class="text-xs opacity-90">
-              {{ reprogramandoReserva ? 'Procesando la reprogramación' : 'Cambiar fecha de la reserva' }}
-            </div>
-          </div>
-        </button>
-
-        <!-- Botón para finalizar -->
-        <button
-          v-if="getAccionesDisponibles(reserva).includes('finalizar')"
-          class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start disabled:opacity-50 disabled:cursor-not-allowed"
-          @click="finalizarReserva"
-          :disabled="finalizandoReserva"
-        >
-          <FontAwesomeIcon
-            v-if="finalizandoReserva"
-            :icon="faSpinner"
-            class="h-5 w-5 animate-spin"
-          />
-          <FontAwesomeIcon
-            v-else
-            :icon="faCheck"
-            class="h-5 w-5"
-          />
-          <div class="text-left flex-1">
-            <div class="font-medium">
-              {{ finalizandoReserva ? 'Finalizando...' : 'Finalizar Reserva' }}
-            </div>
-            <div class="text-xs opacity-90">
-              {{ finalizandoReserva ? 'Procesando finalización' : 'Marcar como completada' }}
-            </div>
-          </div>
-        </button>
+        <!-- ELIMINADO: Botón para reprogramar y finalizar reserva individual -->
+        <!-- Ahora las reservas se manejan automáticamente desde el TOUR -->
       </div>
     </div>
 
@@ -538,6 +504,23 @@ const cerrarModalReprogramar = () => {
     :draggable="false"
   >
     <div class="space-y-3 sm:space-y-4">
+      <!-- Advertencia sobre eliminación permanente -->
+      <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4 mb-4">
+        <div class="flex items-start gap-2 sm:gap-3">
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-600 text-base sm:text-lg mt-1 flex-shrink-0" />
+          <div>
+            <h4 class="font-semibold text-orange-800 text-sm sm:text-base mb-2">¡ADVERTENCIA - Acción Permanente!</h4>
+            <div class="text-xs sm:text-sm text-orange-700 space-y-1">
+              <p><strong>• Esta acción NO se puede deshacer</strong></p>
+              <p>• La reserva será ELIMINADA completamente de la base de datos</p>
+              <p>• Se liberarán automáticamente los cupos del tour</p>
+              <p>• Se enviará una notificación por email al cliente</p>
+              <p>• No será posible recuperar esta información posteriormente</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div v-if="reserva" class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
         <div class="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
           <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-base sm:text-lg" />
@@ -585,8 +568,8 @@ const cerrarModalReprogramar = () => {
             class="animate-spin h-5 text-white"
           />
           <FontAwesomeIcon v-else :icon="faCheck" class="h-5" />
-          <span v-if="!procesando">Rechazar Reserva</span>
-          <span v-else>Rechazando...</span>
+          <span v-if="!procesando">Eliminar Reserva Definitivamente</span>
+          <span v-else>Eliminando...</span>
         </button>
         <button
           type="button"
@@ -600,137 +583,8 @@ const cerrarModalReprogramar = () => {
     </template>
   </Dialog>
 
-  <!-- Modal para reprogramar reserva -->
-  <Dialog
-    v-model:visible="isReprogramarVisible"
-    modal
-    header="Reprogramar Reserva"
-    :style="{ width: '95vw', maxWidth: '800px' }"
-    :closable="false"
-    :draggable="false"
-  >
-    <div class="space-y-6">
-      <div v-if="reserva" class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div class="flex items-center gap-3 mb-3">
-          <FontAwesomeIcon :icon="faCalendarDays" class="text-blue-600 text-lg" />
-          <h4 class="font-medium text-blue-800">Información de la Reserva</h4>
-        </div>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div>
-            <span class="font-medium text-gray-700">Cliente:</span>
-            <span class="ml-2">{{ (reserva.cliente?.user?.name) || (reserva.cliente?.nombres) || 'N/A' }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Servicio:</span>
-            <span class="ml-2">{{ reserva.entidad_nombre }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Fecha actual:</span>
-            <span class="ml-2">{{ formatearFecha(reserva.fecha_reserva) }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Total:</span>
-            <span class="ml-2 font-bold text-green-600">${{ Number(reserva.total || 0).toFixed(2) }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tour asociado -->
-      <div v-if="tour && tour.id" class="bg-purple-50 border border-purple-200 rounded-lg p-4">
-        <div class="flex items-center gap-3 mb-3">
-          <FontAwesomeIcon :icon="faInfoCircle" class="text-purple-600 text-lg" />
-          <h4 class="font-medium text-purple-800">Tour Asociado</h4>
-        </div>
-        <div class="text-sm space-y-1">
-          <p><strong>Nombre:</strong> {{ tour.nombre }}</p>
-          <p><strong>Estado actual:</strong>
-            <span :class="getColorEstadoTour(tour.estado)" class="px-2 py-1 rounded-full text-xs font-medium ml-1">
-              {{ estadosTours.find(e => e.value === tour.estado)?.label || tour.estado }}
-            </span>
-          </p>
-          <p class="text-purple-600 text-xs mt-2">
-            ℹ️ Al reprogramar esta reserva, el tour también será marcado como "REPROGRAMADO"
-          </p>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-1 gap-4">
-        <div>
-          <label class="block text-sm font-medium text-gray-700 mb-2">
-            Nueva fecha <span class="text-red-500">*</span>
-          </label>
-          <DatePicker
-            v-model="fechaNuevaReprogramacion"
-            showTime
-            dateFormat="dd/mm/yy"
-            class="w-full"
-            showIcon
-            placeholder="Seleccione la nueva fecha y hora"
-            :minDate="getMinDate()"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Motivo de la reprogramación <span class="text-red-500">*</span>
-        </label>
-        <Textarea
-          v-model="motivoReprogramacion"
-          placeholder="Especifica el motivo de la reprogramación..."
-          rows="3"
-          class="w-full"
-          maxlength="255"
-        />
-        <small class="text-gray-500 text-xs mt-1">
-          {{ motivoReprogramacion.length }}/255 caracteres
-        </small>
-      </div>
-
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-2">
-          Observaciones adicionales (opcional)
-        </label>
-        <Textarea
-          v-model="observacionesReprogramacion"
-          placeholder="Información adicional sobre la reprogramación..."
-          rows="2"
-          class="w-full"
-          maxlength="500"
-        />
-        <small class="text-gray-500 text-xs mt-1">
-          {{ observacionesReprogramacion.length }}/500 caracteres
-        </small>
-      </div>
-    </div>
-
-    <template #footer>
-      <div class="flex justify-center gap-4 w-full mt-6">
-        <button
-          @click="reprogramarReserva"
-          :disabled="!fechaNuevaReprogramacion || !motivoReprogramacion.trim() || procesando"
-          class="bg-yellow-500 hover:bg-yellow-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <FontAwesomeIcon
-            v-if="procesando"
-            :icon="faSpinner"
-            class="animate-spin h-5 text-white"
-          />
-          <FontAwesomeIcon v-else :icon="faCalendarDays" class="h-5" />
-          <span v-if="!procesando">Reprogramar</span>
-          <span v-else>Reprogramando...</span>
-        </button>
-        <button
-          type="button"
-          @click="cerrarModalReprogramar"
-          :disabled="procesando"
-          class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-        >
-          <FontAwesomeIcon :icon="faTimes" class="h-5" />Cancelar
-        </button>
-      </div>
-    </template>
-  </Dialog>
+  <!-- ELIMINADO: Modal para reprogramar reserva individual -->
+  <!-- Las reservas ahora se reprograman automáticamente desde el TOUR -->
 </template>
 
 <style scoped>

@@ -1,45 +1,73 @@
 <script setup>
-import { Head } from '@inertiajs/vue3'
+import { Head, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { ref, onMounted, computed, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
+import { useConfirm } from 'primevue/useconfirm'
+import Toast from 'primevue/toast'
+import ConfirmDialog from 'primevue/confirmdialog'
+import Card from 'primevue/card'
+import DataTable from 'primevue/datatable'
+import Column from 'primevue/column'
+import InputText from 'primevue/inputtext'
+import DatePicker from 'primevue/datepicker'
+import Dialog from 'primevue/dialog'
+import Select from 'primevue/select'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import {
   faCheck, faXmark, faCalendarDays, faClockRotateLeft,
-  faUsers, faDollarSign,
-  faCalendarCheck, faInfoCircle,
-  faSpinner, faListDots, faRefresh,
-  faHandPointUp
+  faUsers,
+  faCalendarCheck, faInfoCircle, faExclamationTriangle,
+  faSpinner, faListDots,
+  faHandPointUp, faArrowLeft,
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 import ReservaModales from './Components/ReservasComponents/Modales.vue'
+import CambiarEstado from './Components/TourComponents/CambiarEstado.vue'
 
-// Configuración de Toast
+// Configuración de Toast y Confirm
 const toast = useToast()
+const confirm = useConfirm()
 
 // Estado reactivo
 const reservas = ref([])
 const tours = ref([])
 const loading = ref(false)
 const loadingTours = ref(false)
+
+// Variables para el tour específico
+const tourId = ref(null)
+const tourActual = ref(null)
+const loadingTour = ref(false)
+const loadingVolver = ref(false)
+const accionesTourLoading = ref({
+  cambiarEstado: false
+})
+
+// Modales para acciones de tour
+const modalCambiarEstadoTour = ref(false)
+const modalReprogramarTour = ref(false)
+const datosReprogramacion = ref({
+  fechaSalida: null,
+  fechaRegreso: null,
+  motivo: ''
+})
 const filtros = ref({
   busqueda: '',
   fechaDesde: null,
   fechaHasta: null,
-  estadoReserva: '', // Siempre vacío por defecto
-  estadoTour: null,
-  tourSeleccionado: '' // Nuevo filtro para buscar por tour específico
+  estado: null
 })
 
 // Estados para modales
 const modalMasAcciones = ref(false)
-const modalReprogramar = ref(false)
 const modalRechazar = ref(false)
+const modalCancelarTour = ref(false) // Modal separado para cancelar tour
 const modalDetalles = ref(false)
-const modalCambiarEstadoTour = ref(false)
 const reservaSeleccionada = ref(null)
 const tourSeleccionado = ref(null)
 const motivoRechazo = ref('')
+const motivoCancelacionTour = ref('') // Motivo separado para cancelar tour
 const fechaNuevaReprogramacion = ref(null)
 const motivoReprogramacion = ref('')
 const observacionesReprogramacion = ref('')
@@ -52,46 +80,78 @@ const isClearingFilters = ref(false)
 const procesando = ref(false)
 const confirmandoReserva = ref(false)
 const rechazandoReserva = ref(false)
-const reprogramandoReserva = ref(false)
-const finalizandoReserva = ref(false)
-const isReloading = ref(false)
-const isFinalizandoAutomatico = ref(false)
+const cancelandoTour = ref(false)
+// Se removieron: isReloading, isFinalizandoAutomatico
 
-// Estados disponibles para reservas
+// Estados disponibles para reservas (unificados)
 const estadosReservas = [
-  { label: 'Pendientes', value: 'PENDIENTE', severity: 'warn', color: 'bg-yellow-100 text-yellow-800', icon: faClockRotateLeft },
-  { label: 'Confirmadas', value: 'CONFIRMADA', severity: 'success', color: 'bg-green-100 text-green-800', icon: faCheck },
-  { label: 'Rechazadas', value: 'RECHAZADA', severity: 'danger', color: 'bg-red-100 text-red-800', icon: faXmark },
-  { label: 'Reprogramadas', value: 'REPROGRAMADA', severity: 'info', color: 'bg-blue-100 text-blue-800', icon: faCalendarDays },
-  { label: 'Finalizadas', value: 'FINALIZADA', severity: 'secondary', color: 'bg-gray-100 text-gray-800', icon: faCalendarCheck }
+  { label: 'Pendiente', value: 'PENDIENTE', severity: 'warn', color: 'bg-yellow-100 text-yellow-800', icon: faClockRotateLeft },
+  { label: 'Confirmada', value: 'CONFIRMADA', severity: 'success', color: 'bg-green-100 text-green-800', icon: faCheck },
+  { label: 'En Curso', value: 'EN_CURSO', severity: 'info', color: 'bg-blue-100 text-blue-800', icon: faCalendarDays },
+  { label: 'Finalizada', value: 'FINALIZADA', severity: 'secondary', color: 'bg-gray-100 text-gray-800', icon: faCalendarCheck },
+  { label: 'Rechazada', value: 'CANCELADA', severity: 'danger', color: 'bg-red-100 text-red-800', icon: faXmark },
+  { label: 'Reprogramada', value: 'REPROGRAMADA', severity: 'info', color: 'bg-purple-100 text-purple-800', icon: faCalendarDays }
 ]
+
+// NOTA: Las reservas ya NO se reprograman ni finalizan individualmente.
+// Solo se manejan a través del TOUR asociado desde la vista de Tours.
 
 // Estados disponibles para tours
 const estadosTours = [
   { label: 'Disponible', value: 'DISPONIBLE', color: 'bg-green-100 text-green-800' },
-  { label: 'Agotado', value: 'AGOTADO', color: 'bg-red-100 text-red-800' },
+  { label: 'Completo', value: 'COMPLETO', color: 'bg-orange-100 text-orange-800' },
   { label: 'En Curso', value: 'EN_CURSO', color: 'bg-blue-100 text-blue-800' },
-  { label: 'Completado', value: 'COMPLETADO', color: 'bg-gray-100 text-gray-800' },
-  { label: 'Cancelado', value: 'CANCELADO', color: 'bg-red-100 text-red-800' },
-  { label: 'Suspendido', value: 'SUSPENDIDO', color: 'bg-orange-100 text-orange-800' },
-  { label: 'Reprogramado', value: 'REPROGRAMADO', color: 'bg-purple-100 text-purple-800' }
+  { label: 'Finalizado', value: 'FINALIZADO', color: 'bg-gray-100 text-gray-800' },
+  { label: 'Cancelada', value: 'CANCELADA', color: 'bg-red-100 text-red-800' },
+  { label: 'Reprogramada', value: 'REPROGRAMADA', color: 'bg-purple-100 text-purple-800' }
 ]
 
-// Computed para filtrar reservas por estado
+// Computed para verificar si se cumple el cupo mínimo
+const cumpleCupoMinimo = computed(() => {
+  if (!tourActual.value) return false
+
+  const personasConfirmadas = reservasFiltradas.value
+    .filter(reserva => reserva.estado === 'CONFIRMADA')
+    .reduce((total, reserva) => {
+      const adultos = reserva.mayores_edad || 0
+      const menores = reserva.menores_edad || 0
+      return total + adultos + menores
+    }, 0)
+
+  const cupoMinimo = tourActual.value.cupo_min || 0
+
+  return personasConfirmadas >= cupoMinimo
+})
+
+// Computed para verificar si el tour tiene reservas activas (para habilitar/deshabilitar cancelación)
+const tieneReservasActivas = computed(() => {
+  if (!tourActual.value || !reservas.value) return false
+
+  return reservas.value.some(reserva =>
+    ['PENDIENTE', 'CONFIRMADA', 'EN_CURSO', 'REPROGRAMADA'].includes(reserva.estado)
+  )
+})
+
+// Computed para verificar si todas las reservas están confirmadas (no hay pendientes)
+const todasReservasConfirmadas = computed(() => {
+  if (!tourActual.value || !reservas.value || reservas.value.length === 0) return false
+
+  // No debe haber ninguna reserva PENDIENTE
+  const hayPendientes = reservas.value.some(reserva => reserva.estado === 'PENDIENTE')
+
+  // Debe haber al menos una reserva CONFIRMADA
+  const hayConfirmadas = reservas.value.some(reserva => reserva.estado === 'CONFIRMADA')
+
+  return !hayPendientes && hayConfirmadas
+})// Computed para filtrar reservas (simplificado para un tour específico)
 const reservasFiltradas = computed(() => {
   let filtered = reservas.value
 
-  // Filtrar por estado de reserva si está seleccionado
-  if (filtros.value.estadoReserva) {
-    filtered = filtered.filter(reserva => reserva.estado === filtros.value.estadoReserva)
-  }
-
-  // Aplicar filtros adicionales
+  // Aplicar filtros básicos
   if (filtros.value.busqueda) {
     const busqueda = filtros.value.busqueda.toLowerCase()
     filtered = filtered.filter(reserva =>
       (reserva.cliente?.user?.name || reserva.cliente?.nombres || '').toLowerCase().includes(busqueda) ||
-      (reserva.entidad_nombre || '').toLowerCase().includes(busqueda) ||
       (reserva.cliente?.user?.email || reserva.cliente?.correo || '').toLowerCase().includes(busqueda)
     )
   }
@@ -108,10 +168,13 @@ const reservasFiltradas = computed(() => {
     )
   }
 
+  if (filtros.value.estado) {
+    filtered = filtered.filter(reserva => reserva.estado === filtros.value.estado)
+  }
+
   // Ordenar: PENDIENTES primero, luego por fecha más reciente
   const resultado = filtered.sort((a, b) => {
-    // Prioridad por estado: PENDIENTE primero
-    const prioridadEstado = { 'PENDIENTE': 1, 'CONFIRMADA': 2, 'REPROGRAMADA': 3, 'FINALIZADA': 4, 'RECHAZADA': 5 }
+    const prioridadEstado = { 'PENDIENTE': 1, 'CONFIRMADA': 2, 'EN_CURSO': 3, 'REPROGRAMADA': 4, 'COMPLETADA': 5, 'SUSPENDIDA': 6, 'CANCELADA': 7 }
     const prioridadA = prioridadEstado[a.estado] || 6
     const prioridadB = prioridadEstado[b.estado] || 6
 
@@ -119,7 +182,6 @@ const reservasFiltradas = computed(() => {
       return prioridadA - prioridadB
     }
 
-    // Si tienen el mismo estado, ordenar por fecha (más reciente primero)
     return new Date(b.fecha_reserva) - new Date(a.fecha_reserva)
   })
   return resultado
@@ -129,28 +191,295 @@ const reservasFiltradas = computed(() => {
 const estadisticas = computed(() => {
   return {
     pendientes: reservas.value.filter(r => r.estado === 'PENDIENTE').length,
-    confirmadas: reservas.value.filter(r => r.estado === 'CONFIRMADA').length,
-    reprogramadas: reservas.value.filter(r => r.estado === 'REPROGRAMADA').length,
-    rechazadas: reservas.value.filter(r => r.estado === 'RECHAZADA').length,
-    finalizadas: reservas.value.filter(r => r.estado === 'FINALIZADA').length,
-    totalIngresos: reservas.value
-      .filter(r => ['CONFIRMADA', 'FINALIZADA'].includes(r.estado))
-      .reduce((sum, r) => sum + (Number(r.total) || 0), 0)
+    confirmadas: reservas.value.filter(r => r.estado === 'CONFIRMADA').length
   }
 })
 
-// Computed para información del tour seleccionado
-const infoTourSeleccionado = computed(() => {
-  if (!filtros.value.tourSeleccionado || filtros.value.tourSeleccionado === '') return null
-
-  const tour = tours.value.find(t => t.id == filtros.value.tourSeleccionado)
-  const reservasDelTour = reservasFiltradas.value.length
-
-  return {
-    nombre: tour?.nombre || 'Tour no encontrado',
-    totalReservas: reservasDelTour
+// Funciones para cargar tour específico
+const cargarTour = async (id) => {
+  loadingTour.value = true
+  try {
+    const response = await axios.get(`/api/tours/${id}`)
+    tourActual.value = response.data
+  } catch (error) {
+    console.error('Error cargando tour:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: 'No se pudo cargar la información del tour',
+      life: 4000
+    })
+  } finally {
+    loadingTour.value = false
   }
-})
+}
+
+// Función para obtener tour ID desde URL
+const obtenerTourIdDesdeUrl = () => {
+  const urlParams = new URLSearchParams(window.location.search)
+  const tourParam = urlParams.get('tour')
+  console.log('Tour ID obtenido de URL:', tourParam)
+  return tourParam
+}
+
+// El modal ahora solo se usa para Reprogramar desde cambiarEstadoDirecto()
+
+// Función para cambiar estado directamente
+const cambiarEstadoDirecto = async (nuevoEstado) => {
+  if (!tourActual.value) return
+
+  // Para Reprogramar, abrir modal específico
+  if (nuevoEstado === 'REPROGRAMADA') {
+    cerrarTodosLosModales() // Cerrar todos los modales primero
+
+    datosReprogramacion.value = {
+      fechaSalida: tourActual.value.fecha_salida ? new Date(tourActual.value.fecha_salida) : null,
+      fechaRegreso: tourActual.value.fecha_regreso ? new Date(tourActual.value.fecha_regreso) : null,
+      motivo: ''
+    }
+    modalReprogramarTour.value = true
+    return
+  }
+
+  // Para Cancelar, abrir modal específico para cancelar tour
+  if (nuevoEstado === 'CANCELADA') {
+    abrirModalCancelarTour()
+    return
+  }
+
+  // Mostrar confirmación para otros cambios de estado
+  const mensajesConfirmacion = {
+    'EN_CURSO': {
+      header: 'Cambio de Estado del Tour',
+      message: '¡Tienes un cambio de estado pendiente!',
+      detail: '¿Deseas marcar este tour como "En Curso"?'
+    },
+    'FINALIZADO': {
+      header: 'Finalizar Tour',
+      message: '¡Tienes un cambio de estado pendiente!',
+      detail: '¿Deseas finalizar este tour permanentemente?'
+    }
+  }
+
+  const configuracion = mensajesConfirmacion[nuevoEstado]
+  if (!configuracion) return
+
+  confirm.require({
+    message: {
+      header: configuracion.message,
+      content: configuracion.detail
+    },
+    header: configuracion.header,
+    icon: 'pi pi-exclamation-triangle',
+    position: 'center',
+    rejectClass: 'bg-blue-500 hover:bg-blue-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2',
+    acceptClass: 'bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 ml-3',
+    rejectLabel: '✓ Continuar',
+    acceptLabel: '✕ Cancelar',
+    accept: () => {
+      // No hacer nada si se cancela (ahora accept es cancelar)
+    },
+    reject: async () => {
+      // Ejecutar cambio de estado (ahora reject es continuar)
+      await ejecutarCambioEstado(nuevoEstado)
+    }
+  })
+}
+
+// Función separada para ejecutar el cambio de estado
+const ejecutarCambioEstado = async (nuevoEstado) => {
+  accionesTourLoading.value.cambiarEstado = true
+
+  try {
+    const response = await axios.put(`/api/tours/${tourActual.value.id}/cambiar-estado`, {
+      estado: nuevoEstado
+    })
+
+    tourActual.value.estado = nuevoEstado
+
+    toast.add({
+      severity: 'success',
+      summary: 'Estado actualizado',
+      detail: `El tour ahora está ${nuevoEstado.toLowerCase()}`,
+      life: 3000
+    })
+
+    // Recargar reservas para reflejar cambios
+    await cargarReservas()
+
+  } catch (error) {
+    console.error('Error actualizando estado:', error)
+
+    // Manejo específico para errores de validación (422)
+    if (error.response?.status === 422) {
+      toast.add({
+        severity: 'warn',
+        summary: 'Validación fallida',
+        detail: error.response.data.message || 'No se pudo actualizar el estado',
+        life: 6000
+      })
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: error.response?.data?.message || 'No se pudo actualizar el estado',
+        life: 4000
+      })
+    }
+  } finally {
+    accionesTourLoading.value.cambiarEstado = false
+  }
+}
+
+// Función para manejar actualización de estado del tour
+const handleEstadoTourActualizado = async (tourActualizado) => {
+  tourActual.value = tourActualizado
+  modalCambiarEstadoTour.value = false
+
+  // Mensaje específico según el estado
+  const mensajes = {
+    'CANCELADA': {
+      severity: 'warn',
+      summary: 'Tour cancelado',
+      detail: `El tour ha sido cancelado. Se enviaron notificaciones de cancelación a ${tourActualizado.reservas_canceladas || 0} cliente(s) con reservas.`
+    },
+    'FINALIZADO': {
+      severity: 'success',
+      summary: 'Tour finalizado',
+      detail: `El tour ha sido finalizado correctamente. Se enviaron notificaciones a ${tourActualizado.reservas_finalizadas || 0} cliente(s).`
+    },
+    default: {
+      severity: 'success',
+      summary: 'Estado actualizado',
+      detail: 'El estado del tour se ha actualizado correctamente'
+    }
+  }
+
+  const mensaje = mensajes[tourActualizado.estado] || mensajes.default
+
+  toast.add({
+    severity: mensaje.severity,
+    summary: mensaje.summary,
+    detail: mensaje.detail,
+    life: 5000
+  })
+
+  // Recargar reservas para reflejar cambios
+  await cargarReservas()
+}
+
+// Función para limpiar el estado del scroll
+const limpiarScrollModal = () => {
+  document.body.style.overflow = ''
+  document.body.style.paddingRight = ''
+}
+
+// Función para cerrar todos los modales
+const cerrarTodosLosModales = () => {
+  modalMasAcciones.value = false
+  modalRechazar.value = false
+  modalCancelarTour.value = false
+  modalDetalles.value = false
+  modalCambiarEstadoTour.value = false
+  modalReprogramarTour.value = false
+
+  // Limpiar variables relacionadas
+  reservaSeleccionada.value = null
+  tourSeleccionado.value = null
+  motivoRechazo.value = ''
+  motivoCancelacionTour.value = ''
+
+  // Limpiar estados de loading
+  cancelandoTour.value = false
+
+  // Restaurar scroll
+  limpiarScrollModal()
+}// Función para manejar reprogramación
+const handleReprogramarTour = async () => {
+  if (!datosReprogramacion.value.fechaSalida || !datosReprogramacion.value.fechaRegreso) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Campos requeridos',
+      detail: 'Debe seleccionar las nuevas fechas de salida y regreso',
+      life: 4000
+    })
+    return
+  }
+
+  if (!datosReprogramacion.value.motivo.trim()) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Motivo requerido',
+      detail: 'Debe ingresar un motivo para la reprogramación',
+      life: 4000
+    })
+    return
+  }
+
+  // Validar que fecha de regreso sea posterior a fecha de salida
+  if (datosReprogramacion.value.fechaRegreso <= datosReprogramacion.value.fechaSalida) {
+    toast.add({
+      severity: 'warn',
+      summary: 'Fechas inválidas',
+      detail: 'La fecha de regreso debe ser posterior a la fecha de salida',
+      life: 4000
+    })
+    return
+  }
+
+  accionesTourLoading.value.cambiarEstado = true
+
+  try {
+    // Formatear fechas para envío al servidor
+    const formatearFechaISO = (fecha) => {
+      if (fecha instanceof Date) {
+        return fecha.toISOString().slice(0, 19).replace('T', ' ')
+      }
+      return fecha
+    }
+
+    // Reprogramar el tour y sus reservas
+    const response = await axios.put(`/api/tours/${tourActual.value.id}/cambiar-estado`, {
+      estado: 'REPROGRAMADA',
+      fecha_salida: formatearFechaISO(datosReprogramacion.value.fechaSalida),
+      fecha_regreso: formatearFechaISO(datosReprogramacion.value.fechaRegreso),
+      motivo_reprogramacion: datosReprogramacion.value.motivo,
+      reprogramar_reservas: true // Indicar que también se reprogramen las reservas
+    })
+
+    tourActual.value = { ...tourActual.value, ...response.data }
+    cerrarTodosLosModales() // Usar función centralizada para cerrar modales
+
+    // Mostrar información sobre reservas reprogramadas
+    const reservasReprogramadas = response.data.reservas_reprogramadas || 0
+
+    toast.add({
+      severity: 'success',
+      summary: 'Tour y reservas reprogramados',
+      detail: `El tour ha sido reprogramado correctamente. ${reservasReprogramadas} reserva(s) fueron reprogramada(s) y se enviaron notificaciones por correo.`,
+      life: 5000
+    })
+
+    await cargarReservas()
+
+  } catch (error) {
+    console.error('Error reprogramando tour:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'No se pudo reprogramar el tour',
+      life: 4000
+    })
+  } finally {
+    accionesTourLoading.value.cambiarEstado = false
+  }
+}
+
+// Función para volver a Tours
+const volverATours = () => {
+  loadingVolver.value = true
+  router.visit('/tours')
+}
 
 // Estilo responsive para el diálogo
 const dialogStyle = computed(() => {
@@ -163,25 +492,26 @@ const dialogStyle = computed(() => {
     }
 })
 
-// Función para cargar todas las reservas
+// Función para cargar reservas de un tour específico
 const cargarReservas = async () => {
+  if (!tourId.value) return
+
   loading.value = true
   try {
     const params = {
       busqueda: filtros.value.busqueda || undefined,
       fecha_inicio: filtros.value.fechaDesde || undefined,
       fecha_fin: filtros.value.fechaHasta || undefined,
-      tour_id: filtros.value.tourSeleccionado || undefined
+      tour_id: tourId.value
     }
     const response = await axios.get('/api/reservas', { params, withCredentials: true })
     reservas.value = Array.isArray(response.data) ? response.data : (response.data.data || [])
-    // Reservas cargadas exitosamente
   } catch (error) {
     console.error('Error cargando reservas:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: 'No se pudieron cargar las reservas',
+      detail: 'No se pudieron cargar las reservas del tour',
       life: 4000
     })
     reservas.value = []
@@ -190,62 +520,9 @@ const cargarReservas = async () => {
   }
 }
 
-// Función para cargar reservas con toasts informativos
-const cargarReservasWithToasts = async () => {
-  loading.value = true
+// Función de cargar reservas con toasts removida - se usa cargarReservas directamente
 
-  // Mostrar toast de carga con duración automática
-  toast.add({
-    severity: 'info',
-    summary: 'Cargando reservas...',
-    life: 2000
-  })
-
-  try {
-    const params = {
-      busqueda: filtros.value.busqueda || undefined,
-      fecha_inicio: filtros.value.fechaDesde || undefined,
-      fecha_fin: filtros.value.fechaHasta || undefined,
-      tour_id: filtros.value.tourSeleccionado || undefined
-    }
-
-    const response = await axios.get('/api/reservas', { params, withCredentials: true })
-    reservas.value = response.data.data || []
-
-    // Mostrar toast de éxito
-    toast.add({
-      severity: 'success',
-      summary: 'Reservas cargadas',
-      life: 2000
-    })
-
-  } catch (error) {
-    console.error('Error cargando reservas:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudieron cargar las reservas',
-      life: 4000
-    })
-    reservas.value = []
-  } finally {
-    loading.value = false
-  }
-}
-
-// Función para cargar tours
-const cargarTours = async () => {
-  loadingTours.value = true
-  try {
-    const response = await axios.get('/api/tours')
-    tours.value = response.data || []
-  } catch (error) {
-    console.error('Error cargando tours:', error)
-    tours.value = []
-  } finally {
-    loadingTours.value = false
-  }
-}
+// Función cargarTours removida - ya no se necesita cargar lista completa
 
 // Función para confirmar reserva
 const confirmarReserva = async (reserva) => {
@@ -279,200 +556,83 @@ const confirmarReserva = async (reserva) => {
   }
 }
 
-// Función para abrir modal de rechazo
-const abrirModalRechazar = (reserva) => {
-  reservaSeleccionada.value = reserva
-  motivoRechazo.value = ''
-  modalRechazar.value = true
+// Función para abrir modal de cancelar tour completo
+const abrirModalCancelarTour = () => {
+  cerrarTodosLosModales() // Cerrar todos los modales primero
+
+  motivoCancelacionTour.value = ''
+  modalCancelarTour.value = true
 }
 
-// Función para rechazar reserva
-const rechazarReserva = async () => {
-  if (!motivoRechazo.value.trim()) {
+// Función para cancelar tour completo
+const cancelarTourCompleto = async () => {
+  if (!motivoCancelacionTour.value.trim()) {
     toast.add({
       severity: 'warn',
       summary: 'Campo requerido',
-      detail: 'Debe ingresar un motivo para rechazar la reserva',
+      detail: 'Debe ingresar un motivo para cancelar el tour',
       life: 4000
     })
     return
   }
 
+  cancelandoTour.value = true
+
   try {
-    await axios.put(`/api/reservas/${reservaSeleccionada.value.id}/rechazar`, {
-      motivo: motivoRechazo.value
+    // Cancelar tour completo y todas sus reservas
+    const response = await axios.put(`/api/tours/${tourActual.value.id}/cambiar-estado`, {
+      estado: 'CANCELADA',
+      motivo_cancelacion: motivoCancelacionTour.value,
+      cancelar_reservas: true
     })
 
-    // Actualizar estado local
-    const index = reservas.value.findIndex(r => r.id === reservaSeleccionada.value.id)
-    if (index !== -1) {
-      reservas.value[index].estado = 'RECHAZADA'
-    }
+    // Actualizar estado del tour
+    tourActual.value.estado = 'CANCELADA'
 
-    modalRechazar.value = false
+    // Recargar reservas para mostrar los cambios
+    await cargarReservas()
+
+    cerrarTodosLosModales()
+
+    const reservasCanceladas = response.data.reservas_canceladas || 0
     toast.add({
-      severity: 'success',
-      summary: '¡Rechazada!',
-      detail: `Reserva de ${reservaSeleccionada.value.cliente?.user?.name || reservaSeleccionada.value.cliente?.nombres} rechazada correctamente`,
-      life: 4000
+      severity: 'warn',
+      summary: '¡Tour Cancelado!',
+      detail: `El tour ha sido cancelado. Se cancelaron ${reservasCanceladas} reserva(s) y se enviaron notificaciones por correo.`,
+      life: 5000
     })
-
   } catch (error) {
-    console.error('Error rechazando reserva:', error)
+    console.error('Error cancelando tour:', error)
     toast.add({
       severity: 'error',
       summary: 'Error',
-      detail: error.response?.data?.message || 'No se pudo rechazar la reserva',
+      detail: error.response?.data?.message || 'No se pudo cancelar el tour',
       life: 4000
     })
+  } finally {
+    cancelandoTour.value = false
   }
 }
 
 // Función para abrir modal de reprogramación
-const abrirModalReprogramar = (reserva) => {
-  reservaSeleccionada.value = reserva
-  fechaNuevaReprogramacion.value = null
-  motivoReprogramacion.value = ''
-  observacionesReprogramacion.value = ''
+// ELIMINADO: abrirModalReprogramar - ya no se reprograma individualmente
 
-  // Cargar el tour relacionado para poder reprogramarlo también
-  const tour = tours.value.find(t =>
-    reserva.detallesTours?.some(dt => dt.tour_id === t.id) ||
-    reserva.entidad_nombre === t.nombre
-  )
-  tourSeleccionado.value = tour
+// ELIMINADO: reprogramarReserva - ahora se hace a nivel de TOUR
 
-  modalReprogramar.value = true
-}
-
-// Función para reprogramar reserva
-const reprogramarReserva = async () => {
-  if (!fechaNuevaReprogramacion.value || !motivoReprogramacion.value.trim()) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Campos requeridos',
-      detail: 'Debe ingresar una nueva fecha y motivo para reprogramar',
-      life: 4000
-    })
-    return
-  }
-
-  try {
-    const reprogramacionData = {
-      fecha_nueva: fechaNuevaReprogramacion.value,
-      motivo: motivoReprogramacion.value,
-      observaciones: observacionesReprogramacion.value
-    }
-
-    await axios.put(`/api/reservas/${reservaSeleccionada.value.id}/reprogramar`, reprogramacionData)
-
-    // Si hay un tour asociado, también reprogramarlo
-    if (tourSeleccionado.value) {
-      try {
-        // Calcular nueva fecha de regreso (agregar la duración original del tour)
-        const fechaOriginalSalida = new Date(tourSeleccionado.value.fecha_salida)
-        const fechaOriginalRegreso = new Date(tourSeleccionado.value.fecha_regreso)
-        const duracionTour = fechaOriginalRegreso.getTime() - fechaOriginalSalida.getTime()
-
-        const nuevaFechaRegreso = new Date(new Date(fechaNuevaReprogramacion.value).getTime() + duracionTour)
-
-        const tourData = {
-          estado: 'REPROGRAMADO',
-          fecha_salida: fechaNuevaReprogramacion.value,
-          fecha_regreso: nuevaFechaRegreso,
-          motivo_reprogramacion: `Reprogramado por reserva: ${motivoReprogramacion.value}`,
-          observaciones: observacionesReprogramacion.value
-        }
-
-        await axios.put(`/api/tours/${tourSeleccionado.value.id}/cambiar-estado`, tourData)
-
-        toast.add({
-          severity: 'info',
-          summary: 'Tour actualizado',
-          detail: `El tour "${tourSeleccionado.value.nombre}" también ha sido reprogramado`,
-          life: 4000
-        })
-      } catch (tourError) {
-        console.error('Error reprogramando tour:', tourError)
-        toast.add({
-          severity: 'warn',
-          summary: 'Advertencia',
-          detail: 'La reserva fue reprogramada pero hubo un error al actualizar el tour',
-          life: 4000
-        })
-      }
-    }
-
-    // Actualizar estado local de la reserva
-    const index = reservas.value.findIndex(r => r.id === reservaSeleccionada.value.id)
-    if (index !== -1) {
-      reservas.value[index].estado = 'REPROGRAMADA'
-      reservas.value[index].fecha_reserva = fechaNuevaReprogramacion.value
-    }
-
-    modalReprogramar.value = false
-
-    // Recargar datos para mostrar cambios
-    await Promise.all([cargarReservas(), cargarTours()])
-
-    toast.add({
-      severity: 'success',
-      summary: '¡Reprogramada!',
-      detail: `Reserva de ${reservaSeleccionada.value.cliente?.user?.name || reservaSeleccionada.value.cliente?.nombres} reprogramada correctamente`,
-      life: 4000
-    })
-
-  } catch (error) {
-    console.error('Error reprogramando reserva:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'No se pudo reprogramar la reserva',
-      life: 4000
-    })
-  }
-}
-
-// Función para finalizar reserva
-const finalizarReserva = async (reserva) => {
-  finalizandoReserva.value = true
-  try {
-    await axios.put(`/api/reservas/${reserva.id}/finalizar`)
-
-    // Actualizar estado local
-    const index = reservas.value.findIndex(r => r.id === reserva.id)
-    if (index !== -1) {
-      reservas.value[index].estado = 'FINALIZADA'
-    }
-
-    toast.add({
-      severity: 'success',
-      summary: '¡Finalizada!',
-      detail: `Reserva de ${reserva.cliente?.user?.name || reserva.cliente?.nombres} finalizada correctamente. Email de confirmación enviado.`,
-      life: 4000
-    })
-
-  } catch (error) {
-    console.error('Error finalizando reserva:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'No se pudo finalizar la reserva',
-      life: 4000
-    })
-  } finally {
-    finalizandoReserva.value = false
-  }
-}
+// ELIMINADO: finalizarReserva - ahora se hace a nivel de TOUR
 
 // Función para ver detalles de reserva
 const verDetallesReserva = (reserva) => {
+  cerrarTodosLosModales() // Cerrar todos los modales primero
+
   reservaSeleccionada.value = reserva
   modalDetalles.value = true
 }
 
 // Función para abrir modal de más acciones
 const abrirModalMasAcciones = (reserva) => {
+  cerrarTodosLosModales() // Cerrar todos los modales primero
+
   reservaSeleccionada.value = reserva
   // Cargar el tour relacionado si existe
   const tour = tours.value.find(t =>
@@ -494,16 +654,19 @@ const onRowClick = (event) => {
   }
 }
 
-// Función para obtener acciones disponibles según el estado
+// Función para obtener acciones disponibles según el estado (estados unificados)
+// NOTA: Se eliminó 'reprogramar' y 'finalizar' - ahora solo se maneja a nivel TOUR
 const getAccionesDisponibles = (reserva) => {
   switch (reserva.estado) {
     case 'PENDIENTE':
-      return ['confirmar', 'rechazar', 'reprogramar', 'detalles']
+      return ['confirmar', 'rechazar', 'detalles']
     case 'CONFIRMADA':
-      return ['rechazar', 'reprogramar', 'finalizar', 'detalles']
+      return ['rechazar', 'detalles']
+    case 'EN_CURSO':
+      return ['detalles']
     case 'REPROGRAMADA':
-      return ['rechazar', 'finalizar', 'detalles']
-    case 'RECHAZADA':
+      return ['rechazar', 'detalles']
+    case 'CANCELADA':
       return ['detalles']
     case 'FINALIZADA':
       return ['detalles']
@@ -524,13 +687,35 @@ const getColorEstadoTour = (estado) => {
   return estadoObj?.color || 'bg-gray-100 text-gray-800'
 }
 
+// Función para obtener label formateado del estado de tour
+const getLabelEstadoTour = (estado) => {
+  const estadoObj = estadosTours.find(e => e.value === estado)
+  return estadoObj?.label || estado
+}
+
 // Función para formatear fecha
 const formatearFecha = (fecha) => {
   if (!fecha) return 'N/A'
-  return new Date(fecha).toLocaleDateString('es-ES', {
+
+  const fechaObj = new Date(fecha)
+
+  // Si la hora es 00:00, mostrar solo la fecha
+  if (fechaObj.getHours() === 0 && fechaObj.getMinutes() === 0) {
+    return fechaObj.toLocaleDateString('es-ES', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    })
+  }
+
+  // Si tiene hora específica, mostrar fecha y hora en formato AM/PM
+  return fechaObj.toLocaleString('es-ES', {
     day: '2-digit',
     month: '2-digit',
-    year: 'numeric'
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   })
 }
 
@@ -552,32 +737,28 @@ const formatearFechaHora = (fecha) => {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
   })
 }
 
-// Función para limpiar filtros
+// Función para limpiar filtros (simplificada)
 const limpiarFiltros = async () => {
   isClearingFilters.value = true
 
   try {
-    // Simular un pequeño delay para mostrar el loading
-    await new Promise(resolve => setTimeout(resolve, 300))
-
     filtros.value = {
       busqueda: '',
       fechaDesde: null,
       fechaHasta: null,
-      estadoReserva: '', // Limpiar filtro de estado
-      estadoTour: null,
-      tourSeleccionado: '' // Limpiar filtro de tour
+      estado: null
     }
 
     toast.add({
       severity: "success",
       summary: "Filtros limpiados",
-      life: 2000
+      life: 1500
     })
 
   } finally {
@@ -590,90 +771,51 @@ const getMinDate = () => {
   return new Date()
 }
 
-// Función para recargar reservas con toasts
-const recargarReservasWithToasts = async () => {
-  isReloading.value = true
-
-  // Mostrar toast de carga
-  toast.add({
-    severity: 'info',
-    summary: 'Cargando reservas...',
-    life: 2000
-  })
-
-  try {
-    await cargarReservas()
-
-    // Mostrar toast de éxito
-    setTimeout(() => {
-      toast.add({
-        severity: 'success',
-        summary: 'Reservas actualizadas',
-        detail: `${reservas.value.length} registros cargados`,
-        life: 2000
-      })
-    }, 300)
-
-  } catch (error) {
-    console.error('Error al cargar las reservas:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: 'No se pudieron cargar las reservas',
-      life: 3000
-    })
-  } finally {
-    // Desactivar loading después de un breve delay
-    setTimeout(() => {
-      isReloading.value = false
-    }, 500)
+// Computed para fecha mínima de regreso segura
+const minDateRegreso = computed(() => {
+  if (datosReprogramacion.value.fechaSalida instanceof Date) {
+    const minDate = new Date(datosReprogramacion.value.fechaSalida)
+    minDate.setDate(minDate.getDate() + 1) // Al menos un día después
+    return minDate
   }
-}
+  return new Date()
+})
 
-// Función para ejecutar finalización automática
-const ejecutarFinalizacionAutomatica = async () => {
-  try {
-    isFinalizandoAutomatico.value = true
-
-    const response = await axios.post('/api/reservas/finalizar-automaticamente')
-    const data = response.data
-
-    if (data.success) {
-      toast.add({
-        severity: 'success',
-        summary: '¡Finalización automática completada!',
-        detail: `${data.reservas_finalizadas} reserva(s) finalizada(s) de ${data.reservas_procesadas} procesada(s)`,
-        life: 6000
-      })
-
-      // Recargar las reservas para mostrar los cambios
-      await cargarReservas()
-    } else {
-      toast.add({
-        severity: 'warn',
-        summary: 'Sin cambios',
-        detail: data.message || 'No hay reservas pendientes de finalización',
-        life: 4000
-      })
-    }
-  } catch (error) {
-    console.error('Error en finalización automática:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'Error al ejecutar la finalización automática',
-      life: 4000
-    })
-  } finally {
-    isFinalizandoAutomatico.value = false
-  }
-}
+// Funciones recargarReservasWithToasts y ejecutarFinalizacionAutomatica removidas
 
 // Funciones para manejar eventos del componente Modales
 const handleConfirmarReserva = async (reserva) => {
-  await confirmarReserva(reserva)
-  // Cerrar el modal después de completar la operación
-  modalMasAcciones.value = false
+  confirmandoReserva.value = true
+  try {
+    await axios.put(`/api/reservas/${reserva.id}/confirmar`)
+
+    // Actualizar estado local solamente (sin recargar)
+    const index = reservas.value.findIndex(r => r.id === reserva.id)
+    if (index !== -1) {
+      reservas.value[index].estado = 'CONFIRMADA'
+    }
+
+    // Cerrar el modal después de completar la operación
+    modalMasAcciones.value = false
+
+    toast.add({
+      severity: 'success',
+      summary: '¡Confirmada!',
+      detail: `Reserva de ${reserva.cliente?.user?.name || reserva.cliente?.nombres} confirmada correctamente`,
+      life: 4000
+    })
+
+  } catch (error) {
+    console.error('Error confirmando reserva:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'No se pudo confirmar la reserva',
+      life: 4000
+    })
+  } finally {
+    confirmandoReserva.value = false
+  }
 }
 
 const handleRechazarReserva = async (data) => {
@@ -687,15 +829,15 @@ const handleRechazarReserva = async (data) => {
     // Actualizar estado local
     const index = reservas.value.findIndex(r => r.id === data.reserva.id)
     if (index !== -1) {
-      reservas.value[index].estado = 'RECHAZADA'
+      reservas.value[index].estado = 'CANCELADA'
     }
 
     modalRechazar.value = false
     modalMasAcciones.value = false
     toast.add({
       severity: 'success',
-      summary: '¡Rechazada!',
-      detail: `Reserva de ${data.reserva.cliente?.user?.name || data.reserva.cliente?.nombres} rechazada correctamente`,
+      summary: '¡Cancelada!',
+      detail: `Reserva de ${data.reserva.cliente?.user?.name || data.reserva.cliente?.nombres} cancelada correctamente`,
       life: 4000
     })
   } catch (error) {
@@ -712,107 +854,35 @@ const handleRechazarReserva = async (data) => {
   }
 }
 
-const handleReprogramarReserva = async (data) => {
-  reprogramandoReserva.value = true
-  procesando.value = true
-  try {
-    const reprogramacionData = {
-      fecha_nueva: data.fechaNueva,
-      motivo: data.motivo,
-      observaciones: data.observaciones
-    }
+// ELIMINADO: handleReprogramarReserva - ahora se hace a nivel de TOUR
 
-    await axios.put(`/api/reservas/${data.reserva.id}/reprogramar`, reprogramacionData)
-
-    // Si hay un tour asociado, también reprogramarlo
-    if (tourSeleccionado.value) {
-      try {
-        // Calcular nueva fecha de regreso (agregar la duración original del tour)
-        const fechaOriginalSalida = new Date(tourSeleccionado.value.fecha_salida)
-        const fechaOriginalRegreso = new Date(tourSeleccionado.value.fecha_regreso)
-        const duracionTour = fechaOriginalRegreso.getTime() - fechaOriginalSalida.getTime()
-
-        const nuevaFechaRegreso = new Date(new Date(data.fechaNueva).getTime() + duracionTour)
-
-        const tourData = {
-          estado: 'REPROGRAMADO',
-          fecha_salida: data.fechaNueva,
-          fecha_regreso: nuevaFechaRegreso,
-          motivo_reprogramacion: `Reprogramado por reserva: ${data.motivo}`,
-          observaciones: data.observaciones
-        }
-
-        await axios.put(`/api/tours/${tourSeleccionado.value.id}/cambiar-estado`, tourData)
-
-        toast.add({
-          severity: 'info',
-          summary: 'Tour actualizado',
-          detail: `El tour "${tourSeleccionado.value.nombre}" también ha sido reprogramado`,
-          life: 4000
-        })
-      } catch (tourError) {
-        console.error('Error reprogramando tour:', tourError)
-        toast.add({
-          severity: 'warn',
-          summary: 'Advertencia',
-          detail: 'La reserva fue reprogramada pero hubo un error al actualizar el tour',
-          life: 4000
-        })
-      }
-    }
-
-    // Actualizar estado local de la reserva
-    const index = reservas.value.findIndex(r => r.id === data.reserva.id)
-    if (index !== -1) {
-      reservas.value[index].estado = 'REPROGRAMADA'
-      reservas.value[index].fecha_reserva = data.fechaNueva
-    }
-
-    modalReprogramar.value = false
-    modalMasAcciones.value = false
-
-    // Recargar datos para mostrar cambios
-    await Promise.all([cargarReservas(), cargarTours()])
-
-    toast.add({
-      severity: 'success',
-      summary: '¡Reprogramada!',
-      detail: `Reserva de ${data.reserva.cliente?.user?.name || data.reserva.cliente?.nombres} reprogramada correctamente`,
-      life: 4000
-    })
-
-  } catch (error) {
-    console.error('Error reprogramando reserva:', error)
-    toast.add({
-      severity: 'error',
-      summary: 'Error',
-      detail: error.response?.data?.message || 'No se pudo reprogramar la reserva',
-      life: 4000
-    })
-  } finally {
-    procesando.value = false
-    reprogramandoReserva.value = false
-  }
-}
-
-const handleFinalizarReserva = async (reserva) => {
-  await finalizarReserva(reserva)
-  // Cerrar el modal después de completar la operación
-  modalMasAcciones.value = false
-}
+// ELIMINADO: handleFinalizarReserva - ahora se hace a nivel de TOUR
 
 const handleVerDetalles = (reserva) => {
   verDetallesReserva(reserva)
 }
 
 // Watch para recargar cuando cambien algunos filtros
-watch(() => [filtros.value.busqueda, filtros.value.fechaDesde, filtros.value.fechaHasta, filtros.value.tourSeleccionado], () => {
+watch(() => [filtros.value.busqueda, filtros.value.fechaDesde, filtros.value.fechaHasta, filtros.value.estado], () => {
   // Debounce para la búsqueda
   clearTimeout(window.searchTimeout)
   window.searchTimeout = setTimeout(() => {
     cargarReservas()
   }, 500)
 }, { deep: true })
+
+// Watch para controlar el scroll del body cuando se abra/cierre el modal
+watch(modalReprogramarTour, (newValue) => {
+  if (newValue) {
+    // Bloquear scroll cuando se abre el modal
+    document.body.style.overflow = 'hidden'
+    document.body.style.paddingRight = '15px' // Compensar por scrollbar
+  } else {
+    // Restaurar scroll cuando se cierra el modal
+    document.body.style.overflow = ''
+    document.body.style.paddingRight = ''
+  }
+})
 
 // 🔧 Función para forzar truncado en selects
 const forceSelectTruncation = () => {
@@ -838,13 +908,43 @@ watch([filtros], () => {
   forceSelectTruncation()
 }, { deep: true })
 
-// Cargar datos iniciales
-onMounted(() => {
-  // Limpiar filtros y cargar reservas/tours al iniciar
-  limpiarFiltros().then(() => {
-    Promise.all([cargarReservasWithToasts(), cargarTours()])
+// Cargar datos iniciales para tour específico
+onMounted(async () => {
+  try {
+    console.log('Montando componente Reservas.vue')
+    console.log('URL actual:', window.location.href)
+
+    // Obtener ID del tour desde URL
+    tourId.value = obtenerTourIdDesdeUrl()
+    console.log('Tour ID establecido:', tourId.value)
+
+    if (!tourId.value) {
+      console.warn('No se encontró tour ID en la URL')
+      toast.add({
+        severity: 'warn',
+        summary: 'Tour no especificado',
+        detail: 'Redirigiendo a la lista de tours...',
+        life: 3000
+      })
+      setTimeout(() => {
+        router.visit('/tours')
+      }, 2000)
+      return
+    }
+
+    // Cargar tour y sus reservas
+    console.log('Cargando tour y reservas...')
+    await Promise.all([cargarTour(tourId.value), cargarReservas()])
+    console.log('Tour y reservas cargados exitosamente')
     forceSelectTruncation()
-  })
+  } catch (error) {
+    console.error('Error cargando datos iniciales:', error)
+  }
+})
+
+// Limpiar el scroll cuando se desmonte el componente
+onUnmounted(() => {
+  limpiarScrollModal()
 })
 </script>
 
@@ -853,281 +953,270 @@ onMounted(() => {
   <AuthenticatedLayout>
     <Head title="Gestión de Reservas" />
     <Toast class="z-[9999]" />
+    <ConfirmDialog
+      class="z-[9999]"
+      :style="dialogStyle"
+      :draggable="false"
+      :closable="false"
+    >
+      <template #message="slotProps">
+        <div class="flex items-center gap-3">
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+          <div class="flex flex-col">
+            <span>{{ slotProps.message.header }}</span>
+            <span class="text-red-600 text-sm font-medium mt-1">{{ slotProps.message.content }}</span>
+          </div>
+        </div>
+      </template>
+    </ConfirmDialog>
 
     <div class="container mx-auto px-4 py-6">
+      <!-- Header con botón volver -->
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Reservas de Tours</h1>
-        <p class="text-gray-600">Administra todas las reservas de tours</p>
+        <!-- Botón volver -->
+        <button
+          @click="volverATours"
+          :disabled="loadingVolver"
+          class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Regresar a Tours"
+        >
+          <FontAwesomeIcon
+            :icon="loadingVolver ? faSpinner : faArrowLeft"
+            class="h-5 w-5 mr-2"
+            :class="{ 'animate-spin': loadingVolver }"
+          />
+          <span class="font-medium">Volver a Tours</span>
+        </button>
       </div>
 
-      <!-- Estadísticas como tarjetas -->
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-6 mb-8">
-        <Card class="bg-gradient-to-r from-yellow-500 to-yellow-600">
-          <template #content>
-            <div class="flex items-center justify-between text-white p-2 sm:p-4">
-              <div>
-                <p class="text-xs sm:text-sm opacity-90">Pendientes</p>
-                <p class="text-xl sm:text-3xl font-bold">{{ estadisticas.pendientes }}</p>
-              </div>
-              <FontAwesomeIcon :icon="faClockRotateLeft" class="text-2xl sm:text-4xl opacity-75" />
-            </div>
-          </template>
-        </Card>
 
-        <Card class="bg-gradient-to-r from-green-500 to-green-600">
-          <template #content>
-            <div class="flex items-center justify-between text-white p-2 sm:p-4">
-              <div>
-                <p class="text-xs sm:text-sm opacity-90">Confirmadas</p>
-                <p class="text-xl sm:text-3xl font-bold">{{ estadisticas.confirmadas }}</p>
-              </div>
-              <FontAwesomeIcon :icon="faCheck" class="text-2xl sm:text-4xl opacity-75" />
-            </div>
-          </template>
-        </Card>
 
-        <Card class="bg-gradient-to-r from-blue-500 to-blue-600">
-          <template #content>
-            <div class="flex items-center justify-between text-white p-2 sm:p-4">
-              <div>
-                <p class="text-xs sm:text-sm opacity-90">Reprogramadas</p>
-                <p class="text-xl sm:text-3xl font-bold">{{ estadisticas.reprogramadas }}</p>
-              </div>
-              <FontAwesomeIcon :icon="faCalendarDays" class="text-2xl sm:text-4xl opacity-75" />
-            </div>
-          </template>
-        </Card>
 
-        <Card class="bg-gradient-to-r from-red-500 to-red-600">
-          <template #content>
-            <div class="flex items-center justify-between text-white p-2 sm:p-4">
-              <div>
-                <p class="text-xs sm:text-sm opacity-90">Rechazadas</p>
-                <p class="text-xl sm:text-3xl font-bold">{{ estadisticas.rechazadas }}</p>
-              </div>
-              <FontAwesomeIcon :icon="faXmark" class="text-2xl sm:text-4xl opacity-75" />
-            </div>
-          </template>
-        </Card>
-
-        <Card class="bg-gradient-to-r from-purple-500 to-purple-600">
-          <template #content>
-            <div class="flex items-center justify-between text-white p-2 sm:p-4">
-              <div>
-                <p class="text-xs sm:text-sm opacity-90">Ingresos</p>
-                <p class="text-sm sm:text-3xl font-bold">${{ estadisticas.totalIngresos.toFixed(2) }}</p>
-              </div>
-              <FontAwesomeIcon :icon="faDollarSign" class="text-2xl sm:text-4xl opacity-75" />
-            </div>
-          </template>
-        </Card>
-      </div>
 
       <!-- Sección de contenido principal -->
       <div class="bg-white rounded-lg shadow-md">
-        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-          <div>
-            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de reservas</h3>
-            <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium">
-                <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                Haz clic en cualquier fila para ver los detalles.
+        <!-- Estados del Tour (cambio directo) -->
+        <div v-if="tourActual" class="p-6 border-b border-gray-200">
+          <h3 class="text-lg font-semibold text-blue-600 mb-2">Cambiar Estado del Tour</h3>
+          <div class="mb-4 space-y-2">
+            <p class="text-sm text-blue-600 flex items-center gap-2">
+              <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
+              Haz clic en cualquier tarjeta para cambiar el estado del tour
             </p>
+            <p v-if="!cumpleCupoMinimo && tourActual.estado === 'DISPONIBLE' && tieneReservasActivas" class="text-sm text-amber-600 flex items-center gap-2 bg-amber-50 p-2 rounded-md">
+              <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-amber-500" />
+              <span>
+                Cupo mínimo no cumplido ({{ tourActual.cupo_min }} personas requeridas).
+                Actualmente hay {{ reservasFiltradas.filter(r => r.estado === 'CONFIRMADA').reduce((total, r) => total + (r.mayores_edad || 0) + (r.menores_edad || 0), 0) }} personas confirmadas.
+                Solo se puede cancelar el tour.
+              </span>
+            </p>
+            <p v-if="tourActual.estado === 'COMPLETO' && !todasReservasConfirmadas" class="text-sm text-blue-600 flex items-center gap-2 bg-blue-50 p-3 rounded-md border border-blue-200">
+              <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
+              <span class="font-medium">
+                Tour completo - Debe confirmar TODAS las reservas pendientes para poder poner el tour en curso
+              </span>
+            </p>
+            <p v-if="!tieneReservasActivas && (tourActual.estado === 'DISPONIBLE' || tourActual.estado === 'REPROGRAMADA')" class="text-sm text-gray-600 flex items-center gap-2 bg-gray-50 p-2 rounded-md">
+              <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-gray-500" />
+              <span>
+                Este tour no tiene reservas activas.
+              </span>
+            </p>
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:flex-wrap gap-2 md:gap-3">
+            <!-- Estado Actual -->
+            <div class="bg-gray-100 border-2 border-gray-300 rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0">
+              <p class="text-xs md:text-sm text-gray-600 mb-1">Estado Actual</p>
+              <p class="text-xs md:text-sm font-bold text-gray-800">{{ getLabelEstadoTour(tourActual.estado) }}</p>
+            </div>
+
+            <!-- En Curso -->
+            <div
+              v-if="tourActual.estado !== 'EN_CURSO' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'CANCELADA'"
+              :class="[
+                'rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0 transition-all duration-200',
+                (
+                  (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
+                  (tourActual.estado === 'REPROGRAMADA' && cumpleCupoMinimo) ||
+                  (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas && cumpleCupoMinimo)
+                )
+                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 cursor-pointer hover:shadow-lg hover:scale-105'
+                  : 'bg-gray-400 cursor-not-allowed opacity-60'
+              ]"
+              @click="(
+                (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
+                (tourActual.estado === 'REPROGRAMADA' && cumpleCupoMinimo) ||
+                (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas && cumpleCupoMinimo)
+              ) ? cambiarEstadoDirecto('EN_CURSO') : null"
+            >
+              <div class="flex items-center gap-2 text-white">
+                <div class="flex-1">
+                  <p class="text-xs md:text-sm opacity-90">En Curso</p>
+                </div>
+                <FontAwesomeIcon
+                  :icon="accionesTourLoading.cambiarEstado ? faSpinner : faCalendarDays"
+                  :class="{'animate-spin': accionesTourLoading.cambiarEstado}"
+                  class="text-xs md:text-sm opacity-75"
+                />
+              </div>
+            </div>
+
+            <!-- Finalizado -->
+            <div
+              v-if="tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'CANCELADA' && tourActual.estado === 'EN_CURSO'"
+              class="bg-gradient-to-r from-gray-500 to-gray-600 cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-105 rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0"
+              @click="cambiarEstadoDirecto('FINALIZADO')"
+            >
+              <div class="flex items-center gap-2 text-white">
+                <div class="flex-1">
+                  <p class="text-xs md:text-sm opacity-90">Finalizar</p>
+                </div>
+                <FontAwesomeIcon
+                  :icon="accionesTourLoading.cambiarEstado ? faSpinner : faCalendarCheck"
+                  :class="{'animate-spin': accionesTourLoading.cambiarEstado}"
+                  class="text-xs md:text-sm opacity-75"
+                />
+              </div>
+            </div>
+
+            <!-- Reprogramar (con modal) -->
+            <div
+              v-if="tourActual.estado !== 'REPROGRAMADA' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'CANCELADA' && tourActual.estado !== 'EN_CURSO'"
+              :class="[
+                'rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0 transition-all duration-200',
+                (
+                  (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
+                  (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas)
+                )
+                  ? 'bg-gradient-to-r from-purple-500 to-purple-600 cursor-pointer hover:shadow-lg hover:scale-105'
+                  : 'bg-gray-400 cursor-not-allowed opacity-60'
+              ]"
+              @click="(
+                (tourActual.estado === 'DISPONIBLE' && cumpleCupoMinimo) ||
+                (tourActual.estado === 'COMPLETO' && todasReservasConfirmadas)
+              ) ? cambiarEstadoDirecto('REPROGRAMADA') : null"
+            >
+              <div class="flex items-center gap-2 text-white">
+                <div class="flex-1">
+                  <p class="text-xs md:text-sm opacity-90">Reprogramar</p>
+                </div>
+                <FontAwesomeIcon
+                  :icon="accionesTourLoading.cambiarEstado ? faSpinner : faCalendarDays"
+                  :class="{'animate-spin': accionesTourLoading.cambiarEstado}"
+                  class="text-xs md:text-sm opacity-75"
+                />
+              </div>
+            </div>
+
+            <!-- Cancelar (con modal) -->
+            <div
+              v-if="tourActual.estado !== 'CANCELADA' && tourActual.estado !== 'FINALIZADO' && tourActual.estado !== 'EN_CURSO'"
+              :class="[
+                'rounded-lg px-2 py-2 md:px-4 md:py-3 flex-1 min-w-0 transition-all duration-200',
+                (
+                  tieneReservasActivas ||
+                  (tourActual.estado === 'COMPLETO')
+                )
+                  ? 'bg-gradient-to-r from-red-500 to-red-600 cursor-pointer hover:shadow-lg hover:scale-105'
+                  : 'bg-gray-400 cursor-not-allowed opacity-60'
+              ]"
+              @click="(
+                tieneReservasActivas ||
+                (tourActual.estado === 'COMPLETO')
+              ) ? cambiarEstadoDirecto('CANCELADA') : null"
+              :title="(
+                !tieneReservasActivas && tourActual.estado !== 'COMPLETO'
+              ) ? 'No se puede cancelar un tour sin reservas activas' : 'Cancelar tour y todas sus reservas'"
+            >
+              <div class="flex items-center gap-2 text-white">
+                <div class="flex-1">
+                  <p class="text-xs md:text-sm opacity-90">Cancelar</p>
+                  <p v-if="!tieneReservasActivas" class="text-xs opacity-70">Sin reservas</p>
+                </div>
+                <FontAwesomeIcon
+                  :icon="accionesTourLoading.cambiarEstado ? faSpinner : faXmark"
+                  :class="{'animate-spin': accionesTourLoading.cambiarEstado}"
+                  class="text-xs md:text-sm opacity-75"
+                />
+              </div>
+            </div>
           </div>
         </div>
 
-        <!-- Filtros -->
+        <!-- Filtros simplificados -->
         <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4 mx-4">
-          <div class="flex flex-col sm:flex-row items-center justify-between mb-3">
-            <div class="flex items-center gap-3">
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2 flex-wrap">
               <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
                 <i class="pi pi-filter text-blue-600 text-sm"></i><span>Filtros</span>
               </h3>
-              <div class="bg-blue-50 border border-blue-200 text-blue-700 px-3 py-1 rounded text-sm font-medium">
-                {{ reservas.length }} resultado{{ reservas.length !== 1 ? 's' : '' }}
+              <div class="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-1 rounded text-xs font-medium">
+                {{ reservasFiltradas.length }} resultado{{ reservasFiltradas.length !== 1 ? 's' : '' }}
               </div>
             </div>
-            <!-- Botones para móvil en grid de 3 columnas -->
-            <div class="grid grid-cols-3 gap-2 w-full sm:hidden mt-2">
-              <button
-                @click="limpiarFiltros"
-                :disabled="isClearingFilters"
-                class="bg-red-500 hover:bg-red-600 border border-red-500 px-2 py-1 text-xs text-white shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              >
-                <FontAwesomeIcon
-                  v-if="isClearingFilters"
-                  :icon="faSpinner"
-                  class="animate-spin h-3 w-3"
-                />
-                <span class="truncate">{{ isClearingFilters ? 'Limpiando...' : 'Limpiar' }}</span>
-              </button>
-              <button
-                @click="recargarReservasWithToasts"
-                :disabled="isReloading"
-                class="bg-blue-500 hover:bg-blue-600 text-white px-2 py-1 text-xs shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-              >
-                <FontAwesomeIcon
-                  :icon="isReloading ? faSpinner : faRefresh"
-                  :class="{ 'animate-spin': isReloading }"
-                  class="h-3 w-3"
-                />
-                <span class="truncate">{{ isReloading ? 'Recargando...' : 'Recargar' }}</span>
-              </button>
-              <button
-                @click="ejecutarFinalizacionAutomatica"
-                :disabled="isFinalizandoAutomatico"
-                class="bg-purple-500 hover:bg-purple-600 text-white px-2 py-1 text-xs shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1"
-                title="Finaliza automáticamente las reservas cuyas fechas de tour han pasado"
-              >
-                <FontAwesomeIcon
-                  v-if="isFinalizandoAutomatico"
-                  :icon="faSpinner"
-                  class="animate-spin h-3 w-3"
-                />
-                <FontAwesomeIcon v-else :icon="faCalendarCheck" class="h-3" />
-                <span v-if="!isFinalizandoAutomatico" class="truncate">Finalizar</span>
-              </button>
-            </div>
-            <div class="flex gap-2">
-              <button
-                @click="limpiarFiltros"
-                :disabled="isClearingFilters"
-                class="bg-red-500 hover:bg-red-600 border border-red-500 px-3 py-1 text-sm text-white shadow-md rounded-md hidden sm:flex disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2"
-              >
-                <FontAwesomeIcon
-                  v-if="isClearingFilters"
-                  :icon="faSpinner"
-                  class="animate-spin h-3 w-3"
-                />
-                <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar filtros' }}</span>
-              </button>
-              <button
-                @click="recargarReservasWithToasts"
-                :disabled="isReloading"
-                class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 text-sm shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2 hidden sm:flex"
-              >
-                <FontAwesomeIcon
-                  :icon="isReloading ? faSpinner : faRefresh"
-                  :class="{ 'animate-spin': isReloading }"
-                  class="h-3 w-3"
-                />
-                <span>{{ isReloading ? 'Recargando...' : 'Recargar' }}</span>
-              </button>
-              <button
-                @click="ejecutarFinalizacionAutomatica"
-                :disabled="isFinalizandoAutomatico"
-                class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-1 text-sm shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed items-center gap-2 hidden sm:flex"
-                title="Finaliza automáticamente las reservas cuyas fechas de tour han pasado"
-              >
-                <FontAwesomeIcon
-                  v-if="isFinalizandoAutomatico"
-                  :icon="faSpinner"
-                  class="animate-spin h-3 w-3"
-                />
-                <FontAwesomeIcon v-else :icon="faCalendarCheck" class="h-3" />
-                <span v-if="!isFinalizandoAutomatico" class="hidden sm:inline">Finalización Automática</span>
-              </button>
-            </div>
+            <button
+              @click="limpiarFiltros"
+              :disabled="isClearingFilters"
+              class="bg-red-500 hover:bg-red-600 border border-red-500 px-2 py-1 text-xs text-white shadow-md rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 shrink-0"
+            >
+              <FontAwesomeIcon
+                v-if="isClearingFilters"
+                :icon="faSpinner"
+                class="animate-spin h-3 w-3"
+              />
+              <span>{{ isClearingFilters ? 'Limpiando...' : 'Limpiar' }}</span>
+            </button>
           </div>
           <div class="space-y-3">
             <div>
               <InputText
                 v-model="filtros.busqueda"
-                placeholder="🔍 Buscar reservas..."
+                placeholder="🔍 Buscar por cliente..."
                 class="w-full h-9 text-sm rounded-md"
                 style="background-color: white; border-color: #93c5fd;"
               />
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-3">
-              <div class="col-span-1">
-                <select
-                  v-model="filtros.estadoReserva"
-                  class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
-                >
-                  <option value="" disabled selected hidden>Estado</option>
-                  <option
-                    v-for="estado in estadosReservas"
-                    :key="estado.value"
-                    :value="estado.value"
-                    class="truncate text-gray-900"
-                  >
-                    {{ estado.label }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="col-span-1">
-                <select
-                  v-model="filtros.tourSeleccionado"
-                  class="w-full h-9 text-sm border border-blue-300 rounded-md px-3 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
-                  :disabled="loadingTours"
-                >
-                  <option value="" disabled selected hidden>Filtrar por Tour</option>
-                  <option
-                    v-for="tour in tours"
-                    :key="tour.id"
-                    :value="tour.id"
-                    class="truncate text-gray-900"
-                  >
-                    {{ tour.nombre }}
-                  </option>
-                </select>
-              </div>
-
-              <div class="col-span-1 hidden md:block">
-                <DatePicker
-                  v-model="filtros.fechaDesde"
-                  placeholder="Fecha desde"
-                  dateFormat="yy-mm-dd"
-                  class="w-full h-9 text-sm"
-                  style="background-color: white; border-color: #93c5fd;"
-                  showIcon
-                />
-              </div>
-
-              <div class="col-span-1 hidden md:block">
-                <DatePicker
-                  v-model="filtros.fechaHasta"
-                  placeholder="Fecha hasta"
-                  dateFormat="yy-mm-dd"
-                  class="w-full h-9 text-sm"
-                  style="background-color: white; border-color: #93c5fd;"
-                  showIcon
-                />
-              </div>
-
-              <!-- Calendars para móviles -->
-              <div class="col-span-2 flex gap-3 md:hidden">
-                <DatePicker
-                  v-model="filtros.fechaDesde"
-                  placeholder="Fecha desde"
-                  dateFormat="dd/mm/yy"
-                  class="flex-1 h-9 text-sm rounded-md border border-blue-300"
-                  showIcon
-                />
-                <DatePicker
-                  v-model="filtros.fechaHasta"
-                  placeholder="Fecha hasta"
-                  dateFormat="dd/mm/yy"
-                  class="flex-1 h-9 text-sm rounded-md border border-blue-300"
-                  showIcon
-                />
-              </div>
-            </div>
-
-            <!-- Indicador del tour seleccionado -->
-            <div v-if="infoTourSeleccionado" class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <div class="flex items-center justify-between text-sm">
-                <div class="flex items-center gap-2">
-                  <span class="text-blue-600 font-medium">🏝️ Mostrando reservas para:</span>
-                  <span class="text-blue-800 font-semibold">{{ infoTourSeleccionado.nombre }}</span>
-                </div>
-                <div class="text-blue-600">
-                  <span class="font-medium">{{ infoTourSeleccionado.totalReservas }}</span>
-                  <span>{{ infoTourSeleccionado.totalReservas === 1 ? ' reserva encontrada' : ' reservas encontradas' }}</span>
-                </div>
-              </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <DatePicker
+                v-model="filtros.fechaDesde"
+                placeholder="Fecha desde"
+                dateFormat="dd/mm/yy"
+                class="w-full h-9 text-sm"
+                style="background-color: white; border-color: #93c5fd;"
+                showIcon
+              />
+              <DatePicker
+                v-model="filtros.fechaHasta"
+                placeholder="Fecha hasta"
+                dateFormat="dd/mm/yy"
+                class="w-full h-9 text-sm"
+                style="background-color: white; border-color: #93c5fd;"
+                showIcon
+              />
+              <Select
+                v-model="filtros.estado"
+                :options="[
+                  { label: 'Todos los estados', value: null },
+                  { label: 'Pendientes', value: 'PENDIENTE' },
+                  { label: 'Confirmadas', value: 'CONFIRMADA' }
+                ]"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="Filtrar por estado"
+                class="w-full h-9 text-sm"
+                style="background-color: white; border-color: #93c5fd;"
+              />
             </div>
           </div>
+        </div>
+
+        <!-- Texto de ayuda para la tabla -->
+        <div class="px-4 mb-3">
+          <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+            <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+            Haz clic en cualquier fila para ver los detalles.
+          </p>
         </div>
 
         <!-- Tabla de reservas mejorada -->
@@ -1171,16 +1260,14 @@ onMounted(() => {
               </template>
 
               <!-- Columna Fecha -->
-              <Column field="fecha_reserva" header="Fecha" sortable class="w-16 sm:w-20 lg:w-24 min-w-14">
+              <Column field="fecha_reserva" header="Fecha" class="w-28 min-w-16">
                 <template #body="slotProps">
-                  <div class="text-xs sm:text-sm">
-                    <div class="font-medium">{{ formatearFecha(slotProps.data.fecha_reserva) }}</div>
-                  </div>
+                  <span class="font-medium text-xs sm:text-sm">{{ formatearFecha(slotProps.data.fecha_reserva) }}</span>
                 </template>
               </Column>
 
               <!-- Columna Cliente -->
-              <Column field="cliente.nombres" header="Cliente" sortable class="w-24 sm:w-32 lg:w-40 min-w-20 hidden sm:table-cell">
+              <Column field="cliente.nombres" header="Cliente" class="w-16 hidden sm:table-cell">
                 <template #body="slotProps">
                   <div class="flex items-center gap-1 sm:gap-3">
                     <div class="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1198,30 +1285,12 @@ onMounted(() => {
                 </template>
               </Column>
 
-              <!-- Columna Servicio -->
-              <Column field="entidad_nombre" header="Servicio" sortable class="w-24 sm:w-32 lg:w-48 min-w-20">
-                <template #body="slotProps">
-                  <div class="min-w-0">
-                    <div
-                      class="text-xs sm:text-sm font-medium leading-relaxed overflow-hidden"
-                      style="max-width: 120px; text-overflow: ellipsis; white-space: nowrap;"
-                      :title="slotProps.data.entidad_nombre"
-                    >
-                      {{ slotProps.data.entidad_nombre || 'N/A' }}
-                    </div>
-                    <div class="text-xs text-gray-500 capitalize hidden sm:block">
-                      Tours
-                    </div>
-                  </div>
-                </template>
-              </Column>
-
               <!-- Columna Personas -->
-              <Column header="Personas" class="w-16 sm:w-20 lg:w-24 min-w-14 hidden md:table-cell">
+              <Column header="Personas" class="w-20 sm:w-24 lg:w-28 min-w-16 hidden md:table-cell">
                 <template #body="slotProps">
-                  <div class="text-center">
-                    <div class="text-xs sm:text-sm flex items-center justify-center gap-1">
-                      <FontAwesomeIcon :icon="faUsers" class="text-gray-400 text-xs" />
+                  <div>
+                    <div class="text-xs sm:text-sm">
+                      <FontAwesomeIcon :icon="faUsers" class="text-gray-400 text-xs mr-1" />
                       <span class="font-medium">{{ (slotProps.data.mayores_edad || 0) + (slotProps.data.menores_edad || 0) }}</span>
                     </div>
                     <div class="text-xs text-gray-500">
@@ -1232,21 +1301,18 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Total -->
-              <Column field="total" header="Total" sortable class="w-16 sm:w-20 lg:w-24 min-w-14">
+              <Column field="total" header="Total" class="w-12 min-w-12">
                 <template #body="slotProps">
-                  <div class="text-right">
-                    <div class="font-medium text-green-600 flex items-center justify-end gap-1 text-xs sm:text-sm">
-                      <FontAwesomeIcon :icon="faDollarSign" class="text-xs" />
-                      <span class="truncate">{{ Number(slotProps.data.total || 0).toFixed(2) }}</span>
-                    </div>
-                  </div>
+                  <span class="font-medium text-green-600 text-xs sm:text-sm">
+                    ${{ Number(slotProps.data.total || 0).toFixed(2) }}
+                  </span>
                 </template>
               </Column>
 
               <!-- Columna Estado -->
-              <Column field="estado" header="Estado" class="w-20 sm:w-24 lg:w-32 min-w-16 hidden lg:table-cell">
+              <Column field="estado" header="Estado" class="w-24 sm:w-28 lg:w-36 min-w-20 hidden lg:table-cell">
                 <template #body="slotProps">
-                  <span :class="getColorEstadoReserva(slotProps.data.estado)" class="px-1 sm:px-2 py-1 rounded-full text-xs font-medium">
+                  <span :class="getColorEstadoReserva(slotProps.data.estado)" class="px-2 py-1 rounded-full text-xs font-medium">
                     <span class="hidden xl:inline">{{ estadosReservas.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado }}</span>
                     <span class="xl:hidden">{{ (estadosReservas.find(e => e.value === slotProps.data.estado)?.label || slotProps.data.estado).substring(0, 4) }}</span>
                   </span>
@@ -1254,19 +1320,17 @@ onMounted(() => {
               </Column>
 
               <!-- Columna Acciones -->
-              <Column header="Acciones" class="w-20 sm:w-24 lg:w-28 min-w-16">
+              <Column header="Acciones" class="w-24 sm:w-28 lg:w-32 min-w-20">
                 <template #body="slotProps">
-                  <div class="flex justify-center">
-                    <!-- Botón Más Acciones -->
-                    <button
-                      class="bg-green-500 hover:bg-green-600 text-white px-2 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-1 text-xs shadow-md hover:shadow-lg hover:-translate-y-1"
-                      @click="abrirModalMasAcciones(slotProps.data)"
-                      title="Más acciones"
-                    >
-                      <FontAwesomeIcon :icon="faListDots" class="h-3 w-4 sm:h-4 sm:w-5" />
-                      <span class="hidden md:inline">Más</span>
-                    </button>
-                  </div>
+                  <!-- Botón Más Acciones -->
+                  <button
+                    class="bg-green-500 hover:bg-green-600 text-white px-2 py-2 rounded-md transition-all duration-200 ease-in-out inline-flex items-center gap-1 text-xs shadow-md hover:shadow-lg hover:-translate-y-1"
+                    @click="abrirModalMasAcciones(slotProps.data)"
+                    title="Más acciones"
+                  >
+                    <FontAwesomeIcon :icon="faListDots" class="h-3 w-4 sm:h-4 sm:w-5" />
+                    <span class="hidden md:inline">Más</span>
+                  </button>
                 </template>
               </Column>
             </DataTable>
@@ -1276,24 +1340,196 @@ onMounted(() => {
         v-model:visible="modalMasAcciones"
         v-model:detalles-visible="modalDetalles"
         v-model:rechazar-visible="modalRechazar"
-        v-model:reprogramar-visible="modalReprogramar"
         :reserva="reservaSeleccionada"
         :tour="tourSeleccionado"
         :dialog-style="dialogStyle"
         :procesando="procesando"
         :confirmando-reserva="confirmandoReserva"
         :rechazando-reserva="rechazandoReserva"
-        :reprogramando-reserva="reprogramandoReserva"
-        :finalizando-reserva="finalizandoReserva"
         :estados-reservas="estadosReservas"
         :estados-tours="estadosTours"
         @confirmar="handleConfirmarReserva"
         @rechazar="handleRechazarReserva"
-        @reprogramar="handleReprogramarReserva"
-        @finalizar="handleFinalizarReserva"
         @ver-detalles="handleVerDetalles"
       />
 
+      <!-- Modal de Cambiar Estado del Tour -->
+      <CambiarEstado
+        v-model:visible="modalCambiarEstadoTour"
+        :tour="tourActual"
+        :dialog-style="dialogStyle"
+        @estado-actualizado="handleEstadoTourActualizado"
+      />
+
+      <!-- Modal de Cancelar Tour Completo -->
+      <Dialog
+        v-model:visible="modalCancelarTour"
+        modal
+        header="Cancelar Tour Completo"
+        :style="dialogStyle"
+        :closable="false"
+        :draggable="false"
+      >
+        <div class="space-y-4">
+          <!-- Advertencia sobre eliminación permanente -->
+          <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 mb-4">
+            <div class="flex items-start gap-3">
+              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-600 text-lg mt-1 flex-shrink-0" />
+              <div>
+                <h4 class="font-bold text-orange-800 mb-2">¡ADVERTENCIA - ELIMINACIÓN MASIVA PERMANENTE!</h4>
+                <div class="text-sm text-orange-700 space-y-2">
+                  <p><strong>• Esta acción NO se puede deshacer bajo ninguna circunstancia</strong></p>
+                  <p>• Se eliminarán TODAS las reservas del tour de forma PERMANENTE</p>
+                  <p>• Se eliminarán TODOS los detalles asociados a cada reserva</p>
+                  <p>• Los cupos del tour serán liberados automáticamente</p>
+                  <p>• Se enviarán emails de cancelación a TODOS los clientes</p>
+                  <p>• No será posible recuperar ninguna información posteriormente</p>
+                  <div class="mt-3 p-2 bg-orange-100 rounded border border-orange-300">
+                    <p class="font-semibold text-orange-900 text-xs">
+                      Asegúrese de que realmente desea eliminar toda la información antes de continuar
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información del tour -->
+          <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+            <div class="flex items-center gap-2 mb-2">
+              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600" />
+              <h4 class="font-semibold text-red-800">Cancelar Tour: {{ tourActual?.nombre }}</h4>
+            </div>
+            <p class="text-sm text-red-700">
+              Esta acción cancelará el tour completo y TODAS las reservas asociadas.
+              Se enviarán notificaciones por correo a todos los clientes.
+            </p>
+            <p class="text-xs text-red-600 mt-2">
+              <strong>Reservas que serán ELIMINADAS PERMANENTEMENTE: {{ reservas.length }}</strong>
+            </p>
+          </div>
+
+          <!-- Motivo de la cancelación -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Motivo de la Cancelación del Tour <span class="text-red-500">*</span>
+            </label>
+            <textarea
+              v-model="motivoCancelacionTour"
+              placeholder="Explique por qué se cancela el tour completo..."
+              class="w-full p-3 border border-gray-300 rounded-md focus:ring-red-500 focus:border-red-500"
+              rows="4"
+              maxlength="500"
+            ></textarea>
+            <small class="text-gray-500">{{ motivoCancelacionTour.length }}/500 caracteres</small>
+          </div>
+
+          <!-- Botones -->
+          <div class="flex justify-end gap-3 pt-4">
+            <button
+              @click="modalCancelarTour = false"
+              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              @click="cancelarTourCompleto"
+              :disabled="!motivoCancelacionTour.trim() || cancelandoTour"
+              class="px-4 py-2 bg-red-700 text-white rounded-md hover:bg-red-800 disabled:bg-red-300 flex items-center gap-2"
+            >
+              <FontAwesomeIcon
+                :icon="cancelandoTour ? faSpinner : faXmark"
+                :class="{'animate-spin': cancelandoTour}"
+              />
+              {{ cancelandoTour ? 'Eliminando Todo...' : 'Eliminar Tour y Reservas Definitivamente' }}
+            </button>
+          </div>
+        </div>
+      </Dialog>
+
+      <!-- Modal específico para Reprogramar -->
+      <Dialog
+        v-model:visible="modalReprogramarTour"
+        modal
+        header="Reprogramar Tour"
+        :style="dialogStyle"
+        :closable="false"
+        :draggable="false"
+      >
+        <div class="space-y-4">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h4 class="font-semibold text-blue-800 mb-2">{{ tourActual?.nombre }}</h4>
+            <p class="text-sm text-blue-600">
+              Fechas actuales: {{ formatearFechaHora(tourActual?.fecha_salida) }} - {{ formatearFechaHora(tourActual?.fecha_regreso) }}
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Salida:</label>
+              <DatePicker
+                v-model="datosReprogramacion.fechaSalida"
+                showTime
+                hourFormat="12"
+                dateFormat="dd/mm/yy"
+                showIcon
+                placeholder="Seleccionar fecha y hora"
+                class="w-full"
+                :minDate="new Date()"
+              />
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Regreso:</label>
+              <DatePicker
+                v-model="datosReprogramacion.fechaRegreso"
+                showTime
+                hourFormat="12"
+                dateFormat="dd/mm/yy"
+                showIcon
+                placeholder="Seleccionar fecha y hora"
+                class="w-full"
+                :minDate="minDateRegreso"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Motivo de la Reprogramación</label>
+            <textarea
+              v-model="datosReprogramacion.motivo"
+              placeholder="Ingrese el motivo de la reprogramación..."
+              class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              rows="3"
+            ></textarea>
+            <p class="text-xs text-gray-500 mt-2">
+              💡 Al reprogramar el tour, todas las reservas asociadas serán reprogramadas automáticamente y se enviarán correos de notificación a los clientes.
+            </p>
+          </div>
+
+          <div class="flex justify-center items-center gap-3 pt-4">
+
+            <button
+              @click="handleReprogramarTour"
+              :disabled="accionesTourLoading.cambiarEstado"
+              class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            >
+              <FontAwesomeIcon
+                v-if="accionesTourLoading.cambiarEstado"
+                :icon="faSpinner"
+                class="animate-spin"
+              />
+              {{ accionesTourLoading.cambiarEstado ? 'Reprogramando...' : 'Reprogramar Tour' }}
+            </button>
+            <button
+              @click="modalReprogramarTour = false; limpiarScrollModal()"
+              class="border rounded-md bg-blue-500 hover:bg-blue-700 text-white px-6 py-2"
+              :disabled="accionesTourLoading.cambiarEstado"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </Dialog>
 
       </div>
     </div>
@@ -1417,18 +1653,80 @@ onMounted(() => {
   transform: translateY(-0.25rem);
 }
 
+/* Forzar alineación con ::deep() */
+:deep(.p-datatable .p-datatable-tbody > tr > td) {
+  vertical-align: middle !important;
+  padding: 1rem 0.5rem !important;
+  height: 60px !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th) {
+  vertical-align: middle !important;
+  padding: 1rem 0.5rem !important;
+}
+
+/* Alineación específica por columna con ::deep() - Headers */
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(1)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(2)) {
+  text-align: left !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(3)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(4)) {
+  text-align: right !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(5)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-thead > tr > th:nth-child(6)) {
+  text-align: center !important;
+}
+
+/* Alineación específica por columna con ::deep() - Contenido */
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(1)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(2)) {
+  text-align: left !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(3)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(4)) {
+  text-align: right !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(5)) {
+  text-align: center !important;
+}
+
+:deep(.p-datatable .p-datatable-tbody > tr > td:nth-child(6)) {
+  text-align: center !important;
+}
+
 /* Responsive table styles */
 @media (max-width: 640px) {
   .p-datatable .p-datatable-thead > tr > th,
   .p-datatable .p-datatable-tbody > tr > td {
-    padding: 0.5rem 0.25rem;
+    padding: 0.5rem 0.25rem !important;
   }
 }
 
 @media (max-width: 768px) {
   .p-datatable .p-datatable-thead > tr > th,
   .p-datatable .p-datatable-tbody > tr > td {
-    padding: 0.75rem 0.5rem;
+    padding: 0.75rem 0.5rem !important;
   }
 }
 </style>

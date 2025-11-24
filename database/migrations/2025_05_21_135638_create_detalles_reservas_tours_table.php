@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('detalles_reservas_tours', function (Blueprint $table) {
             $table->id();
-            $table->date('fecha');
             $table->integer('cupos_reservados');
             $table->decimal('precio_unitario', 5, 2);
             $table->decimal('precio_total', 6, 2);

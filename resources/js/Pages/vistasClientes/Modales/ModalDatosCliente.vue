@@ -338,9 +338,11 @@ const guardarCliente = async () => {
       errores.value.numero_identificacion = error.response.data.message
     }
 
+    // Detectar si es una advertencia o un error
+    const isWarning = error.response?.data?.warning
     toast.add({
-      severity: 'error',
-      summary: 'Error al guardar',
+      severity: isWarning ? 'warn' : 'error',
+      summary: isWarning ? 'Advertencia' : 'Error al guardar',
       detail: error.response?.data?.message || 'No se pudo guardar la información',
       life: 5000
     })

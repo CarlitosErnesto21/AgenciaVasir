@@ -10,6 +10,23 @@ class Tour extends Model
     use HasFactory;
     protected $table = 'tours';
 
+    // Estados del tour
+    const DISPONIBLE = 'DISPONIBLE';
+    const COMPLETO = 'COMPLETO';
+    const EN_CURSO = 'EN_CURSO';
+    const FINALIZADO = 'FINALIZADO';
+    const CANCELADA = 'CANCELADA';
+    const REPROGRAMADA = 'REPROGRAMADA';
+
+    const ESTADOS = [
+        self::DISPONIBLE,
+        self::COMPLETO,
+        self::EN_CURSO,
+        self::FINALIZADO,
+        self::CANCELADA,
+        self::REPROGRAMADA
+    ];
+
     protected $fillable = [
         'nombre',
         'categoria',
@@ -47,7 +64,7 @@ class Tour extends Model
                 $query->where('estado', '!=', 'cancelada');
             })
             ->sum('cupos_reservados');
-        
+
         return max(0, $this->cupo_max - $cuposReservados);
     }
 

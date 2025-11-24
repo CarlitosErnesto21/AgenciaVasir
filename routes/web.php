@@ -32,7 +32,9 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('productos', fn() => Inertia::render('Catalogos/Productos'))->name('productos');
     Route::get('hoteles', fn() => Inertia::render('Catalogos/Hoteles'))->name('hoteles');
     Route::get('reservas', fn() => Inertia::render('Catalogos/Reservas'))->name('reservas');
+    Route::get('catalogos/reservas', fn() => Inertia::render('Catalogos/Reservas'))->name('catalogos.reservas');
     Route::get('tours', fn() => Inertia::render('Catalogos/Tours'))->name('tours');
+    Route::get('catalogos/tours', fn() => Inertia::render('Catalogos/Tours'))->name('catalogos.tours');
     Route::get('control-paises-provincias', fn() => Inertia::render('Catalogos/ControlPaisesProvincias'))->name('controlPaisesProvincias');
     Route::get('paquetes-visas', fn() => Inertia::render('Catalogos/PaquetesVisas'))->name('paquetesVisas');
 

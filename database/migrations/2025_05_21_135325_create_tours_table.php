@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('punto_salida', 200);
             $table->datetime('fecha_salida');
             $table->datetime('fecha_regreso');
-            $table->enum('estado', ['DISPONIBLE', 'AGOTADO', 'EN_CURSO', 'COMPLETADO', 'CANCELADO', 'SUSPENDIDO', 'REPROGRAMADO'])->default('DISPONIBLE');
-                        $table->decimal('precio', 6, 2);
+            $table->enum('estado', ['DISPONIBLE', 'COMPLETO', 'EN_CURSO', 'FINALIZADO', 'CANCELADA', 'REPROGRAMADA'])->default('DISPONIBLE');
+            $table->decimal('precio', 6, 2);
             // llave foránea a transportes
             $table->unsignedBigInteger('transporte_id');
             $table->foreign('transporte_id')->references('id')->on('transportes')->onDelete('cascade');

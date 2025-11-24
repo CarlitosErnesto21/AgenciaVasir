@@ -495,23 +495,7 @@ onBeforeUnmount(() => {
                             <!-- Separador visual -->
                             <div class="relative w-full h-px bg-gradient-to-r from-transparent via-red-200/50 to-transparent my-1"></div>
 
-                            <!-- Reservaciones -->
-                            <Link
-                                :href="route('reservas')"
-                                :class="[
-                                    'relative flex items-center py-3 px-3 rounded-xl transition-all duration-300 group',
-                                    route().current('reservas')
-                                        ? 'bg-gradient-to-r from-red-600 to-red-500 text-white font-bold shadow-lg'
-                                        : 'text-gray-800 hover:bg-gradient-to-r hover:from-red-600 hover:to-red-500 hover:text-white hover:shadow-lg'
-                                ]"
-                                @click.prevent="navigateAndCloseSidebar('reservas')"
-                            >
-                                <FontAwesomeIcon
-                                    :icon="faClipboardList"
-                                    class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
-                                />
-                                <span class="font-semibold">Reservas tours</span>
-                            </Link>
+
 
                             <!-- Ventas -->
                             <Link
@@ -779,23 +763,7 @@ onBeforeUnmount(() => {
                             </transition>
                         </div>
 
-                        <!-- Reservaciones -->
-                        <Link
-                            :href="route('reservas')"
-                            :class="[
-                                'flex items-center px-4 py-3 rounded-xl transition-all duration-300 group hover:scale-105 justify-start',
-                                route().current('reservas')
-                                    ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
-                                    : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
-                            ]"
-                            title="Reservaciones"
-                        >
-                            <FontAwesomeIcon
-                                :icon="faClipboardList"
-                                class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
-                            />
-                            <span class="font-semibold">Reservas tours</span>
-                        </Link>
+
 
                         <!-- Ventas -->
                         <Link

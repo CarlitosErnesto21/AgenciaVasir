@@ -184,16 +184,9 @@
             </div>
 
             <div class="detail-row">
-                <span class="detail-label">Fecha finalización del tour: </span>
+                <span class="detail-label">Finalizado:</span>
                 <span class="detail-value">
-                    @if(isset($reservation['fecha_regreso']) && $reservation['fecha_regreso'])
-                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_regreso'])) }}
-                    @else
-                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}
-                        <small style="display: block; color: #6c757d; font-size: 12px;">
-                            (Fecha de reservación)
-                        </small>
-                    @endif
+                    {{ date('d/m/Y H:i') }}
                 </span>
             </div>
 

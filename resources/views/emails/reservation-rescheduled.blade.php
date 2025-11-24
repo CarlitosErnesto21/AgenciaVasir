@@ -217,11 +217,6 @@
                     <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
                         @if(isset($reservation['fecha_salida_anterior']) && $reservation['fecha_salida_anterior'])
                             {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida_anterior'])) }}
-                        @else
-                            {{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}
-                            <small style="display: block; color: #856404; font-size: 11px; margin-top: 2px;">
-                                (Fecha de reservación)
-                            </small>
                         @endif
                     </div>
                 </div>
@@ -231,11 +226,6 @@
                     <div style="font-size: 16px; font-weight: bold; margin-top: 5px;">
                         @if(isset($reservation['fecha_salida_nueva']) && $reservation['fecha_salida_nueva'])
                             {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida_nueva'])) }}
-                        @else
-                            {{ date('d/m/Y H:i', strtotime($newDate)) }}
-                            <small style="display: block; color: #155724; font-size: 11px; margin-top: 2px;">
-                                (Nueva fecha programada)
-                            </small>
                         @endif
                     </div>
                 </div>

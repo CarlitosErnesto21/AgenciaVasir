@@ -151,11 +151,6 @@
                 <span class="detail-value">
                     @if(isset($reservation['fecha_salida']) && $reservation['fecha_salida'])
                         {{ date('d/m/Y H:i', strtotime($reservation['fecha_salida'])) }}
-                    @else
-                        {{ date('d/m/Y H:i', strtotime($reservation['fecha_reserva'])) }}
-                        <small style="display: block; color: #6c757d; font-size: 12px;">
-                            (Fecha de reservación)
-                        </small>
                     @endif
                 </span>
             </div>

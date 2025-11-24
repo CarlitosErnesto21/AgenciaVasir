@@ -151,11 +151,12 @@ const estadisticas = computed(() => {
   }
 })
 
-// Computed properties para separar tours por disponibilidad con filtro de búsqueda
-const toursDisponibles = computed(() => {
+// Computed properties para todos los tours con filtro de búsqueda
+const toursVisibles = computed(() => {
   let filtrados = tours.value.filter(tour => {
-    const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
-    return cuposDisponibles > 0
+    // Mostrar todos los tours excepto los cancelados/finalizados
+    // EN_CURSO se muestra deshabilitado como COMPLETO
+    return tour.estado !== 'CANCELADA' && tour.estado !== 'FINALIZADO'
   })
 
   if (searchQuery.value.trim()) {
@@ -176,11 +177,29 @@ const toursDisponibles = computed(() => {
   return filtrados
 })
 
+// Helper para verificar si un tour está completo o no disponible para reservar
+const esTourCompleto = (tour) => {
+  const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
+  return cuposDisponibles <= 0 || tour.estado === 'COMPLETO' || tour.estado === 'EN_CURSO'
+}
+
+// Función para obtener el texto de la etiqueta según el estado
+const getEtiquetaEstado = (tour) => {
+  if (tour.estado === 'EN_CURSO') {
+    return 'EN CURSO'
+  } else if (tour.estado === 'COMPLETO' || (tour.cupos_disponibles !== null && tour.cupos_disponibles <= 0)) {
+    return 'COMPLETO'
+  }
+  return 'DISPONIBLE'
+}
+
+// Mantener para compatibilidad (pero ya no se usa para separar secciones)
+const toursDisponibles = computed(() => {
+  return toursVisibles.value.filter(tour => !esTourCompleto(tour))
+})
+
 const toursSinCupos = computed(() => {
-  return tours.value.filter(tour => {
-    const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
-    return cuposDisponibles <= 0
-  })
+  return toursVisibles.value.filter(tour => esTourCompleto(tour))
 })
 
 // Función para obtener tours desde la API
@@ -475,7 +494,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Estado vacío -->
-        <div v-else-if="!loading && tours.length === 0" class="text-center py-12">
+        <div v-else-if="!loading && toursVisibles.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-red-50 to-indigo-50 border-2 border-red-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
             <div class="text-6xl mb-4">
                 <FontAwesomeIcon :icon="faVolcano" class="w-16 h-16 text-indigo-500 mx-auto" />
@@ -487,7 +506,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Barra de búsqueda optimizada -->
-        <div v-if="tours.length > 0" class="bg-gradient-to-br from-white to-red-50 rounded-2xl p-4 shadow-lg border border-red-200 mb-6">
+        <div v-if="toursVisibles.length > 0" class="bg-gradient-to-br from-white to-red-50 rounded-2xl p-4 shadow-lg border border-red-200 mb-6">
           <div class="max-w-xl mx-auto">
             <div class="text-center mb-3">
               <div class="flex items-center justify-center gap-2 mb-2">
@@ -529,14 +548,19 @@ const verMasInfo = (tour) => {
           </div>
         </div>
 
-        <!-- Tours Disponibles -->
-        <div v-if="toursDisponibles.length > 0" class="mb-8">
+        <!-- Todos los Tours -->
+        <div v-if="toursVisibles.length > 0" class="mb-8">
 
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             <Card
-              v-for="tour in toursDisponibles"
+              v-for="tour in toursVisibles"
               :key="tour.id"
-              class="bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-2 border-gray-200 hover:border-red-300 shadow-lg hover:shadow-xl transition-all duration-300 flex flex-col min-h-[320px] sm:min-h-[340px] transform hover:-translate-y-2 hover:scale-[1.02] overflow-hidden rounded-xl"
+              :class="[
+                'flex flex-col min-h-[320px] sm:min-h-[340px] overflow-hidden rounded-xl transition-all duration-300 border-2 shadow-lg',
+                esTourCompleto(tour)
+                  ? 'bg-gray-100 border-gray-300 opacity-60 cursor-not-allowed'
+                  : 'bg-gradient-to-br from-white to-gray-50 hover:from-gray-50 hover:to-white border-gray-200 hover:border-red-300 hover:shadow-xl transform hover:-translate-y-2 hover:scale-[1.02]'
+              ]"
               >
               <template #header>
                 <div class="relative w-full h-28 sm:h-30 bg-gradient-to-br from-gray-100 via-gray-50 to-gray-200 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-200"
@@ -544,11 +568,20 @@ const verMasInfo = (tour) => {
                   <img
                     :src="obtenerImagenActual(tour)"
                     :alt="tour.nombre"
-                    class="object-contain h-full w-full bg-gradient-to-br from-gray-50 to-white group-hover:scale-110 transition-transform duration-500"
+                    :class="[
+                      'object-contain h-full w-full bg-gradient-to-br from-gray-50 to-white transition-transform duration-500',
+                      esTourCompleto(tour)
+                        ? 'filter grayscale opacity-75'
+                        : 'group-hover:scale-110'
+                    ]"
                     @error="$event.target.src = 'https://via.placeholder.com/300x200/ef4444/ffffff?text=' + encodeURIComponent((tour.nombre || 'Tour').substring(0, 15))"
                   />
                   <div class="absolute top-1.5 right-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-lg border border-green-400">
                     ${{ tour.precio }}
+                  </div>
+                  <!-- Etiqueta de estado -->
+                  <div v-if="esTourCompleto(tour)" class="absolute top-8 right-1.5 bg-gradient-to-r from-red-500 to-red-600 text-white px-2 py-0.5 rounded-full text-xs font-bold shadow-lg border border-red-400 animate-pulse">
+                    {{ getEtiquetaEstado(tour) }}
                   </div>
                   <div class="absolute bottom-1.5 left-1.5 bg-gradient-to-r from-black/80 to-gray-800/80 backdrop-blur-sm text-white px-2 py-0.5 rounded-full text-xs font-medium border border-white/20">
                     {{ calcularDuracion(tour.fecha_salida, tour.fecha_regreso) }}
@@ -596,15 +629,33 @@ const verMasInfo = (tour) => {
                       </div>
                       <p class="text-xs text-gray-700 font-semibold">{{ formatearFecha(tour.fecha_salida) }}</p>
                     </div>
-                    <div class="bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg p-1.5 border border-green-100">
+                    <div :class="[
+                      'rounded-lg p-1.5 border',
+                      esTourCompleto(tour)
+                        ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-200'
+                        : 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-100'
+                    ]">
                       <div class="flex items-center gap-1 mb-0.5">
-                        <svg class="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <svg v-if="esTourCompleto(tour)" class="w-3 h-3 text-red-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                        </svg>
+                        <svg v-else class="w-3 h-3 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <p class="text-xs font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">Cupos disponibles</p>
+                        <p class="text-xs font-bold" :class="[
+                          esTourCompleto(tour)
+                            ? 'bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent'
+                            : 'bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent'
+                        ]">
+                          {{ esTourCompleto(tour) ? (tour.estado === 'EN_CURSO' ? 'Tour en curso' : 'Tour completo') : 'Cupos disponibles' }}
+                        </p>
                       </div>
-                      <p class="text-xs font-bold" :class="obtenerClaseCupos(tour)">
-                        {{ tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0 }} cupos
+                      <p class="text-xs font-bold" :class="[
+                        esTourCompleto(tour)
+                          ? 'text-red-600'
+                          : obtenerClaseCupos(tour)
+                      ]">
+                        {{ esTourCompleto(tour) ? '0 cupos' : `${tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0} cupos` }}
                       </p>
                     </div>
                   </div>
@@ -614,17 +665,31 @@ const verMasInfo = (tour) => {
                     <p class="text-xs text-gray-500 italic">Toca en cualquier parte para ver más detalles</p>
                   </div>
 
-                  <!-- Botones profesionales - SIEMPRE VISIBLES -->
+                  <!-- Botones profesionales -->
                   <div class="flex gap-1 mt-1.5 pt-1.5 border-t border-gray-100 flex-shrink-0">
                     <button
+                      v-if="esTourCompleto(tour)"
+                      disabled
+                      class="px-2 py-1 text-xs font-bold rounded-lg flex-1 bg-gray-400 text-gray-200 cursor-not-allowed opacity-60"
+                      >
+                        Agotado
+                    </button>
+                    <button
+                      v-else
                       @click="reservarTour(tour)"
                       class="px-2 py-1 text-xs font-bold rounded-lg transition-all duration-300 flex-1 shadow-md hover:shadow-lg bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white transform hover:scale-105"
                       >
                         Reservar
                     </button>
                     <button
-                        @click="verMasInfo(tour)"
-                        class="border-2 border-red-500 text-red-600 hover:red-blue-700 px-2 py-1 text-xs font-bold rounded-lg hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg bg-white"
+                        :disabled="esTourCompleto(tour)"
+                        @click="esTourCompleto(tour) ? null : verMasInfo(tour)"
+                        :class="[
+                          'border-2 px-2 py-1 text-xs font-bold rounded-lg transition-all duration-300 transform shadow-md',
+                          esTourCompleto(tour)
+                            ? 'border-gray-400 text-gray-400 bg-gray-100 cursor-not-allowed opacity-60'
+                            : 'border-red-500 text-red-600 hover:red-blue-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-blue-100 hover:scale-105 hover:shadow-lg bg-white'
+                        ]"
                       >
                         Info
                     </button>
@@ -635,100 +700,7 @@ const verMasInfo = (tour) => {
           </div>
         </div>
 
-        <!-- Tours Sin Cupos -->
-        <div v-if="toursSinCupos.length > 0" class="mb-8">
-          <div class="bg-gradient-to-r from-gray-500 to-gray-600 text-white text-center py-4 px-6 rounded-t-xl mb-6">
-            <h2 class="text-xl md:text-2xl font-bold">😔 Tours Sin Cupos Disponibles</h2>
-            <p class="text-gray-200 text-sm mt-1">{{ toursSinCupos.length }} destino{{ toursSinCupos.length !== 1 ? 's' : '' }} temporalmente agotado{{ toursSinCupos.length !== 1 ? 's' : '' }}</p>
-          </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
-            <Card
-              v-for="tour in toursSinCupos"
-              :key="tour.id"
-              class="border-2 border-gray-300 bg-gray-50 opacity-75 shadow-md hover:shadow-lg transition-all duration-300 flex flex-col min-h-[400px] sm:min-h-[450px] overflow-hidden rounded-xl"
-              >
-              <template #header>
-                <div class="relative w-full h-36 sm:h-40 bg-gradient-to-br from-gray-200 via-gray-150 to-gray-300 rounded-t-xl overflow-hidden group cursor-pointer border-b border-gray-300"
-                    @click="mostrarGaleria(tour)">
-                  <img
-                    :src="obtenerImagenActual(tour)"
-                    :alt="tour.nombre"
-                    class="object-contain h-full w-full bg-gradient-to-br from-gray-100 to-gray-200 group-hover:scale-110 transition-transform duration-500 filter grayscale"
-                    @error="$event.target.src = 'https://via.placeholder.com/300x200/6b7280/ffffff?text=' + encodeURIComponent((tour.nombre || 'Tour').substring(0, 15))"
-                  />
-                  <div class="absolute top-2 right-2 bg-gray-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg border border-gray-500">
-                    ${{ tour.precio }}
-                  </div>
-                  <div class="absolute bottom-2 left-2 bg-red-600/90 text-white px-3 py-1 rounded-full text-xs font-bold border border-red-400">
-                    SIN CUPOS
-                  </div>
-                  <!-- Indicador de múltiples imágenes -->
-                  <div v-if="tour.imagenes && tour.imagenes.length > 1"
-                      class="absolute top-2 left-2 bg-gradient-to-r from-black/80 to-gray-800/80 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs flex items-center border border-white/20">
-                    <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                      <path fill-rule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clip-rule="evenodd"/>
-                    </svg>
-                    {{ tour.imagenes.length }}
-                  </div>
-                </div>
-              </template>
 
-              <template #title>
-                <div class="h-10 sm:h-12 flex items-start px-4 pt-3 cursor-pointer hover:bg-gray-100 transition-all duration-300 rounded-lg mx-2"
-                    @click="verMasInfo(tour)">
-                  <span class="text-xs sm:text-sm font-bold text-gray-600 leading-tight line-clamp-2">{{ tour.nombre }}</span>
-                </div>
-              </template>
-
-              <template #content>
-                <div class="flex-1 flex flex-col px-4 pb-4 min-h-0">
-                  <div class="flex-1 space-y-2 cursor-pointer hover:bg-gray-100 transition-all duration-300 rounded-lg p-2 -m-2 border border-transparent hover:border-gray-200"
-                      @click="verMasInfo(tour)">
-                    <div class="flex items-center text-xs text-gray-500 mb-2 bg-gray-100 rounded-lg p-2">
-                      <svg class="w-3 h-3 mr-2 flex-shrink-0 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/>
-                      </svg>
-                      <span class="truncate font-medium">{{ tour.punto_salida }}</span>
-                    </div>
-                    <div class="space-y-2">
-                      <div class="bg-gray-100 rounded-lg p-2 border border-gray-200">
-                        <p class="text-xs font-bold text-gray-600 mb-1">📅 Fecha de Salida:</p>
-                        <p class="text-xs text-gray-500 font-medium">{{ formatearFecha(tour.fecha_salida) }}</p>
-                      </div>
-                      <div class="bg-red-100 rounded-lg p-2 border border-red-200">
-                        <p class="text-xs font-bold text-red-700 mb-1">👥 Disponibles:</p>
-                        <p class="text-xs font-bold text-red-600">
-                          0 cupos
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <!-- Texto informativo -->
-                  <div class="mt-2 mb-1 text-center">
-                    <p class="text-xs text-gray-500 italic">Clic para ver más detalles</p>
-                  </div>
-
-                  <!-- Botones profesionales - SIEMPRE VISIBLES -->
-                  <div class="flex gap-2 mt-2 pt-3 border-t border-gray-200 flex-shrink-0">
-                    <button
-                      disabled
-                      class="px-3 py-2 text-xs font-bold rounded-lg transition-all duration-300 flex-1 shadow-md bg-gray-400 text-white cursor-not-allowed"
-                      >
-                        Sin Cupos
-                    </button>
-                    <button
-                        @click="verMasInfo(tour)"
-                        class="border-2 border-gray-400 text-gray-600 hover:text-gray-700 px-3 py-2 text-xs font-bold rounded-lg hover:bg-gray-100 transition-all duration-300 shadow-md bg-white"
-                      >
-                        Info
-                    </button>
-                  </div>
-                </div>
-              </template>
-            </Card>
-          </div>
-        </div>
 
         <!-- Info adicional profesional -->
         <div class="w-full">

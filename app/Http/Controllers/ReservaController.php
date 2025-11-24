@@ -248,7 +248,31 @@ class ReservaController extends Controller
             $cliente = Cliente::where('user_id', $user->id)->first();
 
             if (!$cliente) {
-                // 2. Crear el cliente si no existe
+                // 2. Verificar si ya existe un cliente con este número de identificación
+                $clienteExistente = Cliente::where('numero_identificacion', $validated['cliente_data']['numero_identificacion'])->first();
+
+                if ($clienteExistente) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de identificación porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // 2.1. Verificar si ya existe un cliente con este teléfono
+                $clienteConTelefono = Cliente::where('telefono', $validated['cliente_data']['telefono'])->first();
+
+                if ($clienteConTelefono) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de teléfono porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // 3. Crear el cliente si no existe
                 $cliente = Cliente::create([
                     'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
                     'fecha_nacimiento' => $validated['cliente_data']['fecha_nacimiento'],
@@ -259,6 +283,34 @@ class ReservaController extends Controller
                     'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             } else {
+                // Verificar si el número de identificación que se quiere actualizar ya existe en otro cliente
+                $clienteConMismoDocumento = Cliente::where('numero_identificacion', $validated['cliente_data']['numero_identificacion'])
+                    ->where('id', '!=', $cliente->id)
+                    ->first();
+
+                if ($clienteConMismoDocumento) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de identificación porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // Verificar si el teléfono que se quiere actualizar ya existe en otro cliente
+                $clienteConMismoTelefono = Cliente::where('telefono', $validated['cliente_data']['telefono'])
+                    ->where('id', '!=', $cliente->id)
+                    ->first();
+
+                if ($clienteConMismoTelefono) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de teléfono porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
                 // Actualizar datos del cliente existente
                 $cliente->update([
                     'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
@@ -279,7 +331,7 @@ class ReservaController extends Controller
             // 5. Crear la reserva (sin empleado asignado inicialmente)
             $reserva = Reserva::create([
                 'fecha' => $validated['fecha_entrada'],
-                'estado' => 'PENDIENTE',
+                'estado' => Reserva::PENDIENTE,
                 'mayores_edad' => $validated['cantidad_personas'],
                 'menores_edad' => 0, // Para hoteles no manejamos menores por separado
                 'total' => $precio_estimado,
@@ -399,7 +451,31 @@ class ReservaController extends Controller
             $fechaNacimiento = $fechaNacimientoCarbon->format('Y-m-d');
 
             if (!$cliente) {
-                // 2. Crear el cliente si no existe
+                // 2. Verificar si ya existe un cliente con este número de identificación
+                $clienteExistente = Cliente::where('numero_identificacion', $validated['cliente_data']['numero_identificacion'])->first();
+
+                if ($clienteExistente) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de identificación porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // 2.1. Verificar si ya existe un cliente con este teléfono
+                $clienteConTelefono = Cliente::where('telefono', $validated['cliente_data']['telefono'])->first();
+
+                if ($clienteConTelefono) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de teléfono porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // 3. Crear el cliente si no existe
                 $cliente = Cliente::create([
                     'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
                     'fecha_nacimiento' => $fechaNacimiento,
@@ -410,6 +486,34 @@ class ReservaController extends Controller
                     'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
             } else {
+                // Verificar si el número de identificación que se quiere actualizar ya existe en otro cliente
+                $clienteConMismoDocumento = Cliente::where('numero_identificacion', $validated['cliente_data']['numero_identificacion'])
+                    ->where('id', '!=', $cliente->id)
+                    ->first();
+
+                if ($clienteConMismoDocumento) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de identificación porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
+                // Verificar si el teléfono que se quiere actualizar ya existe en otro cliente
+                $clienteConMismoTelefono = Cliente::where('telefono', $validated['cliente_data']['telefono'])
+                    ->where('id', '!=', $cliente->id)
+                    ->first();
+
+                if ($clienteConMismoTelefono) {
+                    DB::rollback();
+                    return response()->json([
+                        'success' => false,
+                        'warning' => true,
+                        'message' => 'No puedes usar este número de teléfono porque pertenece a otro usuario.'
+                    ], 400);
+                }
+
                 // Actualizar datos del cliente existente
                 $cliente->update([
                     'numero_identificacion' => $validated['cliente_data']['numero_identificacion'],
@@ -423,6 +527,25 @@ class ReservaController extends Controller
 
             // 3. Obtener información del tour
             $tour = Tour::findOrFail($validated['tour_id']);
+
+            // 3.1. Verificar que el cliente no tenga ya una reserva activa para este tour
+            $reservaExistente = Reserva::where('cliente_id', $cliente->id)
+                ->whereHas('detallesTours', function($query) use ($validated) {
+                    $query->where('tour_id', $validated['tour_id']);
+                })
+                ->whereNotIn('estado', [Reserva::CANCELADA, Reserva::FINALIZADA])
+                ->first();
+
+            if ($reservaExistente) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Ya tiene una reserva con (Estado: {$reservaExistente->estado}). No puedes reservar el mismo tour múltiples veces. Si necesita modificar su reserva, ponte en contacto con nosotros.",
+                    'data' => [
+                        'reserva_existente' => $reservaExistente->load('detallesTours.tour')
+                    ]
+                ], 422);
+            }
 
             // 4. Calcular totales
             $cupos_totales = $validated['cupos_adultos'] + ($validated['cupos_menores'] ?? 0);
@@ -440,7 +563,7 @@ class ReservaController extends Controller
 
             // 6. Crear la reserva (sin empleado asignado inicialmente)
             $reserva = Reserva::create([
-                'fecha' => Carbon::now()->toDateString(),
+                'fecha' => Carbon::now(),
                 'estado' => 'PENDIENTE',
                 'mayores_edad' => $validated['cupos_adultos'],
                 'menores_edad' => $validated['cupos_menores'] ?? null,
@@ -451,7 +574,6 @@ class ReservaController extends Controller
 
             // 7. Crear el detalle de reserva de tour
             $detalleReserva = DetalleReservaTour::create([
-                'fecha' => Carbon::now()->toDateString(),
                 'cupos_reservados' => $cupos_totales,
                 'precio_unitario' => $tour->precio,
                 'precio_total' => $precio_total,
@@ -467,11 +589,17 @@ class ReservaController extends Controller
             // Recalcular cupos disponibles después de la reserva
             $cuposReservadosTotal = $tour->detalleReservas()
                 ->whereHas('reserva', function($query) {
-                    $query->where('estado', '!=', 'cancelada');
+                    $query->where('estado', '!=', Reserva::CANCELADA);
                 })
                 ->sum('cupos_reservados');
 
             $cuposDisponiblesActualizados = max(0, $tour->cupo_max - $cuposReservadosTotal);
+
+            // Cambiar estado del tour automáticamente si se completó el cupo máximo
+            if ($cuposReservadosTotal >= $tour->cupo_max && $tour->estado === 'DISPONIBLE') {
+                $tour->update(['estado' => 'COMPLETO']);
+                Log::info("Tour {$tour->id} cambió automáticamente a estado COMPLETO - cupos reservados: {$cuposReservadosTotal}/{$tour->cupo_max}");
+            }
 
             // Debug log
             Log::info("Después de reserva - Tour {$tour->id}: cupo_max={$tour->cupo_max}, reservados={$cuposReservadosTotal}, disponibles={$cuposDisponiblesActualizados}");
@@ -522,7 +650,7 @@ class ReservaController extends Controller
         // Validar los datos del formulario
         $validated = $request->validate([
             'fecha' => 'required|date',
-            'estado' => 'required|in:PENDIENTE,CONFIRMADA,RECHAZADA,REPROGRAMADA,FINALIZADA',
+            'estado' => 'required|in:' . implode(',', Reserva::ESTADOS),
             'mayores_edad' => 'required|integer|min:1',
             'menores_edad' => 'nullable|integer|min:0',
             'cliente_id' => 'required|exists:clientes,id',
@@ -530,8 +658,50 @@ class ReservaController extends Controller
             'total' => 'required|numeric|min:0'
         ]);
 
+        // Verificar si el estado está cambiando a CANCELADA para reajustar cupos
+        $estadoAnterior = $reserva->estado;
+        $estadoNuevo = $validated['estado'];
+
         // Actualizar la reserva
         $reserva->update($validated);
+
+        // MANEJAR CAMBIOS DE ESTADO ESPECIALES
+        if ($estadoAnterior !== $estadoNuevo) {
+            // Caso 1: Cambio de activa a CANCELADA - eliminar reserva completamente
+            if ($estadoAnterior !== 'CANCELADA' && $estadoNuevo === 'CANCELADA') {
+                // Cargar relaciones antes de eliminar
+                $reserva->load(['detallesTours.tour']);
+
+                // Liberar cupos antes de eliminar
+                $this->liberarCuposReserva($reserva, 'eliminación por actualización a CANCELADA');
+
+                // Eliminar la reserva
+                $reservaId = $reserva->id;
+
+                // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+                \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+
+                // Luego eliminar la reserva
+                $reserva->delete();
+
+                Log::info('Reserva eliminada por actualización a CANCELADA', [
+                    'reserva_id' => $reservaId,
+                    'estado_anterior' => $estadoAnterior
+                ]);
+
+                return response()->json([
+                    'message' => 'Reserva eliminada exitosamente al cambiar estado a CANCELADA',
+                    'reserva' => ['id' => $reservaId, 'eliminada' => true],
+                ]);
+            }
+
+            // Caso 2: Cambio de CANCELADA a activa - esto no debería pasar ya que eliminamos las canceladas
+            // Pero lo mantenemos por si acaso
+            elseif ($estadoAnterior === 'CANCELADA' && $estadoNuevo !== 'CANCELADA') {
+                $reserva = $reserva->fresh(['detallesTours.tour']);
+                $this->ocuparCuposReserva($reserva, 'reactivación desde CANCELADA');
+            }
+        }
 
         return response()->json([
             'message' => 'Reserva actualizada exitosamente',
@@ -540,10 +710,115 @@ class ReservaController extends Controller
     }
 
     /**
+     * Liberar cupos de una reserva (cuando se cancela)
+     */
+    private function liberarCuposReserva($reserva, $motivo = 'cancelación')
+    {
+        if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+            foreach ($reserva->detallesTours as $detalle) {
+                if ($detalle->tour) {
+                    $tour = $detalle->tour;
+                    $personasLiberadas = ($reserva->mayores_edad ?? 0) + ($reserva->menores_edad ?? 0);
+
+                    // Incrementar cupos disponibles
+                    $nuevos_cupos = ($tour->cupos_disponibles ?? 0) + $personasLiberadas;
+
+                    // Verificar si el tour debe cambiar de estado
+                    $nuevo_estado_tour = $tour->estado;
+                    if ($tour->estado === 'COMPLETO' && $nuevos_cupos > 0) {
+                        $nuevo_estado_tour = 'DISPONIBLE';
+                    }
+                    // Si el tour estaba CANCELADA pero ahora no tiene reservas, debe volver a DISPONIBLE
+                    elseif ($tour->estado === 'CANCELADA') {
+                        // Verificar si quedan reservas activas en este tour
+                        $reservasActivas = Reserva::whereHas('detallesTours', function($query) use ($tour) {
+                            $query->where('tour_id', $tour->id);
+                        })
+                        ->whereIn('estado', [Reserva::PENDIENTE, Reserva::CONFIRMADA, Reserva::EN_CURSO, Reserva::REPROGRAMADA])
+                        ->where('id', '!=', $reserva->id) // Excluir la reserva que se está eliminando
+                        ->count();
+
+                        if ($reservasActivas === 0) {
+                            $nuevo_estado_tour = 'DISPONIBLE';
+                        }
+                    }
+
+                    $tour->update([
+                        'cupos_disponibles' => $nuevos_cupos,
+                        'estado' => $nuevo_estado_tour
+                    ]);
+
+                    Log::info("Cupos liberados por {$motivo}", [
+                        'reserva_id' => $reserva->id,
+                        'tour_id' => $tour->id,
+                        'personas_liberadas' => $personasLiberadas,
+                        'cupos_anteriores' => $tour->cupos_disponibles - $personasLiberadas,
+                        'cupos_nuevos' => $nuevos_cupos,
+                        'estado_anterior_tour' => $tour->estado === $nuevo_estado_tour ? 'sin cambio' : $tour->estado,
+                        'estado_nuevo_tour' => $nuevo_estado_tour
+                    ]);
+                }
+            }
+        }
+    }
+
+    /**
+     * Ocupar cupos de una reserva (cuando se reactiva)
+     */
+    private function ocuparCuposReserva($reserva, $motivo = 'reactivación')
+    {
+        if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+            foreach ($reserva->detallesTours as $detalle) {
+                if ($detalle->tour) {
+                    $tour = $detalle->tour;
+                    $personasOcupadas = ($reserva->mayores_edad ?? 0) + ($reserva->menores_edad ?? 0);
+
+                    // Decrementar cupos disponibles
+                    $nuevos_cupos = max(0, ($tour->cupos_disponibles ?? 0) - $personasOcupadas);
+
+                    // Verificar si el tour debe cambiar a COMPLETO
+                    $nuevo_estado_tour = $tour->estado;
+                    if ($nuevos_cupos <= 0 && $tour->estado === 'DISPONIBLE') {
+                        $nuevo_estado_tour = 'COMPLETO';
+                    }
+
+                    $tour->update([
+                        'cupos_disponibles' => $nuevos_cupos,
+                        'estado' => $nuevo_estado_tour
+                    ]);
+
+                    Log::info("Cupos ocupados por {$motivo}", [
+                        'reserva_id' => $reserva->id,
+                        'tour_id' => $tour->id,
+                        'personas_ocupadas' => $personasOcupadas,
+                        'cupos_anteriores' => $tour->cupos_disponibles + $personasOcupadas,
+                        'cupos_nuevos' => $nuevos_cupos,
+                        'estado_anterior_tour' => $tour->estado === $nuevo_estado_tour ? 'sin cambio' : $tour->estado,
+                        'estado_nuevo_tour' => $nuevo_estado_tour
+                    ]);
+                }
+            }
+        }
+    }
+
+
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy(Reserva $reserva)
     {
+        // REAJUSTAR CUPOS: Liberar cupos antes de eliminar la reserva
+        // Solo si la reserva no estaba ya cancelada
+        if ($reserva->estado !== 'CANCELADA') {
+            // Cargar relaciones antes de eliminar
+            $reserva->load(['detallesTours.tour']);
+            $this->liberarCuposReserva($reserva, 'eliminación de reserva');
+        }
+
+        // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+        \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+
         // Eliminar la reserva
         $reserva->delete();
 
@@ -599,7 +874,7 @@ class ReservaController extends Controller
             $reserva = Reserva::findOrFail($id);
 
             // Validar que se pueda confirmar
-            $estadosPermitidos = ['PENDIENTE', 'Pendiente', 'pendiente'];
+            $estadosPermitidos = [Reserva::PENDIENTE, 'Pendiente', 'pendiente'];
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
@@ -608,8 +883,27 @@ class ReservaController extends Controller
             }
 
             $reserva->update([
-                'estado' => 'CONFIRMADA'
+                'estado' => Reserva::CONFIRMADA
             ]);
+
+            // Verificar si hay que cambiar el estado del tour a COMPLETO
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                $tour = $reserva->detallesTours->first()->tour;
+                if ($tour) {
+                    // Recalcular cupos reservados
+                    $cuposReservadosTotal = $tour->detalleReservas()
+                        ->whereHas('reserva', function($query) {
+                            $query->where('estado', '!=', Reserva::CANCELADA);
+                        })
+                        ->sum('cupos_reservados');
+
+                    // Cambiar estado del tour automáticamente si se completó el cupo máximo
+                    if ($cuposReservadosTotal >= $tour->cupo_max && $tour->estado === 'DISPONIBLE') {
+                        $tour->update(['estado' => 'COMPLETO']);
+                        Log::info("Tour {$tour->id} cambió automáticamente a estado COMPLETO al confirmar reserva - cupos reservados: {$cuposReservadosTotal}/{$tour->cupo_max}");
+                    }
+                }
+            }
 
             // Recargar la reserva con relaciones
             $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
@@ -740,12 +1034,56 @@ class ReservaController extends Controller
 
             $motivo = trim($request->input('motivo'));
 
-            $reserva->update([
-                'estado' => 'RECHAZADA'
-            ]);
+            // Cargar relaciones ANTES de eliminar
+            $reserva->load(['cliente.user', 'detallesTours.tour']);
 
-            // Recargar la reserva con relaciones
-            $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
+            // REAJUSTAR CUPOS: Liberar cupos antes de eliminar la reserva
+            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+                foreach ($reserva->detallesTours as $detalle) {
+                    if ($detalle->tour) {
+                        $tour = $detalle->tour;
+                        $personasCanceladas = ($reserva->mayores_edad ?? 0) + ($reserva->menores_edad ?? 0);
+
+                        // Incrementar cupos disponibles
+                        $nuevos_cupos = ($tour->cupos_disponibles ?? 0) + $personasCanceladas;
+
+                        // Verificar si el tour debe cambiar de estado
+                        $nuevo_estado = $tour->estado;
+                        if ($tour->estado === 'COMPLETO' && $nuevos_cupos > 0) {
+                            $nuevo_estado = 'DISPONIBLE';
+                        }
+                        // Si el tour estaba CANCELADA pero ahora no tiene reservas, debe volver a DISPONIBLE
+                        elseif ($tour->estado === 'CANCELADA') {
+                            // Verificar si quedan reservas activas en este tour después de rechazar esta
+                            $reservasActivas = \App\Models\Reserva::whereHas('detallesTours', function($query) use ($tour) {
+                                $query->where('tour_id', $tour->id);
+                            })
+                            ->whereIn('estado', [\App\Models\Reserva::PENDIENTE, \App\Models\Reserva::CONFIRMADA, \App\Models\Reserva::EN_CURSO, \App\Models\Reserva::REPROGRAMADA])
+                            ->where('id', '!=', $reserva->id) // Excluir la reserva que se está rechazando
+                            ->count();
+
+                            if ($reservasActivas === 0) {
+                                $nuevo_estado = 'DISPONIBLE';
+                            }
+                        }
+
+                        $tour->update([
+                            'cupos_disponibles' => $nuevos_cupos,
+                            'estado' => $nuevo_estado
+                        ]);
+
+                        Log::info('Cupos reajustados por eliminación de reserva rechazada', [
+                            'reserva_id' => $reserva->id,
+                            'tour_id' => $tour->id,
+                            'personas_liberadas' => $personasCanceladas,
+                            'cupos_anteriores' => $tour->cupos_disponibles - $personasCanceladas,
+                            'cupos_nuevos' => $nuevos_cupos,
+                            'estado_anterior' => $tour->estado === $nuevo_estado ? 'sin cambio' : $tour->estado,
+                            'estado_nuevo' => $nuevo_estado
+                        ]);
+                    }
+                }
+            }
 
             // Obtener la fecha de salida del tour si existe
             $fechaSalida = null;
@@ -787,10 +1125,25 @@ class ReservaController extends Controller
                 }
             }
 
+            // ELIMINAR RESERVA: En lugar de cambiar estado, eliminar completamente
+            $reservaId = $reserva->id;
+
+            // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+            \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+
+            // Luego eliminar la reserva
+            $reserva->delete();
+
+            Log::info('Reserva eliminada por rechazo', [
+                'reserva_id' => $reservaId,
+                'motivo' => $motivo,
+                'email_enviado' => !empty($clientData['email'])
+            ]);
+
             return response()->json([
                 'success' => true,
-                'message' => 'Reserva rechazada exitosamente. Se ha enviado una notificación al cliente.',
-                'data' => $reserva
+                'message' => 'Reserva eliminada exitosamente. Se ha enviado una notificación al cliente.',
+                'data' => ['id' => $reservaId, 'eliminada' => true]
             ]);
 
         } catch (\Exception $e) {
@@ -808,131 +1161,33 @@ class ReservaController extends Controller
     }
 
     /**
-     * Reprogramar una reserva
+     * Reprogramar una reserva (DEPRECADO)
+     *
+     * Las reservas ahora se reprograman automáticamente cuando se reprograma el TOUR asociado.
+     * Para reprogramar reservas, usar la funcionalidad de reprogramar TOURS desde la vista de Tours.
      */
     public function reprogramar(Request $request, $id): JsonResponse
     {
-        try {
-            $reserva = Reserva::findOrFail($id);
+        // Buscar la reserva para obtener información del tour asociado
+        $reserva = Reserva::with('detallesTours.tour')->findOrFail($id);
 
-            // Ser más flexible con los estados
-            $estadosPermitidos = [
-                'PENDIENTE', 'Pendiente', 'pendiente',
-                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado'
-            ];
-
-            if (!in_array($reserva->estado, $estadosPermitidos)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "No se puede reprogramar una reserva en estado: {$reserva->estado}"
-                ], 400);
-            }
-
-            $request->validate([
-                'fecha_nueva' => 'required|date|after:today',
-                'motivo' => 'required|string|max:255',
-                'observaciones' => 'nullable|string|max:1000'
-            ]);
-
-            $fechaAnterior = $reserva->fecha;
-            $fechaNueva = $request->fecha_nueva;
-            $motivo = $request->motivo;
-            $observaciones = $request->observaciones;
-
-            // Obtener fecha de salida anterior ANTES de hacer cambios
-            $fechaSalidaAnterior = null;
-            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
-                $primerDetalle = $reserva->detallesTours->first();
-                if ($primerDetalle && $primerDetalle->tour) {
-                    $fechaSalidaAnterior = $primerDetalle->tour->fecha_salida;
-                    
-                    // Actualizar la fecha de salida del tour también
-                    $primerDetalle->tour->update([
-                        'fecha_salida' => $fechaNueva
-                    ]);
-                }
-            }
-
-            $reserva->update([
-                'fecha' => $fechaNueva,
-                'estado' => 'REPROGRAMADA'
-            ]);
-
-            // Recargar la reserva con relaciones
-            $reserva = $reserva->fresh(['cliente.user', 'detallesTours.tour']);
-
-            // Obtener la nueva fecha de salida del tour (después de la actualización)
-            $fechaSalidaNueva = null;
-            if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
-                $primerDetalle = $reserva->detallesTours->first();
-                if ($primerDetalle && $primerDetalle->tour) {
-                    $fechaSalidaNueva = $primerDetalle->tour->fecha_salida;
-                }
-            }
-
-            // Preparar datos para el email de reprogramación
-            $reservationData = [
-                'entidad_nombre' => $this->obtenerNombreEntidad($reserva),
-                'fecha_reserva' => $fechaAnterior, // Fecha de reservación anterior
-                'fecha_salida_anterior' => $fechaSalidaAnterior, // Fecha de salida anterior del tour
-                'fecha_salida_nueva' => $fechaSalidaNueva, // Fecha de salida nueva del tour
-                'tipo' => $this->obtenerTipoReserva($reserva),
-                'mayores_edad' => $reserva->mayores_edad,
-                'menores_edad' => $reserva->menores_edad,
-                'total' => $reserva->total
-            ];
-
-            $clientData = [
-                'name' => $reserva->cliente->user->name ?? $reserva->cliente->nombres ?? 'Estimado cliente',
-                'email' => $reserva->cliente->user->email ?? $reserva->cliente->correo ?? null
-            ];
-
-            // Enviar email de reprogramación solo si hay email
-            if ($clientData['email']) {
-                try {
-                    Mail::to($clientData['email'])
-                        ->send(new ReservationRescheduledMail(
-                            $reservationData,
-                            $clientData,
-                            $motivo,
-                            $fechaNueva,
-                            $observaciones
-                        ));
-
-                    Log::info('Email de reprogramación enviado exitosamente', [
-                        'reserva_id' => $id,
-                        'email' => $clientData['email'],
-                        'fecha_anterior' => $fechaAnterior,
-                        'fecha_nueva' => $fechaNueva
-                    ]);
-                } catch (\Exception $emailError) {
-                    Log::error('Error al enviar email de reprogramación', [
-                        'reserva_id' => $id,
-                        'email' => $clientData['email'],
-                        'error' => $emailError->getMessage()
-                    ]);
-                    // No retornamos error aquí para no afectar la reprogramación de la reserva
-                }
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Reserva reprogramada exitosamente. Se ha notificado al cliente sobre los cambios.',
-                'data' => $reserva
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('Error al reprogramar reserva', [
-                'id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al reprogramar la reserva',
-                'error' => $e->getMessage()
-            ], 500);
+        $tourAsociado = null;
+        if ($reserva->detallesTours && $reserva->detallesTours->isNotEmpty()) {
+            $tourAsociado = $reserva->detallesTours->first()->tour;
         }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Las reservas individuales ya no se pueden reprogramar. Para reprogramar reservas, debe reprogramar el TOUR asociado desde la vista de Tours.',
+            'redirect_info' => [
+                'tour_id' => $tourAsociado?->id,
+                'tour_nombre' => $tourAsociado?->nombre,
+                'mensaje' => 'Vaya a la vista de Tours, busque el tour "' . ($tourAsociado?->nombre ?? 'asociado') . '" y use la opción "Cambiar Estado" para reprogramarlo. Esto actualizará automáticamente todas las reservas asociadas.'
+            ]
+        ], 422); // 422 Unprocessable Entity
+
+        // El resto de la lógica fue eliminada ya que ahora las reservas
+        // se reprograman automáticamente desde el TOUR
     }
 
     /**
@@ -943,21 +1198,18 @@ class ReservaController extends Controller
         try {
             $reserva = Reserva::findOrFail($id);
 
-            // Ser más flexible con los estados
-            $estadosPermitidos = [
-                'CONFIRMADA', 'CONFIRMADO', 'Confirmada', 'Confirmado', 'confirmada', 'confirmado',
-                'REPROGRAMADA', 'Reprogramada', 'reprogramada'
-            ];
+            // Estados permitidos para finalizar (estados unificados)
+            $estadosPermitidos = [Reserva::CONFIRMADA, Reserva::EN_CURSO, Reserva::REPROGRAMADA];
 
             if (!in_array($reserva->estado, $estadosPermitidos)) {
                 return response()->json([
                     'success' => false,
-                    'message' => "No se puede finalizar una reserva en estado: {$reserva->estado}. Solo se pueden finalizar reservas confirmadas o reprogramadas."
+                    'message' => "No se puede finalizar una reserva en estado: {$reserva->estado}. Solo se pueden finalizar reservas confirmadas, en curso o reprogramadas."
                 ], 400);
             }
 
             $reserva->update([
-                'estado' => 'FINALIZADA'
+                'estado' => Reserva::FINALIZADA
             ]);
 
             // Recargar la reserva con relaciones

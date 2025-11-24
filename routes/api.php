@@ -129,6 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
         Route::apiResource('clientes', ClienteController::class);
         Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
+        Route::put('tours/{id}/finalizar', [TourController::class, 'finalizarTour']);
         // Ruta adicional para estadísticas de hoteles
         Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
 

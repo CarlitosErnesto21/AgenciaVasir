@@ -1,8 +1,7 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import DatePicker from 'primevue/datepicker';
-import Select from 'primevue/select';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faCheck, faSpinner, faXmark, faExclamationTriangle, faCalendarDays, faClockRotateLeft } from '@fortawesome/free-solid-svg-icons';
 import { useToast } from 'primevue/usetoast';
@@ -35,12 +34,11 @@ const toast = useToast();
 // Estados disponibles
 const estadosOptions = ref([
     { label: 'Disponible', value: 'DISPONIBLE', descripcion: 'El tour está disponible para reservas', color: 'text-green-600', disponible: true },
-    { label: 'Agotado', value: 'AGOTADO', descripcion: 'No hay cupos disponibles', color: 'text-red-600', disponible: true },
+    { label: 'Completo', value: 'COMPLETO', descripcion: 'No hay cupos disponibles', color: 'text-red-600', disponible: true },
     { label: 'En Curso', value: 'EN_CURSO', descripcion: 'El tour está en desarrollo', color: 'text-blue-600', disponible: true },
-    { label: 'Completado', value: 'COMPLETADO', descripcion: 'El tour ha finalizado exitosamente', color: 'text-gray-600', disponible: true },
-    { label: 'Cancelado', value: 'CANCELADO', descripcion: 'El tour ha sido cancelado', color: 'text-red-600', disponible: true },
-    { label: 'Suspendido', value: 'SUSPENDIDO', descripcion: 'El tour está temporalmente suspendido', color: 'text-orange-600', disponible: true },
-    { label: 'Reprogramado', value: 'REPROGRAMADO', descripcion: 'El tour ha sido reprogramado a una nueva fecha', color: 'text-purple-600', disponible: true }
+    { label: 'Finalizado', value: 'FINALIZADO', descripcion: 'El tour ha finalizado exitosamente y se notificará a los clientes', color: 'text-gray-600', disponible: true },
+    { label: 'Cancelada', value: 'CANCELADA', descripcion: 'El tour será cancelado y se notificará a todos los clientes con reservas', color: 'text-red-600', disponible: true },
+    { label: 'Reprogramada', value: 'REPROGRAMADA', descripcion: 'El tour ha sido reprogramado a una nueva fecha', color: 'text-purple-600', disponible: true }
 ]);
 
 // Estados reactivos
@@ -63,19 +61,30 @@ const isVisible = computed({
 watch([() => props.visible, () => props.tour], () => {
     if (props.visible && props.tour) {
         resetForm();
+        // Desactivar scroll del body cuando se abre el modal
+        document.body.style.overflow = 'hidden';
+    } else {
+        // Reactivar scroll del body cuando se cierra el modal
+        document.body.style.overflow = 'auto';
     }
 });
 
 // Watch para mostrar/ocultar formulario de reprogramación
 watch(selectedEstado, (nuevoEstado) => {
-    mostrarFormularioReprogramacion.value = nuevoEstado === 'REPROGRAMADO';
-    if (nuevoEstado !== 'REPROGRAMADO') {
+    mostrarFormularioReprogramacion.value = nuevoEstado === 'REPROGRAMADA';
+
+    if (nuevoEstado !== 'REPROGRAMADA') {
         // Limpiar campos de reprogramación
         nuevaFechaSalida.value = null;
         nuevaFechaRegreso.value = null;
         motivoReprogramacion.value = '';
         observaciones.value = '';
     }
+});
+
+// Limpiar scroll al desmontar el componente
+onUnmounted(() => {
+    document.body.style.overflow = 'auto';
 });
 
 // Motivos predefinidos para reprogramación
@@ -101,6 +110,8 @@ const resetForm = () => {
 
 const closeModal = () => {
     resetForm();
+    // Reactivar scroll cuando se cierra el modal
+    document.body.style.overflow = 'auto';
     emit('update:visible', false);
 };
 
@@ -116,7 +127,7 @@ const validarFormulario = () => {
         return false;
     }
 
-    if (selectedEstado.value === 'REPROGRAMADO') {
+    if (selectedEstado.value === 'REPROGRAMADA') {
         if (!nuevaFechaSalida.value) {
             toast.add({
                 severity: "warn",
@@ -174,7 +185,13 @@ const validarFormulario = () => {
     return true;
 };
 
-const cambiarEstado = async () => {
+const cambiarEstado = async (event) => {
+    // Prevenir comportamiento por defecto
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+
     submitted.value = true;
 
     if (!validarFormulario()) {
@@ -188,31 +205,76 @@ const cambiarEstado = async () => {
             estado: selectedEstado.value
         };
 
+        let response;
+
+        // Si es finalización, usar endpoint específico
+        if (selectedEstado.value === 'FINALIZADO') {
+            const finalizarPayload = {
+                observaciones: observaciones.value || ''
+            };
+            response = await axios.put(`/api/tours/${props.tour.id}/finalizar`, finalizarPayload);
+        }
+        // Si es cancelación, agregar datos adicionales y cancelar reservas
+        else if (selectedEstado.value === 'CANCELADA') {
+            payload.motivo_cancelacion = observaciones.value || 'Tour cancelado por el administrador';
+            payload.cancelar_reservas = true; // Cancelar todas las reservas asociadas
+
+            response = await axios.put(`/api/tours/${props.tour.id}/cambiar-estado`, payload);
+        }
         // Si es reprogramación, agregar datos adicionales
-        if (selectedEstado.value === 'REPROGRAMADO') {
-            payload.fecha_salida = nuevaFechaSalida.value;
-            payload.fecha_regreso = nuevaFechaRegreso.value;
+        else if (selectedEstado.value === 'REPROGRAMADA') {
+            // Formatear las fechas en formato local de El Salvador (sin conversión UTC)
+            // Usamos toLocaleString para mantener la hora local seleccionada
+            const formatearFechaLocal = (fecha) => {
+                const year = fecha.getFullYear();
+                const month = String(fecha.getMonth() + 1).padStart(2, '0');
+                const day = String(fecha.getDate()).padStart(2, '0');
+                const hours = String(fecha.getHours()).padStart(2, '0');
+                const minutes = String(fecha.getMinutes()).padStart(2, '0');
+                const seconds = String(fecha.getSeconds()).padStart(2, '0');
+                return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+            };
+
+            payload.fecha_salida = formatearFechaLocal(nuevaFechaSalida.value);
+            payload.fecha_regreso = formatearFechaLocal(nuevaFechaRegreso.value);
             payload.motivo_reprogramacion = motivoReprogramacion.value;
             payload.observaciones = observaciones.value;
+
+            response = await axios.put(`/api/tours/${props.tour.id}/cambiar-estado`, payload);
+        }
+        // Para otros estados, usar el endpoint normal
+        else {
+            response = await axios.put(`/api/tours/${props.tour.id}/cambiar-estado`, payload);
         }
 
-        const response = await axios.put(`/api/tours/${props.tour.id}/cambiar-estado`, payload);
+        // Emitir evento para actualizar la lista PRIMERO (sin esperar)
+        const tourActualizado = response.data.tour || {
+            ...props.tour,
+            estado: selectedEstado.value,
+            fecha_salida: selectedEstado.value === 'REPROGRAMADA' ? payload.fecha_salida : props.tour.fecha_salida,
+            fecha_regreso: selectedEstado.value === 'REPROGRAMADA' ? payload.fecha_regreso : props.tour.fecha_regreso
+        };
 
+        emit('estadoActualizado', tourActualizado);
+
+        // Mostrar toast después de emitir el evento
         toast.add({
             severity: "success",
             summary: "¡Estado actualizado!",
-            detail: selectedEstado.value === 'REPROGRAMADO'
+            detail: selectedEstado.value === 'REPROGRAMADA'
                 ? "El tour ha sido reprogramado correctamente."
-                : `El estado del tour ha sido cambiado a ${estadosOptions.value.find(e => e.value === selectedEstado.value)?.label}.`,
+                : selectedEstado.value === 'FINALIZADO'
+                    ? "El tour ha sido finalizado correctamente."
+                    : selectedEstado.value === 'CANCELADA'
+                        ? "El tour ha sido cancelado y se notificó a todos los clientes."
+                        : `El estado del tour ha sido cambiado a ${estadosOptions.value.find(e => e.value === selectedEstado.value)?.label}.`,
             life: 4000
         });
 
-        // Emitir evento para actualizar la lista
-        emit('estadoActualizado', response.data.tour);
+        // Cerrar modal
         closeModal();
 
     } catch (error) {
-        console.error('Error al cambiar estado:', error);
 
         let mensaje = "No se pudo cambiar el estado del tour.";
         if (error.response?.data?.message) {
@@ -247,6 +309,35 @@ const getMinDateRegreso = () => {
     fechaSalida.setHours(fechaSalida.getHours() + 1);
     return fechaSalida;
 };
+
+// Función para formatear fecha y hora en formato amigable
+const formatearFechaHora = (fecha) => {
+    if (!fecha) return 'N/A';
+
+    const fechaObj = new Date(fecha);
+
+    // Verificar si es una fecha válida
+    if (isNaN(fechaObj.getTime())) return 'Fecha inválida';
+
+    // Si la hora es 00:00, mostrar solo la fecha
+    if (fechaObj.getHours() === 0 && fechaObj.getMinutes() === 0) {
+        return fechaObj.toLocaleDateString('es-ES', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        }) + ' (Sin hora especificada)';
+    }
+
+    // Mostrar fecha y hora completa en formato AM/PM
+    return fechaObj.toLocaleString('es-ES', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+    });
+};
 </script>
 
 <template>
@@ -274,12 +365,12 @@ const getMinDateRegreso = () => {
                         <span class="ml-2">{{ tour.categoria }}</span>
                     </div>
                     <div>
-                        <span class="font-medium text-gray-700">Fecha de salida:</span>
-                        <span class="ml-2">{{ new Date(tour.fecha_salida).toLocaleDateString('es-ES') }}</span>
+                        <span class="font-medium text-gray-700">Salida:</span>
+                        <span class="ml-2">{{ formatearFechaHora(tour.fecha_salida) }}</span>
                     </div>
                     <div>
-                        <span class="font-medium text-gray-700">Fecha de regreso:</span>
-                        <span class="ml-2">{{ new Date(tour.fecha_regreso).toLocaleDateString('es-ES') }}</span>
+                        <span class="font-medium text-gray-700">Regreso:</span>
+                        <span class="ml-2">{{ formatearFechaHora(tour.fecha_regreso) }}</span>
                     </div>
                 </div>
             </div>
@@ -289,28 +380,44 @@ const getMinDateRegreso = () => {
                 <label class="block text-sm font-semibold text-gray-700">
                     Nuevo Estado <span class="text-red-500">*</span>
                 </label>
-                <Select
-                    v-model="selectedEstado"
-                    :options="estadosOptions"
-                    optionLabel="label"
-                    optionValue="value"
-                    placeholder="Selecciona un estado"
-                    class="w-full"
-                    :class="{ 'p-invalid': submitted && !selectedEstado }"
-                >
-                    <template #option="slotProps">
-                        <div class="flex flex-col py-2">
-                            <span :class="slotProps.option.color" class="font-medium">
-                                {{ slotProps.option.label }}
-                            </span>
-                            <span class="text-xs text-gray-500 mt-1">
-                                {{ slotProps.option.descripcion }}
-                            </span>
+                <div class="text-xs text-gray-500 mb-3">Selecciona el nuevo estado para el tour</div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                        v-for="estado in estadosOptions"
+                        :key="estado.value"
+                        type="button"
+                        :class="[
+                            'w-full p-3 rounded-lg border-2 transition-all duration-200 ease-in-out text-left',
+                            selectedEstado === estado.value
+                                ? 'border-blue-500 bg-blue-50 shadow-md'
+                                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                        ]"
+                        @click="selectedEstado = estado.value"
+                    >
+                        <div class="flex items-start gap-3">
+                            <div :class="[
+                                'w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5',
+                                selectedEstado === estado.value
+                                    ? 'border-blue-500 bg-blue-500'
+                                    : 'border-gray-300'
+                            ]">
+                                <div v-if="selectedEstado === estado.value" class="w-full h-full rounded-full bg-white transform scale-50"></div>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div :class="[estado.color, 'font-medium text-sm']">
+                                    {{ estado.label }}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-1 leading-tight">
+                                    {{ estado.descripcion }}
+                                </div>
+                            </div>
                         </div>
-                    </template>
-                </Select>
+                    </button>
+                </div>
+
                 <small v-if="submitted && !selectedEstado" class="text-red-500">
-                    El estado es obligatorio.
+                    Debes seleccionar un estado.
                 </small>
             </div>
 
@@ -332,8 +439,10 @@ const getMinDateRegreso = () => {
                             showTime
                             showIcon
                             dateFormat="dd/mm/yy"
+                            timeFormat="12"
+                            hourFormat="12"
                             :minDate="getMinDate()"
-                            placeholder="Selecciona fecha y hora"
+                            placeholder="Selecciona fecha y hora (AM/PM)"
                             class="w-full"
                             :class="{ 'p-invalid': submitted && !nuevaFechaSalida }"
                         />
@@ -351,8 +460,10 @@ const getMinDateRegreso = () => {
                             showTime
                             showIcon
                             dateFormat="dd/mm/yy"
+                            timeFormat="12"
+                            hourFormat="12"
                             :minDate="getMinDateRegreso()"
-                            placeholder="Selecciona fecha y hora"
+                            placeholder="Selecciona fecha y hora (AM/PM)"
                             class="w-full"
                             :class="{ 'p-invalid': submitted && !nuevaFechaRegreso }"
                         />
@@ -367,14 +478,41 @@ const getMinDateRegreso = () => {
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         Motivo de la Reprogramación <span class="text-red-500">*</span>
                     </label>
-                    <Select
-                        v-model="motivoReprogramacion"
-                        :options="motivosComunes"
-                        placeholder="Selecciona o escribe un motivo"
-                        editable
-                        class="w-full"
-                        :class="{ 'p-invalid': submitted && !motivoReprogramacion.trim() }"
-                    />
+                    <div class="text-xs text-gray-500 mb-3">Selecciona un motivo predefinido o escribe uno personalizado</div>
+
+                    <!-- Motivos predefinidos -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                        <button
+                            v-for="motivo in motivosComunes"
+                            :key="motivo"
+                            type="button"
+                            :class="[
+                                'text-left p-2 rounded-md border transition-all duration-200 ease-in-out text-sm',
+                                motivoReprogramacion === motivo
+                                    ? 'border-purple-500 bg-purple-50 text-purple-800'
+                                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700'
+                            ]"
+                            @click="motivoReprogramacion = motivo"
+                        >
+                            {{ motivo }}
+                        </button>
+                    </div>
+
+                    <!-- Campo personalizado -->
+                    <div>
+                        <label class="block text-xs font-medium text-gray-600 mb-1">
+                            Motivo personalizado:
+                        </label>
+                        <textarea
+                            v-model="motivoReprogramacion"
+                            rows="2"
+                            placeholder="Escribe un motivo personalizado..."
+                            class="w-full p-2 border border-gray-300 rounded-md text-sm focus:ring-purple-500 focus:border-purple-500"
+                            :class="{ 'border-red-500': submitted && !motivoReprogramacion.trim() }"
+                            maxlength="255"
+                        ></textarea>
+                    </div>
+
                     <small v-if="submitted && !motivoReprogramacion.trim()" class="text-red-500">
                         El motivo es obligatorio.
                     </small>
@@ -409,7 +547,7 @@ const getMinDateRegreso = () => {
                             <strong>{{ estadosOptions.find(e => e.value === tour.estado)?.label }}</strong>
                             a
                             <strong>{{ estadosOptions.find(e => e.value === selectedEstado)?.label }}</strong>.
-                            <span v-if="selectedEstado === 'REPROGRAMADO'">
+                            <span v-if="selectedEstado === 'REPROGRAMADA'">
                                 Esto actualizará las fechas del tour y notificará a los clientes con reservas.
                             </span>
                         </p>
@@ -422,16 +560,8 @@ const getMinDateRegreso = () => {
             <div class="flex justify-center gap-4 w-full mt-6">
                 <button
                     type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-9 sm:px-12 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="closeModal"
-                    :disabled="isLoading"
-                >
-                    <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />
-                    Cancelar
-                </button>
-                <button
                     class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    @click="cambiarEstado"
+                    @click.prevent="cambiarEstado"
                     :disabled="isLoading || !selectedEstado"
                 >
                     <FontAwesomeIcon
@@ -442,7 +572,16 @@ const getMinDateRegreso = () => {
                         ]"
                     />
                     <span v-if="!isLoading">Cambiar Estado</span>
-                    <span v-else>{{ selectedEstado === 'REPROGRAMADO' ? 'Reprogramando...' : 'Actualizando...' }}</span>
+                    <span v-else>{{ selectedEstado === 'REPROGRAMADA' ? 'Reprogramando...' : 'Actualizando...' }}</span>
+                </button>
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-9 sm:px-12 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="closeModal"
+                    :disabled="isLoading"
+                >
+                    <FontAwesomeIcon :icon="faXmark" class="h-5 text-white" />
+                    Cancelar
                 </button>
             </div>
         </template>
@@ -462,31 +601,5 @@ const getMinDateRegreso = () => {
 
 .animate-spin {
     animation: spin 1s linear infinite;
-}
-
-/* Estilos para el dropdown del Select de PrimeVue */
-:deep(.p-select-overlay) {
-    border: 2px solid #9ca3af !important;
-    border-radius: 0.375rem !important;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1) !important;
-}
-
-:deep(.p-select-option) {
-    border-bottom: 1px solid #e5e7eb !important;
-    padding: 8px 12px !important;
-    transition: background-color 0.2s ease !important;
-}
-
-:deep(.p-select-option:last-child) {
-    border-bottom: none !important;
-}
-
-:deep(.p-select-option:hover) {
-    background-color: #f3f4f6 !important;
-}
-
-:deep(.p-select-option[aria-selected="true"]) {
-    background-color: #dbeafe !important;
-    color: #1e40af !important;
 }
 </style>

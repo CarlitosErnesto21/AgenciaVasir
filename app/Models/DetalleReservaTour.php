@@ -12,7 +12,6 @@ class DetalleReservaTour extends Model
     protected $table = 'detalles_reservas_tours';
     
     protected $fillable = [
-        'fecha',
         'cupos_reservados',
         'precio_unitario',
         'precio_total',

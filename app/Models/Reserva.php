@@ -8,6 +8,24 @@ use Illuminate\Database\Eloquent\Model;
 class Reserva extends Model
 {
     use HasFactory;
+
+    // Estados de la reserva
+    const PENDIENTE = 'PENDIENTE';
+    const CONFIRMADA = 'CONFIRMADA';
+    const EN_CURSO = 'EN_CURSO';
+    const FINALIZADA = 'FINALIZADA';
+    const CANCELADA = 'CANCELADA';
+    const REPROGRAMADA = 'REPROGRAMADA';
+
+    const ESTADOS = [
+        self::PENDIENTE,
+        self::CONFIRMADA,
+        self::EN_CURSO,
+        self::FINALIZADA,
+        self::CANCELADA,
+        self::REPROGRAMADA
+    ];
+
     protected $fillable = [
         'fecha',
         'estado',
@@ -19,7 +37,7 @@ class Reserva extends Model
     ];
 
     protected $casts = [
-        'fecha' => 'date',
+        'fecha' => 'datetime',
         'total' => 'decimal:2'
     ];
     public function empleado()
