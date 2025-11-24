@@ -210,7 +210,7 @@
 
             <div class="detail-row">
                 <span class="detail-label">Nombre:</span>
-                <span class="detail-value">{{ $client['nombres'] ?? 'N/A' }} {{ $client['apellidos'] ?? '' }}</span>
+                <span class="detail-value">{{ $client['nombre_completo'] ?? ($client['nombres'] . ' ' . ($client['apellidos'] ?? '')) }}</span>
             </div>
 
             <div class="detail-row">
@@ -318,16 +318,11 @@
             @endif
 
             <div class="detail-row">
-                <span class="detail-label">Precio por adulto:</span>
-                <span class="detail-value">${{ number_format($tour['precio_adulto'] ?? 0, 2) }}</span>
+                <span class="detail-label">Precio por persona:</span>
+                <span class="detail-value">${{ number_format($tour['precio'] ?? 0, 2) }}</span>
             </div>
 
-            @if(isset($tour['precio_menor']) && $tour['precio_menor'] > 0)
-            <div class="detail-row">
-                <span class="detail-label">Precio por niño:</span>
-                <span class="detail-value">${{ number_format($tour['precio_menor'], 2) }}</span>
-            </div>
-            @endif
+
         </div>
 
         <!-- Sección de acciones -->

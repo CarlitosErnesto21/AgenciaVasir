@@ -132,7 +132,7 @@
         </div>
 
         <div>
-            <h2>¡Hola {{ $client['nombres'] ?? $client['name'] ?? 'Estimado cliente' }}!</h2>
+            <h2>¡Hola {{ $client['nombre_completo'] ?? $client['nombres'] ?? $client['name'] ?? 'Estimado cliente' }}!</h2>
             <p>¡Gracias por elegir VASIR! Tu reserva ha sido <strong style="color: #007bff;">CREADA EXITOSAMENTE</strong> y está siendo procesada por nuestro equipo.</p>
             <p style="color: #856404; background-color: #fff3cd; padding: 15px; border-radius: 5px; border-left: 4px solid #ffc107;">
                 <strong>Importante:</strong> Tu reserva está pendiente de confirmación. Recibirás un correo adicional una vez que nuestro equipo la revise y confirme.
@@ -205,7 +205,7 @@
 
             <div class="detail-row">
                 <span class="detail-label">Nombre:</span>
-                <span class="detail-value">{{ $client['nombres'] ?? 'N/A' }} {{ $client['apellidos'] ?? '' }}</span>
+                <span class="detail-value">{{ $client['nombre_completo'] ?? ($client['nombres'] . ' ' . ($client['apellidos'] ?? '')) }}</span>
             </div>
 
             <div class="detail-row">
@@ -234,7 +234,7 @@
         <div class="info-section">
             <h3 style="margin-top: 0;">Información Importante</h3>
             <ul style="margin: 10px 0; padding-left: 20px;">
-                <li>Tu reservación está confirmada y garantizada</li>
+                <li>Tu reservación está pendiente de confirmación</li>
                 <li>Si necesitas hacer cambios, contáctanos lo antes posible</li>
                 <li>Recuerda llegar 10 minutos antes del punto de encuentro</li>
                 <li>Lleva documento de identidad y ropa cómoda</li>

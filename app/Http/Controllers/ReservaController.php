@@ -488,6 +488,9 @@ class ReservaController extends Controller
                     'user_id' => $user->id,
                     'tipo_documento' => $validated['cliente_data']['tipo_documento']
                 ]);
+
+                // Recargar cliente con la relación user
+                $cliente = $cliente->fresh(['user']);
             } else {
                 // Verificar si el número de identificación que se quiere actualizar ya existe en otro cliente
                 $clienteConMismoDocumento = Cliente::where('numero_identificacion', $validated['cliente_data']['numero_identificacion'])
@@ -620,8 +623,10 @@ class ReservaController extends Controller
                 ];
 
                 $clientData = [
-                    'nombres' => $cliente->nombres,
-                    'apellidos' => $cliente->apellidos,
+                    'name' => $cliente->user ? $cliente->user->name : 'Cliente Sin Nombre',
+                    'nombres' => $cliente->user ? $cliente->user->name : 'Sin nombre',
+                    'apellidos' => '',
+                    'nombre_completo' => $cliente->user ? $cliente->user->name : 'Cliente Sin Nombre',
                     'email' => $user->email,
                     'telefono' => $cliente->telefono,
                     'tipo_documento' => $cliente->tipo_documento,
@@ -639,8 +644,7 @@ class ReservaController extends Controller
                     'fecha_regreso' => $tour->fecha_regreso,
                     'cupo_min' => $tour->cupo_min,
                     'cupo_max' => $tour->cupo_max,
-                    'precio_adulto' => $tour->precio_adulto,
-                    'precio_menor' => $tour->precio_menor,
+                    'precio' => $tour->precio,
                     'cupos_disponibles' => $cuposDisponiblesActualizados
                 ];
 
