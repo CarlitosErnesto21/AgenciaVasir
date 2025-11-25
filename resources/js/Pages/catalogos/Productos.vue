@@ -5,7 +5,7 @@ import { ref, onMounted, computed, watch, nextTick } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faFilter, faHandPointUp, faImages, faListDots, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faFilter, faHandPointUp, faImages, faListDots, faMagnifyingGlass, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark, faTags } from "@fortawesome/free-solid-svg-icons";
 import ProductoModals from "./Components/ProductoComponents/Modales.vue";
 import axios from "axios";
 axios.defaults.withCredentials = true;
@@ -706,8 +706,10 @@ const confirmDeleteProduct = (p) => {
 // 🚀 MEJORADO: Función para eliminar con mejor manejo de errores
 const deleteProduct = async () => {
     isDeleting.value = true;
+
     try {
-        await axios.delete(`${url}/${producto.value.id}`);
+        const response = await axios.delete(`${url}/${producto.value.id}`);
+
         await fetchProductos();
         deleteDialog.value = false;
         toast.add({
@@ -722,22 +724,31 @@ const deleteProduct = async () => {
         // 🎯 Manejo específico de errores 422 - Restricciones de integridad
         if (err.response?.status === 422) {
             const errorData = err.response.data;
-            let mensaje = errorData.error || "El producto está siendo utilizado en el sistema.";
 
-            // Si hay detalles específicos, mostrarlos en formato legible
+            let mensaje = errorData.error || errorData.message || "El producto está protegido contra eliminación.";
+
+            // Mostrar detalles específicos con mejor formato
             if (errorData.details && Array.isArray(errorData.details)) {
-                mensaje += "\n\n📋 Detalles:\n• " + errorData.details.join("\n• ");
+                mensaje += "\n\n Restricciones de seguridad:\n• " + errorData.details.join("\n• ");
+
+                // Agregar instrucciones de limpieza
+                mensaje += "\n\n Para eliminar este producto debe:";
+                mensaje += "\n• Eliminar primero todas las ventas asociadas";
+                mensaje += "\n• Limpiar todo el historial de movimientos de inventario";
+                mensaje += "\n• Luego podrá eliminar el producto de forma segura";
             }
 
             toast.add({
-                severity: "warn",
-                summary: "❌ No se puede eliminar",
+                severity: "error",
+                summary: "Producto Protegido",
                 detail: mensaje,
-                life: 10000
+                life: 15000
             });
         }
         // 🎯 Manejo de errores 404 - Producto no encontrado
         else if (err.response?.status === 404) {
+
+
             toast.add({
                 severity: "error",
                 summary: "Producto no encontrado",
@@ -749,6 +760,8 @@ const deleteProduct = async () => {
         }
         // 🎯 Manejo de errores 500 - Error del servidor
         else if (err.response?.status === 500) {
+
+
             toast.add({
                 severity: "error",
                 summary: "Error del servidor",
@@ -758,6 +771,7 @@ const deleteProduct = async () => {
         }
         // 🎯 Otros errores
         else {
+
             const errorMsg = err.response?.data?.error || err.message || "Error desconocido";
             toast.add({
                 severity: "error",
@@ -766,6 +780,8 @@ const deleteProduct = async () => {
                 life: 6000
             });
         }
+
+
     } finally {
         isDeleting.value = false;
     }
@@ -1363,19 +1379,11 @@ const onStockMinimoPaste = (event) => {
         <Toast class="z-[9999]" />
 
         <div class="container mx-auto px-4 py-6">
-            <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Productos</h1>
-                <p class="text-gray-600">Gestión completa del inventario de productos</p>
-            </div>
-
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
                     <div class="w-full">
-                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Productos</h3>
-                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
-                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                            Haz clic en cualquier fila para ver los detalles.
-                        </p>
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2 text-center sm:text-start">Catálogo de Productos</h1>
+                        <p class="text-gray-600 text-center sm:text-start">Gestión completa del inventario de productos</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link
@@ -1460,8 +1468,9 @@ const onStockMinimoPaste = (event) => {
                             </button>
                         </div>
                         <div class="space-y-3">
-                            <div>
-                                <InputText v-model="filters['global'].value" placeholder="🔍 Buscar productos..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                            <div class="relative">
+                                <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <InputText v-model="filters['global'].value" placeholder="Buscar productos..." class="w-full h-9 text-sm rounded-md pl-10" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-3">
                                 <div>
@@ -1500,6 +1509,14 @@ const onStockMinimoPaste = (event) => {
                                         </option>
                                     </select>
                                 </div>
+                            </div>
+
+                            <!-- Texto de ayuda para la tabla -->
+                            <div class="px-1 mt-3">
+                                <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                                    <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                                    Haz clic en cualquier fila para ver los detalles.
+                                </p>
                             </div>
                         </div>
                     </div>

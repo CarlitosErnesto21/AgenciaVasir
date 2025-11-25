@@ -5,7 +5,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useToast } from 'primevue/usetoast'
 import { FilterMatchMode } from "@primevue/core/api"
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faArrowLeft, faCheck, faExclamationTriangle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faCheck, faExclamationTriangle, faHandPointUp, faMagnifyingGlass, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 
 const toast = useToast()
@@ -338,25 +338,25 @@ const onNombrePaste = (event) => {
 
         <div class="container mx-auto px-4 py-6">
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Categorías</h1>
-                <p class="text-gray-600">Gestión de categorías de productos</p>
+                <Link
+                    :href="route('productos')"
+                    @click="handleProductosClick"
+                    :class="{'opacity-50 cursor-not-allowed': isNavigatingToProductos}"
+                    class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 mb-4"
+                    title="Regresar a Productos">
+                    <FontAwesomeIcon
+                        :icon="isNavigatingToProductos ? faSpinner : faArrowLeft"
+                        :class="{'animate-spin': isNavigatingToProductos, 'h-5 w-5 mr-2': true}"
+                    />
+                    Volver a Productos
+                </Link>
             </div>
 
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <div class="flex items-center gap-3">
-                        <Link
-                            :href="route('productos')"
-                            @click="handleProductosClick"
-                            :class="{'opacity-50 cursor-not-allowed': isNavigatingToProductos}"
-                            class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
-                            title="Regresar a Productos">
-                            <FontAwesomeIcon
-                                :icon="isNavigatingToProductos ? faSpinner : faArrowLeft"
-                                :class="{'animate-spin': isNavigatingToProductos, 'h-5 w-5': true}"
-                            />
-                        </Link>
-                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Categorías</h3>
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Categorías</h1>
+                        <p class="text-gray-600">Gestión de categorías de productos</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
@@ -382,7 +382,12 @@ const onNombrePaste = (event) => {
             >
                 <template #header>
                     <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
-                        <InputText v-model="filters['global'].value" placeholder="🔍 Buscar categorías..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                        <div class="space-y-3">
+                            <div class="relative">
+                                <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <InputText v-model="filters['global'].value" placeholder="Buscar categorías..." class="w-full h-9 text-sm rounded-md pl-10" style="background-color: white; border-color: #93c5fd;"/>
+                            </div>
+                        </div>
                     </div>
                 </template>
 

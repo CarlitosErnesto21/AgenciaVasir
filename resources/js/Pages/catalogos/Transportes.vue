@@ -6,7 +6,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import Select from "primevue/select";
-import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faInfoCircle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faArrowLeft, faBusSimple, faCheck, faExclamationTriangle, faHandPointUp, faInfoCircle, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 
 const toast = useToast();
@@ -685,26 +685,30 @@ const handleToursClick = () => {
         <Toast class="z-[9999]" />
 
         <div class="container mx-auto px-4 py-6">
+            <!-- Header con botón volver -->
             <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Transportes</h1>
-                <p class="text-gray-600">Gestión de vehículos y transportes</p>
+                <!-- Botón volver -->
+                <Link
+                    :href="route('tours')"
+                    @click="handleToursClick"
+                    :class="{'opacity-50 cursor-not-allowed': isNavigatingToTours}"
+                    class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+                    title="Regresar a Tours">
+                    <FontAwesomeIcon
+                        :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
+                        :class="{'animate-spin': isNavigatingToTours}"
+                        class="h-5 w-5 mr-2"
+                    />
+                    <span class="font-medium">Volver a Tours</span>
+                </Link>
             </div>
 
+            <!-- Sección de contenido principal -->
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <div class="flex items-center gap-3">
-                        <Link
-                            :href="route('tours')"
-                            @click="handleToursClick"
-                            :class="{'opacity-50 cursor-not-allowed': isNavigatingToTours}"
-                            class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
-                            title="Regresar a Tours">
-                            <FontAwesomeIcon
-                                :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
-                                :class="{'animate-spin': isNavigatingToTours, 'h-5 w-5': true}"
-                            />
-                        </Link>
-                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Transportes</h3>
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Transportes</h1>
+                        <p class="text-gray-600">Gestión de vehículos y transportes</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
@@ -715,6 +719,8 @@ const handleToursClick = () => {
                         </button>
                     </div>
                 </div>
+
+
             <DataTable
                 :value="filteredTransportes"
                 v-model:selection="selectedTransportes"
@@ -800,6 +806,14 @@ const handleToursClick = () => {
                             <div>
                                 <InputText v-model="filters['global'].value" placeholder="🔍 Buscar transportes..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;" />
                             </div>
+                        </div>
+
+                        <!-- Texto de ayuda para la tabla -->
+                        <div class="px-1 mt-3">
+                            <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                                <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                                Haz clic en cualquier fila para ver los detalles.
+                            </p>
                         </div>
                     </div>
                 </template>

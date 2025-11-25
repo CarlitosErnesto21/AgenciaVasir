@@ -5,7 +5,7 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faHandPointUp, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faHandPointUp, faListDots, faMagnifyingGlass, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import axios from "axios";
@@ -1593,19 +1593,11 @@ const onPricePaste = (event) => {
         <Toast class="z-[9999]" />
 
         <div class="container mx-auto px-4 py-6">
-            <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours</h1>
-                <p class="text-gray-600">Gestión completa de paquetes turísticos</p>
-            </div>
-
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-                    <div class="w-full">
-                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Tours</h3>
-                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
-                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                            Haz clic en cualquier fila para ver los detalles.
-                        </p>
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours</h1>
+                        <p class="text-gray-600">Gestión completa de paquetes turísticos</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link
@@ -1692,8 +1684,9 @@ const onPricePaste = (event) => {
                             </button>
                         </div>
                         <div class="space-y-3">
-                            <div>
-                                <InputText v-model="filters['global'].value" placeholder="?? Buscar tours..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                            <div class="relative">
+                                <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                <InputText v-model="filters['global'].value" placeholder="Buscar tours..." class="w-full h-9 text-sm rounded-md pl-10" style="background-color: white; border-color: #93c5fd;"/>
                             </div>
                             <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-5 gap-3">
                                 <div>
@@ -1792,6 +1785,13 @@ const onPricePaste = (event) => {
                                         dateFormat="dd/mm/yy"
                                         :minDate="selectedFechaInicio"
                                     />
+                                </div>
+                                <!-- Texto de ayuda para la tabla -->
+                                <div class="col-span-2 sm:col-span-4 md:col-span-4 lg:col-span-4 px-1 mt-3">
+                                    <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                                        <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                                        Haz clic en cualquier fila para ver los detalles.
+                                    </p>
                                 </div>
                             </div>
                         </div>

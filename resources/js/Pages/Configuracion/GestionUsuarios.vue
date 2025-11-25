@@ -8,7 +8,7 @@ import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import Toast from 'primevue/toast';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey, faHandPointUp } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faListDots, faPencil, faPlus, faSpinner, faTrashCan, faXmark, faUsers, faKey, faHandPointUp, faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import Modales from "./GestionUsuarioComponent/Modales.vue";
@@ -575,7 +575,7 @@ const openMoreActionsModal = (empleadoData) => {
 const handleChangePassword = (emp) => {
     moreActionsDialog.value = false;
     selectedEmpleado.value = emp;
-    
+
     // 📝 Limpiar completamente cualquier dato de contraseña previo
     empleado.value = {
         id: emp.id,
@@ -586,10 +586,10 @@ const handleChangePassword = (emp) => {
         password: "",
         password_confirmation: ""
     };
-    
+
     // 🔄 Resetear estado de formulario
     submitted.value = false;
-    
+
     passwordDialog.value = true;
 };
 
@@ -637,7 +637,7 @@ const updatePassword = async (passwordData) => {
             detail: "La contraseña ha sido actualizada correctamente. Las sesiones del usuario han sido cerradas por seguridad.",
             life: 6000
         });
-        
+
         // 🔄 Recargar la lista de empleados para reflejar cualquier cambio
         await fetchEmpleadosWithToasts();
 
@@ -1000,19 +1000,11 @@ const telefonoErrors = computed(() => {
         <Toast class="z-[9999]" />
 
         <div class="container mx-auto px-4 py-6">
-            <div class="mb-6">
-                <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Usuarios Internos</h1>
-                <p class="text-gray-600">Gestión completa de empleados del sistema</p>
-            </div>
-
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center text-center sm:text-left gap-4 p-4">
                     <div class="w-full">
-                        <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Empleados</h3>
-                        <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
-                            <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                            Haz clic en cualquier fila para ver los detalles.
-                        </p>
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Empleados</h1>
+                        <p class="text-gray-600">Gestión completa de usuarios con acceso al sistema</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button
@@ -1085,9 +1077,14 @@ const telefonoErrors = computed(() => {
                                 </button>
                             </div>
                             <div class="space-y-3">
-                                <div>
-                                    <InputText v-model="filters['global'].value" placeholder="🔍 Buscar empleados..." class="w-full h-9 text-sm rounded-md" style="background-color: white; border-color: #93c5fd;"/>
+                                <div class="relative">
+                                    <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                                    <InputText v-model="filters['global'].value" placeholder="Buscar empleados..." class="w-full h-9 text-sm rounded-md pl-10" style="background-color: white; border-color: #93c5fd;"/>
                                 </div>
+                                <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                                    <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                                    Haz clic en cualquier fila para ver los detalles del empleado.
+                                </p>
                             </div>
                         </div>
                     </template>

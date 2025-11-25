@@ -220,4 +220,56 @@ class InventarioController extends Controller
         $inventario->load(['producto.categoria', 'user.roles', 'venta']);
         return response()->json($inventario);
     }
+
+    /**
+     * Eliminar un movimiento de inventario
+     */
+    public function destroy(Inventario $inventario)
+    {
+        try {
+            // Solo verificar que el movimiento no esté asociado a una venta activa
+            if ($inventario->venta_id) {
+                return response()->json([
+                    'message' => 'No se puede eliminar un movimiento de inventario asociado a una venta',
+                    'error' => true
+                ], 422);
+            }
+
+            // Obtener el producto y ajustar el stock
+            $producto = $inventario->producto;
+            
+            if ($inventario->tipo_movimiento === 'ENTRADA') {
+                // Si era una entrada, restar la cantidad del stock actual
+                $producto->stock_actual -= $inventario->cantidad;
+            } else {
+                // Si era una salida, sumar la cantidad al stock actual
+                $producto->stock_actual += $inventario->cantidad;
+            }
+
+            // Validar que el stock no quede negativo
+            if ($producto->stock_actual < 0) {
+                return response()->json([
+                    'message' => 'No se puede eliminar el movimiento porque dejaría el stock en negativo',
+                    'error' => true
+                ], 422);
+            }
+
+            // Guardar el producto con el stock ajustado
+            $producto->save();
+
+            // Eliminar el movimiento
+            $inventario->delete();
+
+            return response()->json([
+                'message' => 'Movimiento de inventario eliminado exitosamente',
+                'success' => true
+            ]);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => 'Error al eliminar el movimiento: ' . $e->getMessage(),
+                'error' => true
+            ], 500);
+        }
+    }
 }

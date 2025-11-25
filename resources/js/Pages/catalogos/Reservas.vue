@@ -1,5 +1,5 @@
 <script setup>
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, Link } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { ref, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
@@ -19,7 +19,7 @@ import {
   faUsers,
   faCalendarCheck, faInfoCircle, faExclamationTriangle,
   faSpinner, faListDots,
-  faHandPointUp, faArrowLeft,
+  faHandPointUp, faArrowLeft, faMagnifyingGlass,
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 import ReservaModales from './Components/ReservasComponents/Modales.vue'
@@ -507,10 +507,9 @@ const handleReprogramarTour = async () => {
   }
 }
 
-// Función para volver a Tours
-const volverATours = () => {
+// Función para manejar el click en volver a Tours
+const handleVolverATours = () => {
   loadingVolver.value = true
-  router.visit('/tours')
 }
 
 // Estilo responsive para el diálogo
@@ -1000,30 +999,27 @@ onUnmounted(() => {
       <!-- Header con botón volver -->
       <div class="mb-6">
         <!-- Botón volver -->
-        <button
-          @click="volverATours"
-          :disabled="loadingVolver"
-          class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        <Link
+          :href="route('tours')"
+          @click="handleVolverATours"
+          :class="{'opacity-50 cursor-not-allowed': loadingVolver}"
+          class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
           title="Regresar a Tours"
         >
           <FontAwesomeIcon
             :icon="loadingVolver ? faSpinner : faArrowLeft"
+            :class="{'animate-spin': loadingVolver}"
             class="h-5 w-5 mr-2"
-            :class="{ 'animate-spin': loadingVolver }"
           />
           <span class="font-medium">Volver a Tours</span>
-        </button>
+        </Link>
       </div>
-
-
-
-
 
       <!-- Sección de contenido principal -->
       <div class="bg-white rounded-lg shadow-md">
         <!-- Estados del Tour (cambio directo) -->
         <div v-if="tourActual" class="p-6 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-blue-600 mb-2">Cambiar Estado del Tour</h3>
+          <h3 class="text-lg font-semibold text-blue-600 mb-2" style="word-break: break-all; overflow-wrap: break-word; max-width: 100%; white-space: pre-wrap;">{{ tourActual.nombre }}</h3>
           <div class="mb-4 space-y-2">
             <p class="text-sm text-blue-600 flex items-center gap-2">
               <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
@@ -1195,11 +1191,12 @@ onUnmounted(() => {
             </button>
           </div>
           <div class="space-y-3">
-            <div>
+            <div class="relative">
+              <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
               <InputText
                 v-model="filtros.busqueda"
-                placeholder="🔍 Buscar por cliente..."
-                class="w-full h-9 text-sm rounded-md"
+                placeholder="Buscar por cliente..."
+                class="w-full h-9 text-sm rounded-md pl-10"
                 style="background-color: white; border-color: #93c5fd;"
               />
             </div>
@@ -1234,15 +1231,14 @@ onUnmounted(() => {
                 style="background-color: white; border-color: #93c5fd;"
               />
             </div>
+            <!-- Texto de ayuda para la tabla -->
+            <div class="px-1 mt-3">
+              <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                Haz clic en cualquier fila para ver los detalles.
+            </p>
+            </div>
           </div>
-        </div>
-
-        <!-- Texto de ayuda para la tabla -->
-        <div class="px-4 mb-3">
-          <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
-            <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
-            Haz clic en cualquier fila para ver los detalles.
-          </p>
         </div>
 
         <!-- Tabla de reservas mejorada -->

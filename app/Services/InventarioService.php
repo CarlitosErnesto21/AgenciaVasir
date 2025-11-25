@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Inventario;
 use App\Models\Producto;
 use App\Models\Venta;
+use App\Models\StockReservation;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Exception;
@@ -47,6 +48,9 @@ class InventarioService
                     $this->registrarEntradaPorEliminacion($detalle->producto, $detalle->cantidad, $venta);
                 }
             }
+
+            // Eliminar reservas de stock relacionadas con los pagos de esta venta
+            $this->limpiarReservasDeVenta($venta);
 
             // Eliminar movimientos de inventario relacionados
             Inventario::where('venta_id', $venta->id)->delete();
@@ -197,5 +201,47 @@ class InventarioService
             'producto_id' => $datos['producto_id'],
             'venta_id' => $datos['venta_id'] ?? null
         ]);
+    }
+
+    /**
+     * Limpiar reservas de stock relacionadas con una venta
+     */
+    private function limpiarReservasDeVenta(Venta $venta): void
+    {
+        // Obtener todas las referencias de Wompi de los pagos de esta venta
+        $referenciasWompi = $venta->pagos()->pluck('referencia_wompi')->filter()->unique();
+
+        if ($referenciasWompi->isEmpty()) {
+            return;
+        }
+
+        // Eliminar todas las reservas de stock relacionadas con estas referencias
+        $reservasEliminadas = 0;
+
+        foreach ($referenciasWompi as $referencia) {
+            $reservas = StockReservation::where('referencia_wompi', $referencia)->get();
+
+            foreach ($reservas as $reserva) {
+                // Si la reserva estaba confirmada, no necesitamos restaurar stock
+                // porque ya se descontó cuando se confirmó la reserva
+                $reserva->delete();
+                $reservasEliminadas++;
+            }
+        }
+
+        // También eliminar reservas directamente asociadas por pago_id
+        $pagosIds = $venta->pagos()->pluck('id');
+        if ($pagosIds->isNotEmpty()) {
+            $reservasPorPago = StockReservation::whereIn('pago_id', $pagosIds)->get();
+
+            foreach ($reservasPorPago as $reserva) {
+                $reserva->delete();
+                $reservasEliminadas++;
+            }
+        }
+
+        if ($reservasEliminadas > 0) {
+            \Log::info("Limpiadas {$reservasEliminadas} reservas de stock al eliminar venta {$venta->id}");
+        }
     }
 }

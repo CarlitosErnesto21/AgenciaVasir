@@ -185,6 +185,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/agotados', [InventarioController::class, 'agotados'])->name('agotados');
             Route::get('/producto/{producto}/historial', [InventarioController::class, 'historialProducto'])->name('producto.historial');
             Route::get('/{inventario}', [InventarioController::class, 'show'])->name('show');
+            Route::delete('/{inventario}', [InventarioController::class, 'destroy'])->name('destroy');
         });
 
         // Rutas adicionales específicas para productos (sin conflicto)

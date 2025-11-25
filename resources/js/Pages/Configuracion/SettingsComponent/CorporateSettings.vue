@@ -1,107 +1,133 @@
 <template>
     <div class="bg-white rounded-lg shadow-lg overflow-hidden">
         <!-- Header -->
-        <div class="bg-gradient-to-r from-red-600 to-red-700 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4">
-            <h1 class="text-sm sm:text-lg lg:text-2xl font-bold text-white flex items-center">
-                <span class="text-sm sm:text-lg lg:text-2xl mr-1 sm:mr-2 lg:mr-3">🏢</span>
-                <span class="hidden sm:inline">Información Corporativa</span>
-                <span class="sm:hidden">Info Corporativa</span>
-            </h1>
-            <p class="text-red-100 mt-0.5 sm:mt-1 lg:mt-2 text-xs sm:text-sm lg:text-base hidden sm:block">Configure el contenido que aparece en la página "Sobre Nosotros"</p>
+        <div class="bg-gradient-to-br from-red-600 via-red-700 to-red-800 px-4 sm:px-6 lg:px-8 py-6 sm:py-8 relative overflow-hidden">
+            <div class="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-white/5 to-blue-500/10"></div>
+            <div class="relative">
+                <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-white flex items-center mb-2">
+                    <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-2 rounded-xl mr-3 shadow-lg">
+                        <FontAwesomeIcon :icon="faBuilding" class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                    </div>
+                    <span class="bg-gradient-to-r from-white to-red-100 bg-clip-text text-transparent">
+                        <span class="hidden sm:inline">Información Corporativa</span>
+                        <span class="sm:hidden">Info Corporativa</span>
+                    </span>
+                </h1>
+                <p class="text-red-100 text-sm sm:text-base ml-14 hidden sm:block font-medium">Gestión integral de identidad y valores empresariales</p>
+            </div>
         </div>
 
         <!-- Content -->
         <div class="p-3 sm:p-4 lg:p-5">
             <div class="space-y-4">
                 <!-- Información Básica (Descripción, Misión, Visión) -->
-                <div class="bg-red-50 rounded-lg p-3 sm:p-4 border border-red-200">
-                    <h3 class="text-sm sm:text-base font-semibold text-gray-800 mb-3 flex items-center">
-                        <span class="text-base sm:text-lg mr-2">📝</span>
-                        Información Básica
-                    </h3>
+                <div class="bg-gradient-to-br from-white to-red-50/50 rounded-2xl p-6 border border-red-100/50 shadow-lg hover:shadow-xl transition-all duration-300">
+                    <div class="flex items-center mb-6">
+                        <div class="bg-gradient-to-br from-red-500 to-red-600 p-3 rounded-xl shadow-lg mr-4">
+                            <FontAwesomeIcon :icon="faFileText" class="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-bold text-gray-900 mb-1">Identidad Empresarial</h3>
+                            <p class="text-sm text-red-600 font-medium">Definición de propósito y valores</p>
+                        </div>
+                    </div>
 
                     <!-- Descripción de la Empresa - Ancho completo -->
-                    <div class="mb-4">
-                        <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">
+                    <div class="mb-6">
+                        <label class="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                            <div class="bg-gradient-to-br from-red-500 to-red-600 p-1.5 rounded-lg mr-2">
+                                <FontAwesomeIcon :icon="faFileText" class="w-3 h-3 text-white" />
+                            </div>
                             Descripción de la Empresa
                         </label>
                         <textarea
                             v-model="currentFormData.description"
                             rows="4"
-                            class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
-                            placeholder="Describe brevemente qué es VASIR, su propósito y lo que ofrece a los clientes..."
+                            class="w-full px-4 py-4 text-sm border-2 border-gray-200 rounded-xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 resize-none shadow-md hover:shadow-lg transition-all duration-300 bg-gradient-to-br from-white to-red-50/10"
+                            placeholder="Describe la identidad, propósito y servicios que ofrece la empresa a sus clientes..."
                         ></textarea>
                     </div>
 
                     <!-- Misión y Visión - Grid 2 columnas -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <!-- Misión -->
-                        <div>
-                            <label class="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                <span class="text-sm mr-1">🎯</span>
+                        <div class="bg-gradient-to-br from-blue-50/50 to-white rounded-xl p-4 border border-blue-100/50">
+                            <label class="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                                <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-1.5 rounded-lg mr-2">
+                                    <FontAwesomeIcon :icon="faBullseye" class="w-3 h-3 text-white" />
+                                </div>
                                 Misión Corporativa
                             </label>
                             <textarea
                                 v-model="currentFormData.mission"
                                 rows="4"
-                                class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
-                                placeholder="Nuestra misión es..."
+                                class="w-full px-4 py-3 text-sm border-2 border-blue-200/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 resize-none shadow-sm hover:shadow-md transition-all duration-300 bg-white/80"
+                                placeholder="Defina el propósito fundamental y los objetivos principales de la empresa..."
                             ></textarea>
                         </div>
 
                         <!-- Visión -->
-                        <div>
-                            <label class="flex items-center text-xs sm:text-sm font-medium text-gray-700 mb-2">
-                                <span class="text-sm mr-1">🌟</span>
+                        <div class="bg-gradient-to-br from-red-50/50 to-white rounded-xl p-4 border border-red-100/50">
+                            <label class="flex items-center text-sm font-semibold text-gray-700 mb-3">
+                                <div class="bg-gradient-to-br from-red-500 to-red-600 p-1.5 rounded-lg mr-2">
+                                    <FontAwesomeIcon :icon="faStar" class="w-3 h-3 text-white" />
+                                </div>
                                 Visión Corporativa
                             </label>
                             <textarea
                                 v-model="currentFormData.vision"
                                 rows="4"
-                                class="w-full px-3 py-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none shadow-sm"
-                                placeholder="Nuestra visión es..."
+                                class="w-full px-4 py-3 text-sm border-2 border-red-200/50 rounded-xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 resize-none shadow-sm hover:shadow-md transition-all duration-300 bg-white/80"
+                                placeholder="Describa las aspiraciones a largo plazo y el futuro deseado de la empresa..."
                             ></textarea>
                         </div>
                     </div>
                 </div>
 
                 <!-- Valores Corporativos -->
-                <div class="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-                    <div class="flex items-center justify-between mb-3">
-                        <h3 class="text-sm sm:text-base font-semibold text-gray-800 flex items-center">
-                            <span class="text-base sm:text-lg mr-2">⭐</span>
-                            Valores Corporativos
-                        </h3>
+                <div class="bg-gradient-to-br from-gray-50 to-red-50/30 rounded-2xl p-6 border border-red-100/50 shadow-lg">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center">
+                            <div class="bg-gradient-to-br from-blue-500 to-blue-600 p-3 rounded-xl shadow-lg mr-4">
+                                <FontAwesomeIcon :icon="faGem" class="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900 mb-1">Valores Corporativos</h3>
+                                <p class="text-sm text-blue-600 font-medium">Principios y ética empresarial</p>
+                            </div>
+                        </div>
                         <button
                             @click="showAddValueForm = !showAddValueForm"
                             type="button"
-                            class="px-3 py-1.5 text-xs sm:text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 flex items-center"
+                            class="group px-4 py-2.5 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl hover:from-red-700 hover:to-red-700 transition-all duration-300 flex items-center shadow-lg hover:shadow-xl transform hover:scale-105 font-semibold"
                         >
-                            <span class="mr-1">+</span>
-                            <span class="hidden sm:inline">Agregar</span>
-                            <span class="sm:hidden">+</span>
+                            <FontAwesomeIcon :icon="faPlus" class="w-3 h-3 mr-2 group-hover:scale-110 transition-transform" />
+                            <span class="hidden sm:inline">Agregar Valor</span>
+                            <span class="sm:hidden">Agregar</span>
                         </button>
                     </div>
 
-                    <!-- Formulario compacto para agregar nuevo valor -->
-                    <div v-if="showAddValueForm" class="bg-white rounded-lg p-3 mb-3 border border-red-300">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <!-- Formulario elegante para agregar nuevo valor -->
+                    <div v-if="showAddValueForm" class="bg-gradient-to-br from-white to-red-50/30 rounded-xl p-5 mb-4 border-2 border-red-200/50 shadow-lg">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">Título del Valor</label>
                                 <input
                                     v-model="newValue.titulo"
                                     type="text"
                                     maxlength="100"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                                    placeholder="Título del valor (ej: Integridad)"
+                                    class="w-full px-4 py-3 text-sm border-2 border-red-200/50 rounded-xl focus:ring-4 focus:ring-red-500/20 focus:border-red-500 transition-all duration-300 bg-white/80 shadow-sm hover:shadow-md"
+                                    placeholder="Ej: Integridad, Excelencia, Compromiso"
                                 />
                             </div>
                             <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wider">Descripción</label>
                                 <textarea
                                     v-model="newValue.descripcion"
-                                    rows="1"
+                                    rows="2"
                                     maxlength="500"
-                                    class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                                    placeholder="Descripción del valor..."
+                                    class="w-full px-4 py-3 text-sm border-2 border-blue-200/50 rounded-xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 resize-none transition-all duration-300 bg-white/80 shadow-sm hover:shadow-md"
+                                    placeholder="Explique qué significa este valor para la empresa..."
                                 ></textarea>
                             </div>
                         </div>
@@ -110,15 +136,17 @@
                                 @click="addValue"
                                 :disabled="!newValue.titulo || !newValue.descripcion"
                                 type="button"
-                                class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
+                                class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center shadow-sm hover:shadow-md"
                             >
+                                <FontAwesomeIcon :icon="faPlus" class="w-3 h-3 mr-2" />
                                 Agregar
                             </button>
                             <button
                                 @click="cancelAddValue"
                                 type="button"
-                                class="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 flex items-center"
                             >
+                                <FontAwesomeIcon :icon="faTimes" class="w-3 h-3 mr-2" />
                                 Cancelar
                             </button>
                         </div>
@@ -131,10 +159,10 @@
                             :key="value.id"
                             :class="[
                                 `value-container-${value.id}`,
-                                'bg-white rounded-lg p-3 mb-2 border border-gray-200 hover:border-purple-300 transition-colors duration-200',
+                                'bg-gradient-to-br from-white to-gray-50/30 rounded-xl p-5 mb-4 border-2 border-gray-200/50 hover:border-purple-300/70 hover:shadow-lg transition-all duration-300 shadow-md group',
                                 {
-                                    'border-green-300 bg-green-50': value.isNew,
-                                    'border-blue-300 bg-blue-50': value.isModified
+                                    'border-green-400/70 bg-gradient-to-br from-green-50 to-white shadow-green-100': value.isNew,
+                                    'border-blue-400/70 bg-gradient-to-br from-blue-50 to-white shadow-blue-100': value.isModified
                                 }
                             ]"
                         >
@@ -143,8 +171,6 @@
                                 <div class="flex-1 mr-3">
                                     <div class="flex items-center gap-2">
                                         <h5 class="text-sm font-semibold text-gray-800">{{ value.titulo }}</h5>
-                                        <span v-if="value.isNew" class="px-2 py-1 text-xs bg-green-100 text-green-700 rounded">Nuevo</span>
-                                        <span v-if="value.isModified" class="px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded">Modificado</span>
                                     </div>
                                     <p class="text-xs text-gray-600 mt-1 line-clamp-2">{{ value.descripcion }}</p>
                                 </div>
@@ -152,7 +178,7 @@
                                     <button
                                         @click="startEditValue(value)"
                                         type="button"
-                                        class="px-3 py-2 text-sm bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors duration-200 flex items-center hover:shadow"
+                                        class="px-3 py-2 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200 flex items-center hover:shadow"
                                         title="Editar valor"
                                     >
                                         <FontAwesomeIcon :icon="faPencil" class="mr-1" />
@@ -161,7 +187,7 @@
                                     <button
                                         @click="deleteValue(value.id)"
                                         type="button"
-                                        class="px-3 py-2 text-sm bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors duration-200 flex items-center hover:shadow"
+                                        class="px-3 py-2 text-sm bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-200 flex items-center hover:shadow"
                                         title="Eliminar valor"
                                     >
                                         <FontAwesomeIcon :icon="faTrash" class="mr-1"/>
@@ -191,15 +217,17 @@
                                         @click="saveEditValue"
                                         :disabled="!editingValue.titulo || !editingValue.descripcion"
                                         type="button"
-                                        class="px-3 py-1.5 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 transition-colors duration-200 flex items-center"
+                                        class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 flex items-center shadow-sm hover:shadow-md"
                                     >
+                                        <FontAwesomeIcon :icon="faSave" class="w-3 h-3 mr-2" />
                                         Guardar
                                     </button>
                                     <button
                                         @click="cancelEditValue"
                                         type="button"
-                                        class="px-3 py-1.5 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                                        class="px-4 py-2 text-sm border border-blue-500 text-white rounded-lg bg-blue-500 hover:bg-blue-600 transition-all duration-200 flex items-center"
                                     >
+                                        <FontAwesomeIcon :icon="faTimes" class="w-3 h-3 mr-2" />
                                         Cancelar
                                     </button>
                                 </div>
@@ -207,22 +235,31 @@
                         </div>
 
                         <!-- Mensaje cuando no hay valores -->
-                        <div v-if="currentCompanyValues.filter(v => !v.isDeleted).length === 0" class="text-center py-6">
-                            <span class="text-3xl mb-2 block">💎</span>
-                            <p class="text-sm text-gray-500">No hay valores corporativos</p>
-                            <p class="text-xs text-gray-400 mt-1">Agrega el primer valor</p>
+                        <div v-if="currentCompanyValues.filter(v => !v.isDeleted).length === 0" class="text-center py-12">
+                            <div class="bg-gradient-to-br from-purple-100 to-purple-200 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                                <FontAwesomeIcon :icon="faGem" class="w-10 h-10 text-purple-500" />
+                            </div>
+                            <h4 class="text-lg font-bold text-gray-700 mb-2">No hay valores corporativos definidos</h4>
+                            <p class="text-sm text-gray-500 mb-4 max-w-md mx-auto">Los valores corporativos definen la cultura y principios éticos de la empresa</p>
+                            <button
+                                @click="showAddValueForm = true"
+                                class="px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-300 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+                            >
+                                <FontAwesomeIcon :icon="faPlus" class="mr-2" />
+                                Agregar Primer Valor
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Botones de Acción -->
-            <div class="flex flex-col sm:flex-row sm:justify-end gap-2 mt-4 pt-3 border-t border-gray-200">
+            <div class="flex flex-col sm:flex-row sm:justify-end gap-4 mt-8 pt-6 border-t border-gradient-to-r from-transparent via-gray-200 to-transparent">
                 <button
                     @click="handleReset"
                     :disabled="!canReset || isSaving"
                     type="button"
-                    class="px-4 py-2 text-sm border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors duration-200"
+                    class="px-6 py-3 text-sm border-2 border-blue-500 text-white rounded-xl bg-blue-500 hover:bg-blue-600 hover:border-blue-600 hover:shadow-lg disabled:bg-gray-100 disabled:text-gray-400 disabled:border-gray-200 disabled:cursor-not-allowed transition-all duration-300 font-semibold transform hover:scale-105"
                 >
                     Restablecer
                 </button>
@@ -230,14 +267,14 @@
                     @click="handleSave"
                     :disabled="!canSave || isSaving"
                     type="button"
-                    class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors duration-200 flex items-center justify-center"
+                    class="px-8 py-3 text-sm bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
                 >
                     <FontAwesomeIcon
                         v-if="isSaving"
                         :icon="faSpinner"
-                        class="animate-spin mr-2"
+                        class="animate-spin mr-3 w-4 h-4"
                     />
-                    {{ isSaving ? 'Guardando...' : 'Guardar Configuración' }}
+                    {{ isSaving ? 'Guardando configuración...' : 'Guardar Configuración' }}
                 </button>
             </div>
         </div>
@@ -273,7 +310,7 @@
 
 <script setup>
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faSpinner, faEdit, faTrash, faPencil } from '@fortawesome/free-solid-svg-icons'
+import { faSpinner, faEdit, faTrash, faPencil, faBuilding, faFileText, faBullseye, faStar, faGem, faPlus, faSave, faTimes } from '@fortawesome/free-solid-svg-icons'
 import { ref, reactive, watch, nextTick, computed } from 'vue'
 import { router } from '@inertiajs/vue3'
 import { useToast } from 'primevue/usetoast'

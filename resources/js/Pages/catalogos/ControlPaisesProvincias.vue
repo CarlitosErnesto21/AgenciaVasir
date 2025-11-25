@@ -10,7 +10,7 @@ import Toast from "primevue/toast";
 import { useToast } from "primevue/usetoast";
 import axios from "axios";
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faArrowLeft, faCheck, faExclamationTriangle, faFilter, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
+import { faArrowLeft, faCheck, faExclamationTriangle, faFilter, faHandPointUp, faMagnifyingGlass, faPencil, faPlus, faSignOut, faSpinner, faTrashCan, faXmark } from '@fortawesome/free-solid-svg-icons';
 
 const toast = useToast();
 
@@ -62,7 +62,7 @@ const itemEliminar = ref(null);
 // Opciones para el select
 const opcionesMostrar = ref([
   { label: 'Países', value: 'País' },
-  { label: 'Departamentos/Provincias', value: 'Provincia' }
+  { label: 'Depa.', value: 'Provincia' }
 ]);
 
 // Funciones para manejo de ventana
@@ -376,7 +376,7 @@ const validarKeypress = (event) => {
   const regex = /^[A-Za-zÀ-ÿ\s]$/;
   const isControlKey = event.ctrlKey || event.metaKey;
   const isNavigationKey = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(event.key);
-  
+
   if (!regex.test(event.key) && !isControlKey && !isNavigationKey) {
     event.preventDefault();
   }
@@ -385,13 +385,13 @@ const validarKeypress = (event) => {
 // Función para manejar evento paste (pegar) y validar contenido
 const handlePaste = (event, isEdit = false) => {
   event.preventDefault();
-  
+
   // Obtener texto del portapapeles
   const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-  
+
   // Limpiar y convertir el texto pegado
   const textoLimpio = convertirAMayuscula(pastedText);
-  
+
   // Aplicar el texto limpio al campo correspondiente
   if (isEdit) {
     itemEdit.value.nombre = textoLimpio;
@@ -453,26 +453,29 @@ onMounted(() => {
     <Toast class="z-[9999]" />
 
     <div class="container mx-auto px-4 py-6">
+      <!-- Header con botón volver -->
       <div class="mb-6">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Países y Departamentos/Provincias</h1>
-        <p class="text-gray-600">Gestión de países y departamentos/provincias del sistema</p>
+        <!-- Botón volver -->
+        <Link
+          :href="route('hoteles')"
+          @click="handleHotelesClick"
+          :class="{'opacity-50 cursor-not-allowed': isNavigatingToHoteles}"
+          class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+          title="Regresar a Hoteles">
+          <FontAwesomeIcon
+            :icon="isNavigatingToHoteles ? faSpinner : faArrowLeft"
+            :class="{'animate-spin': isNavigatingToHoteles}"
+            class="h-5 w-5 mr-2"
+          />
+          <span class="font-medium">{{ isNavigatingToHoteles ? 'Cargando...' : 'Volver a Hoteles' }}</span>
+        </Link>
       </div>
 
       <div class="bg-white rounded-lg shadow-md">
-        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-          <div class="flex items-center gap-3">
-            <Link
-              :href="route('hoteles')"
-              @click="handleHotelesClick"
-              :class="{'opacity-50 cursor-not-allowed': isNavigatingToHoteles}"
-              class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
-              title="Regresar a Hoteles">
-              <FontAwesomeIcon
-                :icon="isNavigatingToHoteles ? faSpinner : faArrowLeft"
-                :class="{'animate-spin': isNavigatingToHoteles, 'h-5 w-5': true}"
-              />
-            </Link>
-            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de {{ modoSeleccionado === 'País' ? 'Países' : 'Provincias' }}</h3>
+        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
+          <div class="text-center sm:text-left">
+            <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Países y Depa./Provincias</h1>
+            <p class="text-gray-600">Gestión de países y depa./provincias del sistema</p>
           </div>
           <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
             <button
@@ -514,7 +517,7 @@ onMounted(() => {
           <div class="bg-blue-50 p-3 rounded-lg shadow-sm border mb-4">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-3">
-                <h3 class="text-base font-medium text-gray-800 flex items-center gap-2">
+                <h3 class="text-base font-medium text-gray-800 flex items-center gap-1">
                   <i class="pi pi-filter text-blue-600 text-sm"></i>
                   <span>Filtros</span>
                 </h3>
@@ -527,7 +530,7 @@ onMounted(() => {
                 <select
                   id="tipo-estado"
                   v-model="modoSeleccionado"
-                  class="w-28 sm:w-32 h-8 text-sm border border-blue-300 rounded-md px-2 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
+                  class="w-24 sm:w-32 h-8 text-sm border border-blue-300 rounded-md px-1 py-1 bg-white text-gray-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 truncate"
                 >
                   <option value="" disabled selected hidden>Mostrar</option>
                   <option
@@ -542,19 +545,20 @@ onMounted(() => {
               </div>
             </div>
             <div class="space-y-3">
-              <div>
+              <div class="relative">
+                <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <InputText
                   v-model="busquedaGeneral"
                   v-if="modoSeleccionado==='Provincia'"
-                  placeholder="🔍 Buscar departamentos/provincias..."
-                  class="w-full h-9 text-sm rounded-md"
+                  placeholder="Buscar departamentos/provincias..."
+                  class="w-full h-9 text-sm rounded-md pl-10"
                   style="background-color: white; border-color: #93c5fd;"
                 />
                 <InputText
                   v-model="busquedaGeneral"
                   v-else
-                  placeholder="🔍 Buscar países..."
-                  class="w-full h-9 text-sm rounded-md"
+                  placeholder="Buscar países..."
+                  class="w-full h-9 text-sm rounded-md pl-10"
                   style="background-color: white; border-color: #93c5fd;"
                 />
               </div>

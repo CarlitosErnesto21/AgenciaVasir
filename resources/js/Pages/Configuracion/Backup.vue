@@ -1,145 +1,216 @@
 <template>
     <AuthenticatedLayout>
-        <div class="container mx-auto px-4 py-8">
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <Link :href="route('settings')"
-                                class="flex items-center text-white hover:text-red-200 transition-colors duration-200 p-2 rounded-lg hover:bg-red-800 mr-4"
-                                title="Regresar a configuración">
-                                <FontAwesomeIcon :icon="faArrowLeft" class="h-5 w-5" />
-                            </Link>
-                            <div>
-                                <h1 class="text-2xl font-bold text-white flex items-center">
-                                    <FontAwesomeIcon :icon="faFileArchive" class="mr-3" />
-                                    Respaldo de Base de Datos
-                                </h1>
-                                <p class="text-red-100 mt-2">Genere y gestione copias de seguridad de la base de datos</p>
-                            </div>
-                        </div>
+        <div class="container mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6">
+            <!-- Header con navegación -->
+            <div class="mb-4 sm:mb-6 mt-1 sm:mt-2">
+                <div class="flex items-center">
+                    <Link :href="route('settings')"
+                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-2 py-1 rounded-md hover:bg-blue-50"
+                        :disabled="isLoading || isGenerating">
+                        <FontAwesomeIcon
+                            :icon="(isLoading || isGenerating) ? faSpinner : faArrowLeft"
+                            :class="{ 'animate-spin': (isLoading || isGenerating) }"
+                            class="h-4 w-4 mr-2"
+                        />
+                        <span class="text-sm font-medium">
+                            {{ (isLoading || isGenerating) ? 'Cargando...' : 'Volver a Configuración' }}
+                        </span>
+                    </Link>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md">
+                <!-- Header interno -->
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-3 sm:mb-4 gap-3 sm:gap-4 p-4 sm:p-5 lg:p-6">
+                    <div class="w-full">
+                        <h3 class="text-xl sm:text-2xl lg:text-3xl text-blue-600 font-bold text-center sm:text-start">Gestión de Respaldos</h3>
+                        <p class="text-gray-600 text-center sm:text-start mt-1 text-sm sm:text-base">Administre las copias de seguridad de la base de datos del sistema</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
+                        <button
+                            @click="generateBackup"
+                            :disabled="isGenerating"
+                            class="flex bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 border border-blue-500 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-all duration-300 items-center justify-center w-full sm:w-auto"
+                        >
+                            <FontAwesomeIcon
+                                :icon="isGenerating ? faSpinner : faDownload"
+                                :class="{ 'animate-spin': isGenerating }"
+                                class="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-white"
+                            />
+                            <span v-if="isGenerating">Generando...</span>
+                            <span v-else class="hidden sm:inline">Generar Respaldo</span>
+                            <span v-else class="sm:hidden">Generar</span>
+                        </button>
+                        <button
+                            @click="cleanupBackups"
+                            :disabled="isGenerating"
+                            class="flex bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 border border-orange-500 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-all duration-300 items-center justify-center w-full sm:w-auto"
+                        >
+                            <FontAwesomeIcon :icon="faBroom" class="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-white" />
+                            <span class="hidden sm:inline">Limpiar Antiguos</span>
+                            <span class="sm:hidden">Limpiar</span>
+                        </button>
                     </div>
                 </div>
 
-                    <!-- Content -->
-                <div class="p-6">
-                    <!-- GESTIÓN MANUAL DE RESPALDOS -->
-                    <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4 flex items-center">
-                            <span class="text-2xl mr-2">💾</span>
-                            Gestión Manual de Respaldos
-                        </h2>
-                        <div class="bg-red-50 border border-red-200 rounded-lg p-6">
-                            <div class="space-y-6">
-                                <div class="bg-white border rounded-lg p-4">
-                                    <div class="flex items-center justify-between">
-                                        <div class="flex items-center">
-                                            <div class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium mr-3">
-                                                🔧 Manual
-                                            </div>
-                                            <span class="text-gray-700 font-medium">
-                                                Respaldos bajo demanda
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="flex space-x-4">
-                                    <button
-                                        @click="generateBackup"
-                                        :disabled="isGenerating"
-                                        class="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg flex items-center transition-colors duration-200"
-                                    >
-                                        <FontAwesomeIcon
-                                            :icon="isGenerating ? faSpinner : faDownload"
-                                            :class="{ 'animate-spin': isGenerating }"
-                                            class="mr-2"
-                                        />
-                                        {{ isGenerating ? 'Generando...' : 'Generar Respaldo' }}
-                                    </button>
-
-                                    <button
-                                        @click="cleanupBackups"
-                                        :disabled="isGenerating"
-                                        class="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white font-semibold py-3 px-6 rounded-lg flex items-center transition-colors duration-200"
-                                    >
-                                        <FontAwesomeIcon :icon="faBroom" class="mr-2" />
-                                        Limpiar Antiguos
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RESPALDOS DISPONIBLES -->
-                    <div class="mb-8">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4">Respaldos Disponibles</h2>
-
-                        <div v-if="isLoading" class="text-center py-8 text-gray-500">
-                            <FontAwesomeIcon :icon="faSpinner" class="text-4xl mb-2 animate-spin" />
-                            <p>Cargando respaldos...</p>
-                        </div>
-
-                        <div v-else-if="backups.length === 0" class="text-center py-8 text-gray-500">
+                <!-- Tabla de respaldos -->
+                <DataTable
+                    :value="backups"
+                    dataKey="id"
+                    :paginator="true"
+                    :rows="10"
+                    :rowsPerPageOptions="[5, 10, 20, 50]"
+                    paginatorTemplate="RowsPerPageDropdown FirstPageLink PrevPageLink CurrentPageReport NextPageLink LastPageLink"
+                    currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} respaldos"
+                    class="overflow-x-auto max-w-full"
+                    responsiveLayout="scroll"
+                    :loading="isLoading"
+                    :pt="{
+                        root: { class: 'text-sm' },
+                        wrapper: { class: 'text-sm' },
+                        table: { class: 'text-sm' },
+                        thead: { class: 'text-sm' },
+                        headerRow: { class: 'text-sm' },
+                        headerCell: { class: 'text-sm font-medium py-3 px-2' },
+                        tbody: { class: 'text-sm' },
+                        bodyRow: { class: 'h-20 text-sm hover:bg-blue-50 transition-colors duration-200' },
+                        bodyCell: { class: 'py-3 px-2 text-sm' },
+                        paginator: { class: 'text-xs sm:text-sm' },
+                        paginatorWrapper: { class: 'flex flex-wrap justify-center sm:justify-between items-center gap-2 p-2' }
+                    }"
+                >
+                    <template #empty>
+                        <div class="text-center py-8 text-gray-500">
                             <FontAwesomeIcon :icon="faFolderOpen" class="text-4xl mb-2" />
                             <p>No hay respaldos disponibles</p>
                         </div>
+                    </template>
 
-                        <div v-else class="space-y-3">
-                            <div
-                                v-for="backup in backups"
-                                :key="backup.id"
-                                class="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-                            >
-                                <div class="flex items-center">
-                                    <FontAwesomeIcon :icon="faFileArchive" class="text-red-600 mr-3" />
-                                    <div>
-                                        <h3 class="font-medium text-gray-800">{{ backup.name }}</h3>
-                                        <p class="text-sm text-gray-500">{{ backup.date }} - {{ backup.size }}</p>
-                                    </div>
-                                </div>
-
-                                <div class="flex space-x-2">
-                                    <button
-                                        @click="downloadBackup(backup.id)"
-                                        class="text-blue-600 hover:text-blue-800 p-2 rounded-full hover:bg-blue-50 transition-colors duration-200"
-                                        title="Descargar"
-                                    >
-                                        <FontAwesomeIcon :icon="faDownload" />
-                                    </button>
-                                    <button
-                                        @click="deleteBackup(backup.id)"
-                                        class="text-red-600 hover:text-red-800 p-2 rounded-full hover:bg-red-50 transition-colors duration-200"
-                                        title="Eliminar"
-                                    >
-                                        <FontAwesomeIcon :icon="faTrash" />
-                                    </button>
+                    <Column field="name" header="Nombre del Archivo" sortable class="w-40">
+                        <template #body="slotProps">
+                            <div class="flex items-center">
+                                <FontAwesomeIcon :icon="faFileArchive" class="text-blue-600 mr-2 h-4 w-4" />
+                                <div
+                                    class="text-sm font-medium leading-relaxed overflow-hidden"
+                                    style="max-width: 200px; text-overflow: ellipsis; white-space: nowrap;"
+                                    :title="slotProps.data.name"
+                                >
+                                    {{ slotProps.data.name }}
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
+                        </template>
+                    </Column>
+
+                    <Column field="date" header="Fecha de Creación" sortable class="w-32 hidden sm:table-cell">
+                        <template #body="slotProps">
+                            <div class="text-sm leading-relaxed">
+                                {{ slotProps.data.date }}
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column field="size" header="Tamaño" class="w-24 hidden md:table-cell">
+                        <template #body="slotProps">
+                            <div class="text-sm leading-relaxed">
+                                {{ slotProps.data.size }}
+                            </div>
+                        </template>
+                    </Column>
+
+                    <Column :exportable="false" class="w-32 min-w-28">
+                        <template #header>
+                            <div class="text-center w-full font-bold">
+                                Acciones
+                            </div>
+                        </template>
+                        <template #body="slotProps">
+                            <div class="flex gap-2 justify-center items-center">
+                                <button
+                                    @click="downloadBackup(slotProps.data.id)"
+                                    class="flex bg-green-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                    :title="'Descargar ' + slotProps.data.name"
+                                >
+                                    <FontAwesomeIcon :icon="faDownload" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                    <span class="hidden md:block text-white">Descargar</span>
+                                </button>
+                                <button
+                                    @click="deleteBackup(slotProps.data.id)"
+                                    class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                                    :title="'Eliminar ' + slotProps.data.name"
+                                >
+                                    <FontAwesomeIcon :icon="faTrash" class="h-3 w-6 sm:h-4 sm:w-7 text-white" />
+                                    <span class="hidden md:block text-white">Eliminar</span>
+                                </button>
+                            </div>
+                        </template>
+                    </Column>
+                </DataTable>
             </div>
         </div>
 
         <!-- Toast para notificaciones -->
-        <Toast />
-        <!-- Dialog de confirmación -->
-        <ConfirmDialog
-            :style="{ width: '450px' }"
-            :breakpoints="{ '1199px': '75vw', '575px': '90vw' }"
-        />
+        <Toast class="z-[9999]" />
+
+        <!-- Dialog de confirmación personalizado -->
+        <Dialog
+            v-model:visible="deleteDialog"
+            header="Eliminar Respaldo"
+            :modal="true"
+            :style="dialogStyle"
+            :closable="false"
+            :draggable="false"
+        >
+            <div class="flex items-center gap-3">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
+                <div class="flex flex-col">
+                    <span>¿Estás seguro de eliminar el respaldo: <b>{{ selectedBackup?.name }}</b>?</span>
+                    <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
+                </div>
+            </div>
+            <template #footer>
+                <div class="flex justify-center gap-4 w-full">
+                    <button
+                        type="button"
+                        class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        @click="confirmDeleteBackup"
+                        :disabled="isDeleting"
+                    >
+                        <FontAwesomeIcon
+                            :icon="isDeleting ? faSpinner : faCheck"
+                            :class="[
+                                'h-5',
+                                { 'animate-spin': isDeleting }
+                            ]"
+                        />
+                        <span v-if="!isDeleting">Eliminar</span>
+                        <span v-else>Eliminando...</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="cancelDeleteBackup"
+                        :disabled="isDeleting"
+                    >
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                        <span>Cancelar</span>
+                    </button>
+                </div>
+            </template>
+        </Dialog>
     </AuthenticatedLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, router } from '@inertiajs/vue3';
 import { useToast } from 'primevue/usetoast';
 import { useConfirm } from 'primevue/useconfirm';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import DataTable from 'primevue/datatable';
+import Column from 'primevue/column';
+import Toast from 'primevue/toast';
+import Dialog from 'primevue/dialog';
 import {
     faFileArchive,
     faDownload,
@@ -147,16 +218,37 @@ import {
     faFolderOpen,
     faSpinner,
     faArrowLeft,
-    faBroom
+    faBroom,
+    faExclamationTriangle,
+    faCheck,
+    faXmark
 } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { route } from 'ziggy-js';
 
 const toast = useToast();
-const confirm = useConfirm();
 const isGenerating = ref(false);
 const isLoading = ref(false);
 const backups = ref([]);
+
+// Estados para el modal de confirmación personalizado
+const deleteDialog = ref(false);
+const selectedBackup = ref(null);
+const isDeleting = ref(false);
+
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) {
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) {
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
 
 // Configuración del sistema: número de respaldos a mantener
 const KEEP_LATEST_BACKUPS = 3; // Configurable: número de respaldos recientes a mantener
@@ -303,48 +395,53 @@ const downloadBackup = async (backupId) => {
 const deleteBackup = (backupId) => {
     // Buscar información del backup en la lista
     const backup = backups.value.find(b => b.id === backupId);
-    const backupName = backup ? backup.name : `Backup ${backupId}`;
-
-    confirm.require({
-        message: `¿Está seguro de que desea eliminar el backup "${backupName}"? Esta acción no se puede deshacer.`,
-        header: 'Confirmar Eliminación',
-        icon: 'pi pi-exclamation-triangle',
-        acceptClass: 'p-button-danger',
-        rejectClass: 'p-button-outlined',
-        acceptLabel: 'Sí, Eliminar',
-        rejectLabel: 'Cancelar',
-        accept: async () => {
-            try {
-                const response = await axios.delete(`/api/backups/${backupId}`, {
-                    headers: getApiHeaders()
-                });
-
-                if (response.data.success) {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Backup Eliminado',
-                        detail: `El backup "${backupName}" ha sido eliminado correctamente.`,
-                        life: 3000
-                    });
-
-                    // Recargar la lista de backups
-                    await loadBackups();
-                } else {
-                    throw new Error(response.data.message || 'Error al eliminar el backup');
-                }
-            } catch (error) {
-                toast.add({
-                    severity: 'error',
-                    summary: 'Error al Eliminar',
-                    detail: error.response?.data?.message || error.message || 'Error desconocido',
-                    life: 5000
-                });
-            }
-        }
-    });
+    selectedBackup.value = backup || { id: backupId, name: `Backup ${backupId}` };
+    deleteDialog.value = true;
 };
 
-const cleanupBackups = () => {
+const confirmDeleteBackup = async () => {
+    if (!selectedBackup.value) return;
+
+    isDeleting.value = true;
+
+    try {
+        const response = await axios.delete(`/api/backups/${selectedBackup.value.id}`, {
+            headers: getApiHeaders()
+        });
+
+        if (response.data.success) {
+            toast.add({
+                severity: 'success',
+                summary: 'Respaldo Eliminado',
+                detail: `El respaldo "${selectedBackup.value.name}" ha sido eliminado correctamente.`,
+                life: 3000
+            });
+
+            // Recargar la lista de backups
+            await loadBackups();
+            deleteDialog.value = false;
+            selectedBackup.value = null;
+        } else {
+            throw new Error(response.data.message || 'Error al eliminar el respaldo');
+        }
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error al Eliminar',
+            detail: error.response?.data?.message || error.message || 'Error desconocido',
+            life: 5000
+        });
+    } finally {
+        isDeleting.value = false;
+    }
+};
+
+const cancelDeleteBackup = () => {
+    deleteDialog.value = false;
+    selectedBackup.value = null;
+};
+
+const cleanupBackups = async () => {
     // Verificar si hay respaldos disponibles para limpiar
     if (backups.value.length === 0) {
         toast.add({
@@ -367,82 +464,58 @@ const cleanupBackups = () => {
         return;
     }
 
-    // Calcular qué archivos se eliminarán (todos excepto los últimos KEEP_LATEST_BACKUPS)
-    const sortedBackups = [...backups.value].sort((a, b) => {
-        // Intentar ordenar por fecha, si falla usar el nombre del archivo
-        try {
-            // Convertir formato "dd/mm/yyyy HH:MM" a Date
-            const dateA = a.date.split(' ');
-            const [dayA, monthA, yearA] = dateA[0].split('/');
-            const timeA = dateA[1] || '00:00';
-            const fullDateA = new Date(`${yearA}-${monthA}-${dayA}T${timeA}`);
-
-            const dateB = b.date.split(' ');
-            const [dayB, monthB, yearB] = dateB[0].split('/');
-            const timeB = dateB[1] || '00:00';
-            const fullDateB = new Date(`${yearB}-${monthB}-${dayB}T${timeB}`);
-
-            return fullDateB - fullDateA; // Más reciente primero
-        } catch (error) {
-            // Si falla el parseo de fechas, ordenar por nombre del archivo
-            console.warn('Error parsing backup dates, falling back to filename sort:', error);
-            return b.name.localeCompare(a.name);
-        }
+    // Mostrar confirmación y proceder directamente con la limpieza
+    toast.add({
+        severity: 'warn',
+        summary: 'Iniciando Limpieza',
+        detail: `Se eliminarán los respaldos antiguos, manteniendo solo los últimos ${KEEP_LATEST_BACKUPS}.`,
+        life: 4000
     });
 
-    const backupsToDelete = sortedBackups.slice(KEEP_LATEST_BACKUPS); // Los que sobran después de mantener los más recientes
-
-    if (backupsToDelete.length === 0) {
-        toast.add({
-            severity: 'info',
-            summary: 'No Hay Nada Que Limpiar',
-            detail: `Ya tienes solo los últimos ${KEEP_LATEST_BACKUPS} respaldos.`,
-            life: 3000
+    try {
+        const response = await axios.post('/api/backups/cleanup', {}, {
+            headers: getApiHeaders()
         });
-        return;
-    }
 
-    const fileNames = backupsToDelete.map(b => b.name).join(', ');
+        if (response.data.success) {
+            const deletedCount = response.data.deleted_count || 'varios';
+            toast.add({
+                severity: 'success',
+                summary: 'Limpieza Completada',
+                detail: `Se han eliminado ${deletedCount} respaldo(s) antiguos.`,
+                life: 4000
+            });
 
-    confirm.require({
-        message: `¿Está seguro de limpiar los respaldos antiguos? Se eliminarán ${backupsToDelete.length} respaldo(s): ${fileNames}. Se mantendrán solo los últimos ${KEEP_LATEST_BACKUPS}. Esta acción no se puede deshacer.`,
-        header: 'Confirmar Limpieza',
-        rejectLabel: 'Cancelar',
-        acceptLabel: 'Sí, Limpiar',
-        rejectClass: 'p-button-secondary p-button-outlined',
-        acceptClass: 'p-button-warning',
-        accept: async () => {
-            try {
-                const response = await axios.post('/api/backups/cleanup', {}, {
-                    headers: getApiHeaders()
-                });
-
-                if (response.data.success) {
-                    toast.add({
-                        severity: 'success',
-                        summary: 'Limpieza Completada',
-                        detail: `Se han eliminado ${backupsToDelete.length} respaldo(s) antiguos.`,
-                        life: 4000
-                    });
-
-                    // Recargar la lista de backups
-                    await loadBackups();
-                } else {
-                    throw new Error(response.data.message || 'Error al limpiar los backups');
-                }
-            } catch (error) {
-                toast.add({
-                    severity: 'error',
-                    summary: 'Error al Limpiar',
-                    detail: error.response?.data?.message || error.message || 'Error desconocido',
-                    life: 5000
-                });
-            }
+            // Recargar la lista de backups
+            await loadBackups();
+        } else {
+            throw new Error(response.data.message || 'Error al limpiar los respaldos');
         }
-    });
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error al Limpiar',
+            detail: error.response?.data?.message || error.message || 'Error desconocido',
+            life: 5000
+        });
+    }
+};
+
+// Listener para actualizar el tamaño de ventana
+const updateWindowWidth = () => {
+    windowWidth.value = window.innerWidth;
 };
 
 onMounted(() => {
     loadBackups();
+    if (typeof window !== 'undefined') {
+        window.addEventListener('resize', updateWindowWidth);
+    }
+});
+
+onUnmounted(() => {
+    if (typeof window !== 'undefined') {
+        window.removeEventListener('resize', updateWindowWidth);
+    }
 });
 </script>

@@ -356,38 +356,51 @@ class ProductoController extends Controller
 
     /**
      * 🔍 Verificar si el producto está siendo usado en otras tablas
+     * 
+     * REGLAS DE NEGOCIO:
+     * ❌ NO permitir eliminar si tiene registros en detalle_ventas
+     * ❌ NO permitir eliminar si tiene movimientos de inventario
      */
     private function verificarProductoEnUso($producto)
     {
         $restricciones = [];
 
-        // 📦 Verificar si está en detalle_ventas
+        // Verificar ventas
         try {
-            $ventasCount = DB::table('detalle_ventas')
+            $ventasCount = DB::table('detalles_ventas')
                 ->where('producto_id', $producto->id)
                 ->count();
 
             if ($ventasCount > 0) {
-                $restricciones[] = "Ha sido vendido {$ventasCount} vez(es)";
+                $ventasDetalladas = DB::table('detalles_ventas')
+                    ->join('ventas', 'detalles_ventas.venta_id', '=', 'ventas.id')
+                    ->where('detalles_ventas.producto_id', $producto->id)
+                    ->select('ventas.id as venta_id', 'ventas.estado', 'detalles_ventas.cantidad', 'ventas.created_at')
+                    ->get();
+
+                $totalVentas = $ventasDetalladas->unique('venta_id')->count();
+                $totalVendido = $ventasDetalladas->sum('cantidad');
+                
+                $restricciones[] = "Tiene {$totalVentas} venta(s) registrada(s) ({$totalVendido} unidades total)";
             }
         } catch (Exception $e) {
-            // La tabla no existe aún, continuar
+            // Continúa sin agregar restricción por error técnico
         }
 
-        // 📦 Verificar si tiene movimientos de inventario importantes
+        // Verificar inventarios
         try {
-            $movimientosCount = DB::table('inventarios')
+            $inventarioCount = DB::table('inventarios')
                 ->where('producto_id', $producto->id)
-                ->where('motivo', '!=', 'eliminacion_producto')
                 ->count();
 
-            if ($movimientosCount > 0) {
-                $restricciones[] = "Tiene {$movimientosCount} movimiento(s) de inventario";
+            if ($inventarioCount > 0) {
+                $restricciones[] = "Tiene {$inventarioCount} movimiento(s) de inventario";
             }
         } catch (Exception $e) {
-            // Continuar
+            // Continúa sin agregar restricción por error técnico
         }
 
+        // Decisión final
         if (!empty($restricciones)) {
             return [
                 'usado' => true,

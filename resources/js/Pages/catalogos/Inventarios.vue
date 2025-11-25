@@ -4,9 +4,13 @@
     <Toast class="z-[9999]" />
 
     <div class="container mx-auto px-4 py-6">
-      <div class="mb-6">
+      <div class="mb-3 text-center sm:text-left">
         <h1 class="text-3xl font-bold text-blue-600 mb-2">Inventarios</h1>
         <p class="text-gray-600">Monitoreo y análisis del estado del inventario</p>
+        <p class="text-gray-500 text-sm text-center sm:text-start mt-1">
+                Para gestionar stock, ve a
+              <span class="text-blue-600 font-medium">Productos > Más Acciones > Actualizar Stock</span>
+            </p>
       </div>
 
       <!-- Tarjetas de Resumen -->
@@ -17,7 +21,10 @@
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Productos Disponibles</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_disponibles || 0 }}</p>
-                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
+                <p class="text-xs opacity-75 mt-1 flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3" />
+                  Clic para ver detalles
+                </p>
               </div>
               <FontAwesomeIcon :icon="faCheckCircle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
@@ -30,7 +37,10 @@
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Productos Agotados</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_agotados || 0 }}</p>
-                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
+                <p class="text-xs opacity-75 mt-1 flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3" />
+                  Clic para ver detalles
+                </p>
               </div>
               <FontAwesomeIcon :icon="faTimesCircle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
@@ -43,7 +53,10 @@
               <div>
                 <p class="text-xs sm:text-sm opacity-90">Stock Bajo</p>
                 <p class="text-xl sm:text-3xl font-bold">{{ resumen.productos_stock_bajo || 0 }}</p>
-                <p class="text-xs opacity-75 mt-1">👆 Clic para ver detalles</p>
+                <p class="text-xs opacity-75 mt-1 flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3" />
+                  Clic para ver detalles
+                </p>
               </div>
               <FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl sm:text-4xl opacity-75" />
             </div>
@@ -65,19 +78,6 @@
 
       <!-- Tabla de Movimientos -->
       <div class="bg-white rounded-lg shadow-md">
-        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center mb-4 gap-4 p-6">
-          <div>
-            <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Historial de Movimientos</h3>
-            <p class="text-gray-500 text-sm text-center sm:text-start mt-1">
-              📊 Vista de solo lectura - Para gestionar stock, ve a
-              <span class="text-blue-600 font-medium">Productos > Más Acciones > Actualizar Stock</span>
-            </p>
-            <p class="text-blue-600 text-sm text-center sm:text-start mt-1">
-                <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                Haz clic en cualquier fila para ver los detalles.
-            </p>
-          </div>
-        </div>
 
         <DataTable
           :value="movimientosFiltrados"
@@ -142,11 +142,12 @@
                 </button>
               </div>
               <div class="space-y-3">
-                <div>
+                <div class="relative">
+                  <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <InputText
                     v-model="busqueda"
-                    placeholder="🔍 Buscar movimientos..."
-                    class="w-full h-9 text-sm rounded-md"
+                    placeholder="Buscar movimientos..."
+                    class="w-full h-9 text-sm rounded-md pl-10"
                     style="background-color: white; border-color: #93c5fd;"
                   />
                 </div>
@@ -227,6 +228,14 @@
                     />
                   </div>
                 </div>
+
+                <!-- Texto de ayuda para la tabla -->
+                <div class="px-1 mt-3">
+                  <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                    <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                    Haz clic en cualquier fila para ver los detalles.
+                  </p>
+                </div>
               </div>
             </div>
           </template>
@@ -289,10 +298,21 @@
             </template>
           </Column>
 
-          <Column field="user.name" header="Usuario" sortable class="w-28 hidden lg:table-cell">
+          <Column :exportable="false" class="w-32 min-w-24">
+            <template #header>
+              <div class="text-center w-full font-bold">
+                Acciones
+              </div>
+            </template>
             <template #body="{ data }">
-              <div class="text-sm leading-relaxed">
-                {{ data.user?.name || 'Sistema' }}
+              <div class="flex justify-center items-center">
+                <button
+                  class="flex bg-red-500 border p-1 py-2 sm:p-2 text-sm shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300"
+                  @click="confirmarEliminacion(data)"
+                  title="Eliminar movimiento">
+                  <FontAwesomeIcon :icon="faTrashCan" class="h-4 w-5 sm:h-4 sm:w-6 text-white" />
+                  <span class="hidden lg:block text-white ml-1">Eliminar</span>
+                </button>
               </div>
             </template>
           </Column>
@@ -329,6 +349,12 @@
           </div>
           <div>
             <strong>Producto:</strong> {{ movimientoSeleccionado.producto?.nombre }}
+          </div>
+          <div>
+            <strong>Precio:</strong>
+            <span class="text-green-600 font-medium">
+              ${{ formatearPrecio(movimientoSeleccionado.producto?.precio) }}
+            </span>
           </div>
           <div>
             <strong>Cantidad:</strong>
@@ -429,14 +455,18 @@
 
       <template #footer>
         <div class="flex justify-center gap-4 w-full mt-6">
-          <Link
-            href="/productos"
-            @click="mostrarModalProductos = false"
-            class="bg-green-500 hover:bg-green-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+          <button
+            @click="handleProductosClick"
+            :disabled="isNavigatingToProductos"
+            class="bg-red-500 hover:bg-red-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FontAwesomeIcon :icon="faEye" class="h-5" />
-            Gestionar Productos
-          </Link>
+            <FontAwesomeIcon
+              :icon="isNavigatingToProductos ? faSpinner : faEye"
+              :class="{'animate-spin': isNavigatingToProductos}"
+              class="h-5"
+            />
+            {{ isNavigatingToProductos ? 'Cargando...' : 'Gestionar Productos' }}
+          </button>
           <button
             type="button"
             @click="mostrarModalProductos = false"
@@ -447,12 +477,87 @@
         </div>
       </template>
     </Dialog>
+
+    <!-- Modal de Confirmación de Eliminación -->
+    <Dialog
+      v-model:visible="mostrarModalEliminacion"
+      header="Eliminar movimiento de inventario"
+      :modal="true"
+      :style="dialogStyle"
+      :closable="false"
+      :draggable="false"
+    >
+      <div v-if="movimientoAEliminar" class="space-y-4">
+        <div class="flex items-center gap-3 p-4 rounded-lg border bg-red-50 border-red-200">
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="text-2xl text-red-500" />
+          <div>
+            <h4 class="text-lg font-semibold text-red-800">Eliminar Movimiento</h4>
+            <p class="text-red-700">Esta acción no se puede deshacer.</p>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 p-4 rounded-lg border">
+          <h5 class="font-semibold text-gray-800 mb-2">Información del movimiento:</h5>
+          <div class="space-y-2 text-sm">
+            <div><strong>ID:</strong> #{{ movimientoAEliminar.id }}</div>
+            <div><strong>Producto:</strong> {{ movimientoAEliminar.producto?.nombre || 'N/A' }}</div>
+            <div><strong>Tipo:</strong>
+              <span :class="'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-1 ' +
+                (movimientoAEliminar.tipo_movimiento === 'ENTRADA' ? 'bg-green-100 text-green-800' :
+                 movimientoAEliminar.tipo_movimiento === 'SALIDA' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800')">
+                {{ movimientoAEliminar.tipo_movimiento }}
+              </span>
+            </div>
+            <div><strong>Cantidad:</strong> {{ movimientoAEliminar.cantidad }}</div>
+            <div><strong>Fecha:</strong> {{ formatearFecha(movimientoAEliminar.fecha_movimiento) }}</div>
+            <div><strong>Motivo:</strong> {{ obtenerMotivoLegible(movimientoAEliminar.motivo) }}</div>
+          </div>
+        </div>
+
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+          <div class="flex items-start gap-2">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-sm mt-0.5" />
+            <div class="text-sm text-yellow-800">
+              <strong>Importante:</strong> Al eliminar este movimiento se perderá el historial del cambio de inventario.
+              Esta acción es irreversible y puede afectar la trazabilidad del producto.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-center gap-4 w-full mt-6">
+          <button
+            class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            @click="eliminarMovimiento"
+            :disabled="isDeleting"
+          >
+            <FontAwesomeIcon
+              :icon="isDeleting ? faSpinner : faTrashCan"
+              :class="[
+                'h-4',
+                { 'animate-spin': isDeleting }
+              ]"
+            />
+            {{ isDeleting ? 'Eliminando...' : 'Eliminar' }}
+          </button>
+          <button
+            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+            @click="cancelarEliminacion"
+            :disabled="isDeleting"
+          >
+            <FontAwesomeIcon :icon="faTimes" class="h-4" />
+            Cancelar
+          </button>
+        </div>
+      </template>
+    </Dialog>
   </AuthenticatedLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -468,7 +573,9 @@ import {
   faEye,
   faHistory,
   faTimes,
-  faHandPointUp
+  faHandPointUp,
+  faTrashCan,
+  faMagnifyingGlass
 } from "@fortawesome/free-solid-svg-icons"
 import axios from 'axios'
 
@@ -493,6 +600,12 @@ const productosModalData = ref([])
 const tituloModal = ref('')
 const tipoEstado = ref('')
 const cargandoProductos = ref(false)
+
+// Modal de confirmación de eliminación
+const mostrarModalEliminacion = ref(false)
+const movimientoAEliminar = ref(null)
+const isDeleting = ref(false)
+const isNavigatingToProductos = ref(false)
 
 // Filtros
 const filtros = ref({
@@ -779,6 +892,58 @@ const onRowClick = (event) => {
     movimientoSeleccionado.value = event.data
     mostrarModalDetalle.value = true
   }
+}
+
+// Funciones para eliminación
+const confirmarEliminacion = (movimiento) => {
+  movimientoAEliminar.value = movimiento
+  mostrarModalEliminacion.value = true
+}
+
+const eliminarMovimiento = async () => {
+  if (!movimientoAEliminar.value) return
+
+  isDeleting.value = true
+  try {
+    const response = await axios.delete(`/api/inventario/${movimientoAEliminar.value.id}`)
+
+    // Eliminar de la lista local
+    const index = movimientos.value.findIndex(m => m.id === movimientoAEliminar.value.id)
+    if (index !== -1) {
+      movimientos.value.splice(index, 1)
+    }
+
+    toast.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Movimiento de inventario eliminado correctamente',
+      life: 3000
+    })
+
+    mostrarModalEliminacion.value = false
+    movimientoAEliminar.value = null
+  } catch (error) {
+    console.error('Error al eliminar movimiento:', error)
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'Error al eliminar el movimiento de inventario',
+      life: 4000
+    })
+  } finally {
+    isDeleting.value = false
+  }
+}
+
+const cancelarEliminacion = () => {
+  mostrarModalEliminacion.value = false
+  movimientoAEliminar.value = null
+}
+
+const handleProductosClick = () => {
+  isNavigatingToProductos.value = true
+  mostrarModalProductos.value = false
+  router.visit('/productos')
 }
 
 const formatearFecha = (fecha) => {

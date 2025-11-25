@@ -258,7 +258,7 @@ defineOptions({
         <div class="space-y-4">
             <div class="text-center mb-4">
                 <h4 class="text-lg font-semibold text-gray-800">
-                   Producto: <span class="text-blue-600">{{ producto.nombre || 'Producto' }}</span>
+                   Producto: <span class="text-blue-500 font-bold">{{ producto.nombre || 'Producto' }}</span>
                 </h4>
                 <p class="text-sm text-gray-600 mt-1">Selecciona una acción a realizar</p>
             </div>
@@ -266,7 +266,7 @@ defineOptions({
             <div class="grid grid-cols-1 gap-3">
                 <!-- Botón para ver detalles -->
                 <button
-                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="viewDetails"
                 >
                     <FontAwesomeIcon :icon="faEye" class="h-5 w-5" />
@@ -278,7 +278,7 @@ defineOptions({
 
                 <!-- Botón para actualizar stock -->
                 <button
-                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="updateStock"
                 >
                     <FontAwesomeIcon :icon="faPencil" class="h-5 w-5" />
@@ -291,7 +291,7 @@ defineOptions({
                 <!-- Botón para ver inventarios -->
                 <Link
                     :href="route('inventario')"
-                    class="w-full bg-purple-500 hover:bg-purple-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    class="w-full bg-gray-500 hover:bg-gray-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
                     @click="closeModal"
                 >
                     <FontAwesomeIcon :icon="faClipboardList" class="h-5 w-5" />
@@ -313,7 +313,7 @@ defineOptions({
             <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" />
@@ -409,7 +409,7 @@ defineOptions({
             <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeDetailsModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" />
@@ -483,7 +483,7 @@ defineOptions({
             <div class="flex justify-center w-full mt-6">
                 <button
                     type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeCarouselModal"
                 >
                     <FontAwesomeIcon :icon="faXmark" class="h-5" />
@@ -506,7 +506,7 @@ defineOptions({
             <div class="flex justify-center gap-4 w-full">
                 <button
                     type="button"
-                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="bg-red-500 hover:bg-red-600 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                     @click="confirmDelete"
                     :disabled="isDeleting"
                 >
@@ -520,7 +520,7 @@ defineOptions({
                     <span v-if="!isDeleting">Eliminar</span>
                     <span v-else>Eliminando...</span>
                 </button>
-                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="cancelDelete" :disabled="isDeleting">
                     <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
                 </button>
@@ -539,11 +539,11 @@ defineOptions({
         </div>
         <template #footer>
             <div class="flex justify-center gap-3 w-full">
-                <button type="button" class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                <button type="button" class="bg-red-500 hover:bg-red-600 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="closeWithoutSaving">
                     <FontAwesomeIcon :icon="faSignOut" class="h-4" /><span>Salir sin guardar</span>
                 </button>
-                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                <button type="button" class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
                     @click="continueEditing">
                     <FontAwesomeIcon :icon="faPencil" class="h-4" /><span>Continuar</span>
                 </button>

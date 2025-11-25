@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 use Inertia\Inertia;
 
@@ -37,7 +38,7 @@ class BackupController extends Controller
 
             $backups = collect($files)
                 ->filter(function ($file) {
-                    return str_ends_with($file, '.zip') || str_ends_with($file, '.sql');
+                    return str_ends_with($file, '.zip');
                 })
                 ->map(function ($file) use ($backupDisk) {
                     $size = $backupDisk->size($file);
@@ -57,7 +58,7 @@ class BackupController extends Controller
                         'size_bytes' => $size,
                         'created_at' => $createdAt->format('Y-m-d H:i:s'),
                         'formatted_date' => $createdAt->format('d/m/Y H:i:s'),
-                        'date' => $createdAt->format('Y-m-d H:i:s'), // Campo adicional por si el frontend lo necesita
+                        'date' => $createdAt->format('Y-m-d H:i:s'),
                         'timestamp' => $lastModified
                     ];
                 })
@@ -81,81 +82,28 @@ class BackupController extends Controller
     public function generate(Request $request)
     {
         try {
-            // Crear backup manualmente sin usar artisan para evitar problemas de notificaciones
-            $includeDatabase = !$request->input('only_files', false);
-            $includeFiles = !$request->input('only_db', false);
-
             $timestamp = now()->format('Y-m-d-H-i-s');
-            $filename = "vasir-{$timestamp}.zip";
+            $filename = "vasir-backup-{$timestamp}.zip";
+
+            // Asegurar que el directorio VASIR existe
             $backupDisk = Storage::disk('backup');
-            $tempPath = storage_path('app/private/VASIR/temp');
-
-            // Crear directorio temporal si no existe
-            if (!file_exists($tempPath)) {
-                mkdir($tempPath, 0755, true);
+            $backupPath = 'VASIR';
+            if (!$backupDisk->exists($backupPath)) {
+                $backupDisk->makeDirectory($backupPath);
             }
 
-            $filesToZip = [];
-
-            // Incluir dump de base de datos si se solicita
-            if ($includeDatabase) {
-                try {
-                    // Usar nuestro comando personalizado que no depende de mysqldump
-                    \Artisan::call('vasir:backup-db', ['--format' => 'sql']);
-
-                    // Buscar el archivo de backup más reciente
-                    $backupDisk = Storage::disk('backup');
-                    $backupFiles = $backupDisk->files('VASIR');
-                    $latestBackup = collect($backupFiles)
-                        ->filter(function($file) {
-                            return str_ends_with($file, '.sql');
-                        })
-                        ->sortByDesc(function($file) use ($backupDisk) {
-                            return $backupDisk->lastModified($file);
-                        })
-                        ->first();
-
-                    if ($latestBackup) {
-                        $databaseDumpPath = $tempPath . '/database.sql';
-                        $backupContent = $backupDisk->get($latestBackup);
-                        file_put_contents($databaseDumpPath, $backupContent);
-                        $filesToZip[] = $databaseDumpPath;
-                    }
-                } catch (\Exception $e) {
-                    // Si el dump falló, continuar sin él pero reportar
-                    error_log("Database backup failed: " . $e->getMessage());
-                }
-            }
-
-            // Incluir archivos importantes si se solicita
-            if ($includeFiles) {
-                // Solo incluir archivos que sean seguros y útiles
-                $importantFiles = [
-                    base_path('composer.json'),
-                    base_path('composer.lock'),
-                    base_path('package.json'),
-                    // NO incluimos .env por seguridad
-                ];
-
-                foreach ($importantFiles as $file) {
-                    if (file_exists($file)) {
-                        $filesToZip[] = $file;
-                    }
-                }
-            }
-
-            if (empty($filesToZip)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'No hay archivos para respaldar'
-                ], 400);
-            }
-
-            // Crear ZIP
             $zipPath = storage_path("app/private/VASIR/{$filename}");
+
+            // Crear el directorio padre si no existe
+            $zipDir = dirname($zipPath);
+            if (!file_exists($zipDir)) {
+                mkdir($zipDir, 0755, true);
+            }
+
             $zip = new \ZipArchive();
 
-            $zipResult = $zip->open($zipPath, \ZipArchive::CREATE);
+            // Crear el archivo ZIP
+            $zipResult = $zip->open($zipPath, \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
             if ($zipResult !== TRUE) {
                 return response()->json([
                     'success' => false,
@@ -164,39 +112,87 @@ class BackupController extends Controller
             }
 
             $addedFiles = 0;
-            foreach ($filesToZip as $file) {
-                if (file_exists($file) && is_readable($file)) {
-                    $zip->addFile($file, basename($file));
+
+            // 1. Crear dump de base de datos directamente en el ZIP
+            try {
+                $databaseContent = $this->createDatabaseDump();
+                if (!empty($databaseContent)) {
+                    $zip->addFromString('database_' . $timestamp . '.sql', $databaseContent);
+                    $addedFiles++;
+                }
+            } catch (\Exception $e) {
+                error_log("Database backup failed: " . $e->getMessage());
+            }
+
+            // 2. Incluir archivos importantes del proyecto
+            $importantFiles = [
+                'composer.json' => base_path('composer.json'),
+                'composer.lock' => base_path('composer.lock'),
+                'package.json' => base_path('package.json'),
+            ];
+
+            foreach ($importantFiles as $zipName => $filePath) {
+                if (file_exists($filePath) && is_readable($filePath)) {
+                    $zip->addFile($filePath, $zipName);
                     $addedFiles++;
                 }
             }
 
+            // 3. Incluir información del sistema
+            $systemInfo = [
+                'backup_date' => now()->format('Y-m-d H:i:s'),
+                'laravel_version' => app()->version(),
+                'php_version' => PHP_VERSION,
+                'database_name' => config('database.connections.mysql.database'),
+                'backup_type' => 'full'
+            ];
+
+            $zip->addFromString('backup_info.json', json_encode($systemInfo, JSON_PRETTY_PRINT));
+            $addedFiles++;
+
             if ($addedFiles === 0) {
                 $zip->close();
-                unlink($zipPath); // Eliminar ZIP vacío
+                if (file_exists($zipPath)) {
+                    unlink($zipPath);
+                }
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'No se pudieron agregar archivos al ZIP'
+                    'message' => 'No se pudieron agregar archivos al backup'
                 ], 500);
             }
 
-            $zip->close();
+            // Cerrar el ZIP correctamente
+            $closeResult = $zip->close();
+            if (!$closeResult) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error al finalizar el archivo ZIP'
+                ], 500);
+            }
 
-            // Limpiar archivos temporales
-            foreach ($filesToZip as $file) {
-                if (str_contains($file, $tempPath)) {
-                    unlink($file);
-                }
+            // Verificar que el archivo se creó correctamente
+            if (!file_exists($zipPath) || filesize($zipPath) === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'El archivo ZIP no se creó correctamente'
+                ], 500);
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Backup generado exitosamente',
                 'filename' => $filename,
-                'size' => $this->formatBytes(filesize($zipPath))
+                'size' => $this->formatBytes(filesize($zipPath)),
+                'files_included' => $addedFiles
             ]);
 
         } catch (\Exception $e) {
+            // Limpiar en caso de error
+            if (isset($zipPath) && file_exists($zipPath)) {
+                unlink($zipPath);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al generar el backup: ' . $e->getMessage(),
@@ -204,6 +200,124 @@ class BackupController extends Controller
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
             ], 500);
+        }
+    }
+
+    /**
+     * Crear dump de base de datos directamente
+     */
+    private function createDatabaseDump()
+    {
+        try {
+            $sql = "-- ================================================" . PHP_EOL;
+            $sql .= "-- Backup de base de datos VASIR" . PHP_EOL;
+            $sql .= "-- Generado el: " . Carbon::now()->format('Y-m-d H:i:s') . PHP_EOL;
+            $sql .= "-- Base de datos: " . DB::getDatabaseName() . PHP_EOL;
+            $sql .= "-- ================================================" . PHP_EOL . PHP_EOL;
+
+            $sql .= "SET FOREIGN_KEY_CHECKS = 0;" . PHP_EOL;
+            $sql .= "SET SQL_MODE = \"NO_AUTO_VALUE_ON_ZERO\";" . PHP_EOL;
+            $sql .= "SET AUTOCOMMIT = 0;" . PHP_EOL;
+            $sql .= "START TRANSACTION;" . PHP_EOL . PHP_EOL;
+
+            $tables = $this->getDatabaseTables();
+
+            foreach ($tables as $table) {
+                try {
+                    // Estructura de la tabla
+                    $createTable = DB::select("SHOW CREATE TABLE `{$table}`");
+                    $sql .= "-- ================================================" . PHP_EOL;
+                    $sql .= "-- Estructura de tabla `{$table}`" . PHP_EOL;
+                    $sql .= "-- ================================================" . PHP_EOL;
+                    $sql .= "DROP TABLE IF EXISTS `{$table}`;" . PHP_EOL;
+                    $sql .= $createTable[0]->{'Create Table'} . ";" . PHP_EOL . PHP_EOL;
+
+                    // Datos de la tabla
+                    $rowCount = DB::table($table)->count();
+                    if ($rowCount > 0) {
+                        $sql .= "-- Datos de tabla `{$table}` ({$rowCount} registros)" . PHP_EOL;
+
+                        // Obtener la primera columna como clave para orderBy
+                        $columns = DB::getSchemaBuilder()->getColumnListing($table);
+                        $firstColumn = $columns[0] ?? 'id';
+
+                        $chunkSize = 100; // Procesar de a 100 registros para evitar problemas de memoria
+
+                        DB::table($table)->orderBy($firstColumn)->chunk($chunkSize, function ($chunk) use (&$sql, $table) {
+                            if ($chunk->isNotEmpty()) {
+                                $sql .= "INSERT INTO `{$table}` VALUES" . PHP_EOL;
+                                $values = [];
+
+                                foreach ($chunk as $row) {
+                                    $rowData = array_map([$this, 'escapeValue'], (array) $row);
+                                    $values[] = '(' . implode(',', $rowData) . ')';
+                                }
+
+                                $sql .= implode(',' . PHP_EOL, $values) . ';' . PHP_EOL . PHP_EOL;
+                            }
+                        });
+                    }
+                } catch (\Exception $e) {
+                    $sql .= "-- Error al respaldar tabla {$table}: " . $e->getMessage() . PHP_EOL . PHP_EOL;
+                }
+            }
+
+            $sql .= "COMMIT;" . PHP_EOL;
+            $sql .= "SET FOREIGN_KEY_CHECKS = 1;" . PHP_EOL;
+            $sql .= PHP_EOL . "-- ================================================" . PHP_EOL;
+            $sql .= "-- Fin del backup" . PHP_EOL;
+            $sql .= "-- ================================================" . PHP_EOL;
+
+            return $sql;
+        } catch (\Exception $e) {
+            error_log("Error creating database dump: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Escapar valores para SQL
+     */
+    private function escapeValue($value)
+    {
+        if (is_null($value)) {
+            return 'NULL';
+        } elseif (is_bool($value)) {
+            return $value ? '1' : '0';
+        } elseif (is_numeric($value)) {
+            return $value;
+        } else {
+            // Escapar comillas y caracteres especiales
+            $escaped = str_replace(['\\', "'", "\r", "\n", "\0", "\x1a"], ['\\\\', "\\'", '\\r', '\\n', '\\0', '\\Z'], $value);
+            return "'" . $escaped . "'";
+        }
+    }
+
+    /**
+     * Obtener lista de tablas de la base de datos
+     */
+    private function getDatabaseTables()
+    {
+        try {
+            $tables = DB::select('SHOW TABLES');
+            $databaseName = DB::getDatabaseName();
+            $tableKey = "Tables_in_{$databaseName}";
+
+            return collect($tables)->pluck($tableKey)->filter(function($table) {
+                // Excluir tablas del sistema y temporales
+                return !in_array($table, [
+                    'migrations',
+                    'password_reset_tokens',
+                    'sessions',
+                    'failed_jobs',
+                    'telescope_entries',
+                    'telescope_entries_tags',
+                    'telescope_monitoring'
+                ]);
+            })->toArray();
+        } catch (\Exception $e) {
+            error_log("Error getting database tables: " . $e->getMessage());
+            return [];
         }
     }
 
@@ -215,7 +329,7 @@ class BackupController extends Controller
             $filename = basename($file);
             $fileId = pathinfo($filename, PATHINFO_FILENAME);
 
-            if ($fileId === $id && (str_ends_with($file, '.zip') || str_ends_with($file, '.sql'))) {
+            if ($fileId === $id && str_ends_with($file, '.zip')) {
                 return $file;
             }
         }
@@ -292,7 +406,7 @@ class BackupController extends Controller
             $files = $backupDisk->files($vasirPath);
             $backupFiles = collect($files)
                 ->filter(function ($file) {
-                    return str_ends_with($file, '.zip') || str_ends_with($file, '.sql');
+                    return str_ends_with($file, '.zip');
                 })
                 ->map(function ($file) use ($backupDisk) {
                     return [

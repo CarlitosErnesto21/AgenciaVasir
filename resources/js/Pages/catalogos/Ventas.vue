@@ -4,7 +4,7 @@
     <Toast class="z-[9999]" />
 
     <div class="container mx-auto px-4 py-6">
-      <div class="mb-6">
+      <div class="mb-6 text-center sm:text-left">
         <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Ventas</h1>
         <p class="text-gray-600">Control completo del sistema de ventas</p>
       </div>
@@ -53,15 +53,7 @@
       </div>
 
       <div class="bg-white rounded-lg shadow-md">
-        <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
-          <div class="w-full">
-                <h3 class="text-2xl sm:text-3xl text-blue-600 font-bold text-center sm:text-start">Lista de Ventas</h3>
-                <p class="text-blue-600 text-xs text-center sm:text-start mt-1 font-medium flex items-center gap-1 justify-center sm:justify-start">
-                    <FontAwesomeIcon :icon="faHandPointUp" class="h-4 w-4 text-yellow-500" />
-                    Haz clic en cualquier fila para ver los detalles.
-                </p>
-            </div>
-        </div>
+
         <DataTable
           :value="ventasFiltradas"
           dataKey="id"
@@ -154,11 +146,12 @@
               </div>
               <div class="space-y-3">
                 <!-- Búsqueda - Full width en todas las pantallas -->
-                <div>
+                <div class="relative">
+                  <FontAwesomeIcon :icon="faMagnifyingGlass" class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                   <InputText
                     v-model="globalFilter"
-                    placeholder="🔍 Buscar ventas..."
-                    class="w-full h-9 text-sm rounded-md"
+                    placeholder="Buscar ventas..."
+                    class="w-full h-9 text-sm rounded-md pl-10"
                     style="background-color: white; border-color: #93c5fd;"
                   />
                 </div>
@@ -257,6 +250,14 @@
                       :minDate="filtros.fechaDesde"
                     />
                   </div>
+                </div>
+
+                <!-- Texto de ayuda para la tabla -->
+                <div class="px-1 mt-3">
+                  <p class="text-blue-600 text-xs font-medium flex items-center gap-1">
+                    <FontAwesomeIcon :icon="faHandPointUp" class="h-3 w-3 text-yellow-500" />
+                    Haz clic en cualquier fila para ver los detalles.
+                  </p>
                 </div>
               </div>
             </div>
@@ -584,7 +585,8 @@ import {
   faBox,
   faRefresh,
   faEnvelope,
-  faHandPointUp
+  faHandPointUp,
+  faMagnifyingGlass
 } from "@fortawesome/free-solid-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';

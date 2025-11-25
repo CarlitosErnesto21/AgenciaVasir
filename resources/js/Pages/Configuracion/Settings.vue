@@ -3,68 +3,72 @@
         <!-- Toast para notificaciones -->
         <Toast />
 
-        <div class="container mx-auto px-2 sm:px-4 py-4 sm:py-6 lg:py-8">
-            <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-                <!-- Header -->
-                <div class="bg-gradient-to-r from-red-600 to-red-700 px-2 sm:px-4 lg:px-6 py-2 sm:py-3 lg:py-4">
-                    <h1 class="text-sm sm:text-lg lg:text-2xl font-bold text-white flex items-center">
-                        <FontAwesomeIcon :icon="faGear" class="mr-1 sm:mr-2 lg:mr-3 text-sm sm:text-base lg:text-xl" />
-                        <span class="hidden sm:inline">Configuración del Sistema</span>
-                        <span class="sm:hidden">Configuración del sistema</span>
-                    </h1>
-                    <p class="text-red-100 mt-0.5 sm:mt-1 lg:mt-2 text-xs sm:text-sm lg:text-base hidden sm:block">Configure los parámetros generales del sistema</p>
+        <div class="bg-gray-50 pt-4 md:pt-6">
+            <!-- Header -->
+            <div class="bg-white shadow-lg border-b border-gray-200 mb-5 md:mb-10">
+                <div class="max-w-4xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 flex flex-col sm:flex-row items-center gap-3 sm:gap-4 lg:gap-6">
+                    <div class="bg-red-600 rounded-xl p-4 shadow flex items-center justify-center border-4 border-white mb-3 sm:mb-0">
+                        <FontAwesomeIcon :icon="faGear" class="w-10 h-10 text-white" />
+                    </div>
+                    <div class="text-center sm:text-left">
+                        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-900 tracking-tight">Configuración del Sistema</h1>
+                        <p class="text-gray-700 text-base sm:text-lg mt-1 font-medium">Configure los parámetros generales del sistema</p>
+                    </div>
                 </div>
+            </div>
 
-                <!-- Layout principal con menú lateral -->
-                <div class="flex flex-col lg:flex-row min-h-screen">
-                    <!-- Menú lateral -->
-                    <div class="w-full lg:w-72 bg-gray-50 border-b lg:border-b-0 lg:border-r border-gray-200 p-3 sm:p-4 lg:p-5">
-                        <nav class="flex flex-row lg:flex-col gap-2 lg:space-y-2 lg:gap-0">
-                            <button
-                                v-for="item in menuItems"
-                                :key="item.id"
-                                @click="handleSectionChange(item.id)"
-                                :class="[
-                                    'flex-1 lg:w-full flex flex-col lg:flex-row items-center justify-center lg:justify-start px-3 py-3 lg:px-4 lg:py-3 text-center lg:text-left rounded-lg transition-all duration-200 font-medium',
-                                    activeSection === item.id
-                                        ? 'bg-red-600 text-white shadow-md'
-                                        : 'text-gray-700 hover:bg-red-50 hover:text-red-700 hover:shadow-sm'
-                                ]"
-                            >
-                                <span class="text-lg lg:text-xl mb-1 lg:mb-0 lg:mr-3">{{ item.icon }}</span>
-                                <div class="flex-1">
-                                    <div class="font-semibold text-sm lg:text-base">{{ item.title }}</div>
-                                    <div class="text-xs hidden lg:block mt-0.5" :class="activeSection === item.id ? 'text-red-100' : 'text-gray-500'">
-                                        {{ item.description }}
-                                    </div>
+            <div class="py-2 sm:py-4">
+                <div class="max-w-4xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+                    <template v-if="!selectedForm">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                            <!-- Tarjeta Información Corporativa -->
+                            <div @click="showForm('corporate')" class="cursor-pointer bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
+                                <div class="bg-red-100 rounded-full p-3 sm:p-4 mb-3 sm:mb-4">
+                                    <FontAwesomeIcon :icon="faBuilding" class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
                                 </div>
-                            </button>
-                        </nav>
-                    </div>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-2">Información Corporativa</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm text-center leading-relaxed">Configure la misión, visión, descripción y valores corporativos de la empresa</p>
+                            </div>
 
-                    <!-- Contenido principal -->
-                    <div class="flex-1 p-3 sm:p-4 lg:p-5">
-                        <!-- Corporate Settings -->
-                        <CorporateSettings
-                            v-if="activeSection === 'corporate'"
-                            :settings="settings"
-                            :company-values="companyValues"
-                            :is-saving="isSaving"
-                            @reset="resetSettings"
-                            @unsaved-changes="reportUnsavedChanges"
-                            @settings-updated="reloadSettings"
-                        />
+                            <!-- Tarjeta Base de Datos -->
+                            <div @click="showForm('database')" class="cursor-pointer bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-100 p-4 sm:p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
+                                <div class="bg-red-100 rounded-full p-3 sm:p-4 mb-3 sm:mb-4">
+                                    <FontAwesomeIcon :icon="faDatabase" class="w-6 h-6 sm:w-8 sm:h-8 text-red-600" />
+                                </div>
+                                <h3 class="text-base sm:text-lg font-bold text-gray-900 mb-2">Base de Datos</h3>
+                                <p class="text-gray-600 text-xs sm:text-sm text-center leading-relaxed">Gestione respaldos y mantenimiento de la base de datos del sistema</p>
+                            </div>
+                        </div>
+                    </template>
 
-                        <!-- Database Settings -->
-                        <DatabaseSettings
-                            v-if="activeSection === 'database'"
-                            :database-info="databaseInfo"
-                            :is-saving="isSaving"
-                            @save="saveSettings"
-                            @reset="resetSettings"
-                            @unsaved-changes="reportUnsavedChanges"
-                        />
-                    </div>
+                    <template v-else>
+                        <button @click="goBack" class="mb-4 sm:mb-6 flex items-center text-red-600 hover:text-red-800 font-semibold text-sm sm:text-base px-2 py-1 rounded-md hover:bg-red-50 transition-all">
+                            <FontAwesomeIcon :icon="faChevronLeft" class="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
+                            <span class="hidden sm:inline">Volver</span>
+                            <span class="sm:hidden">Atrás</span>
+                        </button>
+
+                        <div v-if="selectedForm === 'corporate'">
+                            <CorporateSettings
+                                :settings="settings"
+                                :company-values="companyValues"
+                                :is-saving="isSaving"
+                                @reset="resetSettings"
+                                @unsaved-changes="reportUnsavedChanges"
+                                @settings-updated="reloadSettings"
+                            />
+                        </div>
+
+                        <div v-else-if="selectedForm === 'database'">
+                            <DatabaseSettings
+                                :database-info="databaseInfo"
+                                :is-saving="isSaving"
+                                @save="saveSettings"
+                                @reset="resetSettings"
+                                @unsaved-changes="reportUnsavedChanges"
+                            />
+                        </div>
+                    </template>
                 </div>
             </div>
         </div>
@@ -85,7 +89,8 @@ import { route } from 'ziggy-js';
 import { useToast } from 'primevue/usetoast';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faGear, faSpinner, faFileArchive, faDatabase } from '@fortawesome/free-solid-svg-icons';
+import { faGear, faSpinner, faFileArchive, faDatabase, faChevronLeft, faBuilding } from '@fortawesome/free-solid-svg-icons';
+import Toast from 'primevue/toast';
 
 // Importar componentes de configuración
 import CorporateSettings from './SettingsComponent/CorporateSettings.vue';
@@ -119,7 +124,7 @@ const props = defineProps({
 });
 
 const isSaving = ref(false);
-const activeSection = ref('corporate');
+const selectedForm = ref(null); // null, 'corporate', 'database'
 
 // Variable reactiva para companyValues que se actualiza desde el servidor
 const companyValues = ref(props.companyValues);
@@ -129,13 +134,23 @@ const globalHasUnsavedChanges = ref(false);
 const showUnsavedModal = ref(false);
 const pendingSection = ref(null);
 
-// Función para verificar cambios antes de cambiar de sección
-const handleSectionChange = (newSection) => {
+// Función para mostrar formulario
+const showForm = (form) => {
     if (globalHasUnsavedChanges.value) {
-        pendingSection.value = newSection;
+        pendingSection.value = form;
         showUnsavedModal.value = true;
     } else {
-        activeSection.value = newSection;
+        selectedForm.value = form;
+    }
+};
+
+// Función para volver
+const goBack = () => {
+    if (globalHasUnsavedChanges.value) {
+        pendingSection.value = null;
+        showUnsavedModal.value = true;
+    } else {
+        selectedForm.value = null;
     }
 };
 
@@ -143,8 +158,8 @@ const handleSectionChange = (newSection) => {
 const confirmSectionChange = () => {
     globalHasUnsavedChanges.value = false;
     showUnsavedModal.value = false;
-    if (pendingSection.value) {
-        activeSection.value = pendingSection.value;
+    if (pendingSection.value !== undefined) {
+        selectedForm.value = pendingSection.value;
         pendingSection.value = null;
     }
 };
@@ -160,21 +175,7 @@ const reportUnsavedChanges = (hasChanges) => {
     globalHasUnsavedChanges.value = hasChanges;
 };
 
-// Elementos del menú lateral
-const menuItems = ref([
-    {
-        id: 'corporate',
-        icon: '🏢',
-        title: 'Información Corporativa',
-        description: 'Contenido empresarial'
-    },
-    {
-        id: 'database',
-        icon: '💾',
-        title: 'Base de Datos',
-        description: 'Respaldos y mantenimiento'
-    }
-]);
+
 
 // Configuraciones del sistema
 const settings = ref({

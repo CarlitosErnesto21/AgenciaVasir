@@ -750,7 +750,7 @@ function limpiarFechas() {
                         {{ informeSeleccionado?.descripcion }}
                       </p>
                       <div v-if="!requiereFechas" class="mt-1.5 sm:mt-2 text-xs text-red-600 font-medium">
-                        ✨ <span class="hidden sm:inline">Este informe se genera con datos actuales del sistema</span>
+                        <span class="hidden sm:inline">Este informe se genera con datos actuales del sistema</span>
                         <span class="sm:hidden">Datos actuales del sistema</span>
                       </div>
                     </div>
