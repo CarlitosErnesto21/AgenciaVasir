@@ -135,12 +135,7 @@ const widgets = ref([
 ]);
 
 // 🎯 Estados para interactividad
-const showReservasPendientesModal = ref(false);
 const showProductosStockBajoModal = ref(false);
-
-const toggleReservasPendientesModal = () => {
-    showReservasPendientesModal.value = !showReservasPendientesModal.value;
-};
 
 const toggleProductosStockBajoModal = () => {
     showProductosStockBajoModal.value = !showProductosStockBajoModal.value;
@@ -495,7 +490,6 @@ onMounted(() => {
                     :widgets="widgets"
                     :dashboard-data="dashboardData"
                     :format-value-for-mobile="formatValueForMobile"
-                    @toggle-reservas-modal="toggleReservasPendientesModal"
                     @toggle-stock-modal="toggleProductosStockBajoModal"
                 />
 
@@ -549,10 +543,8 @@ onMounted(() => {
 
         <!-- Modales interactivos -->
         <ModalesInteractivos
-            :show-reservas-pendientes-modal="showReservasPendientesModal"
             :show-productos-stock-bajo-modal="showProductosStockBajoModal"
             :dashboard-data="dashboardData"
-            @close-reservas-modal="showReservasPendientesModal = false"
             @close-stock-modal="showProductosStockBajoModal = false"
         />
     </AuthenticatedLayout>

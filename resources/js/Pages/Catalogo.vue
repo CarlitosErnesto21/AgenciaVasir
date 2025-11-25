@@ -205,7 +205,7 @@ function abrirEmail() {
 
                 <!-- Logo con efecto -->
                 <Link :href="route('inicio')" title="Ir a la página de inicio" class="flex items-center cursor-pointer select-none group">
-                    <img src="/images/logo.png" alt="Logo VASIR" class="w-16 h-5 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
+                    <img src="/images/logo.png" alt="Logo VASIR" class="h-8 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                 </Link>
             </div>
 

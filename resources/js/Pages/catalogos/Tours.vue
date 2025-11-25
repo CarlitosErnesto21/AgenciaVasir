@@ -553,7 +553,32 @@ const openNew = () => {
     });
 };
 
-const editTour = (t) => {
+const editTour = async (t) => {
+    // Verificar si el tour tiene reservas antes de permitir editarlo
+    try {
+        const response = await axios.get(`/api/tours/${t.id}/verificar-reservas`);
+
+        if (response.data.success && response.data.tiene_reservas) {
+            toast.add({
+                severity: 'warn',
+                summary: 'No se puede editar',
+                detail: `No puedes editar el tour "${response.data.tour_nombre}" porque tiene ${response.data.cantidad_reservas} reserva(s) asociada(s).`,
+                life: 5000
+            });
+            return; // Salir sin abrir el modal
+        }
+    } catch (error) {
+        console.error('Error verificando reservas:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Error al verificar las reservas del tour',
+            life: 3000
+        });
+        return;
+    }
+
+    // Si no tiene reservas, proceder con la edición
     resetForm();
     submitted.value = false; // Limpiar estado de validación
     tour.value = {
@@ -596,6 +621,86 @@ const editTour = (t) => {
     });
 };
 
+// Función para validar conflictos de fechas
+const validarConflictosFechas = async () => {
+    if (!tour.value.fecha_salida || !horaRegresoCalendar.value) {
+        return true; // Si no hay fechas, no validamos conflictos
+    }
+
+    try {
+        // Formatear fechas correctamente - normalizar todos los formatos
+        const formatearFecha = (fecha) => {
+            if (!fecha) return null;
+
+            let fechaObj;
+            if (fecha instanceof Date) {
+                fechaObj = fecha;
+            } else if (typeof fecha === 'string') {
+                // Manejar diferentes formatos de string
+                if (fecha.includes('T') && fecha.includes('Z')) {
+                    // Formato ISO: "2025-11-29T01:00:26.000000Z"
+                    fechaObj = new Date(fecha);
+                } else {
+                    // Formato MySQL: "2025-11-25 12:00:26"
+                    fechaObj = new Date(fecha);
+                }
+            }
+
+            // Convertir a formato MySQL consistente
+            return fechaObj.getFullYear() + '-' +
+                   String(fechaObj.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(fechaObj.getDate()).padStart(2, '0') + ' ' +
+                   String(fechaObj.getHours()).padStart(2, '0') + ':' +
+                   String(fechaObj.getMinutes()).padStart(2, '0') + ':' +
+                   String(fechaObj.getSeconds()).padStart(2, '0');
+        };
+
+        const fechaSalidaFormatted = formatearFecha(tour.value.fecha_salida);
+        const fechaRegresoFormatted = formatearFecha(horaRegresoCalendar.value);
+
+
+
+        const response = await axios.post('/api/tours/validar-fechas', {
+            fecha_salida: fechaSalidaFormatted,
+            fecha_regreso: fechaRegresoFormatted,
+            tour_id: tour.value.id // Para excluir el tour actual en ediciones
+        });
+
+        if (!response.data.success) {
+            if (response.data.tiene_conflictos) {
+                const conflictos = response.data.conflictos;
+                let mensaje = `Las fechas seleccionadas se superponen con ${conflictos.length} tour(s) existente(s):\n\n`;
+
+                conflictos.forEach((conflicto, index) => {
+                    mensaje += `${index + 1}. ${conflicto.nombre}\n`;
+                    mensaje += `   Fechas: ${conflicto.fecha_salida} al ${conflicto.fecha_regreso}\n\n`;
+                });
+
+                mensaje += 'Por favor selecciona fechas que no se superpongan con tours existentes.';
+
+                toast.add({
+                    severity: "error",
+                    summary: "Conflicto de fechas",
+                    detail: mensaje,
+                    life: 8000
+                });
+                return false;
+            }
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error al validar fechas:', error);
+        toast.add({
+            severity: "error",
+            summary: "Error de validación",
+            detail: "No se pudieron validar las fechas. Inténtalo nuevamente.",
+            life: 4000
+        });
+        return false;
+    }
+};
+
 const saveOrUpdate = async () => {
     submitted.value = true;
     if (!horaRegresoCalendar.value) {
@@ -634,6 +739,12 @@ const saveOrUpdate = async () => {
     if (!validateFechaRegreso()) {
         toast.add({ severity: "warn", summary: "Verificar fechas", detail: "Por favor revisa las fechas ingresadas y asegúrate de que sean correctas.", life: 4000 });
         return;
+    }
+
+    // Validar conflictos de fechas con otros tours
+    const fechasValidas = await validarConflictosFechas();
+    if (!fechasValidas) {
+        return; // El toast ya se muestra en la función de validación
     }
     if (!tour.value.fecha_salida || !tour.value.precio || !tour.value.categoria || !tour.value.transporte_id || !tour.value.cupo_min || !tour.value.cupo_max || imagenPreviewList.value.length === 0) {
         toast.add({ severity: "warn", summary: "Campos requeridos", detail: "Por favor verifica que todos los campos obligatorios estén completos.", life: 4000 });
@@ -761,7 +872,26 @@ const saveOrUpdate = async () => {
     }
 };
 
-const confirmDeleteTour = (t) => { tour.value = { ...t }; deleteDialog.value = true; };
+const tourDeleteInfo = ref(null);
+
+const confirmDeleteTour = async (t) => {
+    tour.value = { ...t };
+
+    // Obtener información sobre las reservas antes de mostrar el modal
+    try {
+        const response = await axios.get(`/api/tours/${t.id}/informacion-eliminacion`);
+        if (response.data.success) {
+            tourDeleteInfo.value = response.data;
+        } else {
+            tourDeleteInfo.value = null;
+        }
+    } catch (error) {
+        console.error('Error obteniendo información de eliminación:', error);
+        tourDeleteInfo.value = null;
+    }
+
+    deleteDialog.value = true;
+};
 
 const deleteTour = async () => {
     isDeleting.value = true;
@@ -2028,6 +2158,7 @@ const onPricePaste = (event) => {
                 :selected-images="selectedImages"
                 :image-path="IMAGE_PATH"
                 :is-deleting="isDeleting"
+                :tour-delete-info="tourDeleteInfo"
                 @duplicate="handleDuplicateTour"
                 @change-status="handleChangeStatus"
                 @generate-report="handleGenerateReport"

@@ -57,6 +57,11 @@ const props = defineProps({
     isDeleting: {
         type: Boolean,
         default: false
+    },
+    // Información sobre las reservas del tour a eliminar
+    tourDeleteInfo: {
+        type: Object,
+        default: null
     }
 });
 
@@ -118,6 +123,9 @@ const isUnsavedChangesVisible = computed({
 
 // Variable reactiva para el índice actual del carrusel
 const currentPageIndex = ref(0);
+
+// Variable para el campo de confirmación de eliminación
+const confirmationText = ref('');
 
 // Watcher para sincronizar el índice cuando cambie el prop
 watch(() => props.carouselIndex, (newIndex) => {
@@ -218,6 +226,18 @@ const closeWithoutSaving = () => {
 const continueEditing = () => {
     emit('continueEditing');
 };
+
+// Función para limpiar el campo de confirmación
+const clearConfirmation = () => {
+    confirmationText.value = '';
+};
+
+// Watcher para limpiar confirmación cuando se cierre el modal
+watch(() => props.deleteVisible, (isVisible) => {
+    if (!isVisible) {
+        clearConfirmation();
+    }
+});
 
 // Exportar el componente con un nombre específico
 defineOptions({
@@ -516,11 +536,79 @@ defineOptions({
 
     <!-- Modal de Eliminar Tour -->
     <Dialog v-model:visible="isDeleteVisible" header="Eliminar tour" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
-        <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-            <div class="flex flex-col">
-                <span>¿Estás seguro de eliminar el tour: <b>{{ tour.nombre }}</b>?</span>
-                <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
+        <div class="space-y-4">
+            <!-- Encabezado de advertencia -->
+            <div class="flex items-start gap-3">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500 mt-1" />
+                <div class="flex flex-col flex-1">
+                    <span class="text-lg font-semibold">¿Estás seguro de eliminar el tour:</span>
+                    <span class="font-bold text-blue-600 text-lg">{{ tour.nombre }}?</span>
+                    <span class="text-red-600 text-sm font-medium mt-2">Esta acción es irreversible.</span>
+                </div>
+            </div>
+
+            <!-- Información de reservas -->
+            <div v-if="tourDeleteInfo" class="border-l-4 border-red-500 bg-red-50 p-4 rounded-r-lg">
+                <div class="flex items-center gap-2 mb-3">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-5 w-5 text-red-600" />
+                    <h4 class="font-semibold text-red-800">Impacto en Reservas</h4>
+                </div>
+
+                <div v-if="tourDeleteInfo.tiene_reservas_activas" class="space-y-2">
+                    <p class="text-red-700 font-medium">
+                        Al eliminar este tour se eliminarán <strong>{{ tourDeleteInfo.total_reservas }} reserva(s)</strong>
+                        que afectan a <strong>{{ tourDeleteInfo.total_personas }} persona(s)</strong>.
+                    </p>
+
+                    <!-- Desglose por estado -->
+                    <div class="grid grid-cols-2 gap-2 mt-3 text-sm">
+                        <div v-if="tourDeleteInfo.estadisticas.PENDIENTE > 0"
+                             class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">
+                            <strong>{{ tourDeleteInfo.estadisticas.PENDIENTE }}</strong> Pendiente(s)
+                        </div>
+                        <div v-if="tourDeleteInfo.estadisticas.CONFIRMADA > 0"
+                             class="bg-green-100 text-green-800 px-2 py-1 rounded">
+                            <strong>{{ tourDeleteInfo.estadisticas.CONFIRMADA }}</strong> Confirmada(s)
+                        </div>
+                        <div v-if="tourDeleteInfo.estadisticas.REPROGRAMADA > 0"
+                             class="bg-purple-100 text-purple-800 px-2 py-1 rounded">
+                            <strong>{{ tourDeleteInfo.estadisticas.REPROGRAMADA }}</strong> Reprogramada(s)
+                        </div>
+                        <div v-if="tourDeleteInfo.estadisticas.FINALIZADA > 0"
+                             class="bg-gray-100 text-gray-800 px-2 py-1 rounded">
+                            <strong>{{ tourDeleteInfo.estadisticas.FINALIZADA }}</strong> Finalizada(s)
+                        </div>
+                    </div>
+
+                    <div class="mt-3 p-3 bg-red-100 border border-red-200 rounded">
+                        <p class="text-red-800 font-semibold text-center">
+                            TODAS estas reservas serán eliminadas permanentemente
+                        </p>
+                    </div>
+                </div>
+
+                <div v-else class="text-green-700">
+                    Este tour no tiene reservas activas. Solo se eliminará el tour y sus imágenes.
+                    <div v-if="tourDeleteInfo.estadisticas.CANCELADA > 0" class="text-gray-600 text-sm mt-1">
+                        ({{ tourDeleteInfo.estadisticas.CANCELADA }} reserva(s) cancelada(s) también serán eliminadas)
+                    </div>
+                </div>
+            </div>
+
+            <!-- Campo de confirmación -->
+            <div class="bg-gray-100 p-4 rounded-lg border">
+                <label for="confirmationInput" class="block text-gray-700 font-medium mb-2 text-center">
+                    Escribe "CONFIRMAR" para proceder con la eliminación
+                </label>
+                <input
+                    id="confirmationInput"
+                    v-model="confirmationText"
+                    type="text"
+                    class="w-full p-3 border border-gray-300 rounded-lg text-center font-bold uppercase tracking-widest"
+                    placeholder="CONFIRMAR"
+                    maxlength="9"
+                    @input="confirmationText = $event.target.value.toUpperCase()"
+                />
             </div>
         </div>
         <template #footer>
@@ -528,22 +616,19 @@ defineOptions({
                 <button
                     type="button"
                     class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    @click="confirmDelete"
-                    :disabled="isDeleting"
+                    @click="$emit('deleteTour', tour.id)"
+                    :disabled="confirmationText !== 'CONFIRMAR'"
                 >
-                    <FontAwesomeIcon
-                        :icon="isDeleting ? faSpinner : faCheck"
-                        :class="[
-                            'h-5',
-                            { 'animate-spin': isDeleting }
-                        ]"
-                    />
-                    <span v-if="!isDeleting">Eliminar</span>
-                    <span v-else>Eliminando...</span>
+                    <FontAwesomeIcon :icon="faTrashCan" class="h-5" />
+                    <span>{{ confirmationText === 'CONFIRMAR' ? 'ELIMINAR TOUR' : 'Escribe CONFIRMAR' }}</span>
                 </button>
-                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="cancelDelete" :disabled="isDeleting">
-                    <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-600 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    @click="isDeleteVisible = false"
+                >
+                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                    <span>Cancelar</span>
                 </button>
             </div>
         </template>

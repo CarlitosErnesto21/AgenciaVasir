@@ -1,28 +1,29 @@
 <template>
   <div class="lg:space-y-4 grid grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-4">
     <!-- Reservas Pendientes -->
-    <div class="p-0 rounded-2xl border-2 border-solid bg-gradient-to-br from-[#f7e7b2] via-[#f2daa0] to-[#e6c87a] shadow-md border-[#f2daa0]
-      transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer max-w-full"
-         @click="$emit('toggle-reservas-modal')">
-      <div class="flex items-stretch min-w-0">
-        <!-- Indicador lateral SOLO en md+ -->
-        <div class="hidden md:block w-2 rounded-l-2xl bg-yellow-400"></div>
-        <div class="flex-1 p-4 sm:p-6 flex flex-col justify-center min-w-0">
-          <div class="flex items-center justify-between min-w-0">
-            <div class="min-w-0 flex-1 font-sans">
-              <p class="text-xs sm:text-sm font-medium text-gray-700 truncate">{{ widgets[0].title }}</p>
-              <hr class="my-2 border-t-2 border-gray-200 opacity-30" />
-              <p class="text-lg sm:text-xl font-bold text-gray-900 mt-1">{{ widgets[0].value }}</p>
-              <p class="text-xs text-gray-500 mt-1 hidden sm:block">Click para ver detalles</p>
-              <p class="text-xs text-gray-500 mt-1 sm:hidden">Tap detalles</p>
-            </div>
-            <div class="flex items-center justify-center shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/40 rounded-full overflow-hidden ml-2">
-              <i :class="widgets[0].icon + ' text-base sm:text-xl ' + widgets[0].iconColor"></i>
+    <Link href="/tours" class="block">
+      <div class="p-0 rounded-2xl border-2 border-solid bg-gradient-to-br from-[#f7e7b2] via-[#f2daa0] to-[#e6c87a] shadow-md border-[#f2daa0]
+        transition-all duration-200 hover:scale-105 hover:shadow-lg active:scale-95 cursor-pointer max-w-full">
+        <div class="flex items-stretch min-w-0">
+          <!-- Indicador lateral SOLO en md+ -->
+          <div class="hidden md:block w-2 rounded-l-2xl bg-yellow-400"></div>
+          <div class="flex-1 p-4 sm:p-6 flex flex-col justify-center min-w-0">
+            <div class="flex items-center justify-between min-w-0">
+              <div class="min-w-0 flex-1 font-sans">
+                <p class="text-xs sm:text-sm font-medium text-gray-700 truncate">{{ widgets[0].title }}</p>
+                <hr class="my-2 border-t-2 border-gray-200 opacity-30" />
+                <p class="text-lg sm:text-xl font-bold text-gray-900 mt-1">{{ widgets[0].value }}</p>
+                <p class="text-xs text-gray-500 mt-1 hidden sm:block">Click para ir a Tours</p>
+                <p class="text-xs text-gray-500 mt-1 sm:hidden">Ir a Tours</p>
+              </div>
+              <div class="flex items-center justify-center shrink-0 w-8 h-8 sm:w-10 sm:h-10 bg-white/40 rounded-full overflow-hidden ml-2">
+                <i :class="widgets[0].icon + ' text-base sm:text-xl ' + widgets[0].iconColor"></i>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </Link>
 
     <!-- Productos Stock Bajo -->
     <div class="p-0 rounded-2xl border-2 border-solid bg-gradient-to-br from-[#f5b8b8] via-[#e7a6a6] to-[#d88a8a] shadow-md border-[#e7a6a6]
@@ -73,6 +74,8 @@
 </template>
 
 <script setup>
+import { Link } from '@inertiajs/vue3';
+
 defineProps({
     widgets: {
         type: Array,
@@ -88,5 +91,5 @@ defineProps({
     }
 });
 
-defineEmits(['toggle-reservas-modal', 'toggle-stock-modal']);
+defineEmits(['toggle-stock-modal']);
 </script>

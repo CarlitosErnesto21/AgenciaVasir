@@ -205,7 +205,7 @@ onBeforeUnmount(() => {
                         <img
                             src="/images/logo.png"
                             alt="Logo VASIR"
-                            class="w-16 h-5 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
+                            class="h-8 sm:w-22 sm:h-7 md:w-28 md:h-10 lg:w-32 lg:h-12 inline-block align-middle group-hover:scale-105 transition-transform duration-300 drop-shadow-sm" />
                     </Link>
                 </div>
 
@@ -633,7 +633,7 @@ onBeforeUnmount(() => {
 
             <!-- Sidebar de escritorio profesional -->
             <aside
-                class="w-64 fixed top-16 left-0 h-[calc(100vh-64px-44px)] bg-gradient-to-b from-red-600 via-red-600 to-red-500 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden lg:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
+                class="w-64 fixed top-20 left-0 h-[calc(100vh-64px-44px)] bg-gradient-to-b from-red-600 via-red-600 to-red-500 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden lg:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
             >
                 <!-- Elementos decorativos -->
                 <div class="absolute inset-0 bg-gradient-to-br from-red-100/20 via-transparent to-red-100/20 pointer-events-none"></div>

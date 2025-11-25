@@ -42,6 +42,14 @@ class Tour extends Model
         'precio'
     ];
 
+    protected $casts = [
+        'fecha_salida' => 'datetime',
+        'fecha_regreso' => 'datetime',
+        'precio' => 'decimal:2',
+        'cupo_min' => 'integer',
+        'cupo_max' => 'integer',
+    ];
+
     public function transporte()
     {
         return $this->belongsTo(Transporte::class);

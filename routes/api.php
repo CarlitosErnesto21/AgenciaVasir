@@ -130,6 +130,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('clientes', ClienteController::class);
         Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
         Route::put('tours/{id}/finalizar', [TourController::class, 'finalizarTour']);
+        Route::get('tours/{id}/verificar-reservas', [TourController::class, 'verificarReservas']);
+        Route::get('tours/{id}/informacion-eliminacion', [TourController::class, 'informacionEliminacion']);
+        Route::post('tours/validar-fechas', [TourController::class, 'validarFechasTour']);
+        Route::post('tours/validar-conflictos-fechas', [TourController::class, 'validarConflictosFechas']);
         // Ruta adicional para estadísticas de hoteles
         Route::get('hoteles/{id}/estadisticas', [HotelController::class, 'obtenerEstadisticas']);
 

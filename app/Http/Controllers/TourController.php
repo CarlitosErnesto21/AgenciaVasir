@@ -299,24 +299,102 @@ class TourController extends Controller
     }
 
     /**
+     * Obtener información sobre las reservas de un tour antes de eliminarlo
+     */
+    public function informacionEliminacion($id)
+    {
+        try {
+            $tour = Tour::findOrFail($id);
+
+            // Contar reservas asociadas por estado
+            $reservas = DetalleReservaTour::where('tour_id', $id)
+                ->with('reserva')
+                ->get();
+
+            $estadisticas = [
+                'PENDIENTE' => 0,
+                'CONFIRMADA' => 0,
+                'REPROGRAMADA' => 0,
+                'FINALIZADA' => 0,
+                'CANCELADA' => 0
+            ];
+
+            $totalPersonas = 0;
+            foreach ($reservas as $detalle) {
+                if ($detalle->reserva) {
+                    $estado = $detalle->reserva->estado;
+                    if (isset($estadisticas[$estado])) {
+                        $estadisticas[$estado]++;
+                        if ($estado !== 'CANCELADA') {
+                            $totalPersonas += $detalle->cupos_reservados;
+                        }
+                    }
+                }
+            }
+
+            $totalReservas = array_sum($estadisticas) - $estadisticas['CANCELADA'];
+
+            return response()->json([
+                'success' => true,
+                'tour_nombre' => $tour->nombre,
+                'total_reservas' => $totalReservas,
+                'total_personas' => $totalPersonas,
+                'estadisticas' => $estadisticas,
+                'tiene_reservas_activas' => $totalReservas > 0
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener información del tour'
+            ], 500);
+        }
+    }
+
+    /**
      * Remove the specified resource from storage.
      */
     public function destroy($id)
     {
-        $tour = Tour::findOrFail($id);
-        $tour->loadMissing(['imagenes', 'transporte']);
+        try {
+            $tour = Tour::findOrFail($id);
+            $tour->loadMissing(['imagenes', 'transporte']);
 
-        // Eliminar imágenes físicas y registros usando Storage Laravel
-        foreach ($tour->imagenes as $imagen) {
-            Storage::disk('public')->delete('tours/' . $imagen->nombre);
-            $imagen->forceDelete();
+            // Eliminar todas las reservas asociadas y sus detalles
+            $detallesReserva = DetalleReservaTour::where('tour_id', $id)->get();
+
+            foreach ($detallesReserva as $detalle) {
+                // Obtener la reserva
+                $reserva = $detalle->reserva;
+
+                if ($reserva) {
+                    // Eliminar otros detalles de la reserva si existen
+                    $reserva->detallesTours()->delete();
+                    // Eliminar la reserva completa
+                    $reserva->delete();
+                }
+            }
+
+            // Eliminar imágenes físicas y registros usando Storage Laravel
+            foreach ($tour->imagenes as $imagen) {
+                Storage::disk('public')->delete('tours/' . $imagen->nombre);
+                $imagen->forceDelete();
+            }
+
+            // Eliminar el tour
+            $tour->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tour y todas sus reservas asociadas eliminados exitosamente',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al eliminar el tour: ' . $e->getMessage()
+            ], 500);
         }
-
-        $tour->delete();
-
-        return response()->json([
-            'message' => 'Tour eliminado exitosamente',
-        ]);
     }
 
     /**
@@ -966,6 +1044,109 @@ class TourController extends Controller
 
         } catch (\Exception $e) {
             // Error silencioso al enviar email
+        }
+    }
+
+    /**
+     * Verificar si un tour tiene reservas asociadas
+     */
+    public function verificarReservas($id)
+    {
+        try {
+            $tour = Tour::findOrFail($id);
+
+            // Contar reservas asociadas al tour (excluyendo canceladas)
+            $cantidadReservas = DetalleReservaTour::where('tour_id', $id)
+                ->whereHas('reserva', function($query) {
+                    $query->where('estado', '!=', 'CANCELADA');
+                })
+                ->count();
+
+            return response()->json([
+                'success' => true,
+                'tiene_reservas' => $cantidadReservas > 0,
+                'cantidad_reservas' => $cantidadReservas,
+                'tour_nombre' => $tour->nombre
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al verificar las reservas del tour'
+            ], 500);
+        }
+    }
+
+    /**
+     * Valida si las fechas del tour no se superponen con tours existentes
+     */
+    public function validarFechasTour(Request $request)
+    {
+        try {
+            // Manejar diferentes formatos de fecha de manera más robusta
+            $fechaSalida = Carbon::parse($request->fecha_salida)->setTimezone('America/El_Salvador');
+            $fechaRegreso = Carbon::parse($request->fecha_regreso)->setTimezone('America/El_Salvador');
+            $tourId = $request->tour_id; // Para edición, excluir el tour actual            // Buscar tours que se superpongan con las fechas solicitadas
+            $toursConflicto = Tour::where('estado', '!=', 'CANCELADA')
+                ->where(function($query) use ($fechaSalida, $fechaRegreso) {
+                    // Caso 1: El tour nuevo inicia durante un tour existente (incluyendo mismo día)
+                    $query->where(function($subQuery) use ($fechaSalida) {
+                        $subQuery->whereDate('fecha_salida', '<=', $fechaSalida->toDateString())
+                                 ->whereDate('fecha_regreso', '>=', $fechaSalida->toDateString());
+                    })
+                    // Caso 2: El tour nuevo termina durante un tour existente (incluyendo mismo día)
+                    ->orWhere(function($subQuery) use ($fechaRegreso) {
+                        $subQuery->whereDate('fecha_salida', '<=', $fechaRegreso->toDateString())
+                                 ->whereDate('fecha_regreso', '>=', $fechaRegreso->toDateString());
+                    })
+                    // Caso 3: El tour nuevo engloba completamente un tour existente
+                    ->orWhere(function($subQuery) use ($fechaSalida, $fechaRegreso) {
+                        $subQuery->whereDate('fecha_salida', '>=', $fechaSalida->toDateString())
+                                 ->whereDate('fecha_regreso', '<=', $fechaRegreso->toDateString());
+                    })
+                    // Caso 4: Un tour existente engloba completamente el tour nuevo
+                    ->orWhere(function($subQuery) use ($fechaSalida, $fechaRegreso) {
+                        $subQuery->whereDate('fecha_salida', '<=', $fechaSalida->toDateString())
+                                 ->whereDate('fecha_regreso', '>=', $fechaRegreso->toDateString());
+                    });
+                });
+
+            // Si estamos editando, excluir el tour actual
+            if ($tourId) {
+                $toursConflicto->where('id', '!=', $tourId);
+            }
+
+            $conflictos = $toursConflicto->get(['id', 'nombre', 'fecha_salida', 'fecha_regreso']);
+
+            if ($conflictos->count() > 0) {
+                return response()->json([
+                    'success' => false,
+                    'tiene_conflictos' => true,
+                    'message' => 'Las fechas se superponen con tours existentes',
+                    'conflictos' => $conflictos->map(function($tour) {
+                        return [
+                            'id' => $tour->id,
+                            'nombre' => $tour->nombre,
+                            'fecha_salida' => $tour->fecha_salida->format('d/m/Y'),
+                            'fecha_regreso' => $tour->fecha_regreso->format('d/m/Y'),
+                            'fecha_salida_raw' => $tour->fecha_salida->format('Y-m-d'),
+                            'fecha_regreso_raw' => $tour->fecha_regreso->format('Y-m-d')
+                        ];
+                    })
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'tiene_conflictos' => false,
+                'message' => 'Las fechas están disponibles'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al validar las fechas: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
