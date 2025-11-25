@@ -59,6 +59,13 @@ const categorias = ref([]);
 const selectedCategoria = ref("");
 const selectedEstado = ref("");
 
+// 📋 Estados para modal de nueva categoría
+const nuevaCategoriaDialog = ref(false);
+const nuevaCategoria = ref({
+    nombre: ""
+});
+const isCreatingCategory = ref(false);
+
 // 🔍 Filtros
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -347,6 +354,107 @@ const handleCategoriasClick = () => {
     isNavigatingToCategorias.value = true;
     // El estado de loading se resetea automáticamente cuando se cambia de página
 };
+
+// 📋 Funciones para el modal de nueva categoría
+const crearNuevaCategoria = async () => {
+    if (!nuevaCategoria.value.nombre || nuevaCategoria.value.nombre.length < 3) {
+        toast.add({
+            severity: "warn",
+            summary: "Validación",
+            detail: "El nombre de la categoría debe tener al menos 3 caracteres.",
+            life: 4000
+        });
+        return;
+    }
+
+    if (nuevaCategoria.value.nombre.length > 30) {
+        toast.add({
+            severity: "warn",
+            summary: "Validación",
+            detail: "El nombre de la categoría no puede exceder 30 caracteres.",
+            life: 4000
+        });
+        return;
+    }
+
+    isCreatingCategory.value = true;
+    try {
+        const response = await axios.post(`/api/categorias-productos`, {
+            nombre: nuevaCategoria.value.nombre
+        });
+
+        toast.add({
+            severity: "success",
+            summary: "¡Éxito!",
+            detail: "La categoría ha sido creada correctamente.",
+            life: 5000
+        });
+
+        // Guardar el ID de la nueva categoría creada
+        const responseData = response.data;
+        const nuevaCategoriaCreada = responseData.categoria || responseData.data || responseData;
+        const nuevaCategoriaId = nuevaCategoriaCreada?.id;
+
+
+
+        // Recargar categorías
+        await fetchCategorias();
+
+        // Forzar truncado después de recargar categorías
+        forceSelectTruncation();
+
+        // Seleccionar automáticamente la nueva categoría creada después de recargar
+        if (nuevaCategoriaId) {
+            // Usar nextTick para asegurar que el DOM se actualice
+            await nextTick();            // Verificar que la categoría existe en la lista
+            const categoriaExiste = categorias.value.find(cat => cat.id === nuevaCategoriaId);
+
+            if (categoriaExiste) {
+                producto.value.categoria_id = nuevaCategoriaId;
+            }
+        }
+
+        // Cerrar modal y limpiar formulario
+        cerrarModalCategoria();
+
+    } catch (error) {
+        console.error('Error al crear categoría:', error);
+        toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: error.response?.data?.message || 'Error al crear la categoría',
+            life: 4000
+        });
+    } finally {
+        isCreatingCategory.value = false;
+    }
+};
+
+// Función para manejar el input del nombre de categoría (conversión a mayúsculas)
+const onNombreCategoriaInput = (event) => {
+    nuevaCategoria.value.nombre = event.target.value.toUpperCase();
+};
+
+const cerrarModalCategoria = () => {
+    nuevaCategoriaDialog.value = false;
+    nuevaCategoria.value.nombre = "";
+};
+
+// 🔍 Función para truncar texto
+const truncateText = (text, maxLength = 10) => {
+    if (!text) return text;
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+};
+
+// 🔍 Categorías con nombres truncados para el select
+const categoriasConTruncado = computed(() => {
+    return categorias.value.map(categoria => ({
+        ...categoria,
+        nombreTruncado: truncateText(categoria.nombre, 20),
+        nombre: categoria.nombre // Mantenemos el nombre completo para búsquedas
+    }));
+});
 
 // 📝 CRUD Operations
 const openNew = () => {
@@ -1545,19 +1653,32 @@ const onStockMinimoPaste = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4 sm:gap-5">
                             <label for="categoria_id" class="w-36 sm:w-32 flex items-center gap-1">
-                                Categoría: <span class="text-red-500 font-bold">*</span>
+                                Categ.: <span class="text-red-500 font-bold">*</span>
                             </label>
-                            <Select
-                                v-model="producto.categoria_id"
-                                :options="categoriasConTextoTruncado"
-                                :optionLabel="(option) => windowWidth.value < 640 ? option.nombreTruncado : option.nombre"
-                                optionValue="id"
-                                id="categoria_id"
-                                name="categoria_id"
-                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500"
-                                placeholder="Seleccionar"
-                                :class="{'p-invalid': submitted && !producto.categoria_id}"
-                            />
+                            <div class="flex items-center gap-2 flex-1">
+                                <Select
+                                    v-model="producto.categoria_id"
+                                    :options="categoriasConTruncado"
+                                    optionLabel="nombreTruncado"
+                                    optionValue="id"
+                                    id="categoria_id"
+                                    name="categoria_id"
+                                    :filter="true"
+                                    filterPlaceholder="Buscar categoría..."
+                                    :showClear="false"
+                                    class="w-12 sm:w-64 ml-8 rounded-md border-2 border-gray-400 hover:border-gray-500 truncate-select"
+                                    placeholder="Seleccionar categoría"
+                                    :class="{'p-invalid': submitted && !producto.categoria_id}"
+                                />
+                                <button
+                                    type="button"
+                                    @click="nuevaCategoriaDialog = true"
+                                    class="bg-green-500 hover:bg-green-600 text-white p-1 rounded-full transition-all duration-200 ease-in-out -ml-1 flex items-center justify-center min-w-[10px]"
+                                    title="Agregar nueva categoría"
+                                >
+                                    <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                </button>
+                            </div>
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !producto.categoria_id">
                             La categoría es obligatoria.
@@ -1708,6 +1829,81 @@ const onStockMinimoPaste = (event) => {
                             <span v-else>{{ btnTitle === 'Guardar' ? 'Guardando...' : 'Actualizando...' }}</span>
                         </button>
                         <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2" @click="hideDialog" :disabled="isLoading">
+                            <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
+                        </button>
+                    </div>
+                </template>
+            </Dialog>
+
+            <!-- Modal para crear nueva categoría -->
+            <Dialog
+                v-model:visible="nuevaCategoriaDialog"
+                header="Agregar Nueva Categoría"
+                :modal="true"
+                :style="dialogStyle"
+                :closable="false"
+                :draggable="false"
+            >
+                <div class="space-y-4">
+                    <div class="w-full flex flex-col">
+                        <div class="flex items-center gap-4">
+                            <label for="nombreCategoria" class="w-24 flex items-center gap-1">
+                                Nombre: <span class="text-red-500 font-bold">*</span>
+                            </label>
+                            <InputText
+                                v-model.trim="nuevaCategoria.nombre"
+                                id="nombreCategoria"
+                                name="nombreCategoria"
+                                :maxlength="30"
+                                class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :class="{
+                                    'border-red-400 focus:border-red-500': nuevaCategoria.nombre && nuevaCategoria.nombre.length > 30,
+                                    'border-orange-400 focus:border-orange-500': nuevaCategoria.nombre && nuevaCategoria.nombre.length > 25 && nuevaCategoria.nombre.length <= 30
+                                }"
+                                placeholder="CATEGORÍA (MAX 30 CARACTERES)"
+                                style="text-transform: uppercase;"
+                                @input="onNombreCategoriaInput"
+                                @keyup.enter="crearNuevaCategoria"
+                            />
+                        </div>
+                        <small class="text-gray-500 ml-28 text-xs" v-if="nuevaCategoria.nombre">
+                            Caracteres: {{ nuevaCategoria.nombre.length }}/30
+                        </small>
+                        <small class="text-red-500 ml-28" v-if="nuevaCategoria.nombre && nuevaCategoria.nombre.length < 3">
+                            El nombre debe tener al menos 3 caracteres.
+                        </small>
+                        <small class="text-orange-500 ml-28" v-if="nuevaCategoria.nombre && nuevaCategoria.nombre.length > 25 && nuevaCategoria.nombre.length <= 30">
+                            Te quedan {{ 30 - nuevaCategoria.nombre.length }} caracteres
+                        </small>
+                        <small class="text-red-500 ml-28" v-if="nuevaCategoria.nombre && nuevaCategoria.nombre.length > 30">
+                            Has excedido el límite por {{ nuevaCategoria.nombre.length - 30 }} caracteres
+                        </small>
+                    </div>
+                </div>
+
+                <template #footer>
+                    <div class="flex justify-center gap-4 w-full mt-6">
+                        <button
+                            class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            @click="crearNuevaCategoria"
+                            :disabled="isCreatingCategory || !nuevaCategoria.nombre || nuevaCategoria.nombre.length < 3 || nuevaCategoria.nombre.length > 30"
+                        >
+                            <FontAwesomeIcon
+                                :icon="isCreatingCategory ? faSpinner : faCheck"
+                                :class="[
+                                    'h-5 text-white',
+                                    { 'animate-spin': isCreatingCategory }
+                                ]"
+                            />
+                            <span v-if="!isCreatingCategory">Guardar</span>
+                            <span v-else>Guardando...</span>
+                        </button>
+                        <button
+                            type="button"
+                            class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                            @click="cerrarModalCategoria"
+                            :disabled="isCreatingCategory"
+                        >
                             <FontAwesomeIcon :icon="faXmark" class="h-5" />Cancelar
                         </button>
                     </div>
@@ -1905,5 +2101,113 @@ select {
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     appearance: none !important;
+}
+
+/* Truncado específico para Select de categoría */
+.truncate-select .p-select-label,
+.truncate-select .p-placeholder {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 1.5rem) !important;
+    display: block !important;
+    padding-right: 0rem !important;
+}
+
+.truncate-select .p-inputtext {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: calc(100% - 1.5rem) !important;
+    display: block !important;
+    padding-right: 0rem !important;
+}
+
+/* Asegurar que el contenedor del select también respete el ancho */
+.truncate-select {
+    position: relative !important;
+    max-width: none !important;
+    padding-right: 1.2rem !important;
+}
+
+.truncate-select .p-select {
+    min-width: 0 !important;
+}
+
+/* Reducir espacio del trigger (flecha) - Escritorio */
+.truncate-select .p-select-trigger {
+    position: absolute !important;
+    right: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+.truncate-select .p-select-dropdown {
+    position: absolute !important;
+    right: 0 !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    flex-shrink: 0 !important;
+}
+
+/* Responsivo: en móviles aún más pequeño */
+@media (max-width: 640px) {
+    .truncate-select .p-select-label,
+    .truncate-select .p-placeholder,
+    .truncate-select .p-inputtext {
+        max-width: calc(100% - 1.2rem) !important;
+        padding-right: 0 !important;
+    }
+
+    .truncate-select .p-select-trigger {
+        position: absolute !important;
+        right: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .truncate-select .p-select-dropdown {
+        position: absolute !important;
+        right: 0 !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        width: 1.5rem !important;
+        height: 1.5rem !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    .truncate-select {
+        position: relative !important;
+        padding-right: 1.2rem !important;
+    }
+}
+
+/* Truncado en las opciones del dropdown */
+.p-select-overlay .p-select-option {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+}
+
+.p-select-overlay .p-select-option-label {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+    display: block !important;
 }
 </style>

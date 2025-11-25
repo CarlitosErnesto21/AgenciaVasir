@@ -62,12 +62,12 @@
             font-style: italic;
         }
 
-        /* Estadísticas Generales */
+        /* Estadísticas Generales - Estilo reservas-cliente */
         .estadisticas-generales {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
-            margin-bottom: 12px;
+            margin-bottom: 20px;
             padding: 0 20px;
         }
         .estadistica-card {
@@ -81,12 +81,12 @@
         .estadistica-card.stock-bajo { border-left: 4px solid #ffc107; }
         .estadistica-card.agotados { border-left: 4px solid #dc3545; }
         .estadistica-numero {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: bold;
             margin-bottom: 4px;
         }
         .estadistica-label {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #666;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -101,12 +101,14 @@
             font-size: 1.1rem;
             font-weight: bold;
             color: #495057;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             padding: 8px 12px;
             background: #f8f9fa;
             border-left: 4px solid #007bff;
             margin-left: 20px;
             margin-right: 20px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
         }
         .tabla-inventario {
             width: 95%;
@@ -147,18 +149,21 @@
         .estado-stock-bajo { color: #ffc107; font-weight: bold; }
         .estado-agotado { color: #dc3545; font-weight: bold; }
 
-        /* Resumen por categoría */
+        /* Resumen por categoría - Estilo reservas-cliente */
         .resumen-categoria {
-            background: #e9ecef;
-            border-radius: 6px;
-            padding: 8px;
-            margin: 10px 20px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 20px;
         }
         .categoria-header {
             font-weight: bold;
             color: #495057;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
         }
         .categoria-stats {
             display: grid;
@@ -168,9 +173,10 @@
         }
         .categoria-stat {
             text-align: center;
-            padding: 4px;
+            padding: 8px;
             background: #fff;
-            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
         }
 
         /* Movimientos recientes */
@@ -219,17 +225,14 @@ if (file_exists($logoPath)) {
             @else
                 <div style="width: 90px; height: 60px; background: #991b1b; color: white; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.7rem;">VASIR</div>
             @endif
-            <div class="business-details">
-                <div class="business-info">
-                    Dirección: Chalatenango, El Salvador<br>
-                    Teléfono: +503 7985 8777<br>
-                    Correo: {{ config('mail.from.address', 'vasirtours19@gmail.com') }}
-                </div>
-            </div>
         </div>
         <div class="fecha">
             Fecha de emisión: {{ $fecha_emision }}
         </div>
+    </div>
+    <!-- Usuario que descarga -->
+    <div style="text-align: center; margin-bottom: 15px; padding: 8px 20px; background: #f8f9fa; border-left: 4px solid #495057; font-size: 0.8rem; color: #666;">
+        <strong>Descargado por:</strong> {{ $usuario_descarga['nombre'] ?? 'Usuario no identificado' }} ({{ $usuario_descarga['email'] ?? 'Email no disponible' }})
     </div>
 
     <!-- Report Title & Description -->

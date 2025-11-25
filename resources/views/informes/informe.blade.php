@@ -81,13 +81,13 @@
             background: #f7fafc;
         }
         .th-informe {
-            background: #991b1b;
+            background: #495057;
             color: #fff;
-            border-bottom: 2px solid #c53030;
-            padding: 5px 2px;
+            border-bottom: 2px solid #495057;
+            padding: 8px 6px;
             font-weight: 700;
             text-align: center;
-            font-size: 0.82rem;
+            font-size: 0.7rem;
             letter-spacing: 0.1px;
         }
         .tabla-informe tbody tr:nth-child(even) {
@@ -104,12 +104,12 @@
             font-size: 0.80rem;
         }
         .td-informe-total {
-            border-top: 2px solid #991b1b;
+            border-top: 2px solid #495057;
             font-weight: bold;
-            background: #fbe9e9;
-            color: #991b1b;
+            background: #f8f9fa;
+            color: #495057;
             text-align: center;
-            padding: 5px 2px;
+            padding: 8px;
             font-size: 0.85rem;
         }
         tfoot td {
@@ -148,50 +148,46 @@
             margin-left: auto;
             margin-right: auto;
         }
-        /* Resumen mensual (3 columnas horizontales) */
+        /* Resumen mensual (3 columnas horizontales) - Estilo reservas-cliente */
         .resumen-mes {
-            width: 92%;
-            max-width: 920px;
-            margin: 8px auto 14px auto;
-            padding: 12px;
-            background: #ffffff;
-            border-radius: 8px;
-            border: 1px solid #e6eef9;
-            box-shadow: 0 1px 4px rgba(14, 31, 66, 0.04);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+            padding: 0 20px;
         }
         .resumen-mes-header {
             font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            color: #495057;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 5px;
+            grid-column: 1 / -1;
         }
         .resumen-mes-stats {
-            text-align: center;
-            font-size: 0; /* Remove whitespace between inline-block elements */
+            display: contents;
         }
         .resumen-stat {
-            display: inline-block;
-            width: 30%;
-            margin: 0 1.5%;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 12px;
             text-align: center;
-            padding: 10px 8px;
-            background: linear-gradient(180deg, #fbfdff 0%, #f3f8ff 100%);
-            border-radius: 6px;
-            border: 1px solid #e6eef9;
-            vertical-align: top;
-            font-size: 12px; /* Reset font size */
         }
+        .resumen-stat.tours { border-left: 4px solid #007bff; }
+        .resumen-stat.cupos { border-left: 4px solid #28a745; }
+        .resumen-stat.ingresos { border-left: 4px solid #ffc107; }
         .resumen-stat-numero {
-            font-size: 1.15rem;
-            font-weight: 700;
-            color: #7c1d1d;
+            font-size: 1.6rem;
+            font-weight: bold;
             margin-bottom: 4px;
         }
         .resumen-stat-label {
-            color: #64748b;
-            font-size: 0.72rem;
-            font-weight: 600;
-            letter-spacing: 0.6px;
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         /* Tarjeta de total general más limpia */
@@ -227,6 +223,10 @@
             Fecha de emisión: {{ $fecha_emision }}
         </div>
     </div>
+    <!-- Usuario que descarga -->
+    <div style="text-align: center; margin-bottom: 15px; padding: 8px 20px; background: #f8f9fa; border-left: 4px solid #7c1d1d; font-size: 0.8rem; color: #666;">
+        <strong>Descargado por:</strong> {{ $usuario_descarga['nombre'] ?? 'Usuario no identificado' }} ({{ $usuario_descarga['email'] ?? 'Email no disponible' }})
+    </div>
     <!-- Report Title & Description -->
     <div class="header">
         <div class="titulo">{{ $titulo }}</div>
@@ -253,16 +253,16 @@
             <div class="resumen-mes">
                 <div class="resumen-mes-header">Resumen del Mes</div>
                 <div class="resumen-mes-stats">
-                    <div class="resumen-stat">
-                        <div class="resumen-stat-numero">{{ $totalTours }}</div>
+                    <div class="resumen-stat tours">
+                        <div class="resumen-stat-numero" style="color: #007bff;">{{ $totalTours }}</div>
                         <div class="resumen-stat-label">TOURS</div>
                     </div>
-                    <div class="resumen-stat">
-                        <div class="resumen-stat-numero">{{ $totalCupos }}</div>
+                    <div class="resumen-stat cupos">
+                        <div class="resumen-stat-numero" style="color: #28a745;">{{ $totalCupos }}</div>
                         <div class="resumen-stat-label">CUPOS VENDIDOS</div>
                     </div>
-                    <div class="resumen-stat">
-                        <div class="resumen-stat-numero">${{ number_format($totalMes, 2) }}</div>
+                    <div class="resumen-stat ingresos">
+                        <div class="resumen-stat-numero" style="color: #ffc107;">${{ number_format($totalMes, 2) }}</div>
                         <div class="resumen-stat-label">INGRESOS</div>
                     </div>
                 </div>

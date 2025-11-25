@@ -5,7 +5,7 @@ import Textarea from 'primevue/textarea';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import {
   faCheck, faXmark, faCalendarDays, faEye,
-  faExclamationTriangle, faInfoCircle, faSpinner, faTimes
+  faExclamationTriangle, faInfoCircle, faSpinner, faTimes, faPhone
 } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
@@ -387,49 +387,47 @@ onUnmounted(() => {
             <span class="font-medium text-gray-700">Documento:</span>
             <span class="ml-2">{{ reserva.cliente?.numero_identificacion || 'Problema al obtener documento o no existe' }}</span>
           </div>
-          <div class="break-words">
+          <div class="flex flex-col gap-1">
             <span class="font-medium text-gray-700">Email:</span>
-            <span class="ml-2">
-              <template v-if="(reserva.cliente?.user?.email) || (reserva.cliente?.correo)">
-                <div class="flex flex-col">
-                  <a
-                    :href="`https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(reserva.cliente?.user?.email || reserva.cliente?.correo)}`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-blue-600 hover:underline flex items-center gap-1"
-                  >
-                    <FontAwesomeIcon :icon="faEnvelope" class="h-4 w-4 mr-1" />
-                    {{ reserva.cliente?.user?.email || reserva.cliente?.correo }}
-                  </a>
-                  <span class="text-xs text-blue-700 mt-1">Toca para escribir por Gmail</span>
-                </div>
-              </template>
-              <template v-else>
-                Problema al obtener email o no existe
-              </template>
-            </span>
+            <div v-if="(reserva.cliente?.user?.email) || (reserva.cliente?.correo)" class="flex flex-wrap items-center gap-2">
+              <span class="text-xs sm:text-sm break-all">{{ reserva.cliente?.user?.email || reserva.cliente?.correo }}</span>
+              <a
+                :href="`mailto:${reserva.cliente?.user?.email || reserva.cliente?.correo}`"
+                class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200"
+                title="Enviar correo electrónico"
+              >
+                <FontAwesomeIcon :icon="faEnvelope" class="h-3 w-3" />
+                <span class="hidden sm:inline">Enviar Email</span>
+              </a>
+            </div>
+            <span v-else class="text-gray-500 italic text-xs sm:text-sm">Problema al obtener email o no existe</span>
           </div>
-          <div>
+          <div class="flex flex-col gap-1">
             <span class="font-medium text-gray-700">Teléfono:</span>
-            <span class="ml-2">
-              <template v-if="reserva.cliente?.telefono">
-                <div class="flex flex-col">
-                  <a
-                    :href="`https://wa.me/${reserva.cliente.telefono.replace(/[^\d]/g, '')}`"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="text-green-600 hover:underline flex items-center gap-1"
-                  >
-                    <FontAwesomeIcon :icon="faWhatsapp" class="h-4 w-4 mr-1" />
-                    {{ reserva.cliente.telefono }}
-                  </a>
-                  <span class="text-xs text-green-700 mt-1">Toca para contactar por WhatsApp</span>
-                </div>
-              </template>
-              <template v-else>
-                Problema al obtener teléfono o no existe
-              </template>
-            </span>
+            <div v-if="reserva.cliente?.telefono" class="flex flex-wrap items-center gap-2">
+              <span class="text-xs sm:text-sm">{{ reserva.cliente.telefono }}</span>
+              <div class="flex gap-1">
+                <a
+                  :href="`https://wa.me/${reserva.cliente.telefono.replace(/[^0-9]/g, '')}`"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="inline-flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md transition-colors duration-200"
+                  title="Enviar mensaje por WhatsApp"
+                >
+                  <FontAwesomeIcon :icon="faWhatsapp" class="h-3 w-3" />
+                  <span class="hidden sm:inline">WhatsApp</span>
+                </a>
+                <a
+                  :href="`tel:${reserva.cliente.telefono}`"
+                  class="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md transition-colors duration-200"
+                  title="Llamar por teléfono"
+                >
+                  <FontAwesomeIcon :icon="faPhone" class="h-3 w-3" />
+                  <span class="hidden sm:inline">Llamar</span>
+                </a>
+              </div>
+            </div>
+            <span v-else class="text-gray-500 italic text-xs sm:text-sm">Problema al obtener teléfono o no existe</span>
           </div>
         </div>
       </div>

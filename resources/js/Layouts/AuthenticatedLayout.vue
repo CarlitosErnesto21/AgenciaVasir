@@ -633,7 +633,7 @@ onBeforeUnmount(() => {
 
             <!-- Sidebar de escritorio profesional -->
             <aside
-                class="w-64 fixed top-20 left-0 h-[calc(100vh-64px-44px)] bg-gradient-to-b from-red-600 via-red-600 to-red-500 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden lg:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
+                class="w-64 fixed top-20 left-0 h-[calc(100vh-64px-60px)] bg-gradient-to-b from-red-600 via-red-600 to-red-500 backdrop-blur-xl text-white transition-all duration-300 ease-in-out shadow-2xl z-40 pt-6 hidden lg:flex flex-col border-r border-red-100/50 overflow-x-visible overflow-y-auto"
             >
                 <!-- Elementos decorativos -->
                 <div class="absolute inset-0 bg-gradient-to-br from-red-100/20 via-transparent to-red-100/20 pointer-events-none"></div>

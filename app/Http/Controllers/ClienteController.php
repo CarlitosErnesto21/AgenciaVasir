@@ -3,8 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Cliente;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\AccountDeletedByAdminMail;
 use Inertia\Inertia;
 
 class ClienteController extends Controller
@@ -12,7 +16,44 @@ class ClienteController extends Controller
     // Vista de configuración de clientes (Inertia)
     public function index()
     {
-        $clientes = Cliente::with(['user'])->get();
+        // Obtener todos los usuarios con el rol 'Cliente' incluyendo sus datos de cliente si existen
+        $clientes = User::whereHas('roles', function($query) {
+            $query->where('name', 'Cliente');
+        })
+        ->with(['cliente']) // Cargar relación cliente si existe
+        ->get()
+        ->map(function($user) {
+            // Si el usuario tiene datos de cliente, combinar la información
+            if ($user->cliente) {
+                return [
+                    'id' => $user->cliente->id,
+                    'user_id' => $user->id,
+                    'user' => $user,
+                    'numero_identificacion' => $user->cliente->numero_identificacion,
+                    'fecha_nacimiento' => $user->cliente->fecha_nacimiento,
+                    'genero' => $user->cliente->genero,
+                    'tipo_documento' => $user->cliente->tipo_documento,
+                    'direccion' => $user->cliente->direccion,
+                    'telefono' => $user->cliente->telefono,
+                    'created_at' => $user->cliente->created_at,
+                    'updated_at' => $user->cliente->updated_at,
+                ];
+            }
+            // Si no tiene datos de cliente, crear estructura con datos básicos del usuario
+            return [
+                'id' => null, // Sin ID de cliente
+                'user_id' => $user->id,
+                'user' => $user,
+                'numero_identificacion' => 'No registrado',
+                'fecha_nacimiento' => null,
+                'genero' => 'No registrado',
+                'tipo_documento' => 'No registrado',
+                'direccion' => 'No registrada',
+                'telefono' => 'No registrado',
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+        });
 
         return Inertia::render('Configuracion/Clientes', [
             'clientes' => $clientes
@@ -22,7 +63,45 @@ class ClienteController extends Controller
     // API para obtener clientes (JSON)
     public function getClientes()
     {
-        $clientes = Cliente::with(['user'])->get();
+        // Obtener todos los usuarios con el rol 'Cliente' incluyendo sus datos de cliente si existen
+        $clientes = User::whereHas('roles', function($query) {
+            $query->where('name', 'Cliente');
+        })
+        ->with(['cliente']) // Cargar relación cliente si existe
+        ->get()
+        ->map(function($user) {
+            // Si el usuario tiene datos de cliente, combinar la información
+            if ($user->cliente) {
+                return [
+                    'id' => $user->cliente->id,
+                    'user_id' => $user->id,
+                    'user' => $user,
+                    'numero_identificacion' => $user->cliente->numero_identificacion,
+                    'fecha_nacimiento' => $user->cliente->fecha_nacimiento,
+                    'genero' => $user->cliente->genero,
+                    'tipo_documento' => $user->cliente->tipo_documento,
+                    'direccion' => $user->cliente->direccion,
+                    'telefono' => $user->cliente->telefono,
+                    'created_at' => $user->cliente->created_at,
+                    'updated_at' => $user->cliente->updated_at,
+                ];
+            }
+            // Si no tiene datos de cliente, crear estructura con datos básicos del usuario
+            return [
+                'id' => null, // Sin ID de cliente
+                'user_id' => $user->id,
+                'user' => $user,
+                'numero_identificacion' => 'No registrado',
+                'fecha_nacimiento' => null,
+                'genero' => 'No registrado',
+                'tipo_documento' => 'No registrado',
+                'direccion' => 'No registrada',
+                'telefono' => 'No registrado',
+                'created_at' => $user->created_at,
+                'updated_at' => $user->updated_at,
+            ];
+        });
+
         return response()->json([
             'success' => true,
             'clientes' => $clientes
@@ -343,15 +422,101 @@ class ClienteController extends Controller
         return response()->json($cliente);
     }
 
-    // Eliminar un cliente
-    public function destroy($id)
+    // Eliminar un usuario con rol cliente y todos sus datos relacionados
+    public function destroy(Request $request, $id)
     {
-        $cliente = Cliente::findOrFail($id);
-        $cliente->delete();
-        return response()->json(['message' => 'Cliente eliminado correctamente']);
-    }
+        try {
+            DB::beginTransaction();
 
-    // Obtener datos del cliente autenticado
+            // El $id ahora puede ser user_id (si no tiene registro de cliente) o cliente_id
+            // Primero intentar encontrar por cliente_id, si no existe, buscar por user_id
+            $user = null;
+            $cliente = null;
+
+            if ($id) {
+                // Intentar encontrar cliente por ID
+                $cliente = Cliente::with(['user', 'reservas', 'ventas'])->find($id);
+
+                if ($cliente) {
+                    $user = $cliente->user;
+                } else {
+                    // Si no se encuentra cliente, buscar usuario directamente con rol Cliente
+                    $user = User::whereHas('roles', function($query) {
+                        $query->where('name', 'Cliente');
+                    })->with(['cliente.reservas', 'cliente.ventas'])->findOrFail($id);
+
+                    $cliente = $user->cliente; // Puede ser null si no tiene datos de cliente
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            // Obtener el motivo de eliminación del request
+            $deletionReason = $request->input('deletion_reason', 'No se especificó un motivo');
+
+            // Información del usuario antes de eliminar
+            $userInfo = [
+                'nombre' => $user->name,
+                'email' => $user->email,
+                'reservas_count' => $cliente ? $cliente->reservas->count() : 0,
+                'ventas_count' => $cliente ? $cliente->ventas->count() : 0
+            ];
+
+            // Enviar correo de notificación antes de eliminar
+            try {
+                Mail::to($user->email)->send(new AccountDeletedByAdminMail($user, $deletionReason));
+            } catch (\Exception $mailException) {
+                Log::warning('No se pudo enviar el correo de eliminación de cuenta: ' . $mailException->getMessage());
+                // Continuar con la eliminación aunque falle el envío del correo
+            }
+
+            // Si el usuario tiene datos de cliente, eliminar datos asociados
+            if ($cliente) {
+                // 1. Eliminar todas las reservas del cliente
+                foreach ($cliente->reservas as $reserva) {
+                    // Eliminar detalles de la reserva de tours si existen
+                    $reserva->detallesTours()->delete();
+
+                    // Eliminar la reserva
+                    $reserva->delete();
+                }
+
+                // 2. Eliminar todas las ventas del cliente
+                foreach ($cliente->ventas as $venta) {
+                    // Eliminar detalles de la venta
+                    $venta->detalleVentas()->delete();
+
+                    // Eliminar pagos asociados a la venta
+                    $venta->pagos()->delete();
+
+                    // Eliminar la venta
+                    $venta->delete();
+                }
+            }
+
+            // 3. Eliminar el usuario (esto también eliminará el cliente por el evento booted si existe)
+            $user->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Usuario cliente eliminado correctamente junto con todos sus datos. Se ha enviado una notificación por correo.',
+                'info' => $userInfo,
+                'deletion_reason' => $deletionReason
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+
+            return response()->json([
+                'message' => 'Error al eliminar el cliente: ' . $e->getMessage()
+            ], 500);
+        }
+    }    // Obtener datos del cliente autenticado
     public function obtenerDatosAutenticado(Request $request)
     {
         $user = $request->user();
@@ -558,28 +723,48 @@ class ClienteController extends Controller
         ], 201);
     }
 
-    // Mostrar reservas del cliente
-    public function reservas($id)
+
+
+    // Buscar clientes por nombre (API para informes)
+    public function buscarClientes(Request $request)
     {
-        $cliente = Cliente::with(['user'])->findOrFail($id);
-        $reservas = $cliente->reservas()->with(['empleado.user'])->orderBy('fecha', 'desc')->get();
+        $query = $request->get('q', '');
 
-        return Inertia::render('Configuracion/ClienteComponents/ReservasCliente', [
-            'cliente' => $cliente,
-            'reservas' => $reservas
-        ]);
-    }
+        if (strlen($query) < 2) {
+            return response()->json(['clientes' => []]);
+        }
 
-    // Mostrar ventas del cliente
-    public function ventas($id)
-    {
-        $cliente = Cliente::with(['user'])->findOrFail($id);
-        $ventas = $cliente->ventas()->with(['detalleVentas.producto'])->orderBy('fecha', 'desc')->get();
+        try {
+            // Buscar usuarios con rol Cliente que coincidan con el nombre
+            $usuarios = User::whereHas('roles', function($q) {
+                $q->where('name', 'Cliente');
+            })
+            ->where('name', 'LIKE', "%{$query}%")
+            ->with(['cliente'])
+            ->limit(10)
+            ->get();
 
-        return Inertia::render('Configuracion/ClienteComponents/VentasCliente', [
-            'cliente' => $cliente,
-            'ventas' => $ventas
-        ]);
+            $clientes = $usuarios->map(function($user) {
+                return [
+                    'id' => $user->cliente ? $user->cliente->id : null,
+                    'user_id' => $user->id,
+                    'user' => [
+                        'name' => $user->name,
+                        'email' => $user->email,
+                    ],
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'numero_identificacion' => $user->cliente ? $user->cliente->numero_identificacion : null,
+                    'telefono' => $user->cliente ? $user->cliente->telefono : null,
+                ];
+            });
+
+            return response()->json(['clientes' => $clientes]);
+
+        } catch (\Exception $e) {
+            Log::error('Error buscando clientes: ' . $e->getMessage());
+            return response()->json(['clientes' => []], 500);
+        }
     }
 
     // Validar teléfono único en tiempo real

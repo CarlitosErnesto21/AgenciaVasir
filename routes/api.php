@@ -127,6 +127,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
+        
+        // Rutas específicas de clientes (antes del apiResource para evitar conflictos)
+        Route::get('clientes/buscar', [ClienteController::class, 'buscarClientes']);
         Route::apiResource('clientes', ClienteController::class);
         Route::put('tours/{id}/cambiar-estado', [TourController::class, 'cambiarEstado']);
         Route::put('tours/{id}/finalizar', [TourController::class, 'finalizarTour']);

@@ -40,8 +40,6 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
 
     Route::get('generar-informes', fn() => Inertia::render('Informes/Informes'))->name('informes');
     Route::get('clientes', [ClienteController::class, 'index'])->name('clientes');
-    Route::get('clientes/{cliente}/reservas', [ClienteController::class, 'reservas'])->name('clientes.reservas');
-    Route::get('clientes/{cliente}/ventas', [ClienteController::class, 'ventas'])->name('clientes.ventas');
     Route::get('categorias-productos', fn() => Inertia::render('Catalogos/CategoriaProductos'))->name('catProductos');
 
     Route::get('ventas', [VentaController::class, 'indexWeb'])->name('ventas');
@@ -52,6 +50,8 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     //Rutas para informes
     Route::get('/descargar-informe', [InformePDFController::class, 'descargarInforme']);
     Route::get('/descargar-informe-inventario', [InformePDFController::class, 'descargarInformeInventario']);
+    Route::get('/descargar-informe-reservas-cliente', [InformePDFController::class, 'descargarInformeReservasCliente']);
+    Route::get('/descargar-informe-ventas-cliente', [InformePDFController::class, 'descargarInformeVentasCliente']);
     Route::get('/configuracion/backup', [BackupController::class, 'showBackupPage'])->name('backups')->middleware('password.confirm');
 
     // Configuración del Sistema - Solo para Administradores

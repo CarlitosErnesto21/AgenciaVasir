@@ -1,8 +1,10 @@
 <script setup>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faEye, faTrashCan, faXmark, faSpinner, faUsers, faPencil, faUserEdit, faEnvelope, faFileText, faCalendarDays, faBagShopping } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faEye, faTrashCan, faXmark, faSpinner, faUsers, faPencil, faUserEdit, faEnvelope, faFileText, faUser, faDatabase, faChartLine, faDownload, faCalendarCheck, faShoppingCart, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import { ref, computed } from "vue";
-import { Link } from "@inertiajs/vue3";
+import { Link, router } from "@inertiajs/vue3";
+import Dialog from 'primevue/dialog';
 
 // Props recibidas desde el componente padre
 const props = defineProps({
@@ -26,7 +28,7 @@ const emit = defineEmits([
     'view-details',
     'view-reservations',
     'view-purchases',
-    'send-email',
+    'view-reports',
     'toggle-status',
     'delete-cliente',
     'cancel-delete',
@@ -34,38 +36,37 @@ const emit = defineEmits([
     'continue-editing'
 ]);
 
+// Variable para confirmación de eliminación
+const confirmationText = ref('');
+// Variable para el motivo de eliminación
+const deletionReason = ref('');
+
 // Funciones para manejar eventos
 const handleViewDetails = () => {
     isVisible.value = false; // Cerrar modal de más acciones
     emit('view-details', props.cliente);
 };
 
-const handleSendEmail = () => {
+const handleViewReports = () => {
     isVisible.value = false; // Cerrar modal de más acciones
-    emit('send-email', props.cliente);
+    // Navegar a la vista de informes usando Inertia SPA
+    router.visit('/generar-informes');
 };
 
 const handleToggleStatus = () => {
     emit('toggle-status', props.cliente);
 };
 
-const handleDeleteCliente = () => {
-    emit('delete-cliente');
-};
-
-const handleCancelDelete = () => {
-    emit('cancel-delete');
-};
-
-// Funciones específicas para el modal de eliminar
 const confirmDelete = () => {
-    emit('delete-cliente', props.cliente);
+    emit('delete-cliente', deletionReason.value);
+    confirmationText.value = ''; // Limpiar el campo
+    deletionReason.value = ''; // Limpiar el motivo
 };
 
 const cancelDelete = () => {
+    confirmationText.value = ''; // Limpiar el campo
+    deletionReason.value = ''; // Limpiar el motivo
     emit('cancel-delete');
-    // También cerrar el modal directamente
-    isDeleteVisible.value = false;
 };
 
 // Función para cerrar el modal de más acciones
@@ -152,47 +153,35 @@ const updateDetallesVisible = (value) => {
                     </div>
                 </button>
 
-                <!-- Visualizar Reservas -->
-                <Link
-                    :href="route('clientes.reservas', { cliente: cliente.id })"
-                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="closeModal"
-                >
-                    <FontAwesomeIcon :icon="faCalendarDays" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Visualizar Reservas</div>
-                        <div class="text-xs opacity-90">Historial de reservas del cliente</div>
-                    </div>
-                </Link>
 
-                <!-- Visualizar Compras -->
-                <Link
-                    :href="route('clientes.ventas', { cliente: cliente.id })"
-                    class="w-full bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="closeModal"
-                >
-                    <FontAwesomeIcon :icon="faBagShopping" class="h-5 w-5" />
-                    <div class="text-left flex-1">
-                        <div class="font-medium">Visualizar Compras</div>
-                        <div class="text-xs opacity-90">Historial de compras del cliente</div>
-                    </div>
-                </Link>
 
-                <!-- Enviar Email -->
+                <!-- Ver Informes del Cliente -->
                 <button
-                    class="w-full bg-green-500 hover:bg-green-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
-                    @click="handleSendEmail"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white px-4 py-3 rounded-md transition-all duration-200 ease-in-out flex items-center gap-3 justify-start"
+                    @click="handleViewReports"
                 >
-                    <FontAwesomeIcon :icon="faEnvelope" class="h-5 w-5" />
+                    <FontAwesomeIcon :icon="faChartLine" class="h-5 w-5" />
                     <div class="text-left flex-1">
-                        <div class="font-medium">Enviar Email</div>
-                        <div class="text-xs opacity-90">Mensaje personalizado al cliente</div>
+                        <div class="font-medium">Ver Informes del Cliente</div>
+                        <div class="text-xs opacity-90">Descargar reportes de reservas y ventas</div>
                     </div>
                 </button>
             </div>
 
-            <div class="mt-6 pt-4 border-t border-gray-200 text-center">
-                <p class="text-xs text-gray-500">
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <div class="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-3">
+                    <h4 class="font-semibold text-blue-800 text-sm mb-2 flex items-center gap-2">
+                        <FontAwesomeIcon :icon="faChartLine" class="h-4 w-4" />
+                        ¿Cómo descargar informes del cliente?
+                    </h4>
+                    <ol class="text-xs text-blue-700 space-y-1 list-decimal list-inside">
+                        <li>Haz clic en "Ver Informes del Cliente" para abrir la vista de informes</li>
+                        <li>Selecciona "Reservas de Cliente" o "Ventas de Cliente" en el tipo de informe</li>
+                        <li>Busca y selecciona el cliente deseado</li>
+                        <li>Haz clic en "Generar Informe PDF" para descargar</li>
+                    </ol>
+                </div>
+                <p class="text-xs text-gray-500 text-center">
                     💡 Selecciona una acción para continuar.
                 </p>
             </div>
@@ -212,37 +201,139 @@ const updateDetallesVisible = (value) => {
         </template>
     </Dialog>
 
-    <!-- Modal de confirmación de eliminación -->
-        <!-- Modal de Eliminar Cliente -->
+    <!-- Modal de Eliminar Cliente -->
     <Dialog v-model:visible="isDeleteVisible" header="Eliminar cliente" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
-        <div class="flex items-center gap-3">
-            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 w-8 text-red-500" />
-            <div class="flex flex-col">
-                <span>¿Estás seguro de eliminar el cliente: <b>{{ cliente.user?.name }}</b>?</span>
-                <span class="text-red-600 text-sm font-medium mt-1">Esta acción es irreversible.</span>
+        <div class="space-y-3 sm:space-y-4 p-1 sm:p-0">
+            <!-- Encabezado de advertencia -->
+            <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-6 w-6 sm:h-8 sm:w-8 text-red-500 flex-shrink-0" />
+                <div class="flex flex-col flex-1">
+                    <span class="text-sm sm:text-lg font-semibold">¿Estás seguro de eliminar el cliente:</span>
+                    <span class="font-bold text-blue-600 text-sm sm:text-lg break-words">{{ cliente.user?.name }}?</span>
+                    <span class="text-red-600 text-xs sm:text-sm font-medium mt-1 sm:mt-2">Esta acción es irreversible.</span>
+                </div>
+            </div>
+
+            <!-- Advertencia de impacto -->
+            <div class="border-l-4 border-red-500 bg-red-50 p-3 sm:p-4 rounded-r-lg">
+                <div class="space-y-2 sm:space-y-3">
+                    <p class="text-red-700 font-medium text-xs sm:text-sm">
+                        Al eliminar este cliente se eliminarán <strong>PERMANENTEMENTE</strong>:
+                    </p>
+
+                    <ul class="space-y-1 sm:space-y-2 text-red-700">
+                        <li class="flex items-start gap-2 text-xs sm:text-sm">
+                            <FontAwesomeIcon :icon="faUser" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span>Su cuenta de usuario completa</span>
+                        </li>
+                        <li class="flex items-start gap-2 text-xs sm:text-sm">
+                            <FontAwesomeIcon :icon="faCalendarCheck" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span>Todas sus reservas (activas e históricas)</span>
+                        </li>
+                        <li class="flex items-start gap-2 text-xs sm:text-sm">
+                            <FontAwesomeIcon :icon="faShoppingCart" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span>Todas sus ventas y transacciones</span>
+                        </li>
+                        <li class="flex items-start gap-2 text-xs sm:text-sm">
+                            <FontAwesomeIcon :icon="faDatabase" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span>Todo su historial y datos personales</span>
+                        </li>
+                    </ul>
+
+                    <div class="mt-2 sm:mt-3 p-2 sm:p-3 bg-yellow-100 border-l-4 border-yellow-500 rounded-r">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2">
+                            <FontAwesomeIcon :icon="faDownload" class="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
+                            <p class="text-yellow-800 font-semibold text-xs sm:text-sm">
+                                RECOMENDACIÓN: Descarga los datos del cliente antes de eliminarlo
+                            </p>
+                        </div>
+                        <p class="text-yellow-700 text-xs sm:text-sm mt-1">
+                            Ve a <strong>Informes → Reservas/Ventas de Cliente</strong> para descargar sus datos. Una vez eliminado, no podrás recuperar ninguna información.
+                        </p>
+                        <button
+                            type="button"
+                            class="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1.5 rounded text-xs font-medium flex items-center gap-1.5 transition-colors duration-200"
+                            @click="handleViewReports"
+                        >
+                            <FontAwesomeIcon :icon="faChartLine" class="h-3 w-3" />
+                            Ir a Informes
+                        </button>
+                    </div>
+
+                    <div class="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-100 border border-red-200 rounded">
+                        <p class="text-red-800 font-bold text-center text-xs sm:text-sm">
+                            TODOS estos datos serán eliminados permanentemente
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección del motivo de eliminación -->
+            <div class="bg-orange-50 p-3 sm:p-4 rounded-lg border border-orange-200">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-1 sm:gap-2 mb-2 sm:mb-3">
+                    <FontAwesomeIcon :icon="faFileText" class="h-4 w-4 sm:h-5 sm:w-5 text-orange-600 flex-shrink-0" />
+                    <h4 class="font-semibold text-orange-800 text-sm sm:text-base">Motivo de eliminación (Requerido)</h4>
+                </div>
+                <p class="text-orange-700 text-xs sm:text-sm mb-2 sm:mb-3">
+                    Especifica el motivo por el cual se está eliminando esta cuenta. Este motivo se incluirá en el correo de notificación que se enviará al cliente.
+                </p>
+                <textarea
+                    v-model="deletionReason"
+                    rows="3"
+                    class="w-full p-2 sm:p-3 border border-orange-300 rounded-lg text-xs sm:text-sm resize-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+                    placeholder="Ejemplo: Violación de términos de servicio, solicitud del cliente, cuenta inactiva, etc."
+                    maxlength="500"
+                ></textarea>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-1 sm:gap-2 mt-2">
+                    <span class="text-orange-600 text-xs">{{ deletionReason.length }}/500 caracteres</span>
+                    <span v-if="!deletionReason.trim()" class="text-red-500 text-xs font-medium">
+                        * Campo requerido
+                    </span>
+                </div>
+            </div>
+
+            <!-- Campo de confirmación -->
+            <div class="bg-gray-100 p-3 sm:p-4 rounded-lg border">
+                <label for="confirmationInput" class="block text-gray-700 font-medium mb-2 text-center text-xs sm:text-sm">
+                    Escribe "CONFIRMAR" para proceder con la eliminación
+                </label>
+                <input
+                    id="confirmationInput"
+                    v-model="confirmationText"
+                    type="text"
+                    class="w-full p-2 sm:p-3 border border-gray-300 rounded-lg text-center font-bold uppercase tracking-widest text-xs sm:text-sm"
+                    placeholder="CONFIRMAR"
+                    maxlength="9"
+                    @input="confirmationText = $event.target.value.toUpperCase()"
+                />
             </div>
         </div>
         <template #footer>
-            <div class="flex justify-center gap-4 w-full">
+            <div class="flex flex-col sm:flex-row justify-center gap-2 sm:gap-4 w-full p-2 sm:p-0">
                 <button
                     type="button"
-                    class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    class="bg-red-500 hover:bg-red-700 text-white border-none px-3 sm:px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center gap-1 sm:gap-2 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
                     @click="confirmDelete"
-                    :disabled="isDeleting"
+                    :disabled="confirmationText !== 'CONFIRMAR' || !deletionReason.trim() || isDeleting"
                 >
                     <FontAwesomeIcon
-                        :icon="isDeleting ? faSpinner : faCheck"
+                        :icon="isDeleting ? faSpinner : faTrashCan"
                         :class="[
-                            'h-5',
+                            'h-4 sm:h-5',
                             { 'animate-spin': isDeleting }
                         ]"
                     />
-                    <span v-if="!isDeleting">Eliminar</span>
+                    <span v-if="!isDeleting" class="hidden sm:inline">{{ confirmationText === 'CONFIRMAR' ? 'ELIMINAR CLIENTE' : 'Escribe CONFIRMAR' }}</span>
+                    <span v-if="!isDeleting" class="sm:hidden">{{ confirmationText === 'CONFIRMAR' ? 'ELIMINAR' : 'Escribe CONFIRMAR' }}</span>
                     <span v-else>Eliminando...</span>
                 </button>
-                <button type="button" class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-                    @click="cancelDelete" :disabled="isDeleting">
-                    <FontAwesomeIcon :icon="faXmark" class="h-5" /><span>Cancelar</span>
+                <button
+                    type="button"
+                    class="bg-blue-500 hover:bg-blue-600 text-white border-none px-3 sm:px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center justify-center gap-1 sm:gap-2 text-xs sm:text-sm"
+                    @click="cancelDelete"
+                >
+                    <FontAwesomeIcon :icon="faXmark" class="h-4 sm:h-5" />
+                    <span>Cancelar</span>
                 </button>
             </div>
         </template>
@@ -297,55 +388,134 @@ const updateDetallesVisible = (value) => {
         :closable="false"
         :draggable="false"
     >
-        <div v-if="cliente" class="space-y-4">
-            <div class="grid grid-cols-1 gap-4">
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-gray-800 mb-3">Información Personal</h4>
-                    <div class="space-y-2">
-                        <p><strong>Nombre Completo:</strong> {{ cliente.user?.name || 'No registrado' }}</p>
-                        <p><strong>Género:</strong>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ml-2"
+        <div v-if="cliente" class="space-y-3 sm:space-y-4 p-1 sm:p-0">
+            <!-- Alerta para usuarios sin datos completos de cliente -->
+            <div v-if="!cliente.id" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600 flex-shrink-0" />
+                    <div class="text-sm sm:text-base">
+                        <h4 class="font-medium text-yellow-800 text-sm sm:text-base">Usuario sin datos de cliente completos</h4>
+                        <p class="text-yellow-700 text-xs sm:text-sm mt-1">Este usuario tiene rol Cliente pero no ha completado su información personal.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3 sm:gap-4">
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base">Información Personal</h4>
+                    <div class="space-y-1 sm:space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm">Nombre Completo:</span>
+                            <span class="text-xs sm:text-sm break-words">{{ cliente.user?.name || 'No registrado' }}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm">Género:</span>
+                            <span v-if="cliente.genero && cliente.genero !== 'No registrado'"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
                                 :class="cliente.genero === 'MASCULINO' ? 'bg-blue-100 text-blue-800' : 'bg-pink-100 text-pink-800'">
                                 {{ cliente.genero }}
                             </span>
-                        </p>
-                        <p><strong>Fecha de Nacimiento:</strong> {{ cliente.fecha_nacimiento }}</p>
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-gray-800 mb-3">Información de Contacto</h4>
-                    <div class="space-y-2">
-                        <p><strong>Teléfono:</strong> {{ cliente.telefono }}</p>
-                        <p><strong>Correo Electrónico:</strong> {{ cliente.user?.email || 'No registrado' }}</p>
-                        <p><strong>Dirección:</strong> {{ cliente.direccion }}</p>
-                    </div>
-                </div>
-
-                <div class="bg-gray-50 p-4 rounded-lg">
-                    <h4 class="font-semibold text-gray-800 mb-3">Documentación</h4>
-                    <div class="space-y-2">
-                        <p><strong>Tipo de Documento:</strong>
-                            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 ml-2">
-                                {{ cliente.tipo_documento?.nombre || 'No registrado' }}
+                            <span v-else class="text-gray-500 italic text-xs sm:text-sm">{{ cliente.genero || 'No registrado' }}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm">Fecha de Nacimiento:</span>
+                            <span :class="cliente.fecha_nacimiento ? 'text-xs sm:text-sm' : 'text-gray-500 italic text-xs sm:text-sm'">
+                                {{ cliente.fecha_nacimiento || 'No registrada' }}
                             </span>
-                        </p>
-                        <p><strong>Número de Identificación:</strong> {{ cliente.numero_identificacion }}</p>
+                        </div>
                     </div>
                 </div>
 
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base">Información de Contacto</h4>
+                    <div class="space-y-2 sm:space-y-3">
+                        <!-- Teléfono con WhatsApp y llamada -->
+                        <div class="flex flex-col gap-1">
+                            <span class="font-medium text-xs sm:text-sm">Teléfono:</span>
+                            <div v-if="cliente.telefono && cliente.telefono !== 'No registrado'" class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs sm:text-sm">{{ cliente.telefono }}</span>
+                                <div class="flex gap-1">
+                                    <a
+                                        :href="`https://wa.me/${cliente.telefono.replace(/[^0-9]/g, '')}`"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="inline-flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md transition-colors duration-200"
+                                        title="Enviar mensaje por WhatsApp"
+                                    >
+                                        <FontAwesomeIcon :icon="faWhatsapp" class="h-3 w-3" />
+                                        <span class="hidden sm:inline">WhatsApp</span>
+                                    </a>
+                                    <a
+                                        :href="`tel:${cliente.telefono}`"
+                                        class="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md transition-colors duration-200"
+                                        title="Llamar por teléfono"
+                                    >
+                                        <FontAwesomeIcon :icon="faPhone" class="h-3 w-3" />
+                                        <span class="hidden sm:inline">Llamar</span>
+                                    </a>
+                                </div>
+                            </div>
+                            <span v-else class="text-gray-500 italic text-xs sm:text-sm">No registrado</span>
+                        </div>
+
+                        <!-- Correo Electrónico con botón enviar -->
+                        <div class="flex flex-col gap-1">
+                            <span class="font-medium text-xs sm:text-sm">Correo Electrónico:</span>
+                            <div v-if="cliente.user?.email" class="flex flex-wrap items-center gap-2">
+                                <span class="text-xs sm:text-sm break-all">{{ cliente.user.email }}</span>
+                                <a
+                                    :href="`mailto:${cliente.user.email}`"
+                                    class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200"
+                                    title="Enviar correo electrónico"
+                                >
+                                    <FontAwesomeIcon :icon="faEnvelope" class="h-3 w-3" />
+                                    <span class="hidden sm:inline">Enviar Email</span>
+                                </a>
+                            </div>
+                            <span v-else class="text-gray-500 italic text-xs sm:text-sm">No registrado</span>
+                        </div>
+
+                        <!-- Dirección -->
+                        <div class="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm flex-shrink-0">Dirección:</span>
+                            <span :class="cliente.direccion && cliente.direccion !== 'No registrada' ? 'text-xs sm:text-sm' : 'text-gray-500 italic text-xs sm:text-sm'" class="break-words">
+                                {{ cliente.direccion || 'No registrada' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 p-3 sm:p-4 rounded-lg">
+                    <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 text-sm sm:text-base">Documentación</h4>
+                    <div class="space-y-1 sm:space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm">Tipo de Documento:</span>
+                            <span v-if="cliente.tipo_documento && cliente.tipo_documento !== 'No registrado'"
+                                class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                {{ cliente.tipo_documento }}
+                            </span>
+                            <span v-else class="text-gray-500 italic text-xs sm:text-sm">{{ cliente.tipo_documento || 'No registrado' }}</span>
+                        </div>
+                        <div class="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                            <span class="font-medium text-xs sm:text-sm">Número de Identificación:</span>
+                            <span :class="cliente.numero_identificacion && cliente.numero_identificacion !== 'No registrado' ? 'text-xs sm:text-sm' : 'text-gray-500 italic text-xs sm:text-sm'">
+                                {{ cliente.numero_identificacion || 'No registrado' }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
 
         <template #footer>
-            <div class="flex justify-center w-full mt-6">
+            <div class="flex justify-center w-full mt-3 sm:mt-6 p-2 sm:p-0">
                 <button
                     type="button"
-                    class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                    class="bg-blue-500 hover:bg-blue-700 text-white px-4 sm:px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-1 sm:gap-2 text-xs sm:text-sm"
                     @click="updateDetallesVisible(false)"
                 >
-                    <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                    <FontAwesomeIcon :icon="faXmark" class="h-4 sm:h-5" />
                     Cerrar
                 </button>
             </div>

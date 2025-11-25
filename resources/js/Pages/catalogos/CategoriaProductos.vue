@@ -189,11 +189,11 @@ const saveOrUpdate = async () => {
     submitted.value = true
     isLoading.value = true
 
-    if (!categoria.value.nombre || categoria.value.nombre.length < 3 || categoria.value.nombre.length > 50) {
+    if (!categoria.value.nombre || categoria.value.nombre.length < 3 || categoria.value.nombre.length > 30) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
-            detail: "El nombre debe tener entre 3 y 50 caracteres.",
+            detail: "El nombre debe tener entre 3 y 30 caracteres.",
             life: 4000
         })
         isLoading.value = false
@@ -432,20 +432,29 @@ const onNombrePaste = (event) => {
                                 v-model.trim="categoria.nombre"
                                 id="nombre"
                                 name="nombre"
-                                :maxlength="50"
-                                :class="{'p-invalid': submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 50)}"
+                                :maxlength="30"
+                                :class="{
+                                    'p-invalid': submitted && (!categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 30),
+                                    'border-orange-400 focus:border-orange-500': categoria.nombre && categoria.nombre.length > 25 && categoria.nombre.length <= 30,
+                                    'border-red-400 focus:border-red-500': categoria.nombre && categoria.nombre.length > 30
+                                }"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="onNombreInput"
                                 @paste="onNombrePaste"
-                                placeholder="MALETAS, BOLSOS, ACCESORIOS, ETC."
+                                placeholder="MALETAS, ACCESORIOS, ROPA, ETC."
                             />
                         </div>
-                        <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
-                            El nombre debe tener al menos 3 caracteres. Actual: {{ categoria.nombre.length }}/3
+                        <small class="text-gray-500 ml-28 text-xs" v-if="categoria.nombre">
+                            Caracteres: {{ categoria.nombre.length }}/30
                         </small>
-
-                        <small class="text-orange-500 ml-28" v-if="categoria.nombre && categoria.nombre.length >= 45 && categoria.nombre.length <= 50">
-                            Caracteres restantes: {{ 50 - categoria.nombre.length }}
+                        <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length < 3">
+                            El nombre debe tener al menos 3 caracteres.
+                        </small>
+                        <small class="text-orange-500 ml-28" v-if="categoria.nombre && categoria.nombre.length > 25 && categoria.nombre.length <= 30">
+                            Te quedan {{ 30 - categoria.nombre.length }} caracteres
+                        </small>
+                        <small class="text-red-500 ml-28" v-if="categoria.nombre && categoria.nombre.length > 30">
+                            Has excedido el límite por {{ categoria.nombre.length - 30 }} caracteres
                         </small>
                         <small class="text-red-500 ml-28" v-if="submitted && !categoria.nombre">
                             El nombre es obligatorio.
@@ -458,7 +467,7 @@ const onNombrePaste = (event) => {
                         <button
                             class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             @click="saveOrUpdate"
-                            :disabled="isLoading"
+                            :disabled="isLoading || !categoria.nombre || categoria.nombre.length < 3 || categoria.nombre.length > 30"
                         >
                             <FontAwesomeIcon
                                 :icon="isLoading ? faSpinner : faCheck"

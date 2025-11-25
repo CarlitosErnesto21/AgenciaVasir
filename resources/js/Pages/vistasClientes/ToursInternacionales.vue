@@ -393,8 +393,8 @@ const manejarConfirmacionReserva = (reserva) => {
   toast.add({
     severity: 'success',
     summary: 'Reserva Confirmada',
-    detail: 'Tu reserva ha sido registrada. Te contactaremos pronto.',
-    life: 5000
+    detail: 'Tu reserva ha sido registrada y se ha enviado un correo electrónico de confirmación. Te contactaremos pronto.',
+    life: 6000
   })
 
   // Cerrar modal

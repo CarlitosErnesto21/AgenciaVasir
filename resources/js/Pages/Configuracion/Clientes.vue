@@ -167,7 +167,7 @@
                     @view-details="handleViewDetails"
                     @view-reservations="handleViewReservations"
                     @view-purchases="handleViewPurchases"
-                    @send-email="handleSendEmail"
+                    @view-reports="handleViewReports"
                     @toggle-status="handleToggleStatus"
                     @delete-cliente="deleteCliente"
                     @cancel-delete="cancelDelete"
@@ -181,7 +181,7 @@
 
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Link, Head } from '@inertiajs/vue3';
+import { Link, Head, router } from '@inertiajs/vue3';
 import { ref, reactive, computed, onMounted } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
@@ -288,19 +288,40 @@ const confirmDeleteCliente = (cliente) => {
     deleteDialog.value = true;
 };
 
-const deleteCliente = async () => {
+const deleteCliente = async (deletionReason) => {
     isDeleting.value = true;
 
     try {
-        // TODO: Implementar eliminación de cliente
-        await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
+        // Usar cliente_id si existe, sino usar user_id
+        const identificador = selectedCliente.value.id || selectedCliente.value.user_id;
 
-        toast.add({
-            severity: 'success',
-            summary: 'Cliente eliminado',
-            detail: 'El cliente ha sido eliminado correctamente',
-            life: 3000
+        const response = await fetch(`/api/clientes/${identificador}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            },
+            body: JSON.stringify({
+                deletion_reason: deletionReason
+            })
         });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            toast.add({
+                severity: 'success',
+                summary: 'Cliente eliminado',
+                detail: `Cliente eliminado correctamente. Se eliminaron ${result.info?.reservas_count || 0} reservas y ${result.info?.ventas_count || 0} ventas asociadas.`,
+                life: 5000
+            });
+
+            // Recargar la página para actualizar la lista de clientes
+            router.reload();
+
+        } else {
+            throw new Error(result.message || 'Error al eliminar el cliente');
+        }
 
         deleteDialog.value = false;
         selectedCliente.value = null;
@@ -309,8 +330,8 @@ const deleteCliente = async () => {
         toast.add({
             severity: 'error',
             summary: 'Error',
-            detail: 'Error al eliminar el cliente',
-            life: 3000
+            detail: error.message || 'Error al eliminar el cliente',
+            life: 5000
         });
         // Asegurar que el modal se cierre incluso en caso de error
         deleteDialog.value = false;
@@ -374,8 +395,9 @@ const handleViewDetails = (cliente) => {
         }
     };
 
-const handleSendEmail = (cliente) => {
-    toast.add({ severity: 'info', summary: 'Función pendiente', detail: 'Enviar email aún no implementado', life: 3000 });
+const handleViewReports = (cliente) => {
+    // Navegar a la vista de informes usando Inertia SPA
+    router.visit('/generar-informes');
     moreActionsDialog.value = false;
 };
 

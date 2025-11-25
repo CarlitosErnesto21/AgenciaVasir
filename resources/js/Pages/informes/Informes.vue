@@ -1,10 +1,31 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import { Head } from '@inertiajs/vue3'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import DatePicker from 'primevue/datepicker'
 import Toast from 'primevue/toast'
+import InputText from 'primevue/inputtext'
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
+import {
+  faFileLines,
+  faCalendarDays,
+  faUsers,
+  faShoppingCart,
+  faChartLine,
+  faDownload,
+  faSearch,
+  faTimes,
+  faCheck,
+  faCogs,
+  faRefresh,
+  faExclamationCircle,
+  faExclamationTriangle,
+  faSpinner,
+  faUser,
+  faFileAlt,
+  faChartBar
+} from '@fortawesome/free-solid-svg-icons'
 
 // Reactive window size for responsive iframe
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
@@ -33,11 +54,30 @@ onMounted(() => {
     windowWidth.value = window.innerWidth
     window.addEventListener('resize', updateWindowWidth)
   }
+
+  // Agregar event listener al input para evitar problemas de re-renderizado de Vue
+  nextTick(() => {
+    const input = searchInputRef.value
+    if (input) {
+      input.addEventListener('input', handleSearchInput)
+    }
+  })
 })
 
 onUnmounted(() => {
   if (typeof window !== 'undefined') {
     window.removeEventListener('resize', updateWindowWidth)
+  }
+
+  // Limpiar timeout al desmontar el componente
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  // Limpiar event listener del input
+  const input = searchInputRef.value
+  if (input) {
+    input.removeEventListener('input', handleSearchInput)
   }
 })
 
@@ -67,6 +107,14 @@ const mesUnico = ref(null)
 const pdfUrl = ref(null)
 const toast = useToast()
 
+// Variables para búsqueda de clientes
+const clienteSeleccionado = ref(null)
+const busquedaCliente = ref('')
+const clientesEncontrados = ref([])
+const buscandoClientes = ref(false)
+const searchInputRef = ref(null)
+let searchTimeout = null
+
 // Nuevo: Tipo de informe
 const tipoInforme = ref('tours')
 const tiposInformes = [
@@ -74,19 +122,41 @@ const tiposInformes = [
     id: 'tours',
     nombre: 'Informe de Tours',
     descripcion: 'Cupos vendidos mensuales por tour',
-    icono: 'M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-9 0v10a2 2 0 002 2h8a2 2 0 002-2V7H7z',
-    endpoint: '/descargar-informe',
+    icono: faChartLine,
+    endpoint: `${window.location.origin}/descargar-informe`,
     requiereFechas: true,
+    requiereCliente: false,
     color: 'red'
   },
   {
     id: 'inventario',
     nombre: 'Informe de Inventario',
     descripcion: 'Estado del inventario, stock y movimientos',
-    icono: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 12l6-3-6-3v6z',
-    endpoint: '/descargar-informe-inventario',
+    icono: faFileLines,
+    endpoint: `${window.location.origin}/descargar-informe-inventario`,
     requiereFechas: false,
+    requiereCliente: false,
     color: 'green'
+  },
+  {
+    id: 'reservas-cliente',
+    nombre: 'Reservas de Cliente',
+    descripcion: 'Historial de reservas de un cliente específico',
+    icono: faUsers,
+    endpoint: `${window.location.origin}/descargar-informe-reservas-cliente`,
+    requiereFechas: false,
+    requiereCliente: true,
+    color: 'blue'
+  },
+  {
+    id: 'ventas-cliente',
+    nombre: 'Ventas de Cliente',
+    descripcion: 'Historial de compras de un cliente específico',
+    icono: faShoppingCart,
+    endpoint: `${window.location.origin}/descargar-informe-ventas-cliente`,
+    requiereFechas: false,
+    requiereCliente: true,
+    color: 'purple'
   }
 ]
 
@@ -106,20 +176,145 @@ const mesesFiltrados = computed(() => {
   return mesesDisponibles.slice(desdeIdx, hastaIdx + 1).map(m => m.value)
 })
 
-const puedeGenerar = computed(() => {
-  const informeSeleccionado = tiposInformes.find(t => t.id === tipoInforme.value)
+const informeSeleccionado = computed(() => {
+  return tiposInformes.find(t => t.id === tipoInforme.value)
+})
 
-  // Si el informe no requiere fechas (como inventario), siempre se puede generar
-  if (!informeSeleccionado?.requiereFechas) {
-    return true
+const requiereCliente = computed(() => {
+  return informeSeleccionado.value?.requiereCliente || false
+})
+
+const requiereFechas = computed(() => {
+  return informeSeleccionado.value?.requiereFechas || false
+})
+
+const puedeGenerar = computed(() => {
+  // Si requiere cliente, verificar que esté seleccionado
+  if (requiereCliente.value && !clienteSeleccionado.value) {
+    return false
+  }
+
+  // Si el informe no requiere fechas, verificar si solo necesita cliente o nada más
+  if (!requiereFechas.value) {
+    return requiereCliente.value ? !!clienteSeleccionado.value : true
   }
 
   // Si requiere fechas, validar según el modo de selección
-  return modoSeleccion.value === 'unico' ? !!mesUnico.value : !!(desde.value && hasta.value && mesesFiltrados.value.length)
-})
+  const fechasValidas = modoSeleccion.value === 'unico' ? !!mesUnico.value : !!(desde.value && hasta.value && mesesFiltrados.value.length)
+
+  return fechasValidas && (requiereCliente.value ? !!clienteSeleccionado.value : true)
+});
 
 function showToast(type, summary, detail, life = 3500) {
   toast.add({ severity: type, summary, detail, life })
+}
+
+// Función para manejar cambios en la búsqueda (con debounce)
+function handleSearchInput(event) {
+  const value = event.target.value
+
+  // Limpiar el timeout anterior
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+  }
+
+  // Si no hay texto suficiente, limpiar resultados inmediatamente
+  if (!value || value.length < 2) {
+    clientesEncontrados.value = []
+    busquedaCliente.value = value
+    return
+  }
+
+  // Establecer nuevo timeout para buscar
+  searchTimeout = setTimeout(() => {
+    busquedaCliente.value = value
+    buscarClientes()
+  }, 300)
+}// Función para buscar clientes
+async function buscarClientes() {
+  const query = busquedaCliente.value
+
+  if (!query || query.length < 2) {
+    clientesEncontrados.value = []
+    return
+  }
+
+  // Deshabilitar el input manualmente para evitar re-render
+  if (searchInputRef.value) {
+    searchInputRef.value.disabled = true
+  }
+
+  buscandoClientes.value = true
+
+  try {
+    const response = await fetch(`/api/clientes/buscar?q=${encodeURIComponent(query)}`)
+    const data = await response.json()
+    clientesEncontrados.value = data.clientes || []
+  } catch (error) {
+    console.error('Error buscando clientes:', error)
+    showToast('error', 'Error', 'Error al buscar clientes')
+    clientesEncontrados.value = []
+  } finally {
+    buscandoClientes.value = false
+
+    // Habilitar el input manualmente
+    if (searchInputRef.value) {
+      searchInputRef.value.disabled = false
+
+      // Restaurar foco de manera más agresiva
+      setTimeout(() => {
+        if (document.activeElement !== searchInputRef.value) {
+          searchInputRef.value.focus()
+          // Si aún no funciona, intentar con más delay
+          setTimeout(() => {
+            if (document.activeElement !== searchInputRef.value) {
+              searchInputRef.value.focus()
+            }
+          }, 50)
+        }
+      }, 10)
+    }
+  }
+}
+
+// Watcher para restaurar foco automáticamente después de las búsquedas
+watch(buscandoClientes, (newVal, oldVal) => {
+  if (newVal === false && oldVal === true) {
+    // Cuando termina la búsqueda, restaurar el foco si se perdió
+    nextTick(() => {
+      if (searchInputRef.value && document.activeElement !== searchInputRef.value) {
+        searchInputRef.value.focus()
+      }
+    })
+  }
+})
+
+// Función para seleccionar cliente
+function seleccionarCliente(cliente) {
+  // Limpiar timeout si existe
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
+  }
+
+  clienteSeleccionado.value = cliente
+  busquedaCliente.value = cliente.user?.name || cliente.name || 'Cliente'
+  clientesEncontrados.value = []
+  buscandoClientes.value = false
+}
+
+// Función para limpiar selección de cliente
+function limpiarCliente() {
+  // Limpiar timeout si existe
+  if (searchTimeout) {
+    clearTimeout(searchTimeout)
+    searchTimeout = null
+  }
+
+  clienteSeleccionado.value = null
+  busquedaCliente.value = ''
+  clientesEncontrados.value = []
+  buscandoClientes.value = false
 }
 
 async function descargarPDF() {
@@ -130,6 +325,17 @@ async function descargarPDF() {
   }
 
   let params = new URLSearchParams()
+
+  // Agregar cliente si es requerido
+  if (informeSeleccionado.requiereCliente) {
+    if (!clienteSeleccionado.value) {
+      showToast('error', 'Error', 'Seleccione un cliente para generar el informe.')
+      return
+    }
+    // Usar el ID del cliente o el ID del usuario según lo que esté disponible
+    const clienteId = clienteSeleccionado.value.id || clienteSeleccionado.value.user_id
+    params.append('cliente_id', clienteId)
+  }
 
   // Solo agregar parámetros de fecha si el informe los requiere
   if (informeSeleccionado.requiereFechas) {
@@ -200,6 +406,7 @@ function limpiarFechas() {
   desde.value = null
   hasta.value = null
   pdfUrl.value = null
+  limpiarCliente()
 }
 </script>
 
@@ -213,9 +420,7 @@ function limpiarFechas() {
         <!-- Header Section -->
         <div class="text-center mb-8 sm:mb-12">
           <div class="inline-flex items-center justify-center w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-red-600 to-red-500 rounded-xl sm:rounded-2xl mb-4 sm:mb-6 shadow-lg">
-            <svg class="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-            </svg>
+            <FontAwesomeIcon :icon="faChartBar" class="w-6 h-6 sm:w-8 sm:h-8 text-white" />
           </div>
           <h1 class="text-2xl sm:text-4xl lg:text-5xl font-bold text-gray-900 mb-3 sm:mb-4 tracking-tight px-2">
             Centro de <span class="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-red-500">Informes</span>
@@ -232,9 +437,7 @@ function limpiarFechas() {
             <!-- Card Header -->
             <div class="bg-gradient-to-r from-red-600 to-red-500 px-4 py-4 sm:px-8 sm:py-6">
               <h2 class="text-lg sm:text-2xl font-bold text-white flex items-center gap-2 sm:gap-3">
-                <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-9 0v10a2 2 0 002 2h8a2 2 0 002-2V7H7z"/>
-                </svg>
+                <FontAwesomeIcon :icon="faCogs" class="w-5 h-5 sm:w-6 sm:h-6" />
                 <span class="hidden sm:inline">Configuración del Informe</span>
                 <span class="sm:hidden">Configurar Informe</span>
               </h2>
@@ -249,9 +452,7 @@ function limpiarFechas() {
               <!-- Selector de Tipo de Informe -->
               <div class="space-y-3 sm:space-y-4">
                 <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                  </svg>
+                  <FontAwesomeIcon :icon="faFileAlt" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                   <span class="hidden sm:inline">Seleccionar Tipo de Informe</span>
                   <span class="sm:hidden">Tipo de Informe</span>
                 </h3>
@@ -265,19 +466,17 @@ function limpiarFechas() {
                     />
                     <div :class="`flex items-center p-3 sm:p-5 bg-gradient-to-r from-${informe.color}-50 to-${informe.color}-100 rounded-lg sm:rounded-xl border-2 border-${informe.color}-200 transition-all duration-200 peer-checked:border-${informe.color}-500 peer-checked:from-${informe.color}-100 peer-checked:to-${informe.color}-200 hover:border-${informe.color}-300 hover:shadow-md`">
                       <div :class="`flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 mr-3 sm:mr-4 bg-${informe.color}-500 rounded-lg sm:rounded-xl shadow-lg`">
-                        <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" :d="informe.icono"/>
-                        </svg>
+                        <FontAwesomeIcon :icon="informe.icono" class="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                       </div>
                       <div class="flex-1">
                         <h4 class="text-sm sm:text-base font-bold text-gray-900 mb-1">{{ informe.nombre }}</h4>
                         <p class="text-xs sm:text-sm text-gray-600">{{ informe.descripcion }}</p>
                         <div class="mt-2">
                           <span v-if="!informe.requiereFechas" class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            📊 Instantáneo
+                            <FontAwesomeIcon :icon="faChartLine" class="mr-1" /> Instantáneo
                           </span>
                           <span v-else class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                            ⚙️ Configurable
+                            <FontAwesomeIcon :icon="faCogs" class="mr-1" /> Configurable
                           </span>
                         </div>
                       </div>
@@ -286,12 +485,79 @@ function limpiarFechas() {
                 </div>
               </div>
 
-              <!-- Configuración de Fechas (solo si es necesario) -->
-              <div v-if="tiposInformes.find(t => t.id === tipoInforme)?.requiereFechas" class="space-y-3 sm:space-y-4">
+              <!-- Búsqueda de Cliente (solo si es necesario) -->
+              <div v-show="requiereCliente" class="space-y-3 sm:space-y-4">
                 <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                  <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                  </svg>
+                  <FontAwesomeIcon :icon="faUser" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
+                  <span class="hidden sm:inline">Seleccionar Cliente</span>
+                  <span class="sm:hidden">Cliente</span>
+                </h3>
+                <div class="bg-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 border border-blue-200">
+                  <label for="busqueda-cliente" class="block text-sm font-medium text-gray-700 mb-3">
+                    Buscar cliente por nombre:
+                  </label>
+                  <div class="relative">
+                    <input
+                      id="busqueda-cliente"
+                      ref="searchInputRef"
+                      type="text"
+                      placeholder="Escriba el nombre del cliente..."
+                      class="w-full border border-gray-300 rounded-lg shadow-sm px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-red-500"
+                    />
+                    <div v-if="buscandoClientes" class="absolute right-3 top-1/2 transform -translate-y-1/2">
+                      <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-4 w-4 text-blue-500" />
+                    </div>
+                  </div>
+
+                  <!-- Lista de clientes encontrados -->
+                  <div v-if="clientesEncontrados.length > 0" class="mt-2 max-h-40 overflow-y-auto border border-gray-300 rounded-lg bg-white shadow-lg">
+                    <button
+                      v-for="cliente in clientesEncontrados"
+                      :key="cliente.id || cliente.user_id"
+                      @click="seleccionarCliente(cliente)"
+                      class="w-full p-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-b-0 flex items-center gap-3"
+                    >
+                      <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-semibold text-sm">
+                        {{ (cliente.user?.name || cliente.name || 'C').charAt(0).toUpperCase() }}
+                      </div>
+                      <div>
+                        <div class="font-medium text-gray-900">{{ cliente.user?.name || cliente.name || 'Cliente' }}</div>
+                        <div class="text-sm text-gray-500">{{ cliente.user?.email || cliente.email || 'Sin email' }}</div>
+                      </div>
+                    </button>
+                  </div>
+
+                  <!-- Cliente seleccionado -->
+                  <div v-if="clienteSeleccionado" class="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                      <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center text-green-600 font-semibold">
+                      <FontAwesomeIcon :icon="faCheck" class="w-4 h-4" />
+                      </div>
+                      <div>
+                        <div class="font-medium text-green-900">{{ clienteSeleccionado.user?.name || clienteSeleccionado.name }}</div>
+                        <div class="text-sm text-green-700">Cliente seleccionado</div>
+                      </div>
+                    </div>
+                    <button
+                      @click="limpiarCliente"
+                      class="text-red-600 hover:text-red-800 p-1"
+                      title="Quitar selección"
+                    >
+                      <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <!-- Mensaje cuando no hay resultados -->
+                  <div v-if="busquedaCliente.length >= 2 && !buscandoClientes && clientesEncontrados.length === 0" class="mt-2 p-3 text-center text-gray-500 text-sm">
+                    No se encontraron clientes con ese nombre
+                  </div>
+                </div>
+              </div>
+
+              <!-- Configuración de Fechas (solo si es necesario) -->
+              <div v-show="requiereFechas" class="space-y-3 sm:space-y-4">
+                <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <FontAwesomeIcon :icon="faCalendarDays" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                   <span class="hidden sm:inline">Configurar Período</span>
                   <span class="sm:hidden">Período</span>
                 </h3>
@@ -345,13 +611,11 @@ function limpiarFechas() {
                 </div>
               </div>
               <!-- Selección de Fechas (solo si el informe requiere fechas) -->
-              <div v-if="tiposInformes.find(t => t.id === tipoInforme)?.requiereFechas" class="space-y-4 sm:space-y-6">
+              <div v-show="requiereFechas" class="space-y-4 sm:space-y-6">
                 <!-- Mes Único -->
                 <div v-show="modoSeleccion === 'unico'" class="space-y-2 sm:space-y-3">
                   <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-9 0v10a2 2 0 002 2h8a2 2 0 002-2V7H7z"/>
-                    </svg>
+                    <FontAwesomeIcon :icon="faCalendarDays" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                     <span class="hidden sm:inline">Seleccionar Mes</span>
                     <span class="sm:hidden">Mes</span>
                   </h3>
@@ -378,9 +642,7 @@ function limpiarFechas() {
                 <!-- Rango de Meses -->
                 <div v-show="modoSeleccion === 'rango'" class="space-y-2 sm:space-y-3">
                   <h3 class="text-base sm:text-lg font-semibold text-gray-900 flex items-center gap-2">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3a2 2 0 012-2h4a2 2 0 012 2v4m-6 0V6a2 2 0 012-2h4a2 2 0 012 2v1m-6 0h8m-9 0v10a2 2 0 002 2h8a2 2 0 002-2V7H7z"/>
-                    </svg>
+                    <FontAwesomeIcon :icon="faCalendarDays" class="w-4 h-4 sm:w-5 sm:h-5 text-red-600" />
                     <span class="hidden sm:inline">Rango de Fechas</span>
                     <span class="sm:hidden">Rango</span>
                   </h3>
@@ -440,9 +702,7 @@ function limpiarFechas() {
                     @click="limpiarFechas"
                     class="flex items-center justify-center gap-2 px-4 py-2.5 sm:py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg sm:rounded-xl transition-all duration-200 font-medium text-sm sm:text-base order-2 sm:order-1"
                   >
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                    </svg>
+                    <FontAwesomeIcon :icon="faRefresh" class="w-4 h-4" />
                     <span class="hidden sm:inline">Limpiar Selección</span>
                     <span class="sm:hidden">Limpiar</span>
                   </button>
@@ -452,9 +712,7 @@ function limpiarFechas() {
                     :disabled="!puedeGenerar"
                     class="flex items-center justify-center gap-2 sm:gap-3 px-6 sm:px-8 py-3 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-700 hover:to-red-600 text-white rounded-lg sm:rounded-xl font-semibold text-base sm:text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-lg order-1 sm:order-2"
                   >
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
-                    </svg>
+                    <FontAwesomeIcon :icon="faDownload" class="w-5 h-5" />
                     <span class="hidden sm:inline">Generar Informe PDF</span>
                     <span class="sm:hidden">Generar PDF</span>
                   </button>
@@ -463,13 +721,17 @@ function limpiarFechas() {
                 <!-- Status Info -->
                 <div v-if="!puedeGenerar" class="mt-3 sm:mt-4 p-3 sm:p-4 bg-amber-50 border border-amber-200 rounded-lg sm:rounded-xl">
                   <div class="flex items-start gap-2 text-amber-700">
-                    <svg class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                    </svg>
+                    <FontAwesomeIcon :icon="faExclamationCircle" class="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0 mt-0.5" />
                     <span class="font-medium text-xs sm:text-sm">
-                      {{ tiposInformes.find(t => t.id === tipoInforme)?.requiereFechas
-                         ? (windowWidth < 640 ? 'Seleccione un período válido' : 'Seleccione un período válido para generar el informe')
-                         : (windowWidth < 640 ? 'Configure los parámetros necesarios' : 'Configure los parámetros necesarios para generar el informe') }}
+                      {{ (() => {
+                        if (requiereCliente && !clienteSeleccionado) {
+                          return windowWidth < 640 ? 'Seleccione un cliente' : 'Seleccione un cliente para generar el informe'
+                        } else if (requiereFechas) {
+                          return windowWidth < 640 ? 'Seleccione un período válido' : 'Seleccione un período válido para generar el informe'
+                        } else {
+                          return windowWidth < 640 ? 'Configure los parámetros necesarios' : 'Configure los parámetros necesarios para generar el informe'
+                        }
+                      })() }}
                     </span>
                   </div>
                 </div>
@@ -482,12 +744,12 @@ function limpiarFechas() {
                     </svg>
                     <div>
                       <h4 class="text-sm sm:text-base font-semibold text-red-900 mb-1">
-                        {{ tiposInformes.find(t => t.id === tipoInforme)?.nombre }}
+                        {{ informeSeleccionado?.nombre }}
                       </h4>
                       <p class="text-xs sm:text-sm text-red-700">
-                        {{ tiposInformes.find(t => t.id === tipoInforme)?.descripcion }}
+                        {{ informeSeleccionado?.descripcion }}
                       </p>
-                      <div v-if="!tiposInformes.find(t => t.id === tipoInforme)?.requiereFechas" class="mt-1.5 sm:mt-2 text-xs text-red-600 font-medium">
+                      <div v-if="!requiereFechas" class="mt-1.5 sm:mt-2 text-xs text-red-600 font-medium">
                         ✨ <span class="hidden sm:inline">Este informe se genera con datos actuales del sistema</span>
                         <span class="sm:hidden">Datos actuales del sistema</span>
                       </div>

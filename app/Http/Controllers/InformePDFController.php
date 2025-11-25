@@ -11,6 +11,10 @@ use App\Models\Reserva;
 use App\Models\Producto;
 use App\Models\Inventario;
 use App\Models\CategoriaProducto;
+use App\Models\Cliente;
+use App\Models\User;
+use App\Models\Venta;
+use App\Models\DetalleVenta;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -104,11 +108,16 @@ class InformePDFController extends Controller
             'mesesSinDatos' => $mesesSinDatos,
             'fecha_emision' => $fecha_emision,
             'direccion' => 'Chalatenango, El Salvador',
+            'usuario_descarga' => [
+                'nombre' => auth()->user()->name ?? 'Usuario no identificado',
+                'email' => auth()->user()->email ?? 'Email no disponible'
+            ],
         ];
 
         $nombreArchivo = "informe_cupos_mas_vendidos_{$fecha_hora}.pdf";
 
-        $pdf = Pdf::loadView('informes.informe', $data);
+        $pdf = Pdf::loadView('informes.informe', $data)
+            ->setPaper('letter', 'portrait');
         // Si se recibe el parámetro preview=1, mostrar en navegador (inline), si no, descargar (attachment)
         $dispositionType = $request->input('preview') == '1' ? 'inline' : 'attachment';
         return response($pdf->output(), 200)
@@ -226,12 +235,16 @@ class InformePDFController extends Controller
                     'productos_requieren_reabastecimiento' => count($productosStockBajo) + count($productosAgotados),
                 ],
                 'fecha_emision' => $fecha_emision,
+                'usuario_descarga' => [
+                    'nombre' => auth()->user()->name ?? 'Usuario no identificado',
+                    'email' => auth()->user()->email ?? 'Email no disponible'
+                ],
             ];
 
             $nombreArchivo = "informe_inventario_{$fecha_hora}.pdf";
 
             $pdf = Pdf::loadView('informes.inventario', $data)
-                ->setPaper('a4', 'portrait');
+                ->setPaper('letter', 'portrait');
 
             $dispositionType = $request->input('preview') == '1' ? 'inline' : 'attachment';
             return response($pdf->output(), 200)
@@ -247,6 +260,332 @@ class InformePDFController extends Controller
                 'error' => true,
                 'message' => 'Error interno del servidor al generar el informe de inventario.'
             ], 500);
+        }
+    }
+
+    /**
+     * Generar informe PDF de reservas de un cliente específico
+     */
+    public function descargarInformeReservasCliente(Request $request)
+    {
+        try {
+            Carbon::setLocale('es');
+
+            $clienteId = $request->input('cliente_id');
+            if (!$clienteId) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'ID de cliente requerido.'
+                ], 400);
+            }
+
+            // Buscar el cliente (puede ser por ID de usuario o ID de cliente)
+            $cliente = null;
+            $user = null;
+
+            // Intentar buscar por ID de cliente primero
+            $clienteModel = Cliente::with(['user'])->find($clienteId);
+            if ($clienteModel) {
+                $cliente = $clienteModel;
+                $user = $clienteModel->user;
+            } else {
+                // Si no se encuentra, buscar por ID de usuario con rol cliente
+                $user = User::whereHas('roles', function($query) {
+                    $query->where('name', 'Cliente');
+                })->with(['cliente'])->find($clienteId);
+
+                if ($user) {
+                    $cliente = $user->cliente;
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Cliente no encontrado.'
+                ], 404);
+            }
+
+            // Obtener reservas del cliente
+            $reservas = collect();
+            if ($cliente) {
+                $reservas = $cliente->reservas()->with(['empleado.user', 'detallesTours.tour'])->orderBy('fecha', 'desc')->get();
+            }
+
+            // Procesar datos de reservas
+            $reservasData = $reservas->map(function($reserva) {
+                // Obtener tours de la reserva
+                $tours = $reserva->detallesTours->map(function($detalle) {
+                    return $detalle->tour ? $detalle->tour->nombre : 'Tour no disponible';
+                })->implode(', ');
+
+                return [
+                    'id' => $reserva->id,
+                    'fecha' => Carbon::parse($reserva->fecha)->format('d/m/Y'),
+                    'personas' => $reserva->mayores_edad + ($reserva->menores_edad ?? 0),
+                    'estado' => $reserva->estado,
+                    'total' => $reserva->total,
+                    'tours' => $tours ?: 'Sin tours asignados',
+                    'fecha_creacion' => Carbon::parse($reserva->created_at)->format('d/m/Y H:i'),
+                ];
+            });
+
+            // Calcular estadísticas
+            $totalReservas = $reservas->count();
+            $totalMonto = $reservas->sum('total');
+            $pendientes = $reservas->where('estado', 'PENDIENTE')->count();
+            $confirmadas = $reservas->where('estado', 'CONFIRMADA')->count();
+
+            // Resumen por estados
+            $estadosCount = $reservas->groupBy('estado');
+            $resumenEstados = [];
+            foreach ($estadosCount as $estado => $reservasEstado) {
+                $cantidad = $reservasEstado->count();
+                $monto = $reservasEstado->sum('total');
+                $porcentaje = $totalReservas > 0 ? ($cantidad / $totalReservas) * 100 : 0;
+
+                $resumenEstados[$estado] = [
+                    'cantidad' => $cantidad,
+                    'monto' => $monto,
+                    'porcentaje' => $porcentaje
+                ];
+            }
+
+            $fecha_emision = Carbon::now('America/El_Salvador')->format('d/m/Y H:i');
+            $fecha_hora = Carbon::now('America/El_Salvador')->format('Ymd_His');
+
+            $data = [
+                'titulo' => 'Informe de Reservas del Cliente',
+                'cliente' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'numero_identificacion' => $cliente->numero_identificacion ?? 'N/A',
+                    'telefono' => $cliente->telefono ?? 'N/A',
+                ],
+                'reservas' => $reservasData,
+                'estadisticas' => [
+                    'total_reservas' => $totalReservas,
+                    'total_monto' => $totalMonto,
+                    'pendientes' => $pendientes,
+                    'confirmadas' => $confirmadas,
+                ],
+                'resumen_estados' => $resumenEstados,
+                'fecha_emision' => $fecha_emision,
+                'usuario_descarga' => [
+                    'nombre' => auth()->user()->name ?? 'Usuario no identificado',
+                    'email' => auth()->user()->email ?? 'Email no disponible'
+                ],
+            ];
+
+            $nombreArchivo = "informe_reservas_cliente_{$user->name}_{$fecha_hora}.pdf";
+            $nombreArchivo = preg_replace('/[^A-Za-z0-9_\-.]/', '_', $nombreArchivo); // Limpiar caracteres especiales
+
+            $pdf = Pdf::loadView('informes.reservas-cliente', $data)
+                ->setPaper('letter', 'portrait');
+
+            $dispositionType = $request->input('preview') == '1' ? 'inline' : 'attachment';
+            return response($pdf->output(), 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', $dispositionType . '; filename="' . $nombreArchivo . '"');
+
+        } catch (\Exception $e) {
+            Log::error('Error generando informe de reservas del cliente: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => true,
+                'message' => 'Error interno del servidor al generar el informe de reservas del cliente.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar informe PDF de ventas de un cliente específico
+     */
+    public function descargarInformeVentasCliente(Request $request)
+    {
+        try {
+            Carbon::setLocale('es');
+
+            $clienteId = $request->input('cliente_id');
+            if (!$clienteId) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'ID de cliente requerido.'
+                ], 400);
+            }
+
+            // Buscar el cliente (puede ser por ID de usuario o ID de cliente)
+            $cliente = null;
+            $user = null;
+
+            // Intentar buscar por ID de cliente primero
+            $clienteModel = Cliente::with(['user'])->find($clienteId);
+            if ($clienteModel) {
+                $cliente = $clienteModel;
+                $user = $clienteModel->user;
+            } else {
+                // Si no se encuentra, buscar por ID de usuario con rol cliente
+                $user = User::whereHas('roles', function($query) {
+                    $query->where('name', 'Cliente');
+                })->with(['cliente'])->find($clienteId);
+
+                if ($user) {
+                    $cliente = $user->cliente;
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Cliente no encontrado.'
+                ], 404);
+            }
+
+            // Obtener ventas del cliente
+            $ventas = collect();
+            if ($cliente) {
+                $ventas = $cliente->ventas()->with(['detalleVentas.producto'])->orderBy('fecha', 'desc')->get();
+            }
+
+            // Procesar datos de ventas
+            $ventasData = $ventas->map(function($venta) {
+                $productos = $venta->detalleVentas->map(function($detalle) {
+                    return [
+                        'nombre' => $detalle->producto->nombre ?? 'Producto eliminado',
+                        'cantidad' => $detalle->cantidad,
+                        'precio' => $detalle->precio_unitario,
+                    ];
+                });
+
+                return [
+                    'id' => $venta->id,
+                    'fecha' => Carbon::parse($venta->fecha)->format('d/m/Y'),
+                    'estado' => $venta->estado,
+                    'estado_label' => $this->getEstadoVentaLabel($venta->estado),
+                    'total' => $venta->total,
+                    'productos' => $productos,
+                ];
+            });
+
+            // Calcular estadísticas
+            $totalVentas = $ventas->count();
+            $totalMonto = $ventas->sum('total');
+            $completadas = $ventas->where('estado', 'completada')->count();
+
+            // Resumen por estados
+            $estadosCount = $ventas->groupBy('estado');
+            $resumenEstados = [];
+            foreach ($estadosCount as $estado => $ventasEstado) {
+                $cantidad = $ventasEstado->count();
+                $monto = $ventasEstado->sum('total');
+                $porcentaje = $totalVentas > 0 ? ($cantidad / $totalVentas) * 100 : 0;
+
+                $resumenEstados[$estado] = [
+                    'cantidad' => $cantidad,
+                    'monto' => $monto,
+                    'porcentaje' => $porcentaje,
+                    'estado_label' => $this->getEstadoVentaLabel($estado)
+                ];
+            }
+
+            // Productos más comprados
+            $productosPopulares = [];
+            if ($cliente && $ventas->isNotEmpty()) {
+                $detallesVentas = DetalleVenta::whereIn('venta_id', $ventas->pluck('id'))
+                    ->with('producto')
+                    ->get()
+                    ->groupBy('producto_id');
+
+                foreach ($detallesVentas as $productoId => $detalles) {
+                    $producto = $detalles->first()->producto;
+                    if ($producto) {
+                        $cantidadTotal = $detalles->sum('cantidad');
+                        $montoTotal = $detalles->sum(function($detalle) {
+                            return $detalle->cantidad * $detalle->precio_unitario;
+                        });
+
+                        $productosPopulares[] = [
+                            'nombre' => $producto->nombre,
+                            'cantidad_total' => $cantidadTotal,
+                            'monto_total' => $montoTotal
+                        ];
+                    }
+                }
+
+                // Ordenar por cantidad total descendente
+                usort($productosPopulares, function($a, $b) {
+                    return $b['cantidad_total'] <=> $a['cantidad_total'];
+                });
+
+                // Tomar solo los primeros 10
+                $productosPopulares = array_slice($productosPopulares, 0, 10);
+            }
+
+            $fecha_emision = Carbon::now('America/El_Salvador')->format('d/m/Y H:i');
+            $fecha_hora = Carbon::now('America/El_Salvador')->format('Ymd_His');
+
+            $data = [
+                'titulo' => 'Informe de Ventas del Cliente',
+                'cliente' => [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'numero_identificacion' => $cliente->numero_identificacion ?? 'N/A',
+                    'telefono' => $cliente->telefono ?? 'N/A',
+                ],
+                'ventas' => $ventasData,
+                'estadisticas' => [
+                    'total_ventas' => $totalVentas,
+                    'total_monto' => $totalMonto,
+                    'completadas' => $completadas,
+                ],
+                'resumen_estados' => $resumenEstados,
+                'productos_populares' => $productosPopulares,
+                'fecha_emision' => $fecha_emision,
+                'usuario_descarga' => [
+                    'nombre' => auth()->user()->name ?? 'Usuario no identificado',
+                    'email' => auth()->user()->email ?? 'Email no disponible'
+                ],
+            ];
+
+            $nombreArchivo = "informe_ventas_cliente_{$user->name}_{$fecha_hora}.pdf";
+            $nombreArchivo = preg_replace('/[^A-Za-z0-9_\-.]/', '_', $nombreArchivo); // Limpiar caracteres especiales
+
+            $pdf = Pdf::loadView('informes.ventas-cliente', $data)
+                ->setPaper('letter', 'portrait');
+
+            $dispositionType = $request->input('preview') == '1' ? 'inline' : 'attachment';
+            return response($pdf->output(), 200)
+                ->header('Content-Type', 'application/pdf')
+                ->header('Content-Disposition', $dispositionType . '; filename="' . $nombreArchivo . '"');
+
+        } catch (\Exception $e) {
+            Log::error('Error generando informe de ventas del cliente: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'error' => true,
+                'message' => 'Error interno del servidor al generar el informe de ventas del cliente.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper para obtener etiquetas de estado de venta
+     */
+    private function getEstadoVentaLabel($estado)
+    {
+        switch ($estado) {
+            case 'pendiente':
+                return 'Pendiente de Pago';
+            case 'completada':
+                return 'Completada';
+            case 'cancelada':
+                return 'Cancelada';
+            default:
+                return ucfirst($estado);
         }
     }
 }
