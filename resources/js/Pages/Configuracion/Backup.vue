@@ -33,13 +33,17 @@
                             class="flex bg-blue-500 hover:bg-blue-600 disabled:bg-gray-400 border border-blue-500 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-all duration-300 items-center justify-center w-full sm:w-auto"
                         >
                             <FontAwesomeIcon
-                                :icon="isGenerating ? faSpinner : faDownload"
+                                :icon="isGenerating ? faSpinner : faFileArchive"
                                 :class="{ 'animate-spin': isGenerating }"
                                 class="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-white"
                             />
-                            <span v-if="isGenerating">Generando...</span>
-                            <span v-else class="hidden sm:inline">Generar Respaldo</span>
-                            <span v-else class="sm:hidden">Generar</span>
+                            <template v-if="isGenerating">
+                                <span>Generando...</span>
+                            </template>
+                            <template v-else>
+                                <span class="hidden sm:inline">Generar Respaldo</span>
+                                <span class="sm:hidden">Generar</span>
+                            </template>
                         </button>
                         <button
                             @click="cleanupBackups"
