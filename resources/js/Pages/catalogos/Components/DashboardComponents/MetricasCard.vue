@@ -22,7 +22,7 @@
                     <p class="text-[#a68700] text-xs sm:text-sm font-medium opacity-90 truncate">{{ metrics[1].label }}</p>
                     <p class="text-[#a68700] text-lg sm:text-2xl font-bold mt-1">
                         <span class="hidden sm:inline">{{ metrics[1].value }}</span>
-                        <span class="sm:hidden">{{ formatValueForMobile(metrics[1].value, dashboardData.inventario) }}</span>
+                        <span class="sm:hidden">{{ formatValueForMobile(metrics[1].rawValue || metrics[1].value) }}</span>
                     </p>
                     <p class="text-[#a68700] text-xs opacity-70 mt-1">Ingresos de ventas completadas hoy</p>
                 </div>

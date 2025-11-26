@@ -59,7 +59,7 @@
                 <hr class="my-2 border-t-2 border-gray-200 opacity-30" />
                 <p class="text-lg sm:text-xl font-bold text-gray-900 mt-1">
                   <span class="hidden sm:inline">{{ widgets[2].value }}</span>
-                  <span class="sm:hidden">{{ formatValueForMobile(widgets[2].value, dashboardData.inventario) }}</span>
+                  <span class="sm:hidden">{{ formatValueForMobile(widgets[2].rawValue || widgets[2].value) }}</span>
                 </p>
                 <p class="text-xs text-gray-500 mt-1">Click para ver inventario</p>
               </div>

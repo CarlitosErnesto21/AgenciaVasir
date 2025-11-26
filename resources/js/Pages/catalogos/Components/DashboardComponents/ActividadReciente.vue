@@ -1,10 +1,22 @@
 <template>
     <!-- Actividad Reciente -->
     <div class="bg-gray-50 rounded-lg shadow-xl border border-gray-100 p-4 sm:p-6">
-    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4 tracking-wide">
+    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3 tracking-wide">
         <FontAwesomeIcon :icon="faClock" class="text-blue-500 mr-2" />
         Actividad Reciente
     </h3>
+
+    <!-- Texto informativo -->
+    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mb-3 sm:mb-4">
+        <div class="flex items-start space-x-2">
+            <FontAwesomeIcon :icon="faShoppingCart" class="text-green-500 text-sm mt-0.5 flex-shrink-0" />
+            <div class="text-xs sm:text-sm text-green-700">
+                <p class="font-medium mb-1">Ventas completadas y reservas recientes</p>
+                <p class="text-green-600">Solo se muestran ventas con estado "completada" y las últimas reservas registradas en el sistema.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="space-y-2 sm:space-y-3 max-h-48 sm:max-h-64 overflow-y-auto">
             <!-- Ventas Recientes -->
             <div v-for="venta in (dashboardData.ventas || []).slice(0, 3)" :key="'venta-' + venta.id"
@@ -30,8 +42,8 @@
                     </div>
                 </div>
                 <span class="text-xs sm:text-sm font-semibold text-yellow-600 flex-shrink-0 ml-2">
-                    <span class="hidden sm:inline">${{ Number(venta.total || 0).toLocaleString('es-ES') }}</span>
-                    <span class="sm:hidden">${{ formatValueForMobile('$' + (venta.total || 0)) }}</span>
+                    <span class="hidden sm:inline">${{ Number(venta.total || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }}</span>
+                    <span class="sm:hidden">${{ formatValueForMobile(venta.total || 0) }}</span>
                 </span>
             </div>
 

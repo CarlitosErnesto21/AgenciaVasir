@@ -23,6 +23,17 @@
             </div>
         </template>
 
+        <!-- Texto informativo -->
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
+            <div class="flex items-start space-x-2">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-yellow-500 text-sm mt-0.5 flex-shrink-0" />
+                <div class="text-xs sm:text-sm text-yellow-700">
+                    <p class="font-medium mb-1">Productos que requieren reabastecimiento</p>
+                    <p class="text-yellow-600">Se muestran productos con stock actual igual o menor al stock mínimo configurado. Es recomendable reponerlos pronto.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="space-y-3 overflow-y-auto max-h-[60vh] sm:max-h-[70vh] px-2 sm:px-0">
             <div v-if="dashboardData.stockBajo && dashboardData.stockBajo.length > 0"
                 class="space-y-3">

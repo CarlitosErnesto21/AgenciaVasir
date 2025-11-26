@@ -43,6 +43,8 @@ class VentaController extends Controller
         // Filtro de fecha para optimizar dashboard
         if ($request->has('desde')) {
             $query->where('fecha', '>=', $request->desde);
+            // Solo mostrar ventas completadas en el dashboard
+            $query->where('estado', 'completada');
         }
 
         $ventas = $query->orderBy('fecha', 'desc')->get();

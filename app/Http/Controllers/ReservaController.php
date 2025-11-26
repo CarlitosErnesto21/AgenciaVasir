@@ -900,18 +900,27 @@ class ReservaController extends Controller
     {
         try {
             // Resumen de tours usando la estructura correcta de BD
+            // Solo incluir tours con estado FINALIZADO de los últimos 6 meses (dinámico)
+            $fechaLimite = now()->subMonths(6);
+
             $toursResumen = DB::table('reservas')
                 ->join('detalles_reservas_tours', 'reservas.id', '=', 'detalles_reservas_tours.reserva_id')
                 ->join('tours', 'detalles_reservas_tours.tour_id', '=', 'tours.id')
+                ->where('tours.estado', 'FINALIZADO')
+                ->where('tours.fecha_regreso', '>=', $fechaLimite) // Solo tours finalizados en los últimos 6 meses
                 ->select(
                     'tours.nombre',
+                    'tours.fecha_regreso',
                     DB::raw("'tours' as tipo"),
-                    DB::raw('COUNT(CASE WHEN reservas.estado = "Pendiente" THEN 1 END) as total_pendientes'),
-                    DB::raw('COUNT(CASE WHEN reservas.estado = "Confirmado" THEN 1 END) as total_confirmadas'),
-                    DB::raw('COUNT(CASE WHEN reservas.estado = "Rechazada" THEN 1 END) as total_rechazadas'),
+                    DB::raw('COUNT(CASE WHEN reservas.estado = "PENDIENTE" THEN 1 END) as total_pendientes'),
+                    DB::raw('COUNT(CASE WHEN reservas.estado = "CONFIRMADA" THEN 1 END) as total_confirmadas'),
+                    DB::raw('COUNT(CASE WHEN reservas.estado = "CANCELADA" THEN 1 END) as total_canceladas'),
+                    DB::raw('COUNT(CASE WHEN reservas.estado = "FINALIZADA" THEN 1 END) as total_finalizadas'),
                     DB::raw('COUNT(*) as total_reservas')
                 )
-                ->groupBy('tours.id', 'tours.nombre')
+                ->groupBy('tours.id', 'tours.nombre', 'tours.fecha_regreso')
+                ->orderByRaw('COUNT(*) DESC')
+                ->limit(5)
                 ->get();
 
             // Por ahora solo manejamos tours, pero se puede extender para hoteles

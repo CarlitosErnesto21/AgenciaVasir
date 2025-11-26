@@ -143,16 +143,30 @@ const toggleProductosStockBajoModal = () => {
 
 // ✅ FUNCIÓN para formatear valores en mobile
 const formatValueForMobile = (value, originalData = null) => {
-    // Si es el valor del inventario, usar el valor original sin formatear
-    if (value.includes('$')) {
+    // Manejar valores numéricos directos (sin símbolo $)
+    if (typeof value === 'number') {
+        if (value >= 1000000) {
+            return '$' + (value / 1000000).toFixed(1) + 'M';
+        } else if (value >= 1000) {
+            return '$' + (value / 1000).toFixed(1) + 'k';
+        } else if (value >= 100) {
+            return '$' + Math.round(value);
+        } else {
+            return '$' + value.toFixed(2);
+        }
+    }
+
+    // Manejar valores string que contienen $
+    if (typeof value === 'string' && value.includes('$')) {
         let numericValue;
 
         // Si tenemos acceso a los datos originales, usarlos
         if (originalData && originalData.valor_total_inventario) {
             numericValue = parseFloat(originalData.valor_total_inventario);
         } else {
-            // Intentar extraer el número del valor formateado
-            numericValue = parseFloat(value.replace(/[$,.\s]/g, ''));
+            // Intentar extraer el número del valor formateado (manejar tanto . como , como separador decimal)
+            const cleanValue = value.replace(/[$\s]/g, '').replace(/,/g, '.');
+            numericValue = parseFloat(cleanValue);
         }
 
         if (isNaN(numericValue)) {
@@ -162,9 +176,11 @@ const formatValueForMobile = (value, originalData = null) => {
         if (numericValue >= 1000000) {
             return '$' + (numericValue / 1000000).toFixed(1) + 'M';
         } else if (numericValue >= 1000) {
-            return '$' + (numericValue / 1000).toFixed(0) + 'k';
+            return '$' + (numericValue / 1000).toFixed(1) + 'k';
+        } else if (numericValue >= 100) {
+            return '$' + Math.round(numericValue);
         } else {
-            return '$' + numericValue.toFixed(0);
+            return '$' + numericValue.toFixed(2);
         }
     }
     return value;
@@ -326,7 +342,8 @@ const updateMetrics = (inventarioData, ventasData, reservasData, resumenReservas
 
     // ✅ Actualizar valores principales
     metrics.value[0].value = ventasHoy.toString();
-    metrics.value[1].value = `$${ingresosHoyVentas.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    metrics.value[1].value = `$${ingresosHoyVentas.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    metrics.value[1].rawValue = ingresosHoyVentas; // Valor numérico para móviles
     metrics.value[2].value = reservasDelMes.toString();
     metrics.value[3].value = toursActivos.toString();
 
@@ -338,7 +355,8 @@ const updateMetrics = (inventarioData, ventasData, reservasData, resumenReservas
 
     widgets.value[0].value = reservasPendientes.toString();
     widgets.value[1].value = (inventarioData.productos_stock_bajo || 0).toString();
-    widgets.value[2].value = `$${Number(inventarioData.valor_total_inventario || 0).toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    widgets.value[2].value = `$${Number(inventarioData.valor_total_inventario || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    widgets.value[2].rawValue = Number(inventarioData.valor_total_inventario || 0); // Valor numérico para móviles
     widgets.value[3].value = clientesActivos.toString();
 };
 
@@ -500,7 +518,19 @@ onMounted(() => {
 
                 <!-- COLUMNA CENTRAL: Gráfico Principal - Responsive -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
-                    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Inventario por Estado</h3>
+                    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Inventario por Estado</h3>
+
+                    <!-- Texto informativo -->
+                    <div class="bg-purple-50 border border-purple-200 rounded-lg p-3 mb-3 sm:mb-4">
+                        <div class="flex items-start space-x-2">
+                            <i class="pi pi-chart-pie text-purple-500 text-sm mt-0.5 flex-shrink-0"></i>
+                            <div class="text-xs sm:text-sm text-purple-700">
+                                <p class="font-medium mb-1">Estado actual del inventario</p>
+                                <p class="text-purple-600">Productos disponibles (stock > mínimo), stock bajo (stock ≤ mínimo) y agotados (stock = 0).</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="h-48 sm:h-64">
                         <Chart v-if="chartDataPie"
                             type="pie"
@@ -515,7 +545,19 @@ onMounted(() => {
 
                 <!-- COLUMNA DERECHA: Estadísticas de Reservas - Responsive -->
                 <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-4 sm:p-6">
-                    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Reservas por Estado</h3>
+                    <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Reservas por Estado</h3>
+
+                    <!-- Texto informativo -->
+                    <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 mb-3 sm:mb-4">
+                        <div class="flex items-start space-x-2">
+                            <i class="pi pi-chart-bar text-orange-500 text-sm mt-0.5 flex-shrink-0"></i>
+                            <div class="text-xs sm:text-sm text-orange-700">
+                                <p class="font-medium mb-1">Distribución de reservas por estado</p>
+                                <p class="text-orange-600">Muestra todas las reservas registradas agrupadas por su estado actual en el sistema.</p>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="h-48 sm:h-64">
                         <Chart v-if="chartDataBar"
                             type="bar"

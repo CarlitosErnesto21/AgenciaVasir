@@ -1,16 +1,28 @@
 <template>
     <!-- Top 5 Tours Más Reservados -->
     <div class="bg-gray-50 rounded-lg shadow-xl border border-[#fbeee6] p-4 sm:p-6 mt-4 sm:mt-6">
-        <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
+        <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">
             <i class="pi pi-star text-yellow-500 mr-2"></i>
             <span class="hidden sm:inline">Top 5 Tours Más Reservados</span>
             <span class="sm:hidden">Top Tours</span>
         </h3>
+
+        <!-- Texto informativo -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-3 sm:mb-4">
+            <div class="flex items-start space-x-2">
+                <i class="pi pi-info-circle text-blue-500 text-sm mt-0.5 flex-shrink-0"></i>
+                <div class="text-xs sm:text-sm text-blue-700">
+                    <p class="font-medium mb-1">Mostrando tours finalizados de los últimos 6 meses</p>
+                    <p class="text-blue-600">Se actualiza automáticamente según la fecha actual. Solo incluye tours completados ordenados por cantidad de reservas.</p>
+                </div>
+            </div>
+        </div>
+
         <div class="h-48 sm:h-64">
-            <Chart v-if="chartDataDoughnut" 
-                type="doughnut" 
-                :data="chartDataDoughnut" 
-                :options="chartOptionsDoughnut" 
+            <Chart v-if="chartDataDoughnut"
+                type="doughnut"
+                :data="chartDataDoughnut"
+                :options="chartOptionsDoughnut"
                 class="w-full h-full" />
             <div v-else class="flex items-center justify-center h-full">
                 <p class="text-gray-500 text-xs sm:text-sm">No hay reservas registradas</p>
@@ -39,6 +51,7 @@ const props = defineProps({
 
 const chartOptionsDoughnut = {
     maintainAspectRatio: false,
+    responsive: true,
     plugins: {
         title: {
             display: true,
@@ -50,7 +63,36 @@ const chartOptionsDoughnut = {
             position: 'bottom',
             labels: {
                 usePointStyle: true,
-                color: '#374151'
+                color: '#374151',
+                padding: 10,
+                font: {
+                    size: function(context) {
+                        // Texto más pequeño en móviles
+                        return window.innerWidth < 640 ? 10 : 12;
+                    }
+                },
+                generateLabels: function(chart) {
+                    const data = chart.data;
+                    if (data.labels.length && data.datasets.length) {
+                        return data.labels.map((label, i) => {
+                            const dataset = data.datasets[0];
+                            const value = dataset.data[i];
+                            // Truncar labels para móviles
+                            const truncatedLabel = window.innerWidth < 640 && label.length > 20
+                                ? label.substring(0, 17) + '...'
+                                : label;
+                            return {
+                                text: `${truncatedLabel} (${value})`,
+                                fillStyle: dataset.backgroundColor[i],
+                                strokeStyle: dataset.borderColor ? dataset.borderColor[i] : dataset.backgroundColor[i],
+                                lineWidth: dataset.borderWidth || 0,
+                                hidden: false,
+                                index: i
+                            };
+                        });
+                    }
+                    return [];
+                }
             }
         },
         tooltip: {
