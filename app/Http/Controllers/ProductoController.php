@@ -578,12 +578,12 @@ class ProductoController extends Controller
     }
 
     /**
-     * Obtener productos disponibles (con stock > 0)
+     * Obtener productos disponibles (con stock > stock_minimo)
      */
     public function disponibles()
     {
         $productos = Producto::with('categoria')
-            ->where('stock_actual', '>', 0)
+            ->whereColumn('stock_actual', '>', 'stock_minimo')
             ->orderBy('nombre')
             ->get();
 

@@ -6,7 +6,10 @@ import Modal from '@/Components/Modal.vue';
 import SecondaryButton from '@/Components/SecondaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
 import { useForm } from '@inertiajs/vue3';
-import { nextTick, ref } from 'vue';
+import { nextTick, ref, computed, onMounted, onUnmounted } from 'vue';
+import { useToast } from 'primevue/usetoast';
+import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { faExclamationTriangle } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
     disabled: {
@@ -19,30 +22,135 @@ const props = defineProps({
     },
 });
 
+// Computed para determinar si es un cliente
+const isClient = computed(() => {
+    return props.rol === 'Cliente';
+});
+
 const confirmingUserDeletion = ref(false);
 const passwordInput = ref(null);
 
 // Estado para mostrar/ocultar contraseña
 const showPassword = ref(false);
 
+// Sistema de toast
+const toast = useToast();
+
+// Clave para localStorage del cooldown
+const COOLDOWN_STORAGE_KEY = 'account_deletion_cooldown';
+
+// Variables para el cooldown del botón
+const cooldownActive = ref(false);
+const cooldownSeconds = ref(0);
+let cooldownInterval = null;
+
+// Función para iniciar el cooldown de 5 minutos
+const startCooldown = () => {
+    const endTime = Date.now() + (5 * 60 * 1000); // 5 minutos desde ahora
+    localStorage.setItem(COOLDOWN_STORAGE_KEY, endTime.toString());
+
+    cooldownActive.value = true;
+    updateCooldownFromStorage();
+};
+
+// Función para actualizar el cooldown desde localStorage
+const updateCooldownFromStorage = () => {
+    const endTime = localStorage.getItem(COOLDOWN_STORAGE_KEY);
+
+    if (!endTime) {
+        cooldownActive.value = false;
+        cooldownSeconds.value = 0;
+        return;
+    }
+
+    const remaining = Math.max(0, Math.ceil((parseInt(endTime) - Date.now()) / 1000));
+
+    if (remaining <= 0) {
+        // El cooldown ha expirado
+        localStorage.removeItem(COOLDOWN_STORAGE_KEY);
+        cooldownActive.value = false;
+        cooldownSeconds.value = 0;
+        if (cooldownInterval) {
+            clearInterval(cooldownInterval);
+            cooldownInterval = null;
+        }
+        return;
+    }
+
+    // Aún hay tiempo restante
+    cooldownActive.value = true;
+    cooldownSeconds.value = remaining;
+
+    // Iniciar o continuar el interval
+    if (!cooldownInterval) {
+        cooldownInterval = setInterval(() => {
+            updateCooldownFromStorage();
+        }, 1000);
+    }
+};
+
+// Función para verificar y restaurar el cooldown al montar el componente
+const checkExistingCooldown = () => {
+    updateCooldownFromStorage();
+};
+
+// Función para formatear segundos a minutos:segundos
+const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}m ${remainingSeconds.toString().padStart(2, '0')}s`;
+};
+
 const form = useForm({
     password: '',
 });
 
 const confirmUserDeletion = () => {
-    if (props.disabled) return;
+    if (props.disabled || (isClient.value && cooldownActive.value)) return;
     confirmingUserDeletion.value = true;
     nextTick(() => passwordInput.value && passwordInput.value.focus());
 };
 
 const deleteUser = () => {
     if (props.disabled) return;
-    form.delete(route('profile.destroy'), {
-        preserveScroll: true,
-        onSuccess: () => closeModal(),
-        onError: () => passwordInput.value && passwordInput.value.focus(),
-        onFinish: () => form.reset(),
-    });
+
+    // Si es cliente, enviar solicitud de eliminación
+    if (isClient.value) {
+        form.post(route('profile.request-deletion'), {
+            preserveScroll: true,
+            onSuccess: () => {
+                closeModal();
+                // Mostrar toast de éxito
+                toast.add({
+                    severity: 'success',
+                    summary: 'Solicitud Enviada',
+                    detail: 'Tu solicitud de eliminación ha sido enviada al equipo de la Agencia VASIR. Recibirás una respuesta pronto.',
+                    life: 6000
+                });
+                // Iniciar cooldown de 5 minutos
+                startCooldown();
+            },
+            onError: () => {
+                passwordInput.value && passwordInput.value.focus();
+                // Mostrar toast de error
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Error al enviar la solicitud. Por favor, intenta de nuevo.',
+                    life: 4000
+                });
+            },
+            onFinish: () => form.reset(),
+        });
+    } else {
+        // Para otros roles, eliminar directamente
+        form.delete(route('profile.destroy'), {
+            preserveScroll: true,
+            onSuccess: () => closeModal(),
+            onError: () => passwordInput.value && passwordInput.value.focus(),
+            onFinish: () => form.reset(),
+        });
+    }
 };
 
 const closeModal = () => {
@@ -50,6 +158,19 @@ const closeModal = () => {
     form.clearErrors();
     form.reset();
 };
+
+// Verificar cooldown existente al montar el componente
+onMounted(() => {
+    checkExistingCooldown();
+});
+
+// Limpiar el interval cuando el componente se desmonte
+onUnmounted(() => {
+    if (cooldownInterval) {
+        clearInterval(cooldownInterval);
+        cooldownInterval = null;
+    }
+});
 </script>
 
 <template>
@@ -58,15 +179,18 @@ const closeModal = () => {
             <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                 <div class="flex-shrink-0 flex justify-center sm:block mb-2 sm:mb-0">
                     <div class="bg-red-100 rounded-full p-2 mx-auto">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                        </svg>
+                        <FontAwesomeIcon :icon="faExclamationTriangle" class="w-5 h-5 text-red-600" />
                     </div>
                 </div>
                 <div class="flex-1">
                     <h3 class="text-sm font-semibold text-red-900 mb-2">Zona de Peligro</h3>
                     <p class="text-red-800 text-sm leading-relaxed mb-3">
-                        Una vez eliminada tu cuenta, todos los recursos y datos serán eliminados permanentemente.
+                        <template v-if="isClient">
+                            Esta es irreversible. Al enviar la solicitud de eliminación, se notificará a nuestro equipo para que procese la eliminación de tu cuenta.
+                        </template>
+                        <template v-else>
+                            Una vez eliminada tu cuenta, todos los recursos y datos serán eliminados permanentemente.
+                        </template>
                     </p>
                     <div class="bg-white bg-opacity-60 rounded-md p-3 border-l-2 border-red-500">
                         <p class="text-red-900 font-medium text-xs">
@@ -79,7 +203,15 @@ const closeModal = () => {
                                 </template>
                             </template>
                             <template v-else>
-                                Esta acción no se puede deshacer. Todos tus datos se perderán permanentemente.
+                                <template v-if="isClient">
+                                    Nuestro equipo revisará tu solicitud y te contactará si es necesario.
+                                    <span v-if="cooldownActive" class="block mt-2 text-xs text-red-600 font-medium">
+                                        Debes esperar {{ formatTime(cooldownSeconds) }} antes de enviar otra solicitud.
+                                    </span>
+                                </template>
+                                <template v-else>
+                                    Esta acción no se puede deshacer. Todos tus datos se perderán permanentemente.
+                                </template>
                             </template>
                         </p>
                     </div>
@@ -90,15 +222,26 @@ const closeModal = () => {
         <div class="flex justify-center mt-2">
             <DangerButton
                 @click="confirmUserDeletion"
-                :disabled="props.disabled"
-                class="inline-flex items-center px-6 sm:px-7 py-3 bg-red-600 text-white text-base font-semibold
-                       rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500
-                       transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md w-full sm:w-auto"
+                :disabled="props.disabled || (isClient && cooldownActive)"
+                :class="[
+                    'inline-flex items-center px-6 sm:px-7 py-3 text-white text-base font-semibold rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 transition-colors shadow-md w-full sm:w-auto',
+                    cooldownActive && isClient ? 'bg-gray-500 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700',
+                    'disabled:opacity-50 disabled:cursor-not-allowed'
+                ]"
             >
-                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
-                </svg>
-                Eliminar Mi Cuenta
+                <template v-if="cooldownActive && isClient">
+                    <svg class="w-5 h-5 mr-2 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"/>
+                    </svg>
+                    Esperar {{ formatTime(cooldownSeconds) }}
+                </template>
+                <template v-else>
+                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path v-if="!isClient" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                    </svg>
+                    {{ isClient ? 'Enviar Solicitud de Eliminación' : 'Eliminar Mi Cuenta' }}
+                </template>
             </DangerButton>
         </div>
 
@@ -108,13 +251,11 @@ const closeModal = () => {
                 <div class="bg-red-600 rounded-t-2xl px-4 sm:px-8 py-6">
                     <div class="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <div class="flex-shrink-0 w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center mx-auto sm:mx-0">
-                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                            </svg>
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="w-6 h-6 text-white" />
                         </div>
                         <div class="text-center sm:text-left">
-                            <h2 class="text-2xl font-bold text-white">Confirmar Eliminación</h2>
-                            <p class="text-red-100 text-base">Esta acción es irreversible</p>
+                            <h2 class="text-2xl font-bold text-white">{{ isClient ? 'Solicitar Eliminación' : 'Confirmar Eliminación' }}</h2>
+                            <p class="text-red-100 text-base">{{ isClient ? 'Enviar solicitud al administrador' : 'Esta acción es irreversible' }}</p>
                         </div>
                     </div>
                 </div>
@@ -124,14 +265,19 @@ const closeModal = () => {
                     <div class="bg-red-50 border-l-4 border-red-400 p-4 sm:p-5 mb-8 rounded-xl shadow-sm">
                         <div class="flex flex-col sm:flex-row sm:items-start gap-3">
                             <div class="flex-shrink-0 flex justify-center sm:block mb-2 sm:mb-0">
-                                <svg class="w-5 h-5 text-red-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
-                                </svg>
+                                <FontAwesomeIcon :icon="faExclamationTriangle" class="w-5 h-5 text-red-500 mt-0.5" />
                             </div>
                             <div>
                                 <p class="text-red-800 text-base leading-relaxed">
-                                    Una vez eliminada tu cuenta, todos los recursos y datos serán eliminados permanentemente.
-                                    Ingresa tu contraseña para confirmar esta acción.
+                                    <template v-if="isClient">
+                                        Se enviará una solicitud al administrador para eliminar tu cuenta.
+                                        Una vez procesada, todos tus recursos y datos serán eliminados permanentemente.
+                                        Ingresa tu contraseña para confirmar el envío de la solicitud.
+                                    </template>
+                                    <template v-else>
+                                        Una vez eliminada tu cuenta, todos los recursos y datos serán eliminados permanentemente.
+                                        Ingresa tu contraseña para confirmar esta acción.
+                                    </template>
                                 </p>
                             </div>
                         </div>
@@ -190,7 +336,7 @@ const closeModal = () => {
                                    hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500
                                    disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-colors w-full sm:w-auto"
                         >
-                            {{ form.processing ? 'Eliminando...' : 'Sí, Eliminar' }}
+                            {{ form.processing ? (isClient ? 'Enviando solicitud...' : 'Eliminando...') : (isClient ? 'Sí, Enviar Solicitud' : 'Sí, Eliminar') }}
                         </DangerButton>
                     </div>
                 </div>

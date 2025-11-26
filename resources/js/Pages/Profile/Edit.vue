@@ -115,8 +115,20 @@ const goBack = () => {
                                 <div class="bg-red-200 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faExclamationTriangle" class="w-8 h-8 text-red-700" />
                                 </div>
-                                <h3 class="text-lg font-bold text-red-900 mb-1">Eliminar Cuenta</h3>
-                                <p class="text-red-700 text-sm text-center">Acción irreversible - procede con precaución</p>
+                                <h3 class="text-lg font-bold text-red-900 mb-1">
+                                    {{ !isAdmin ? 'Solicitar Eliminación' : 'Eliminar Cuenta' }}
+                                </h3>
+                                <p class="text-red-700 text-sm text-center">
+                                    <template v-if="!isAdmin">
+                                        Enviar una solicitud al equipo de la Agencia VASIR
+                                    </template>
+                                    <template v-else-if="user?.roles && user.roles.some(role => role.name === 'Empleado')">
+                                        Debes contactar al Administrador para eliminar tu cuenta
+                                    </template>
+                                    <template v-else>
+                                        Debes contactar a soporte para eliminar tu cuenta
+                                    </template>
+                                </p>
                             </div>
                         </div>
                     </template>

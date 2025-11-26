@@ -56,6 +56,11 @@ class ReservaController extends Controller
                 $query->whereDate('fecha', '<=', $request->fecha_fin);
             }
 
+            // Soporte para parámetro 'desde' del dashboard
+            if ($request->filled('desde')) {
+                $query->whereDate('fecha', '>=', $request->desde);
+            }
+
             if ($request->filled('busqueda')) {
                 $busqueda = $request->busqueda;
                 $query->whereHas('cliente.user', function ($q) use ($busqueda) {
@@ -74,7 +79,7 @@ class ReservaController extends Controller
             }
 
             // Si no hay filtros, devolver formato transformado con relaciones completas
-            if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id'])) {
+            if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id', 'desde'])) {
                 $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour'])->get();
 
                 // Transformar los datos igual que en el flujo paginado

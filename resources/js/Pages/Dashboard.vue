@@ -4,7 +4,7 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, watch } from "vue";
 import Chart from 'primevue/chart';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faCheck, faClock, faExclamationTriangle, faWallet, faUsers, faBox, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 
 // Importar componentes separados
@@ -103,7 +103,7 @@ const widgets = ref([
     {
         title: 'Reservas Pendientes',
         value: '0',
-        icon: 'pi pi-clock',
+        icon: 'faClock',
         color: 'bg-[#fff3b0] border-[#ffd600]',     // Fondo amarillo pálido, borde amarillo vibrante
         iconColor: 'text-[#ffd600]',                // Amarillo fuerte
         key: 'reservas_pendientes'
@@ -111,7 +111,7 @@ const widgets = ref([
     {
         title: 'Productos Stock Bajo',
         value: '0',
-        icon: 'pi pi-exclamation-triangle',
+        icon: 'faExclamationTriangle',
         color: 'bg-[#ffe5e5] border-[#ef233c]',     // Fondo rosado pálido, borde rojo vibrante
         iconColor: 'text-[#d90429]',                // Rojo fuerte
         key: 'productos_stock_bajo'
@@ -119,7 +119,7 @@ const widgets = ref([
     {
         title: 'Valor Inventario',
         value: '$0',
-        icon: 'pi pi-wallet',
+        icon: 'faWallet',
         color: 'bg-[#e5daff] border-[#6c00f9]',     // Fondo lavanda, borde púrpura intenso
         iconColor: 'text-[#480ca8]',                // Púrpura fuerte
         key: 'valor_total_inventario'
@@ -127,7 +127,7 @@ const widgets = ref([
     {
         title: 'Clientes Activos',
         value: '0',
-        icon: 'pi pi-users',
+        icon: 'faUsers',
         color: 'bg-[#d0f1ff] border-[#0077b6]',     // Fondo azul claro, borde azul vibrante
         iconColor: 'text-[#023e8a]',                // Azul fuerte
         key: 'clientes_activos'
@@ -288,35 +288,40 @@ const updateMetrics = (inventarioData, ventasData, reservasData, resumenReservas
     const reservas = Array.isArray(reservasData) ? reservasData : [];
     const tours = Array.isArray(toursData) ? toursData : [];
 
-    // Calcular ventas de hoy
-    const hoy = new Date().toISOString().split('T')[0];
+    // Calcular ventas completadas de hoy (usando fecha local para evitar problemas de zona horaria)
+    const ahora = new Date();
+    const hoy = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
     const ventasHoy = ventas.filter(venta => {
         if (!venta.fecha) return false;
         const fechaVenta = venta.fecha.split('T')[0];
-        return fechaVenta === hoy;
+        const esDeHoy = fechaVenta === hoy;
+        const esCompletada = venta.estado && venta.estado.toLowerCase() === 'completada';
+        return esDeHoy && esCompletada;
     }).length;
 
-    // Calcular ingresos de hoy de ventas
+    // Calcular ingresos de hoy de ventas completadas
     const ingresosHoyVentas = ventas.filter(venta => {
         if (!venta.fecha) return false;
         const fechaVenta = venta.fecha.split('T')[0];
-        return fechaVenta === hoy;
+        const esDeHoy = fechaVenta === hoy;
+        const esCompletada = venta.estado && venta.estado.toLowerCase() === 'completada';
+        return esDeHoy && esCompletada;
     }).reduce((total, venta) => total + (parseFloat(venta.total) || 0), 0);
 
-    // Calcular reservas del mes actual
+    // Calcular reservas finalizadas del mes actual
     const mesActual = new Date().getMonth();
     const añoActual = new Date().getFullYear();
     const reservasDelMes = reservas.filter(reserva => {
         if (!reserva.fecha_reserva && !reserva.fecha) return false;
         const fechaReserva = new Date(reserva.fecha_reserva || reserva.fecha);
-        return fechaReserva.getMonth() === mesActual && fechaReserva.getFullYear() === añoActual;
+        const esDeMesActual = fechaReserva.getMonth() === mesActual && fechaReserva.getFullYear() === añoActual;
+        const esFinalizada = reserva.estado && reserva.estado.toUpperCase() === 'FINALIZADA';
+        return esDeMesActual && esFinalizada;
     }).length;
 
-    // Tours activos (disponibles)
+    // Tours activos (solo con estado DISPONIBLE)
     const toursActivos = tours.filter(tour =>
-        !tour.estado ||
-        tour.estado.toLowerCase() === 'activo' ||
-        tour.estado.toLowerCase() === 'disponible'
+        tour.estado && tour.estado.toUpperCase() === 'DISPONIBLE'
     ).length;
 
     // ✅ Actualizar valores principales
@@ -327,7 +332,7 @@ const updateMetrics = (inventarioData, ventasData, reservasData, resumenReservas
 
     // ✅ Actualizar widgets adicionales
     const reservasPendientes = reservas.filter(reserva =>
-        reserva.estado && reserva.estado.toLowerCase() === 'pendiente'
+        reserva.estado && reserva.estado.toUpperCase() === 'PENDIENTE'
     ).length;
     const clientesActivos = new Set(reservas.map(r => r.cliente?.id).filter(id => id)).size;
 
@@ -465,7 +470,7 @@ onMounted(() => {
         <div v-else class="px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 mt-1 sm:mt-1">
             <!-- Header con botón de actualizar -->
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl sm:text-3xl font-bold text-blue-600">Dashboard administrativo</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-blue-600">Panel Administrativo</h1>
                 <button
                     @click="fetchDashboardData(true)"
                     :disabled="loading"

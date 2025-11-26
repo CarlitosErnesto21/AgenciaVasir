@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Mail\GoodbyeUserMail;
+use App\Mail\AccountDeletionRequestMail;
 use App\Mail\EmailChangedNotificationMail;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -110,7 +112,7 @@ class ProfileController extends Controller
             try {
                 // Enviar notificación al EMAIL ANTERIOR (por seguridad)
                 Mail::to($oldEmail)->send(new EmailChangedNotificationMail($user, $oldEmail, $user->email, true));
-                
+
                 // Enviar confirmación al EMAIL NUEVO
                 Mail::to($user->email)->send(new EmailChangedNotificationMail($user, $oldEmail, $user->email, false));
             } catch (\Exception $e) {
@@ -156,5 +158,40 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    /**
+     * Request account deletion (for clients).
+     */
+    public function requestDeletion(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'current_password'],
+        ]);
+
+        $user = $request->user();
+
+        // Verificar que el usuario sea un cliente
+        if (!$user->hasRole('Cliente')) {
+            return Redirect::route('profile.edit')->with('error', 'Solo los clientes pueden solicitar eliminación de cuenta a través de este método.');
+        }
+
+        try {
+            // Obtener todos los administradores
+            $admins = User::whereHas('roles', function($query) {
+                $query->where('name', 'Administrador');
+            })->get();
+
+            // Enviar correo a todos los administradores
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)->send(new AccountDeletionRequestMail($user));
+            }
+
+            return Redirect::route('profile.edit')->with('status', 'Tu solicitud de eliminación de cuenta ha sido enviada al administrador. Recibirás una respuesta pronto.');
+
+        } catch (\Exception $e) {
+            Log::error('Error enviando solicitud de eliminación de cuenta: ' . $e->getMessage());
+            return Redirect::route('profile.edit')->with('error', 'Error al enviar la solicitud. Por favor, intenta de nuevo.');
+        }
     }
 }

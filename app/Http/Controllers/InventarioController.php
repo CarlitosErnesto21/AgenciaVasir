@@ -43,7 +43,7 @@ class InventarioController extends Controller
         }
 
         $movimientos = $query->orderBy('fecha_movimiento', 'desc')->paginate(20);
-        
+
         // Productos para los filtros
         $productos = Producto::select('id', 'nombre', 'stock_actual', 'stock_minimo')
             ->with('categoria:id,nombre')
@@ -150,22 +150,23 @@ class InventarioController extends Controller
     {
         $resumen = [
             'total_productos' => Producto::count(),
-            'productos_disponibles' => Producto::where('stock_actual', '>', 0)->count(),
+            // ✅ CORREGIDO: Productos disponibles son aquellos con stock > stock_minimo
+            'productos_disponibles' => Producto::whereColumn('stock_actual', '>', 'stock_minimo')->count(),
             'productos_agotados' => Producto::where('stock_actual', '<=', 0)->count(),
             'productos_stock_bajo' => Producto::whereColumn('stock_actual', '<=', 'stock_minimo')
                 ->where('stock_actual', '>', 0)->count(),
             'movimientos_hoy' => Inventario::whereDate('fecha_movimiento', today())->count(),
-            
+
             // Valor del inventario
             'valor_total_inventario' => Producto::selectRaw('SUM(stock_actual * precio) as total')->value('total') ?? 0,
-            
+
             // Movimientos por tipo
             'entradas_mes' => Inventario::where('tipo_movimiento', 'ENTRADA')
                 ->whereMonth('fecha_movimiento', now()->month)->count(),
             'salidas_mes' => Inventario::where('tipo_movimiento', 'SALIDA')
                 ->whereMonth('fecha_movimiento', now()->month)->count(),
         ];
-        
+
         return response()->json($resumen);
     }
 
@@ -179,7 +180,7 @@ class InventarioController extends Controller
             ->where('stock_actual', '>', 0)
             ->orderBy('stock_actual', 'asc')
             ->get();
-            
+
         return response()->json($productos);
     }
 
@@ -192,7 +193,7 @@ class InventarioController extends Controller
             ->where('stock_actual', '<=', 0)
             ->orderBy('nombre')
             ->get();
-            
+
         return response()->json($productos);
     }
 
@@ -205,7 +206,7 @@ class InventarioController extends Controller
             ->with(['user', 'venta'])
             ->orderBy('fecha_movimiento', 'desc')
             ->paginate(15);
-            
+
         return response()->json([
             'producto' => $producto->load('categoria'),
             'movimientos' => $movimientos,
@@ -237,7 +238,7 @@ class InventarioController extends Controller
 
             // Obtener el producto y ajustar el stock
             $producto = $inventario->producto;
-            
+
             if ($inventario->tipo_movimiento === 'ENTRADA') {
                 // Si era una entrada, restar la cantidad del stock actual
                 $producto->stock_actual -= $inventario->cantidad;

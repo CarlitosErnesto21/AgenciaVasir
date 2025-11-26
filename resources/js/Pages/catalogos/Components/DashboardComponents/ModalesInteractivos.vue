@@ -15,7 +15,7 @@
     >
         <template #header>
             <div class="flex items-center">
-                <i class="pi pi-exclamation-triangle text-red-500 mr-2"></i>
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-500 mr-2" />
                 <span class="text-base sm:text-lg font-semibold text-gray-900">
                     <span class="hidden sm:inline">Productos con Stock Bajo</span>
                     <span class="sm:hidden">Stock Bajo</span>
@@ -32,7 +32,7 @@
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
                             <div class="p-2 bg-red-100 rounded-full flex-shrink-0">
-                                <i class="pi pi-box text-red-600 text-sm"></i>
+                                <FontAwesomeIcon :icon="faBox" class="text-red-600 text-sm" />
                             </div>
                             <div class="flex-1 min-w-0">
                                 <h4 class="font-medium text-gray-900 text-sm truncate">{{ producto.nombre }}</h4>
@@ -57,7 +57,7 @@
             </div>
 
             <div v-else class="text-center py-6 sm:py-8">
-                <i class="pi pi-check-circle text-green-400 text-3xl sm:text-4xl mb-3"></i>
+                <FontAwesomeIcon :icon="faCheckCircle" class="text-green-400 text-3xl sm:text-4xl mb-3" />
                 <p class="text-gray-500 text-sm sm:text-base">¡Perfecto! Todos los productos tienen stock suficiente</p>
             </div>
         </div>
@@ -79,7 +79,7 @@
 <script setup>
 import { Link } from '@inertiajs/vue3';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faTimes, faCheck } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faCheck, faExclamationTriangle, faBox, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
 
 defineProps({
     showProductosStockBajoModal: {

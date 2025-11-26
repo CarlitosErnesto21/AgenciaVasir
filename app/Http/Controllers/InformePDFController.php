@@ -208,9 +208,8 @@ class InformePDFController extends Controller
                         'stock_total' => $stockTotal,
                         'valor_total' => $valorTotal,
                         'productos_agotados' => $productos->where('stock_actual', '<=', 0)->count(),
-                        'productos_stock_bajo' => $productos->where('stock_actual', '>', 0)
-                                                             ->where('stock_actual', '<=', function($p) {
-                                                                 return $p->stock_minimo;
+                        'productos_stock_bajo' => $productos->filter(function($p) {
+                                                                 return $p->stock_actual > 0 && $p->stock_actual <= $p->stock_minimo;
                                                              })->count(),
                     ];
                 })

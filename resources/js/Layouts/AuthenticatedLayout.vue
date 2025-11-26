@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
                     <!-- Logo con efecto profesional -->
                     <Link
                         :href="route('dashboard')"
-                        title="Ir al Dashboard"
+                        title="Ir al Panel"
                         class="flex items-center cursor-pointer select-none group"
                     >
                         <img
@@ -372,7 +372,7 @@ onBeforeUnmount(() => {
                         <Link :href="route('dashboard')" class="flex items-center group" @click="isSidebarOpen = false">
                             <img
                                 src="/images/logo.png"
-                                class="w-20 h-7 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300"
+                                class="h-8 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300"
                                 alt="Logo VASIR"
                             />
                         </Link>
@@ -383,6 +383,14 @@ onBeforeUnmount(() => {
                         >
                             <FontAwesomeIcon :icon="faTimes" class="w-4 h-4" />
                         </button>
+                    </div>
+
+                    <!-- Título del menú móvil -->
+                    <div class="px-4 text-center">
+                        <h2 class="text-xl font-bold text-gray-800 drop-shadow-md">
+                            MENÚ PRINCIPAL
+                        </h2>
+                        <div class="mt-2 w-16 h-1 bg-red-500/70 rounded-full mx-auto drop-shadow"></div>
                     </div>
 
                     <!-- Navegación móvil profesional -->
@@ -406,7 +414,7 @@ onBeforeUnmount(() => {
                                     :icon="faHouseChimneyUser"
                                     class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                 />
-                                <span class="font-semibold">Dashboard</span>
+                                <span class="font-semibold">Panel Administrativo</span>
                             </Link>
 
                             <!-- Separador visual -->
@@ -427,7 +435,7 @@ onBeforeUnmount(() => {
                                             :icon="faBoxesStacked"
                                             class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                         />
-                                        <span class="font-semibold">Catálogos</span>
+                                        <span class="font-semibold">Control de Catálogos</span>
                                     </div>
                                     <FontAwesomeIcon
                                         :icon="faChevronDown"
@@ -448,7 +456,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseSidebar('productos')"
                                     >
                                         <FontAwesomeIcon :icon="faBox" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Productos</span>
+                                        <span class="font-medium">Productos y Stock</span>
                                     </Link>
                                     <Link
                                         :href="route('tours')"
@@ -461,7 +469,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseSidebar('tours')"
                                     >
                                         <FontAwesomeIcon :icon="faRoute" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Tours</span>
+                                        <span class="font-medium">Tours y Reservas</span>
                                     </Link>
                                     <Link
                                         :href="route('hoteles')"
@@ -487,7 +495,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseSidebar('paquetesVisas')"
                                     >
                                         <FontAwesomeIcon :icon="faIdCard" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Paquetes Visa</span>
+                                        <span class="font-medium">Paquetes de Visa</span>
                                     </Link>
                                 </div>
                             </div>
@@ -574,7 +582,7 @@ onBeforeUnmount(() => {
                                     :icon="faFileInvoice"
                                     class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                 />
-                                <span class="font-semibold">Informes</span>
+                                <span class="font-semibold">Reportes</span>
                             </Link>
 
                             <!-- Separador visual -->
@@ -622,7 +630,7 @@ onBeforeUnmount(() => {
                                         class="flex items-center py-2.5 px-3 rounded-lg transition-all duration-300 group text-gray-700 hover:bg-red-600 hover:text-white hover:shadow-md"
                                     >
                                         <FontAwesomeIcon :icon="faUsers" class="w-4 h-4 mr-3 text-gray-600 group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium">Usuarios</span>
+                                        <span class="font-medium">Control de Empleados</span>
                                     </Link>
                                 </div>
                             </div>
@@ -661,13 +669,13 @@ onBeforeUnmount(() => {
                                     ? 'bg-gradient-to-r from-red-700 to-red-500 text-white font-bold shadow-lg'
                                     : 'text-white hover:bg-gradient-to-r hover:from-red-700 hover:to-red-500 hover:text-white hover:shadow-lg'
                             ]"
-                            title="Dashboard"
+                            title="Panel de Control"
                         >
                             <FontAwesomeIcon
                                 :icon="faHouseChimneyUser"
                                 class="mr-3 w-5 h-5 group-hover:scale-110 transition-transform duration-300"
                             />
-                            <span class="font-semibold">Dashboard</span>
+                            <span class="font-semibold">Panel Administrativo</span>
                         </Link>
 
                         <!-- Catálogos -->
@@ -689,7 +697,7 @@ onBeforeUnmount(() => {
                                         :icon="faBoxesStacked"
                                         class="mr-3 w-5 h-5 group-hover:scale-110 transition-transform duration-300"
                                     />
-                                    <span class="font-semibold">Catálogos</span>
+                                    <span class="font-semibold">Control Catálogos</span>
                                 </div>
                                 <FontAwesomeIcon
                                     :icon="faChevronDown"
@@ -718,7 +726,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseDropdown('productos')"
                                     >
                                         <FontAwesomeIcon :icon="faBox" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Productos</span>
+                                        <span class="font-medium text-sm">Productos y Stock</span>
                                     </Link>
                                     <Link
                                         :href="route('tours')"
@@ -731,7 +739,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseDropdown('tours')"
                                     >
                                         <FontAwesomeIcon :icon="faRoute" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Tours</span>
+                                        <span class="font-medium text-sm">Tours y Reservas</span>
                                     </Link>
                                     <Link
                                         :href="route('hoteles')"
@@ -757,7 +765,7 @@ onBeforeUnmount(() => {
                                         @click.prevent="navigateAndCloseDropdown('paquetesVisas')"
                                     >
                                         <FontAwesomeIcon :icon="faIdCard" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                        <span class="font-medium text-sm">Paquetes Visa</span>
+                                        <span class="font-medium text-sm">Paquetes de Visa</span>
                                     </Link>
                                 </div>
                             </transition>
@@ -836,7 +844,7 @@ onBeforeUnmount(() => {
                                 :icon="faFileInvoice"
                                 class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
                             />
-                            <span class="font-semibold">Informes</span>
+                            <span class="font-semibold">Reportes</span>
                         </Link>
                     </div>
                 </nav>
@@ -902,7 +910,7 @@ onBeforeUnmount(() => {
                             >
                                 <FontAwesomeIcon
                                     :icon="faUsers" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
-                                <span class="font-medium text-sm">Usuarios</span>
+                                <span class="font-medium text-sm">Control de Empleados</span>
                             </Link>
                         </div>
                     </transition>

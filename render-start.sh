@@ -15,12 +15,12 @@ done
 echo "Base de datos conectada!"
 
 # Ejecutar migraciones (fresh para recrear la base de datos completamente)
-echo "Recreando base de datos con migraciones frescas..."
-php artisan migrate:fresh --force --seed
+# echo "Recreando base de datos con migraciones frescas..."
+# php artisan migrate:fresh --force --seed
 
 # Ejecutar migraciones (solo migrate, no fresh en producción)
-# echo "Ejecutando migraciones..."
-# php artisan migrate --force
+echo "Ejecutando migraciones..."
+php artisan migrate --force
 
 # Configurar sistema de almacenamiento
 echo "Configurando almacenamiento..."
