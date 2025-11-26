@@ -2,6 +2,7 @@
 import Catalogo from '../Catalogo.vue'
 import ModalReservaTour from './Modales/ModalReservaTour.vue'
 import ModalAuthRequerido from './Modales/ModalAuthRequerido.vue'
+import ToursPagination from './Components/ToursPagination.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
@@ -29,6 +30,11 @@ const error = ref(null)
 
 // Variable para búsqueda
 const searchQuery = ref('')
+
+// 📄 Variables de paginación
+const currentPage = ref(1)
+const itemsPerPage = ref(4) // Siempre 4 tours por página
+const totalPages = ref(0)
 
 // Variables para el modal de reserva de tour
 const showReservaDialog = ref(false)
@@ -151,8 +157,8 @@ const estadisticas = computed(() => {
   }
 })
 
-// Computed properties para todos los tours con filtro de búsqueda
-const toursVisibles = computed(() => {
+// Computed properties para todos los tours con filtro de búsqueda (sin paginación)
+const allFilteredTours = computed(() => {
   let filtrados = tours.value.filter(tour => {
     // Mostrar todos los tours excepto los cancelados/finalizados
     // EN_CURSO se muestra deshabilitado como COMPLETO
@@ -177,6 +183,18 @@ const toursVisibles = computed(() => {
   return filtrados
 })
 
+// 📄 Cálculo del total de páginas
+const totalPagesComputed = computed(() => {
+  return Math.ceil(allFilteredTours.value.length / itemsPerPage.value)
+})
+
+// 📄 Tours paginados para mostrar
+const toursVisibles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return allFilteredTours.value.slice(start, end)
+})
+
 // Helper para verificar si un tour está completo o no disponible para reservar
 const esTourCompleto = (tour) => {
   const cuposDisponibles = parseInt(tour.cupos_disponibles) || 0
@@ -195,11 +213,11 @@ const getEtiquetaEstado = (tour) => {
 
 // Mantener para compatibilidad (pero ya no se usa para separar secciones)
 const toursDisponibles = computed(() => {
-  return toursVisibles.value.filter(tour => !esTourCompleto(tour))
+  return allFilteredTours.value.filter(tour => !esTourCompleto(tour))
 })
 
 const toursSinCupos = computed(() => {
-  return toursVisibles.value.filter(tour => esTourCompleto(tour))
+  return allFilteredTours.value.filter(tour => esTourCompleto(tour))
 })
 
 // Función para obtener tours desde la API
@@ -420,9 +438,29 @@ const irAImagen = (index) => {
   currentImageIndex.value = index
 }
 
+// 📄 Funciones de paginación
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPagesComputed.value) {
+    currentPage.value = page
+  }
+}
+
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPagesComputed.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
 // Función para limpiar búsqueda
 const limpiarBusqueda = () => {
   searchQuery.value = ''
+  currentPage.value = 1 // Resetear a la primera página
 }
 
 // Función para obtener la clase CSS según disponibilidad de cupos
@@ -441,6 +479,11 @@ const obtenerClaseCupos = (tour) => {
     return 'text-green-600' // Muchos cupos
   }
 }
+
+// Watcher para resetear la paginación cuando cambie la búsqueda
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
 
 // Funciones para los botones
 const verMasInfo = (tour) => {
@@ -494,7 +537,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Estado vacío -->
-        <div v-else-if="!loading && toursVisibles.length === 0" class="text-center py-12">
+        <div v-else-if="!loading && allFilteredTours.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-red-50 to-indigo-50 border-2 border-red-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
             <div class="text-6xl mb-4">
                 <FontAwesomeIcon :icon="faVolcano" class="w-16 h-16 text-indigo-500 mx-auto" />
@@ -506,7 +549,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Barra de búsqueda optimizada -->
-        <div v-if="toursVisibles.length > 0" class="bg-gradient-to-br from-white to-red-50 rounded-2xl p-4 shadow-lg border border-red-200 mb-6">
+        <div v-if="allFilteredTours.length > 0" class="bg-gradient-to-br from-white to-red-50 rounded-2xl p-4 shadow-lg border border-red-200 mb-6">
           <div class="max-w-xl mx-auto">
             <div class="text-center mb-3">
               <div class="flex items-center justify-center gap-2 mb-2">
@@ -540,8 +583,8 @@ const verMasInfo = (tour) => {
             <div class="mt-2 text-center">
               <p class="text-xs text-gray-600 bg-white/60 rounded-full px-3 py-1 inline-block">
                 {{ searchQuery
-                  ? `${toursDisponibles.length} resultado${toursDisponibles.length !== 1 ? 's' : ''} encontrado${toursDisponibles.length !== 1 ? 's' : ''}`
-                  : `${toursDisponibles.length} destino${toursDisponibles.length !== 1 ? 's' : ''} disponible${toursDisponibles.length !== 1 ? 's' : ''}`
+                  ? `${allFilteredTours.length} resultado${allFilteredTours.length !== 1 ? 's' : ''} encontrado${allFilteredTours.length !== 1 ? 's' : ''}`
+                  : `${allFilteredTours.length} destino${allFilteredTours.length !== 1 ? 's' : ''} disponible${allFilteredTours.length !== 1 ? 's' : ''}`
                 }}
               </p>
             </div>
@@ -549,7 +592,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Todos los Tours -->
-        <div v-if="toursVisibles.length > 0" class="mb-8">
+        <div v-if="allFilteredTours.length > 0" class="mb-8">
 
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             <Card
@@ -698,9 +741,19 @@ const verMasInfo = (tour) => {
               </template>
             </Card>
           </div>
+
+          <!-- Controles de paginación -->
+          <ToursPagination
+            :currentPage="currentPage"
+            :totalPagesComputed="totalPagesComputed"
+            :allFilteredTours="allFilteredTours"
+            :itemsPerPage="itemsPerPage"
+            colorScheme="red"
+            @go-to-page="goToPage"
+            @go-to-previous-page="goToPreviousPage"
+            @go-to-next-page="goToNextPage"
+          />
         </div>
-
-
 
         <!-- Info adicional profesional -->
         <div class="w-full">

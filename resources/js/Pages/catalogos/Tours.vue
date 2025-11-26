@@ -70,7 +70,6 @@ const estadosOptions = ref([
     { label: 'Completo', value: 'COMPLETO' },
     { label: 'En Curso', value: 'EN_CURSO' },
     { label: 'Finalizado', value: 'FINALIZADO' },
-    { label: 'Cancelada', value: 'CANCELADA' },
     { label: 'Reprogramada', value: 'REPROGRAMADA' }
 ]);
 const showImageDialog = ref(false);

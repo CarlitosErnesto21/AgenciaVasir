@@ -10,7 +10,7 @@ class Pais extends Model
     use HasFactory;
 
     protected $table = 'paises';
-    
+
     protected $fillable = ['nombre'];
 
     // Normalizar el nombre automáticamente a MAYÚSCULAS
@@ -24,5 +24,10 @@ class Pais extends Model
     public function provincias()
     {
         return $this->hasMany(Provincia::class, 'pais_id');
+    }
+
+    public function hoteles()
+    {
+        return $this->hasManyThrough(Hotel::class, Provincia::class, 'pais_id', 'provincia_id');
     }
 }

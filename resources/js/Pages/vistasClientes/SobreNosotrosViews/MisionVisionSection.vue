@@ -1,5 +1,5 @@
 <script setup>
-import { faBook, faBullseye, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faBook, faBullseye, faCog, faStar } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 const props = defineProps({
@@ -31,7 +31,9 @@ const props = defineProps({
           </div>
           <div v-else class="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-6 lg:p-8 shadow-md sm:shadow-lg">
             <div class="text-center">
-              <div class="text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-3 md:mb-4">📝</div>
+              <div class="text-2xl sm:text-3xl md:text-4xl mb-2 sm:mb-3 md:mb-4">
+                <FontAwesomeIcon :icon="faBook" class="text-yellow-500 mr-2" />
+              </div>
               <h2 class="text-sm sm:text-base md:text-lg lg:text-xl font-bold bg-gradient-to-r from-yellow-600 to-orange-600 bg-clip-text text-transparent mb-1 sm:mb-2">Descripción en desarrollo</h2>
               <p class="text-xs sm:text-sm md:text-base text-gray-700 leading-tight sm:leading-relaxed">
                 La información de VASIR se encuentra en desarrollo... ¡Sigue disfrutando de nuestros servicios!
@@ -103,7 +105,9 @@ const props = defineProps({
         <!-- Mensaje cuando no hay contenido configurado -->
         <div v-if="!siteSettings.mission && !siteSettings.vision" class="text-center py-8 sm:py-12 mb-8 sm:mb-12 px-4">
           <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 sm:p-6 md:p-8 max-w-2xl mx-auto">
-            <div class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">⚙️</div>
+            <div class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">
+                <FontAwesomeIcon :icon="faCog" class="text-gray-400" />
+            </div>
             <h3 class="text-lg sm:text-xl font-semibold text-yellow-800 mb-2">Contenido en configuración</h3>
             <p class="text-sm sm:text-base text-yellow-700">
               La misión y visión de la empresa están siendo configuradas por nuestro equipo.

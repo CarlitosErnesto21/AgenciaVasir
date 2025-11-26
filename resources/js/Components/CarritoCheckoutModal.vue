@@ -293,7 +293,6 @@ const createVenta = async () => {
 
 // Manejar eventos del pago
 const handlePaymentSuccess = (paymentData) => {
-  console.log('Pago exitoso:', paymentData)
   paymentSuccess.value = true
   emit('payment-completed', {
     success: true,
@@ -383,8 +382,6 @@ const procesarPagoWompi = async () => {
 
     // Si es error 419, intentar renovar token
     if (response.status === 419) {
-      console.log('🔄 Token CSRF expirado, renovando...')
-
       // Hacer petición para obtener nuevo token
       const freshResponse = await fetch('/tienda', {
         headers: {
@@ -401,7 +398,6 @@ const procesarPagoWompi = async () => {
         const metaTag = document.querySelector('meta[name="csrf-token"]')
         if (metaTag) {
           metaTag.setAttribute('content', newToken)
-          console.log('✅ Token CSRF renovado:', newToken)
         }
       }
 
@@ -445,7 +441,6 @@ const procesarPagoWompi = async () => {
 }
 
 const handlePaymentPending = (paymentData) => {
-  console.log('Pago pendiente:', paymentData)
   // Podrías mostrar un estado de "pago pendiente" aquí
 }
 

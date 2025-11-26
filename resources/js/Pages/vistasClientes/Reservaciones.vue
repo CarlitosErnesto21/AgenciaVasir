@@ -1,11 +1,12 @@
 <script setup>
 import Catalogo from '../Catalogo.vue'
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import ToursPagination from './Components/ToursPagination.vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faMapMarkerAlt, faChevronLeft, faChevronRight, faImage, faXmark, faPause, faPlay,
-    faPlane, faSearch, faTimes, faExclamationTriangle, faHotel } from '@fortawesome/free-solid-svg-icons'
+    faPlane, faSearch, faTimes, faExclamationTriangle, faHotel, faCheckCircle, faUser, faZap } from '@fortawesome/free-solid-svg-icons'
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import Dialog from 'primevue/dialog'
 import Button from 'primevue/button'
@@ -34,11 +35,16 @@ const error = ref(null)
 // Variable para búsqueda
 const searchQuery = ref('')
 
+// 📄 Variables de paginación
+const currentPage = ref(1)
+const itemsPerPage = ref(4) // Siempre 4 hoteles por página
+const totalPages = ref(0)
+
 // URL de la API para hoteles
 const url = "/api/hoteles"
 
-// Computed properties para hoteles filtrados por búsqueda
-const hotelesDisponibles = computed(() => {
+// Computed para todos los hoteles con filtro de búsqueda (sin paginación)
+const allFilteredHoteles = computed(() => {
   let filtrados = hoteles.value
 
   if (searchQuery.value.trim()) {
@@ -57,6 +63,18 @@ const hotelesDisponibles = computed(() => {
   }
 
   return filtrados
+})
+
+// 📄 Cálculo del total de páginas
+const totalPagesComputed = computed(() => {
+  return Math.ceil(allFilteredHoteles.value.length / itemsPerPage.value)
+})
+
+// 📄 Hoteles paginados para mostrar
+const hotelesDisponibles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return allFilteredHoteles.value.slice(start, end)
 })
 
 // Ya no necesitamos filtrar por estado, todos los hoteles están disponibles
@@ -189,10 +207,35 @@ const navegarADetalle = (hotel) => {
   router.visit(`/hoteles/${hotel.id}`)
 }
 
+// 📄 Funciones de paginación
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPagesComputed.value) {
+    currentPage.value = page
+  }
+}
+
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPagesComputed.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
 // Función para limpiar búsqueda
 const limpiarBusqueda = () => {
   searchQuery.value = ''
+  currentPage.value = 1 // Resetear a la primera página
 }
+
+// Watcher para resetear la paginación cuando cambie la búsqueda
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
 
 // Variables para el carrusel de imágenes
 const showImageDialog = ref(false)
@@ -409,6 +452,23 @@ const irAImagen = (index) => {
           </div>
         </div>
 
+        <!-- Estado vacío por filtro de búsqueda -->
+        <div v-else-if="!loading && hoteles.length > 0 && allFilteredHoteles.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
+            <div class="text-6xl mb-4">
+                <FontAwesomeIcon :icon="faSearch" class="text-blue-400"/>
+            </div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">No se encontraron hoteles</h3>
+            <p class="text-gray-600 mb-4 leading-relaxed">No hay hoteles que coincidan con tu búsqueda "{{ searchQuery }}".</p>
+            <button
+              @click="limpiarBusqueda"
+              class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+            >
+              Limpiar búsqueda
+            </button>
+          </div>
+        </div>
+
         <!-- Barra de búsqueda optimizada -->
         <div v-if="hoteles.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
           <div class="max-w-xl mx-auto">
@@ -444,14 +504,16 @@ const irAImagen = (index) => {
             <div class="mt-2 text-center">
               <p class="text-xs text-gray-600 bg-white/60 rounded-full px-3 py-1 inline-block">
                 {{ searchQuery
-                  ? `${hotelesDisponibles.length} resultado${hotelesDisponibles.length !== 1 ? 's' : ''} encontrado${hotelesDisponibles.length !== 1 ? 's' : ''}`
-                  : `${hotelesDisponibles.length} hotel${hotelesDisponibles.length !== 1 ? 'es' : ''} disponible${hotelesDisponibles.length !== 1 ? 's' : ''}`
+                  ? `${allFilteredHoteles.length} resultado${allFilteredHoteles.length !== 1 ? 's' : ''} encontrado${allFilteredHoteles.length !== 1 ? 's' : ''}`
+                  : `${allFilteredHoteles.length} hotel${allFilteredHoteles.length !== 1 ? 'es' : ''} disponible${allFilteredHoteles.length !== 1 ? 's' : ''}`
                 }}
               </p>
             </div>
           </div>
         </div>
 
+        <!-- Grilla de hoteles -->
+        <div v-if="allFilteredHoteles.length > 0" class="mb-8">
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 lg:gap-10">
             <Card
               v-for="hotel in hotelesDisponibles"
@@ -481,18 +543,20 @@ const irAImagen = (index) => {
                   <!-- Indicador de múltiples imágenes mejorado -->
                   <div v-if="hotel.imagenes && hotel.imagenes.length > 1" class="absolute bottom-4 right-4 bg-black/70 backdrop-blur-sm text-white px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 border border-white/20">
                     <FontAwesomeIcon :icon="faImage" class="w-3 h-3" />
-                    <span>{{ hotel.imagenes.length }} fotos</span>
-                  </div>
-
-                  <!-- Título superpuesto -->
-                  <div class="absolute bottom-0 left-0 right-0 p-4 text-white">
-                    <h3 class="font-bold text-lg leading-tight line-clamp-2 drop-shadow-2xl group-hover:text-yellow-300 transition-colors duration-300">{{ hotel.nombre }}</h3>
+                    <span>{{ hotel.imagenes.length }}</span>
                   </div>
                 </div>
               </template>
 
               <template #content>
                 <div class="flex-1 flex flex-col p-4">
+                  <!-- Nombre del hotel con truncate -->
+                  <div class="mb-4 pb-3 border-b border-gray-200">
+                    <h3 class="font-bold text-lg text-gray-800 leading-tight truncate group-hover:text-blue-600 transition-colors duration-300" :title="hotel.nombre">
+                      {{ hotel.nombre }}
+                    </h3>
+                  </div>
+
                   <!-- Información de ubicación con diseño moderno -->
                   <div class="space-y-3 mb-3">
                     <!-- Dirección con icono circular -->
@@ -545,6 +609,18 @@ const irAImagen = (index) => {
               </template>
             </Card>
           </div>
+
+          <!-- Controles de paginación -->
+          <ToursPagination
+            :currentPage="currentPage"
+            :totalPagesComputed="totalPagesComputed"
+            :allFilteredTours="allFilteredHoteles"
+            :itemsPerPage="itemsPerPage"
+            colorScheme="blue"
+            @go-to-page="goToPage"
+            @go-to-previous-page="goToPreviousPage"
+            @go-to-next-page="goToNextPage"
+          />
         </div>
 
         <!-- Sección eliminada: Hoteles No Disponibles ya no es necesaria -->
@@ -725,24 +801,31 @@ const irAImagen = (index) => {
 
             <!-- Contenido -->
             <div class="p-2 md:p-8">
-              <div class="grid grid-cols-3 md:grid-cols-3 gap-2 md:gap-8">
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-8">
                 <div class="text-center p-2 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                  <div class="text-3xl md:text-4xl mb-2">🔍</div>
+                  <div class="text-blue-600 mb-3">
+                    <FontAwesomeIcon :icon="faCheckCircle" class="text-3xl md:text-4xl" />
+                  </div>
                   <h3 class="font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2 text-lg">Hoteles Verificados</h3>
                   <p class="text-gray-600 text-sm leading-relaxed">Todos nuestros hoteles están verificados y seleccionados cuidadosamente</p>
                 </div>
                 <div class="text-center p-2 md:p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                  <div class="text-3xl md:text-4xl mb-2">💬</div>
+                  <div class="text-purple-600 mb-3">
+                    <FontAwesomeIcon :icon="faUser" class="text-3xl md:text-4xl" />
+                  </div>
                   <h3 class="font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2 text-lg">Atención Personalizada</h3>
                   <p class="text-gray-600 text-sm leading-relaxed">Te asesoramos personalmente para encontrar el alojamiento perfecto</p>
                 </div>
                 <div class="text-center p-2 md:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
-                  <div class="text-3xl md:text-4xl mb-2">⚡</div>
+                  <div class="text-red-600 mb-3">
+                    <FontAwesomeIcon :icon="faZap" class="text-3xl md:text-4xl" />
+                  </div>
                   <h3 class="font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2 text-lg">Respuesta Rápida</h3>
                   <p class="text-gray-600 text-sm leading-relaxed">Respuesta inmediata por WhatsApp y email para tus consultas</p>
                 </div>
               </div>
             </div>
+          </div>
         </div>
       </div>
     </div>

@@ -60,7 +60,6 @@ export function useCarrito() {
             } catch (firstAttemptError) {
                 // Si es error 419 (CSRF), intentar renovar token
                 if (firstAttemptError.response?.status === 419) {
-                    console.log('🔄 Token CSRF expirado, renovando...')
                     try {
                         // Hacer una petición GET para obtener nuevo token
                         const freshResponse = await axios.get('/tienda', {
@@ -79,7 +78,6 @@ export function useCarrito() {
                                 const metaTag = document.head.querySelector('meta[name="csrf-token"]')
                                 if (metaTag) {
                                     metaTag.setAttribute('content', newToken)
-                                    console.log('✅ Token CSRF renovado:', newToken)
                                 }
                             }
                         }

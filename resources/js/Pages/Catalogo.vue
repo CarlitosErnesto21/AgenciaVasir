@@ -505,7 +505,7 @@ function abrirEmail() {
         <!-- Header del sidebar -->
         <div class="relative flex items-center justify-between px-4 sm:px-6 py-4 sm:py-6 border-b border-red-100/50 bg-white/80 backdrop-blur-sm">
             <Link :href="route('inicio')" class="flex items-center group" @click="isSidebarOpen = false">
-              <img src="/images/logo.png" class="w-16 h-5 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
+              <img src="/images/logo.png" class="h-8 sm:w-24 sm:h-8 group-hover:scale-105 transition-transform duration-300" />
             </Link>
               <button
                 @click="isSidebarOpen = false"

@@ -1,5 +1,5 @@
 <script setup>
-import { faDiamond, faDiamondTurnRight } from '@fortawesome/free-solid-svg-icons';
+import { faTrophy, faShield, faSeedling, faLightbulb, faStar, faBullseye, faHandshake, faGem, faFire, faMagic, faRocket, faDumbbell, faMedal, faStarOfLife, faZap, faSun } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 
 const props = defineProps({
@@ -9,7 +9,24 @@ const props = defineProps({
     }
 });
 
-const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝', '💎', '🔥', '✨', '🚀', '💪', '🎖️', '🌟', '⚡', '🔆'];
+const iconosValores = [
+  { icon: faTrophy, color: 'text-yellow-500' },      // Trofeo - Dorado
+  { icon: faShield, color: 'text-blue-600' },        // Escudo - Azul
+  { icon: faSeedling, color: 'text-green-500' },     // Plántula - Verde
+  { icon: faLightbulb, color: 'text-yellow-400' },   // Bombilla - Amarillo
+  { icon: faStar, color: 'text-purple-500' },        // Estrella - Púrpura
+  { icon: faBullseye, color: 'text-red-500' },       // Diana - Rojo
+  { icon: faHandshake, color: 'text-orange-500' },   // Apretón - Naranja
+  { icon: faGem, color: 'text-pink-500' },           // Gema - Rosa
+  { icon: faFire, color: 'text-red-600' },           // Fuego - Rojo intenso
+  { icon: faMagic, color: 'text-purple-600' },       // Magia - Púrpura intenso
+  { icon: faRocket, color: 'text-indigo-500' },      // Cohete - Índigo
+  { icon: faDumbbell, color: 'text-gray-600' },      // Pesas - Gris
+  { icon: faMedal, color: 'text-amber-500' },        // Medalla - Ámbar
+  { icon: faStarOfLife, color: 'text-teal-500' },    // Estrella de vida - Teal
+  { icon: faZap, color: 'text-yellow-600' },         // Rayo - Amarillo intenso
+  { icon: faSun, color: 'text-orange-400' }          // Sol - Naranja claro
+];
 </script>
 
 <template>
@@ -17,8 +34,8 @@ const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝',
   <div class="mb-8 sm:mb-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="bg-gradient-to-r from-blue-600 to-red-600 text-white text-center py-4 sm:py-6 rounded-t-xl">
-            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold">
-                💎
+            <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold flex items-center justify-center gap-3">
+                <FontAwesomeIcon :icon="faGem" class="text-yellow-300" />
                 Nuestros Valores
             </h2>
         </div>
@@ -31,7 +48,9 @@ const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝',
           :key="valor.id"
           class="bg-white hover:bg-gradient-to-br hover:from-red-50 hover:to-blue-50 rounded-lg sm:rounded-xl p-3 sm:p-4 md:p-5 lg:p-4 shadow-md hover:shadow-xl border border-gray-200 hover:border-red-200 text-center transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
         >
-          <div class="text-2xl sm:text-3xl md:text-4xl lg:text-3xl mb-2 sm:mb-3 md:mb-4 lg:mb-2">{{ iconosValores[index % iconosValores.length] }}</div>
+          <div class="text-2xl sm:text-3xl md:text-4xl lg:text-3xl mb-2 sm:mb-3 md:mb-4 lg:mb-2" :class="iconosValores[index % iconosValores.length].color">
+            <FontAwesomeIcon :icon="iconosValores[index % iconosValores.length].icon" />
+          </div>
           <h3 class="text-sm sm:text-base md:text-lg lg:text-base font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent mb-1 sm:mb-2 md:mb-3 lg:mb-2 leading-tight">{{ valor.titulo }}</h3>
           <p class="text-xs sm:text-sm md:text-sm lg:text-xs text-gray-700 leading-relaxed">{{ valor.descripcion }}</p>
         </div>
@@ -42,7 +61,9 @@ const iconosValores = ['🏆', '🛡️', '🌱', '💡', '⭐', '🎯', '🤝',
     <div v-else class="bg-gradient-to-br from-gray-50 to-white p-6 sm:p-8 rounded-b-xl shadow-lg">
       <div class="text-center py-8 sm:py-12">
         <div class="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 rounded-lg p-4 sm:p-6 md:p-8 max-w-2xl mx-auto">
-          <div class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4">💎</div>
+          <div class="text-4xl sm:text-5xl md:text-6xl mb-3 sm:mb-4 text-yellow-500">
+            <FontAwesomeIcon :icon="faGem" />
+          </div>
           <h3 class="text-lg sm:text-xl font-semibold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent mb-2">Valores en configuración</h3>
           <p class="text-sm sm:text-base text-gray-700">
             Los valores corporativos están siendo configurados por nuestro equipo.

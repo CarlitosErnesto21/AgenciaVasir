@@ -213,6 +213,9 @@ const listaATexto = (lista) => {
     return lista.join('|');
 };
 
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
 // Función para manejar resize de ventana
 const handleResize = () => {
     windowWidth.value = window.innerWidth;
@@ -589,9 +592,6 @@ const onRowClick = (event) => {
     }
 };
 
-// Variable reactiva para el ancho de ventana
-const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
-
 // Estilo responsive para el diálogo
 const dialogStyle = computed(() => {
     if (windowWidth.value < 640) {
@@ -601,7 +601,9 @@ const dialogStyle = computed(() => {
     } else {
         return { width: '450px' };
     }
-});// 🖼️ Manejo de imágenes
+});
+
+// 🖼️ Manejo de imágenes
 const handleImageUploadClick = async () => {
     if (!canAddMoreImages.value) {
         toast.add({
@@ -1456,7 +1458,7 @@ const onDescripcionInput = (event) => {
             v-model:visible="showImageDialog"
             header="Detalles del Paquete"
             :modal="true"
-            :style="{ width: '90vw', maxWidth: '800px' }"
+            :style="dialogStyle"
             :closable="false"
             :draggable="false"
         >

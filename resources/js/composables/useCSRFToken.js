@@ -14,22 +14,21 @@ export function useCSRFToken() {
         try {
             isRefreshing.value = true
             const response = await axios.get('/api/csrf-token')
-            
+
             if (response.data && response.data.csrf_token) {
                 csrfToken.value = response.data.csrf_token
-                
+
                 // Actualizar el meta tag
                 const metaTag = document.querySelector('meta[name="csrf-token"]')
                 if (metaTag) {
                     metaTag.setAttribute('content', csrfToken.value)
                 }
-                
+
                 // Actualizar axios defaults
                 if (axios.defaults.headers.common) {
                     axios.defaults.headers.common['X-CSRF-TOKEN'] = csrfToken.value
                 }
-                
-                console.log('CSRF token refreshed successfully')
+
                 return csrfToken.value
             }
         } catch (error) {
@@ -38,7 +37,7 @@ export function useCSRFToken() {
         } finally {
             isRefreshing.value = false
         }
-        
+
         return csrfToken.value
     }
 
@@ -61,12 +60,12 @@ export function useCSRFToken() {
         if (refreshInterval) {
             clearInterval(refreshInterval)
         }
-        
+
         // Refrescar el token cada X minutos, pero solo si hay actividad reciente
         refreshInterval = setInterval(async () => {
             const timeSinceLastActivity = Date.now() - lastActivity
             const maxInactivity = 30 * 60 * 1000 // 30 minutos
-            
+
             // Solo refrescar si el usuario ha estado activo recientemente
             if (timeSinceLastActivity < maxInactivity) {
                 try {
@@ -106,7 +105,6 @@ export function useCSRFToken() {
             (response) => response,
             async (error) => {
                 if (error.response && error.response.status === 419) {
-                    console.log('CSRF token expired, attempting to refresh...')
                     try {
                         await refreshCSRFToken()
                         // Reintentar la request original con el nuevo token

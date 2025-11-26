@@ -2,6 +2,7 @@
 import Catalogo from '../Catalogo.vue'
 import ModalReservaTour from './Modales/ModalReservaTour.vue'
 import ModalAuthRequerido from './Modales/ModalAuthRequerido.vue'
+import ToursPagination from './Components/ToursPagination.vue'
 import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import { router, usePage } from '@inertiajs/vue3'
@@ -34,6 +35,11 @@ const error = ref(null)
 
 // Variable para búsqueda
 const searchQuery = ref('')
+
+// 📄 Variables de paginación
+const currentPage = ref(1)
+const itemsPerPage = ref(4) // Siempre 4 tours por página
+const totalPages = ref(0)
 
 // URL de la API
 const url = "/api/tours?categoria=internacional"
@@ -83,40 +89,8 @@ const getEtiquetaEstado = (tour) => {
   return 'DISPONIBLE'
 }
 
-// Computed properties para mostrar todos los tours
-const toursDisponibles = computed(() => {
-  let filtrados = tours.value.filter(tour => {
-    const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
-    return cuposDisponibles > 0
-  })
-
-  if (searchQuery.value.trim()) {
-    const query = searchQuery.value.toLowerCase().trim()
-    filtrados = filtrados.filter(tour => {
-      const nombre = tour.nombre?.toLowerCase() || ''
-      const pais = tour.pais?.nombre?.toLowerCase() || ''
-      const ubicacion = tour.ubicacion?.toLowerCase() || ''
-      const descripcion = tour.descripcion?.toLowerCase() || ''
-
-      return nombre.includes(query) ||
-             pais.includes(query) ||
-             ubicacion.includes(query) ||
-             descripcion.includes(query)
-    })
-  }
-
-  return filtrados
-})
-
-const toursSinCupos = computed(() => {
-  return tours.value.filter(tour => {
-    const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
-    return cuposDisponibles === 0
-  })
-})
-
-// Computed para mostrar todos los tours visibles (unificado)
-const toursVisibles = computed(() => {
+// Computed para todos los tours con filtro de búsqueda (sin paginación)
+const allFilteredTours = computed(() => {
   let filtrados = tours.value.filter(tour => {
     // Mostrar todos los tours excepto los cancelados/finalizados
     // EN_CURSO se muestra deshabilitado como COMPLETO
@@ -139,6 +113,33 @@ const toursVisibles = computed(() => {
   }
 
   return filtrados
+})
+
+// 📄 Cálculo del total de páginas
+const totalPagesComputed = computed(() => {
+  return Math.ceil(allFilteredTours.value.length / itemsPerPage.value)
+})
+
+// 📄 Tours paginados para mostrar
+const toursVisibles = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value
+  const end = start + itemsPerPage.value
+  return allFilteredTours.value.slice(start, end)
+})
+
+// Computed properties para mostrar todos los tours (para compatibilidad)
+const toursDisponibles = computed(() => {
+  return allFilteredTours.value.filter(tour => {
+    const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
+    return cuposDisponibles > 0
+  })
+})
+
+const toursSinCupos = computed(() => {
+  return allFilteredTours.value.filter(tour => {
+    const cuposDisponibles = tour.cupos_disponibles !== null && tour.cupos_disponibles !== undefined ? tour.cupos_disponibles : 0
+    return cuposDisponibles === 0
+  })
 })
 
 // Función para obtener tours desde la API
@@ -452,10 +453,35 @@ watch(user, async (newUser) => {
   }
 }, { immediate: false })
 
+// 📄 Funciones de paginación
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPagesComputed.value) {
+    currentPage.value = page
+  }
+}
+
+const goToPreviousPage = () => {
+  if (currentPage.value > 1) {
+    goToPage(currentPage.value - 1)
+  }
+}
+
+const goToNextPage = () => {
+  if (currentPage.value < totalPagesComputed.value) {
+    goToPage(currentPage.value + 1)
+  }
+}
+
 // Función para limpiar búsqueda
 const limpiarBusqueda = () => {
   searchQuery.value = ''
+  currentPage.value = 1 // Resetear a la primera página
 }
+
+// Watcher para resetear la paginación cuando cambie la búsqueda
+watch(searchQuery, () => {
+  currentPage.value = 1
+})
 
 // Función para obtener la clase CSS según disponibilidad de cupos
 const obtenerClaseCupos = (tour) => {
@@ -526,7 +552,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Estado vacío -->
-        <div v-else-if="!loading && toursVisibles.length === 0" class="text-center py-12">
+        <div v-else-if="!loading && allFilteredTours.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
             <div class="text-6xl mb-4">
                 <FontAwesomeIcon :icon="faGlobeAmericas" class="w-16 h-16 text-blue-400" />
@@ -538,7 +564,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Barra de búsqueda optimizada -->
-        <div v-if="toursVisibles.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
+        <div v-if="allFilteredTours.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
           <div class="max-w-xl mx-auto">
             <div class="text-center mb-3">
               <div class="flex items-center justify-center gap-2 mb-2">
@@ -572,8 +598,8 @@ const verMasInfo = (tour) => {
             <div class="mt-2 text-center">
               <p class="text-xs text-gray-600 bg-white/60 rounded-full px-3 py-1 inline-block">
                 {{ searchQuery
-                  ? `${toursVisibles.length} resultado${toursVisibles.length !== 1 ? 's' : ''} encontrado${toursVisibles.length !== 1 ? 's' : ''}`
-                  : `${toursVisibles.length} destino${toursVisibles.length !== 1 ? 's' : ''} mostrado${toursVisibles.length !== 1 ? 's' : ''}`
+                  ? `${allFilteredTours.length} resultado${allFilteredTours.length !== 1 ? 's' : ''} encontrado${allFilteredTours.length !== 1 ? 's' : ''}`
+                  : `${allFilteredTours.length} destino${allFilteredTours.length !== 1 ? 's' : ''} disponible${allFilteredTours.length !== 1 ? 's' : ''}`
                 }}
               </p>
             </div>
@@ -581,7 +607,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Todos los Tours -->
-        <div v-if="toursVisibles.length > 0" class="mb-8">
+        <div v-if="allFilteredTours.length > 0" class="mb-8">
 
           <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8">
             <Card
@@ -728,9 +754,19 @@ const verMasInfo = (tour) => {
               </template>
             </Card>
           </div>
+
+          <!-- Controles de paginación -->
+          <ToursPagination
+            :currentPage="currentPage"
+            :totalPagesComputed="totalPagesComputed"
+            :allFilteredTours="allFilteredTours"
+            :itemsPerPage="itemsPerPage"
+            colorScheme="blue"
+            @go-to-page="goToPage"
+            @go-to-previous-page="goToPreviousPage"
+            @go-to-next-page="goToNextPage"
+          />
         </div>
-
-
 
         <!-- Info adicional profesional -->
         <div class="w-full">

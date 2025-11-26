@@ -1,7 +1,7 @@
 <script setup>
 import Catalogo from './Catalogo.vue'
 import { Link } from '@inertiajs/vue3'
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import axios from 'axios'
 import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
@@ -9,7 +9,10 @@ import Toast from 'primevue/toast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import { faBagShopping, faBullseye, faPhone, faStar, faVolcano, faFaceSmile, faTrophy,
     faMapLocationDot, faGlobeAmericas, faHotel, faPassport, faDollarSign, faChevronLeft,
-    faChevronRight, faPlane, faTimes } from '@fortawesome/free-solid-svg-icons'
+    faChevronRight, faPlane, faTimes,
+    faTimesCircle,
+    faCheckCircle,
+    faInfoCircle} from '@fortawesome/free-solid-svg-icons'
 import { faRocketchat, faWhatsapp } from '@fortawesome/free-brands-svg-icons'
 import { useToast } from 'primevue/usetoast'
 import { usePage } from '@inertiajs/vue3'
@@ -285,6 +288,25 @@ const abrirWhatsApp = (tipo = 'general', nombrePaquete = '') => {
   window.open(url, '_blank')
 }
 
+// Variable reactiva para el ancho de ventana
+const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
+
+// Función para manejar resize de ventana
+const handleResize = () => {
+    windowWidth.value = window.innerWidth;
+};
+
+// Estilo responsive para el diálogo
+const dialogStyle = computed(() => {
+    if (windowWidth.value < 640) {
+        return { width: '95vw', maxWidth: '380px' };
+    } else if (windowWidth.value < 768) {
+        return { width: '400px' };
+    } else {
+        return { width: '450px' };
+    }
+});
+
 // Funciones para el modal de detalles
 const abrirModal = (paquete) => {
   paqueteSeleccionado.value = paquete
@@ -329,11 +351,17 @@ onMounted(() => {
     setTimeout(() => {
         startAutoSlide()
     }, 3000) // Esperar 3 segundos antes de iniciar el auto-avance
+
+    // Listener para resize de ventana para hacer responsivos los modales
+    window.addEventListener('resize', handleResize);
 })
 
 // Limpiar el intervalo cuando el componente se desmonta
 onUnmounted(() => {
     stopAutoSlide()
+
+    // Cleanup del listener de resize
+    window.removeEventListener('resize', handleResize);
 })
 </script>
 
@@ -686,106 +714,135 @@ onUnmounted(() => {
       :closable="false"
       :modal="true"
       :draggable="false"
-      class="mx-4"
-      :style="{ width: '90vw', maxWidth: '600px' }"
+      class="mx-2 sm:mx-4"
+      :style="dialogStyle"
     >
       <template #header>
-        <div class="flex items-center gap-3">
-          <FontAwesomeIcon :icon="faPassport" class="text-blue-600 text-xl" />
-          <span class="text-xl font-bold text-blue-700">Detalles del Paquete</span>
+        <div class="flex items-center gap-2 sm:gap-3 p-1">
+          <FontAwesomeIcon :icon="faPassport" class="text-blue-600 text-lg sm:text-xl" />
+          <span class="text-lg sm:text-xl font-bold text-blue-700">Detalles del Paquete</span>
         </div>
       </template>
 
       <!-- Contenido scrolleable del modal -->
-      <div v-if="paqueteSeleccionado" class="space-y-6 max-h-96 overflow-y-auto">
-        <!-- Imagen -->
-        <div class="text-center">
-          <div v-if="paqueteSeleccionado.imagenes && paqueteSeleccionado.imagenes.length > 0" class="relative">
-            <img
-              :src="`/storage/paquetesvisas/${paqueteSeleccionado.imagenes[0].nombre}`"
-              :alt="paqueteSeleccionado.nombre"
-              class="w-full h-64 object-cover rounded-lg shadow-lg"
-              @error="handleImageError"
-            />
+      <div v-if="paqueteSeleccionado" class="space-y-4 sm:space-y-6 max-h-[60vh] sm:max-h-96 overflow-y-auto px-1 sm:px-2">
+        <!-- Sección superior: Imagen y nombre -->
+        <div class="space-y-3 sm:space-y-4">
+          <!-- Imagen -->
+          <div class="text-center">
+            <div v-if="paqueteSeleccionado.imagenes && paqueteSeleccionado.imagenes.length > 0" class="relative">
+              <img
+                :src="`/storage/paquetesvisas/${paqueteSeleccionado.imagenes[0].nombre}`"
+                :alt="paqueteSeleccionado.nombre"
+                class="w-full h-40 sm:h-48 md:h-56 object-cover rounded-lg shadow-lg"
+                @error="handleImageError"
+              />
+            </div>
+            <div v-else class="w-full h-40 sm:h-48 md:h-56 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
+              <div class="text-center">
+                <FontAwesomeIcon :icon="faPassport" class="text-4xl sm:text-5xl md:text-6xl text-blue-400 mb-2 sm:mb-3" />
+                <p class="text-blue-600 text-sm sm:text-base md:text-lg font-medium">Sin imagen</p>
+              </div>
+            </div>
           </div>
-          <div v-else class="w-full h-64 bg-gradient-to-br from-blue-100 to-blue-200 rounded-lg flex items-center justify-center">
-            <div class="text-center">
-              <FontAwesomeIcon :icon="faPassport" class="text-6xl text-blue-400 mb-3" />
-              <p class="text-blue-600 text-lg font-medium">Sin imagen</p>
+
+          <!-- Nombre -->
+          <div class="text-center">
+            <h3 class="text-lg sm:text-xl md:text-2xl font-bold text-blue-700 leading-tight px-2">
+              {{ paqueteSeleccionado.nombre }}
+            </h3>
+          </div>
+        </div>
+
+        <!-- Sección de información: Grid responsivo -->
+        <div class="grid grid-cols-1 gap-3 sm:gap-4">
+          <!-- Precio - Destacado -->
+          <div class="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-3 sm:p-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <FontAwesomeIcon :icon="faDollarSign" class="text-green-600 text-lg sm:text-xl" />
+                <h4 class="text-sm sm:text-base font-semibold text-gray-800">Precio</h4>
+              </div>
+              <div class="text-right">
+                <span class="text-xl sm:text-2xl md:text-3xl font-bold text-green-600">
+                    {{ parseFloat(paqueteSeleccionado.precio || 0).toFixed(2) }}
+                </span>
+                <span class="text-xs sm:text-sm text-green-700 block font-medium">USD</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Descripción (solo si existe) -->
+          <div v-if="paqueteSeleccionado.descripcion" class="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
+            <h4 class="text-sm sm:text-base font-semibold text-gray-800 mb-2 flex items-center gap-2">
+              <span class="text-blue-600 text-sm sm:text-base">
+                    <FontAwesomeIcon :icon="faInfoCircle" />
+                </span>
+              Descripción
+            </h4>
+            <p class="text-gray-700 text-xs sm:text-sm leading-relaxed">{{ paqueteSeleccionado.descripcion }}</p>
+          </div>
+
+          <!-- Incluye y No Incluye en grid responsivo -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <!-- Incluye (solo si existe) -->
+            <div v-if="paqueteSeleccionado.incluye" class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
+              <h4 class="text-xs sm:text-sm font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2">
+                <span class="text-green-600 text-sm sm:text-base">
+                    <FontAwesomeIcon :icon="faCheckCircle" />
+                </span>
+                Incluye
+              </h4>
+              <ul class="space-y-1 sm:space-y-2 max-h-24 sm:max-h-32 overflow-y-auto">
+                <li
+                  v-for="(item, index) in convertirALista(paqueteSeleccionado.incluye)"
+                  :key="index"
+                  class="flex items-start text-gray-700 text-xs sm:text-sm"
+                >
+                  <span class="text-green-600 mr-1 sm:mr-2 mt-0.5 text-xs">•</span>
+                  <span class="leading-relaxed">{{ item }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <!-- No incluye (solo si existe) -->
+            <div v-if="paqueteSeleccionado.no_incluye" class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
+              <h4 class="text-xs sm:text-sm font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-1 sm:gap-2">
+                <span class="text-red-600 text-sm sm:text-base">
+                    <FontAwesomeIcon :icon="faTimesCircle" />
+                </span>
+                No incluye
+              </h4>
+              <ul class="space-y-1 sm:space-y-2 max-h-24 sm:max-h-32 overflow-y-auto">
+                <li
+                  v-for="(item, index) in convertirALista(paqueteSeleccionado.no_incluye)"
+                  :key="index"
+                  class="flex items-start text-gray-700 text-xs sm:text-sm"
+                >
+                  <span class="text-red-600 mr-1 sm:mr-2 mt-0.5 text-xs">•</span>
+                  <span class="leading-relaxed">{{ item }}</span>
+                </li>
+              </ul>
             </div>
           </div>
         </div>
-
-        <!-- Nombre -->
-        <div>
-          <h3 class="text-2xl font-bold text-blue-700 text-center mb-4">
-            {{ paqueteSeleccionado.nombre }}
-          </h3>
-        </div>
-
-        <!-- Descripción (solo si existe) -->
-        <div v-if="paqueteSeleccionado.descripcion" class="bg-gray-50 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-gray-800 mb-2">Descripción</h4>
-          <p class="text-gray-700 leading-relaxed">{{ paqueteSeleccionado.descripcion }}</p>
-        </div>
-
-        <!-- Precio -->
-        <div class="bg-green-50 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-gray-800 mb-2">Precio</h4>
-          <div class="flex items-center">
-            <FontAwesomeIcon :icon="faDollarSign" class="text-green-600 text-2xl mr-2" />
-            <span class="text-3xl font-bold text-green-600">
-              {{ parseFloat(paqueteSeleccionado.precio || 0).toFixed(2) }} USD
-            </span>
-          </div>
-        </div>
-
-        <!-- Incluye (solo si existe) -->
-        <div v-if="paqueteSeleccionado.incluye" class="bg-blue-50 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-gray-800 mb-3">✅ Incluye</h4>
-          <ul class="space-y-2">
-            <li
-              v-for="(item, index) in convertirALista(paqueteSeleccionado.incluye)"
-              :key="index"
-              class="flex items-start text-gray-700"
-            >
-              <span class="text-green-600 mr-2 mt-1 text-sm">•</span>
-              <span class="leading-relaxed">{{ item }}</span>
-            </li>
-          </ul>
-        </div>
-
-        <!-- No incluye (solo si existe) -->
-        <div v-if="paqueteSeleccionado.no_incluye" class="bg-red-50 rounded-lg p-4">
-          <h4 class="text-lg font-semibold text-gray-800 mb-3">❌ No incluye</h4>
-          <ul class="space-y-2">
-            <li
-              v-for="(item, index) in convertirALista(paqueteSeleccionado.no_incluye)"
-              :key="index"
-              class="flex items-start text-gray-700"
-            >
-              <span class="text-red-600 mr-2 mt-1 text-sm">•</span>
-              <span class="leading-relaxed">{{ item }}</span>
-            </li>
-          </ul>
-        </div>
       </div>
 
-      <!-- Footer fijo con botones -->
+      <!-- Footer fijo con botones responsivos -->
       <template #footer>
-        <div class="flex flex-col sm:flex-row gap-3 w-full">
+        <div class="flex flex-col gap-2 sm:flex-row sm:gap-3 w-full px-1 sm:px-0">
           <button
             @click="abrirWhatsApp('paquete', paqueteSeleccionado?.nombre)"
-            class="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
+            class="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:from-green-600 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-sm sm:text-base"
           >
-            <FontAwesomeIcon :icon="faWhatsapp" class="mr-2" />
-            Consultar por WhatsApp
+            <FontAwesomeIcon :icon="faWhatsapp" class="mr-1 sm:mr-2 text-sm sm:text-base" />
+            Consultar
           </button>
           <button
             @click="cerrarModal"
-            class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center"
+            class="flex-1 bg-blue-500 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-blue-600 transition-all duration-300 shadow-lg hover:shadow-xl flex items-center justify-center text-sm sm:text-base"
           >
-            <FontAwesomeIcon :icon="faTimes" class="mr-2" />
+            <FontAwesomeIcon :icon="faTimes" class="mr-1 sm:mr-2 text-sm sm:text-base" />
             Cerrar
           </button>
         </div>

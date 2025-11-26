@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             ControlSeeder::class,
             SiteSettingsSeeder::class,
-            AdminUserSeeder::class,
+            AdminUserSeeder::class
         ]);
 
         $this->command->info('¡Base de datos inicializada correctamente!');

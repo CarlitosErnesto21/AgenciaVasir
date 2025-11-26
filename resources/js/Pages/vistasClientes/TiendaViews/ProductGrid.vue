@@ -83,7 +83,7 @@ const getImageUrl = (producto) => {
 
 <template>
   <!-- Loading state -->
-  <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+  <div v-if="loading" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
     <div v-for="i in 8" :key="i" class="animate-pulse">
       <div class="bg-gradient-to-br from-white via-gray-50 to-gray-100 rounded-xl border-2 border-gray-200 p-4 sm:p-6 shadow-lg">
         <div class="h-32 bg-gradient-to-br from-gray-200 to-gray-300 rounded-lg mb-4"></div>
@@ -96,7 +96,7 @@ const getImageUrl = (producto) => {
   </div>
 
   <!-- Grid de productos -->
-  <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
+  <div v-else class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-4 md:gap-6">
     <div
       v-for="producto in filteredProducts"
       :key="producto.id"

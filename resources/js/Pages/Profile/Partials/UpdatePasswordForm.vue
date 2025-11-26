@@ -61,7 +61,6 @@ const updatePassword = () => {
         onSuccess: (response) => {
             // No necesitamos resetear el form porque seremos redirigidos
             // La redirección se maneja automáticamente por Inertia desde el backend
-            console.log('Contraseña actualizada exitosamente. Redirigiendo al login...');
         },
         onError: () => {
             if (form.errors.password) {

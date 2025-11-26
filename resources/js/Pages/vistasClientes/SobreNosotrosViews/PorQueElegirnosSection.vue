@@ -17,12 +17,12 @@ const calcularAnosExperiencia = () => {
   <div class="mb-2 sm:mb-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="bg-gradient-to-br from-white via-red-50 to-blue-50 rounded-xl shadow-xl border border-gray-200">
-        <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-4 sm:py-6 rounded-t-xl mb-4 ">
+        <div class="bg-gradient-to-r from-red-600 to-blue-600 text-white text-center py-4 sm:py-6 rounded-t-xl mb-1">
           <h2 class="text-2xl sm:text-3xl md:text-4xl font-bold">
             <FontAwesomeIcon :icon="faStar" class="text-yellow-500 mr-2" />
             ¿Por qué elegir VASIR?</h2>
         </div>
-        <div class="grid grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-8 p-3">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 md:gap-6 lg:gap-8 p-3">
           <div class="bg-white rounded-lg sm:rounded-xl p-2 sm:p-4 md:p-6 lg:p-8 text-center shadow-md sm:shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-2 border border-gray-200 hover:border-red-200">
             <div class="text-lg sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl mb-1 sm:mb-2 md:mb-4 lg:mb-6">
                 <FontAwesomeIcon :icon="faMedal" class="text-red-500" />
