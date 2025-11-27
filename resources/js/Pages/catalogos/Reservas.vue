@@ -894,6 +894,10 @@ const handleVerDetalles = (reserva) => {
   verDetallesReserva(reserva)
 }
 
+const handleActualizarReserva = (reservaActualizada) => {
+  reservaSeleccionada.value = reservaActualizada
+}
+
 // Watch para recargar cuando cambien algunos filtros
 watch(() => [filtros.value.busqueda, filtros.value.fechaDesde, filtros.value.fechaHasta, filtros.value.estado], () => {
   // Debounce para la búsqueda
@@ -1373,6 +1377,7 @@ onUnmounted(() => {
         @confirmar="handleConfirmarReserva"
         @rechazar="handleRechazarReserva"
         @ver-detalles="handleVerDetalles"
+        @actualizar-reserva="handleActualizarReserva"
       />
 
       <!-- Modal de Cambiar Estado del Tour -->

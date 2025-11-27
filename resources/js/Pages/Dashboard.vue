@@ -265,7 +265,7 @@ const fetchDashboardData = async (forceRefresh = false) => {
             : [];
 
         const resumenReservasData = resumenReservasResult.status === 'fulfilled'
-            ? (resumenReservasResult.value.data.data || resumenReservasResult.value.data || [])
+            ? (resumenReservasResult.value.data.data || [])
             : [];
 
         const toursData = toursResult.status === 'fulfilled'

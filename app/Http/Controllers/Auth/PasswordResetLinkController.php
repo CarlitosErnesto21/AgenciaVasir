@@ -44,8 +44,15 @@ class PasswordResetLinkController extends Controller
             return back()->with('status', __($status));
         }
 
+        // Manejar específicamente el error de usuario no encontrado
+        if ($status == Password::INVALID_USER) {
+            throw ValidationException::withMessages([
+                'email' => ['No podemos encontrar un usuario con esa dirección de correo electrónico.'],
+            ]);
+        }
+
         throw ValidationException::withMessages([
-            'email' => [trans($status)],
+            'email' => [__($status)],
         ]);
     }
 }

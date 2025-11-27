@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 class PagoController extends Controller
@@ -967,6 +968,162 @@ class PagoController extends Controller
 
             // Re-lanzar la excepción para que la transacción falle
             throw $e;
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Crear enlace de pago para reserva de tour
+     */
+    public function createPaymentLinkFromTour(Request $request)
+    {
+        Log::info('🎯 Iniciando createPaymentLinkFromTour', [
+            'request_data' => $request->all(),
+            'user_id' => Auth::id(),
+            'is_authenticated' => Auth::check()
+        ]);
+
+        try {
+            $validated = $request->validate([
+                'customer_email' => 'required|email',
+                'amount' => 'required|numeric|min:0.01',
+                'description' => 'string|nullable',
+                'reference' => 'string|nullable',
+                'customer_name' => 'string|nullable',
+                'reserva_id' => 'required|integer|exists:reservas,id',
+                'tour_data' => 'required|array',
+                'tour_data.id' => 'required|integer',
+                'tour_data.nombre' => 'required|string',
+                'tour_data.cupos_adultos' => 'required|integer|min:0',
+                'tour_data.cupos_menores' => 'required|integer|min:0',
+                'tour_data.total' => 'required|numeric|min:0'
+            ]);
+
+            // Crear descripción para tour
+            $cuposTotales = $validated['tour_data']['cupos_adultos'] + $validated['tour_data']['cupos_menores'];
+            $descripcionDetallada = "Reserva de tour: {$validated['tour_data']['nombre']} - {$cuposTotales} cupos";
+            
+            if ($validated['tour_data']['cupos_adultos'] > 0 && $validated['tour_data']['cupos_menores'] > 0) {
+                $descripcionDetallada .= " ({$validated['tour_data']['cupos_adultos']} adultos, {$validated['tour_data']['cupos_menores']} menores)";
+            } elseif ($validated['tour_data']['cupos_adultos'] > 0) {
+                $descripcionDetallada .= " ({$validated['tour_data']['cupos_adultos']} adultos)";
+            } elseif ($validated['tour_data']['cupos_menores'] > 0) {
+                $descripcionDetallada .= " ({$validated['tour_data']['cupos_menores']} menores)";
+            }
+
+            // Crear nombre de producto para Wompi
+            $nombreProducto = "Tour: {$validated['tour_data']['nombre']}";
+
+            // Crear enlace de pago con Wompi
+            $paymentData = [
+                'amount_in_cents' => $validated['amount'] * 100,
+                'description' => $descripcionDetallada,
+                'reference' => $validated['reference'] ?? 'TOUR-' . $validated['reserva_id'] . '-' . time(),
+                'customer_email' => $validated['customer_email'],
+                'product_name' => $nombreProducto,
+                'tour_detalle' => $validated['tour_data']
+            ];
+
+            Log::info('🎯 TourPagoController - Datos antes de enviar a Wompi', [
+                'validated_amount' => $validated['amount'],
+                'amount_in_cents' => $paymentData['amount_in_cents'],
+                'amount_final' => $paymentData['amount_in_cents'] / 100,
+                'product_name' => $paymentData['product_name'],
+                'reference' => $paymentData['reference'],
+                'full_payment_data' => $paymentData
+            ]);
+
+            // ✅ CREAR ENLACE DE PAGO CON WOMPI
+            $result = $this->wompiService->createPaymentLink($paymentData);
+
+            Log::info('🎯 TourPagoController - Resultado de Wompi', [
+                'success' => $result['success'],
+                'result' => $result
+            ]);
+
+            if (!$result['success']) {
+                Log::error('❌ Error creando enlace de pago con Wompi para tour', [
+                    'error' => $result['error'],
+                    'payment_data' => $paymentData
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error']
+                ], 400);
+            }
+
+            // ✅ CREAR REGISTRO DE PAGO PARA LA RESERVA
+            try {
+                DB::beginTransaction();
+
+                $pago = Pago::create([
+                    'reserva_id' => $validated['reserva_id'],
+                    'monto' => $validated['amount'],
+                    'moneda' => 'USD',
+                    'referencia_wompi' => $paymentData['reference'],
+                    'estado' => 'pending',
+                    'metodo_pago' => 'enlace_pago',
+                    'email_cliente' => $validated['customer_email'],
+                    'wompi_payment_link_id' => $result['link_id'] ?? null,
+                    'wompi_payment_link' => $result['payment_link'],
+                    'tour_detalle' => json_encode($validated['tour_data'])
+                ]);
+
+                Log::info('✅ Pago de tour creado exitosamente', [
+                    'pago_id' => $pago->id,
+                    'reserva_id' => $validated['reserva_id'],
+                    'monto' => $validated['amount'],
+                    'wompi_link' => $result['payment_link']
+                ]);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'payment_link' => $result['payment_link'],
+                    'reference' => $paymentData['reference'],
+                    'pago_id' => $pago->id,
+                    'message' => 'Enlace de pago creado exitosamente para la reserva de tour'
+                ]);
+
+            } catch (Exception $e) {
+                DB::rollBack();
+                
+                Log::error('Error creando registro de pago para tour', [
+                    'reserva_id' => $validated['reserva_id'],
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error interno del servidor al procesar el pago'
+                ], 500);
+            }
+
+        } catch (ValidationException $e) {
+            Log::error('Error de validación en createPaymentLinkFromTour', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Datos de entrada inválidos',
+                'errors' => $e->errors()
+            ], 422);
+
+        } catch (Exception $e) {
+            Log::error('Error general en createPaymentLinkFromTour', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error interno del servidor'
+            ], 500);
         }
     }
 

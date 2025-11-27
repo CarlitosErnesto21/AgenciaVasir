@@ -167,8 +167,31 @@ function abrirEmail() {
 
   // Verificar si el email está disponible
   if (adminEmail.value && !adminEmail.value.includes('no disponible')) {
-    const url = `https://mail.google.com/mail/?view=cm&fs=1&to=${adminEmail.value}&su=Consulta sobre servicios de VASIR&body=Hola,%0A%0AMe interesa conocer más información sobre sus servicios de:%0A- Tours nacionales e internacionales%0A- Boletos aéreos%0A- Reservaciones de hoteles%0A- Artículos de viaje%0A%0APor favor, contáctenme para brindarme más detalles.%0A%0AGracias.`
-    window.open(url, '_blank')
+    // Detectar si es un dispositivo móvil
+    const isMobile = /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+
+    const subject = 'Consulta sobre servicios de VASIR'
+    const body = `Hola,
+
+Me interesa conocer más información sobre sus servicios de:
+- Tours nacionales e internacionales
+- Boletos aéreos
+- Reservaciones de hoteles
+- Artículos de viaje
+
+Espero puedan ayudarme con más detalles.
+
+Gracias.`
+
+    if (isMobile) {
+      // En móviles, usar mailto para abrir la app de correo predeterminada
+      const mailtoUrl = `mailto:${adminEmail.value}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      window.location.href = mailtoUrl
+    } else {
+      // En escritorio, abrir Gmail web
+      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${adminEmail.value}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+      window.open(gmailUrl, '_blank')
+    }
   } else {
     toast.add({
       severity: 'warn',

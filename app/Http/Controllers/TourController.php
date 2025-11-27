@@ -10,6 +10,7 @@ use App\Mail\ReservationRescheduledMail;
 use App\Mail\ReservationCompletedMail;
 use App\Mail\ReservationInProgressMail;
 use App\Mail\ReservationRejectedMail;
+use App\Models\Pago;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -908,6 +909,9 @@ class TourController extends Controller
 
                 // ELIMINAR la reserva completamente en lugar de solo cambiar estado
                 $reservaId = $reserva->id;
+
+                // Eliminar los pagos asociados primero
+                Pago::where('reserva_id', $reserva->id)->delete();
 
                 // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
                 DetalleReservaTour::where('reserva_id', $reserva->id)->delete();

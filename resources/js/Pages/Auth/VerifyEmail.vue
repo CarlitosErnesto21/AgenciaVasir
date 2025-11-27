@@ -2,7 +2,7 @@
 <script setup>
 import { computed } from 'vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm, usePage } from '@inertiajs/vue3';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import { faCheckCircle, faExclamationTriangle, faLightbulb } from '@fortawesome/free-solid-svg-icons';
 
@@ -27,6 +27,11 @@ const props = defineProps({
     },
 });
 
+// Obtener datos de configuración
+const page = usePage();
+const config = computed(() => page.props.config || {});
+const adminEmail = computed(() => config.value.admin_email || 'vasirtours19@gmail.com');
+
 const form = useForm({
     email: props.email,
 });
@@ -43,6 +48,41 @@ const verificationLinkSent = computed(
 
 const hasLimitError = computed(() => !!props.errors.limit || props.resendCount >= 3);
 const remainingAttempts = computed(() => Math.max(0, 3 - props.resendCount));
+
+// Función para abrir Gmail de soporte
+const abrirGmailSoporte = () => {
+  const email = adminEmail.value;
+
+  // Verificar si el email del administrador está disponible
+  if (!email || email.includes('no disponible')) {
+    return;
+  }
+
+  const subject = 'Problema con verificación de email';
+  const body = `Hola,
+
+Tengo problemas con la verificación de mi email en VASIR.
+
+Mi correo registrado: ${props.email}
+
+Por favor, ayúdenme a resolver este problema.
+
+Gracias.`;
+
+  // Detectar si es móvil
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // En móviles, usar mailto: que el sistema operativo maneje
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.location.href = mailtoUrl;
+  } else {
+    // En escritorio, abrir Gmail web directamente
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}&su=${encodedSubject}&body=${encodedBody}`, '_blank');
+  }
+};
 </script>
 
 <template>
@@ -228,7 +268,11 @@ const remainingAttempts = computed(() => Math.max(0, 3 - props.resendCount));
             <div class="text-center mt-4 sm:mt-6">
                 <p class="text-xs sm:text-sm text-gray-500 px-2">
                     ¿Tienes problemas?
-                    <a href="mailto:soporte@vasir.com" class="text-red-600 hover:text-red-700 underline font-medium">
+                    <a
+                        href="#"
+                        @click="abrirGmailSoporte"
+                        class="text-red-600 hover:text-red-700 underline font-medium cursor-pointer"
+                    >
                         Contacta a soporte
                     </a>
                 </p>

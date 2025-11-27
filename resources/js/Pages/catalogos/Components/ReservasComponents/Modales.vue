@@ -3,6 +3,7 @@ import { computed, ref, watch, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import axios from 'axios';
 import {
   faCheck, faXmark, faCalendarDays, faEye,
   faExclamationTriangle, faInfoCircle, faSpinner, faTimes, faPhone
@@ -76,7 +77,8 @@ const emit = defineEmits([
   // ELIMINADO: 'update:reprogramarVisible', 'reprogramar', 'finalizar' - ya no se usan
   'confirmar',
   'rechazar',
-  'verDetalles'
+  'verDetalles',
+  'actualizar-reserva'
 ]);
 
 // Computed para v-model del modal Más Acciones
@@ -185,12 +187,10 @@ const rechazarReserva = () => {
 
 // ELIMINADO: abrirModalReprogramar, reprogramarReserva y finalizarReserva - ya no se usan
 
-const verDetalles = () => {
+const verDetalles = async () => {
   isVisible.value = false;
   isDetallesVisible.value = true;
-};
-
-// Limpiar formularios al cerrar modales
+};// Limpiar formularios al cerrar modales
 const limpiarFormularios = () => {
   motivoRechazo.value = '';
 };
@@ -210,6 +210,22 @@ const restaurarScroll = () => {
 const cerrarModalRechazar = () => {
   isRechazarVisible.value = false;
   limpiarFormularios();
+};
+
+// Función para abrir Gmail
+const abrirGmail = (email) => {
+  if (!email) return;
+
+  // Detectar si es móvil
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // En móviles, usar mailto: que el sistema operativo maneje
+    window.location.href = `mailto:${email}`;
+  } else {
+    // En escritorio, abrir Gmail web directamente
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
+  }
 };
 
 // Watchers para controlar el scroll cuando se abran/cierren los modales
@@ -233,9 +249,7 @@ watch(isDetallesVisible, (newValue) => {
       restaurarScroll();
     }
   }
-});
-
-watch(isRechazarVisible, (newValue) => {
+});watch(isRechazarVisible, (newValue) => {
   if (newValue) {
     bloquearScroll();
   } else {
@@ -392,9 +406,10 @@ onUnmounted(() => {
             <div v-if="(reserva.cliente?.user?.email) || (reserva.cliente?.correo)" class="flex flex-wrap items-center gap-2">
               <span class="text-xs sm:text-sm break-all">{{ reserva.cliente?.user?.email || reserva.cliente?.correo }}</span>
               <a
-                :href="`mailto:${reserva.cliente?.user?.email || reserva.cliente?.correo}`"
-                class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200"
-                title="Enviar correo electrónico"
+                @click="abrirGmail(reserva.cliente?.user?.email || reserva.cliente?.correo)"
+                href="#"
+                class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200 cursor-pointer"
+                title="Abrir Gmail para enviar correo"
               >
                 <FontAwesomeIcon :icon="faEnvelope" class="h-3 w-3" />
                 <span class="hidden sm:inline">Enviar Email</span>
@@ -462,7 +477,7 @@ onUnmounted(() => {
           <FontAwesomeIcon :icon="faInfoCircle" class="text-green-600 text-sm sm:text-base" />
           Detalles de la Reserva
         </h4>
-        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3 text-xs sm:text-sm">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-xs sm:text-sm">
           <div>
             <span class="font-medium text-gray-700">Adultos:</span>
             <span class="ml-2">{{ reserva.mayores_edad || 0 }}</span>
@@ -471,9 +486,16 @@ onUnmounted(() => {
             <span class="font-medium text-gray-700">Niños:</span>
             <span class="ml-2">{{ reserva.menores_edad || 0 }}</span>
           </div>
-          <div class="col-span-2 sm:col-span-1">
+          <div>
             <span class="font-medium text-gray-700">Total:</span>
             <span class="ml-2 font-bold text-green-600">${{ Number(reserva.total || 0).toFixed(2) }}</span>
+          </div>
+          <div>
+            <span class="font-medium text-gray-700">Ref. Wompi:</span>
+            <span class="ml-2" v-if="reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].referencia_wompi">
+              {{ reserva.pagos[0].referencia_wompi }}
+            </span>
+            <span class="ml-2 text-gray-400 italic" v-else>Sin referencia</span>
           </div>
         </div>
       </div>

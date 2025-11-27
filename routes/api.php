@@ -74,6 +74,7 @@ Route::middleware('auth:sanctum')->post('/users/validar-email', [ApiAuthControll
 Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
 Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
 Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLinkFromCart']);
+Route::post('/wompi/payment-link-tour', [PagoController::class, 'createPaymentLinkFromTour']);
 
 
 
@@ -113,6 +114,7 @@ Route::middleware('auth:sanctum')->group(function () {
         // Gestión de reservas
         Route::prefix('reservas')->group(function () {
             Route::get('/', [ReservaController::class, 'index']);
+            Route::get('/{id}', [ReservaController::class, 'show']);
             Route::get('/resumen', [ReservaController::class, 'resumen']);
             Route::put('/{id}/confirmar', [ReservaController::class, 'confirmar']);
             Route::put('/{id}/rechazar', [ReservaController::class, 'rechazar']);
@@ -127,7 +129,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('productos', ProductoController::class)->except(['index']);
         Route::apiResource('hoteles', HotelController::class)->except(['index']);
         Route::apiResource('tours', TourController::class)->except(['index', 'show']);
-        
+
         // Rutas específicas de clientes (antes del apiResource para evitar conflictos)
         Route::get('clientes/buscar', [ClienteController::class, 'buscarClientes']);
         Route::apiResource('clientes', ClienteController::class);

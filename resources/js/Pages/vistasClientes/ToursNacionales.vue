@@ -71,14 +71,7 @@ const reservarTour = (tour) => {
 
 // Función para manejar la confirmación de reserva desde el componente hijo
 const manejarConfirmacionReserva = (reserva) => {
-  toast.add({
-    severity: 'success',
-    summary: 'Reserva Confirmada',
-    detail: 'Tu reserva ha sido registrada y se ha enviado un correo electrónico de confirmación. Te contactaremos pronto.',
-    life: 6000
-  })
-
-  // Cerrar modal
+  // Cerrar modal (el toast ya se muestra en el modal)
   showReservaDialog.value = false
 }
 

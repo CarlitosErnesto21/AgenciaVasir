@@ -6,7 +6,7 @@ import { VueTelInput } from 'vue-tel-input';
 import 'vue-tel-input/vue-tel-input.css';
 import { useToast } from 'primevue/usetoast';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faInfoCircle, faLightbulb } from '@fortawesome/free-solid-svg-icons';
+import { faInfoCircle, faLightbulb, faCheck } from '@fortawesome/free-solid-svg-icons';
 
 const props = defineProps({
 	empleado: {
@@ -124,6 +124,18 @@ const telefonoErrors = computed(() => {
 	return errors;
 });
 
+// Computed para filtrar errores de servidor que ya se muestran en toast
+const shouldShowServerError = computed(() => {
+	if (!form.errors.telefono) return false;
+	// No mostrar errores de validación requerida o genéricos en el template
+	if (form.errors.telefono === 'validation.required' || 
+		form.errors.telefono.includes('required') ||
+		form.errors.telefono.includes('requerido')) {
+		return false;
+	}
+	return true;
+});
+
 const closeModal = () => {
 	emit('close');
 };
@@ -167,6 +179,40 @@ const submit = () => {
 		onError: (errors) => {
 			// eslint-disable-next-line no-console
 			console.debug('[DEBUG] Errores al guardar:', errors);
+			
+			// Manejar errores específicos de validación
+			if (errors.telefono) {
+				if (errors.telefono.includes('required') || errors.telefono === 'validation.required') {
+					toast.add({
+						severity: 'warn',
+						summary: 'Campo requerido',
+						detail: 'El campo teléfono es requerido.',
+						life: 4000
+					});
+				} else {
+					toast.add({
+						severity: 'warn',
+						summary: 'Error en teléfono',
+						detail: errors.telefono,
+						life: 4000
+					});
+				}
+			} else if (errors.cargo) {
+				toast.add({
+					severity: 'warn',
+					summary: 'Error en cargo',
+					detail: errors.cargo,
+					life: 4000
+				});
+			} else {
+				// Error genérico si no se puede identificar el campo específico
+				toast.add({
+					severity: 'error',
+					summary: 'Error de validación',
+					detail: 'Por favor revisa los campos y completa la información requerida.',
+					life: 4000
+				});
+			}
 		}
 	});
 };
@@ -254,8 +300,8 @@ const submit = () => {
 							/>
 						</div>
 					</div>
-					<div v-if="form.errors.telefono || (submitted && telefonoErrors.length > 0)" class="ml-28 mt-1">
-						<small v-if="form.errors.telefono" class="text-red-500 block">{{ form.errors.telefono }}</small>
+					<div v-if="shouldShowServerError || (submitted && telefonoErrors.length > 0)" class="ml-28 mt-1">
+						<small v-if="shouldShowServerError" class="text-red-500 block">{{ form.errors.telefono }}</small>
 						<small v-for="error in telefonoErrors" :key="error" class="text-red-500 block">{{ error }}</small>
 					</div>
 					<div v-if="telefonoValidation.mensaje" class="ml-28 mt-1">
@@ -269,22 +315,15 @@ const submit = () => {
 				</div>
 
 				<!-- Botones -->
-				<div class="flex justify-center gap-4 w-full mt-6">
+				<div class="flex justify-center w-full mt-6">
 					<button
 						type="submit"
 						:disabled="form.processing"
 						class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-semibold"
 					>
+						<FontAwesomeIcon v-if="!form.processing" :icon="faCheck" />
 						<span v-if="!form.processing">Guardar</span>
 						<span v-else>Guardando...</span>
-					</button>
-					<button
-						type="button"
-						class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-						@click="closeModal"
-						:disabled="form.processing"
-					>
-						Cancelar
 					</button>
 				</div>
 			</form>

@@ -9,6 +9,7 @@ import axios from 'axios'
 import ResumenTour from './ModalReservaTour/ResumenTour.vue'
 import FormularioDatosPersonales from './ModalReservaTour/FormularioDatosPersonales.vue'
 import SelectorCupos from './ModalReservaTour/SelectorCupos.vue'
+import ModalFinalizarReservaTour from '@/Components/ModalFinalizarReservaTour.vue'
 
 // Inicializar toast
 const toast = useToast()
@@ -54,6 +55,10 @@ const isConfirmingReserva = ref(false)
 
 // Estado para controlar si hay datos precargados del cliente
 const tieneClienteExistente = ref(false)
+
+// Estado para el modal de pago
+const showModalPago = ref(false)
+const reservaCreada = ref(null)
 
 // Función para cargar datos del cliente existente
 const cargarDatosCliente = async () => {
@@ -176,6 +181,45 @@ const manejarToast = (toastConfig) => {
   toast.add(toastConfig)
 }
 
+// Funciones para el modal de pago
+const cerrarModalPago = () => {
+  showModalPago.value = false
+  reservaCreada.value = null
+}
+
+const manejarPagoCompletado = (pagoData) => {
+  showModalPago.value = false
+  
+  // Mostrar mensaje de éxito
+  toast.add({
+    severity: 'success',
+    summary: '¡Reserva confirmada!',
+    detail: 'Tu reserva ha sido registrada. Se ha abierto Wompi para procesar el pago.',
+    life: 6000
+  })
+
+  // Emitir cupos actualizados si están disponibles
+  if (pagoData.reserva?.cupos_disponibles_actualizados !== undefined) {
+    emit('actualizar-cupos', {
+      tourId: props.tourSeleccionado.id,
+      cuposDisponibles: pagoData.reserva.cupos_disponibles_actualizados
+    })
+  }
+
+  // También emitir para refrescar el tour completo como respaldo
+  emit('refrescar-tour', props.tourSeleccionado.id)
+
+  // Emitir evento de confirmación al padre
+  emit('confirmar-reserva', {
+    data: {
+      reserva: pagoData.reserva,
+      pago: pagoData
+    }
+  })
+
+  reservaCreada.value = null
+}
+
 // Función para confirmar la reserva
 const confirmarReserva = async () => {
   // Evitar múltiples envíos si ya se está procesando
@@ -198,95 +242,34 @@ const confirmarReserva = async () => {
     return
   }
 
-  // Activar loading
-  isConfirmingReserva.value = true
-
-  try {
-    const response = await axios.post('/reservas/tour', {
-      tour_id: props.tourSeleccionado.id,
-      cliente_data: {
-        correo: reservaForm.value.correo,
-        nombres: reservaForm.value.nombres,
-        tipo_documento: reservaForm.value.tipo_documento,
-        numero_identificacion: reservaForm.value.numero_identificacion,
-        fecha_nacimiento: reservaForm.value.fecha_nacimiento,
-        genero: reservaForm.value.genero?.toUpperCase() || '',
-        direccion: reservaForm.value.direccion,
-        telefono: reservaForm.value.telefono
-      },
-      cupos_adultos: reservaForm.value.cupos_adultos,
-      cupos_menores: reservaForm.value.cupos_menores,
-      precio_total: precios.value.total
-    })
-
-    // Emitir cupos actualizados si están disponibles en la respuesta
-    if (response.data?.data?.cupos_disponibles_actualizados !== undefined) {
-      emit('actualizar-cupos', {
-        tourId: props.tourSeleccionado.id,
-        cuposDisponibles: response.data.data.cupos_disponibles_actualizados
-      })
+  // Preparar datos para el modal de pago (sin crear reserva aún)
+  reservaCreada.value = {
+    id: null, // Se creará en el modal de pago
+    tour_id: props.tourSeleccionado.id,
+    tour_nombre: props.tourSeleccionado.nombre,
+    cupos_adultos: reservaForm.value.cupos_adultos,
+    cupos_menores: reservaForm.value.cupos_menores,
+    total: precios.value.total,
+    cliente_email: reservaForm.value.correo,
+    cliente_nombre: reservaForm.value.nombres,
+    // Datos completos del cliente para crear la reserva
+    cliente_data: {
+      correo: reservaForm.value.correo,
+      nombres: reservaForm.value.nombres,
+      tipo_documento: reservaForm.value.tipo_documento,
+      numero_identificacion: reservaForm.value.numero_identificacion,
+      fecha_nacimiento: reservaForm.value.fecha_nacimiento,
+      genero: reservaForm.value.genero?.toUpperCase() || '',
+      direccion: reservaForm.value.direccion,
+      telefono: reservaForm.value.telefono
     }
-
-    // También emitir para refrescar el tour completo como respaldo
-    emit('refrescar-tour', props.tourSeleccionado.id)
-
-    emit('confirmar-reserva', response.data)
-    cerrarModal()
-  } catch (error) {
-    console.error('Error al confirmar reserva:', error)
-    if (error.response?.status === 419) {
-      toast.add({
-        severity: 'error',
-        summary: 'Sesión expirada',
-        detail: 'Su sesión ha expirado. Por favor, recargue la página.',
-        life: 5000
-      })
-      window.location.reload()
-    } else if (error.response?.status === 422) {
-      // Error de validación - mostrar detalles específicos
-      const errors = error.response?.data?.errors || {}
-      const errorMessages = Object.values(errors).flat()
-      if (errorMessages.length > 0) {
-        toast.add({
-          severity: 'error',
-          summary: 'Errores de validación',
-          detail: errorMessages.join(', '),
-          life: 5000
-        })
-      } else {
-        toast.add({
-          severity: 'error',
-          summary: 'Error de validación',
-          detail: error.response?.data?.message || 'Datos inválidos',
-          life: 4000
-        })
-      }
-    } else if (error.response?.status === 403) {
-      toast.add({
-        severity: 'error',
-        summary: 'Acceso denegado',
-        detail: 'No tiene permisos para realizar esta acción. Debe tener rol de cliente.',
-        life: 4000
-      })
-    } else if (error.response?.status === 401) {
-      toast.add({
-        severity: 'error',
-        summary: 'Sesión requerida',
-        detail: 'Debe iniciar sesión para realizar una reserva.',
-        life: 4000
-      })
-    } else {
-      toast.add({
-        severity: 'error',
-        summary: 'Error al procesar la reserva',
-        detail: error.response?.data?.message || 'Inténtelo de nuevo.',
-        life: 4000
-      })
-    }
-  } finally {
-    // Desactivar loading siempre al final
-    isConfirmingReserva.value = false
   }
+
+  // Cerrar el modal actual
+  emit('update:visible', false)
+
+  // Abrir el modal de pago
+  showModalPago.value = true
 }
 
 // Computed para calcular precios
@@ -374,7 +357,7 @@ watch(() => props.visible, async (newValue) => {
             v-else
             class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
           ></div>
-          {{ isConfirmingReserva ? 'Procesando...' : 'Confirmar' }}
+          {{ isConfirmingReserva ? 'Procesando...' : 'Continuar y Pagar' }}
         </button>
         <button
           @click="cerrarModal"
@@ -387,4 +370,12 @@ watch(() => props.visible, async (newValue) => {
       </div>
     </template>
   </Dialog>
+
+  <!-- Modal de pago para la reserva -->
+  <ModalFinalizarReservaTour
+    :is-visible="showModalPago"
+    :reserva-data="reservaCreada || {}"
+    @close="cerrarModalPago"
+    @payment-completed="manejarPagoCompletado"
+  />
 </template>

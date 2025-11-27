@@ -175,13 +175,14 @@ const decrementMenores = () => {
 
       <div class="bg-gradient-to-br from-white to-gray-50 rounded-xl p-4 sm:p-5 shadow-inner border border-gray-100">
         <div class="space-y-4">
+
           <!-- Información del tour -->
-          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-3 border border-blue-100">
+          <div class="bg-white border border-blue-200 rounded-lg p-4 shadow-sm">
             <div class="flex justify-between items-start">
               <div class="flex-1">
-                <p class="font-bold bg-gradient-to-r from-gray-800 to-blue-700 bg-clip-text text-transparent text-sm sm:text-base line-clamp-2">{{ tourSeleccionado.nombre }}</p>
+                <p class="font-bold text-gray-800 text-sm sm:text-base line-clamp-2">{{ tourSeleccionado.nombre }}</p>
                 <div class="mt-2 flex items-center gap-2">
-                  <span class="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-2 py-1 rounded-full text-xs font-bold shadow-sm">
+                  <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-bold">
                     ${{ (tourSeleccionado.precio || tourSeleccionado.precio_adulto || 0).toLocaleString() }}
                   </span>
                   <span class="text-gray-600 text-xs">por persona</span>
@@ -190,53 +191,74 @@ const decrementMenores = () => {
             </div>
           </div>
 
-          <div class="border-t-2 border-gradient-to-r from-blue-200 via-purple-200 to-blue-200"></div>
-
+          <div class="border-t border-gray-200 my-3"></div>
 
           <!-- Total a pagar -->
-          <div class="bg-gradient-to-br from-red-500 via-red-600 to-purple-600 text-white rounded-xl p-4 shadow-lg border-2 border-red-400/30 relative overflow-hidden">
-            <div class="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/5 pointer-events-none"></div>
-            <div class="relative z-10">
-              <div class="flex justify-between items-center mb-2">
-                <div class="flex items-center gap-2">
-                  <span class="text-white font-bold text-base sm:text-lg">Total a Pagar:</span>
-                  <div class="flex items-center gap-1">
-                    <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 0ms;"></div>
-                    <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
-                    <div class="w-1.5 h-1.5 bg-white rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
-                  </div>
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4 shadow-sm">
+            <div class="flex justify-between items-center mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-gray-800 font-bold text-base sm:text-lg">Total a Pagar:</span>
+                <div class="flex items-center gap-1">
+                  <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 0ms;"></div>
+                  <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 150ms;"></div>
+                  <div class="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce" style="animation-delay: 300ms;"></div>
                 </div>
-                <span class="text-white font-black text-2xl sm:text-3xl drop-shadow-lg">${{ ((tourSeleccionado.precio || tourSeleccionado.precio_adulto || 0) * cupos_total).toLocaleString() }}</span>
               </div>
-              <div class="bg-white/20 backdrop-blur-sm rounded-lg p-2 border border-white/30">
-                <p class="text-red-100 text-xs sm:text-sm font-medium text-center">
-                  {{ cupos_total }} {{ cupos_total === 1 ? 'cupo' : 'cupos' }} × ${{ (tourSeleccionado.precio || tourSeleccionado.precio_adulto || 0).toLocaleString() }}
-                </p>
-              </div>
+              <span class="text-blue-700 font-black text-2xl sm:text-3xl">${{ ((tourSeleccionado.precio || tourSeleccionado.precio_adulto || 0) * cupos_total).toLocaleString() }}</span>
+            </div>
+            <div class="bg-white border border-blue-100 rounded-lg p-2">
+              <p class="text-gray-600 text-xs sm:text-sm font-medium text-center">
+                {{ cupos_total }} {{ cupos_total === 1 ? 'cupo' : 'cupos' }} × ${{ (tourSeleccionado.precio || tourSeleccionado.precio_adulto || 0).toLocaleString() }}
+              </p>
             </div>
           </div>
 
-          <!-- Mensaje de contacto para pago -->
-          <div class="bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 text-white rounded-xl p-4 shadow-lg border-2 border-blue-400/30 relative overflow-hidden mt-4">
-            <div class="absolute inset-0 bg-gradient-to-br from-white/5 via-transparent to-black/10 pointer-events-none"></div>
-            <div class="relative z-10 text-center">
-              <div class="flex items-center justify-center gap-2 mb-2">
-                <span class="text-2xl">
-                    <FontAwesomeIcon :icon="faExclamationTriangle" class="h-8 text-yellow-400 animate-pulse" />
-                </span>
-                <h6 class="font-bold text-lg">¡Confirma tu Reserva!</h6>
+
+          <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-gray-200 rounded-xl p-4 sm:p-5 shadow-lg mt-4">
+            <div class="flex items-center justify-center gap-3 mb-4">
+              <div class="bg-blue-100 p-2 rounded-full">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-5 text-blue-600" />
               </div>
-              <p class="text-blue-100 text-sm mb-3 leading-relaxed">
-                Ponte en contacto con nosotros para efectuar el pago y confirmar tu reserva
-              </p>
-              <div class="bg-white/20 backdrop-blur-sm rounded-lg p-3 border border-white/30">
-                <p class="text-white font-semibold text-xs sm:text-sm">
-                  <FontAwesomeIcon :icon="faMessage" class="h-4 text-yellow-300 inline-block mr-1" />
-                    Nuestros agentes te contactarán para coordinar el proceso de pago
-                </p>
+              <h6 class="font-bold text-lg text-gray-700">Información Importante</h6>
+            </div>
+
+            <div class="space-y-3 mb-4">
+              <div class="bg-white border border-blue-100 rounded-lg p-3 shadow-sm">
+                <div class="flex items-start gap-2">
+                  <FontAwesomeIcon :icon="faMessage" class="h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                  <p class="text-gray-700 text-sm leading-relaxed">
+                    <span class="font-semibold text-gray-800">Proceso de reserva:</span> Al completar esta reserva, recibirá un correo electrónico con los detalles de su reserva en estado PENDIENTE.
+                  </p>
+                </div>
+              </div>
+
+              <div class="bg-white border border-green-100 rounded-lg p-3 shadow-sm">
+                <div class="flex items-start gap-2">
+                  <FontAwesomeIcon :icon="faMessage" class="h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                  <p class="text-gray-700 text-sm leading-relaxed">
+                    <span class="font-semibold text-gray-800">Confirmación:</span> Una vez procesado el pago, recibirá una segunda notificación por correo con la confirmación definitiva de su reserva.
+                  </p>
+                </div>
+              </div>
+
+              <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 shadow-sm">
+                <div class="flex items-start gap-2">
+                  <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                  <p class="text-gray-700 text-sm leading-relaxed">
+                    <span class="font-semibold text-gray-800">Restricción:</span> Solo se permite una reserva activa por tour por cliente. Si ya tiene una reserva para este tour, no podrá realizar otra hasta completar o cancelar la existente.
+                  </p>
+                </div>
               </div>
             </div>
+
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p class="text-gray-700 font-medium text-xs sm:text-sm text-center">
+                <FontAwesomeIcon :icon="faMessage" class="h-4 text-blue-500 inline-block mr-2" />
+                Nuestro equipo se pondrá en contacto para coordinar los detalles finales
+              </p>
+            </div>
           </div>
+
         </div>
       </div>
     </div>

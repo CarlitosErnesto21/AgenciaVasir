@@ -19,6 +19,7 @@ use App\Mail\NewReservationClientMail;
 use App\Mail\NewReservationStaffMail;
 use App\Mail\ReservationRescheduledMail;
 use App\Mail\ReservationCompletedMail;
+use App\Models\Pago;
 use Carbon\Carbon;
 
 class ReservaController extends Controller
@@ -29,7 +30,7 @@ class ReservaController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour']);
+            $query = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour', 'pagos']);
 
             // Aplicar filtros por tipo (solo tours por ahora)
             if ($request->filled('tipo')) {
@@ -80,7 +81,7 @@ class ReservaController extends Controller
 
             // Si no hay filtros, devolver formato transformado con relaciones completas
             if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id', 'desde'])) {
-                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour'])->get();
+                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour', 'pagos'])->get();
 
                 // Transformar los datos igual que en el flujo paginado
                 $transformedData = $reservas->map(function ($reserva) {
@@ -91,23 +92,24 @@ class ReservaController extends Controller
                         'id' => $reserva->id,
                         'fecha_reserva' => $reserva->fecha,
                         'estado' => $reserva->estado,
-                        'cliente' => [
-                            'nombres' => $reserva->cliente && $reserva->cliente->user ?
-                                       $reserva->cliente->user->name : 'Cliente no asignado',
-                            'correo' => $reserva->cliente && $reserva->cliente->user ?
-                                      $reserva->cliente->user->email : 'Sin correo',
-                            'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
-                            'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
-                            'user' => $reserva->cliente && $reserva->cliente->user ? [
+                        'cliente' => $reserva->cliente ? [
+                            'id' => $reserva->cliente->id,
+                            'nombres' => $reserva->cliente->user ? $reserva->cliente->user->name : 'Cliente no asignado',
+                            'correo' => $reserva->cliente->user ? $reserva->cliente->user->email : 'Sin correo',
+                            'telefono' => $reserva->cliente->telefono,
+                            'numero_identificacion' => $reserva->cliente->numero_identificacion,
+                            'user' => $reserva->cliente->user ? [
                                 'name' => $reserva->cliente->user->name,
                                 'email' => $reserva->cliente->user->email
                             ] : null
-                        ],
+                        ] : null,
+                        'empleado' => $reserva->empleado,
                         'entidad_nombre' => $tourNombre,
                         'tipo' => 'Tour',
                         'total' => $reserva->total,
                         'mayores_edad' => $reserva->mayores_edad,
-                        'menores_edad' => $reserva->menores_edad
+                        'menores_edad' => $reserva->menores_edad,
+                        'pagos' => $reserva->pagos
                     ];
                 });
 
@@ -126,23 +128,24 @@ class ReservaController extends Controller
                     'id' => $reserva->id,
                     'fecha_reserva' => $reserva->fecha,
                     'estado' => $reserva->estado,
-                    'cliente' => [
-                        'nombres' => $reserva->cliente && $reserva->cliente->user ?
-                                   $reserva->cliente->user->name : 'Cliente no asignado',
-                        'correo' => $reserva->cliente && $reserva->cliente->user ?
-                                  $reserva->cliente->user->email : 'Sin correo',
-                        'telefono' => $reserva->cliente ? $reserva->cliente->telefono : null,
-                        'numero_identificacion' => $reserva->cliente ? $reserva->cliente->numero_identificacion : null,
-                        'user' => $reserva->cliente && $reserva->cliente->user ? [
+                    'cliente' => $reserva->cliente ? [
+                        'id' => $reserva->cliente->id,
+                        'nombres' => $reserva->cliente->user ? $reserva->cliente->user->name : 'Cliente no asignado',
+                        'correo' => $reserva->cliente->user ? $reserva->cliente->user->email : 'Sin correo',
+                        'telefono' => $reserva->cliente->telefono,
+                        'numero_identificacion' => $reserva->cliente->numero_identificacion,
+                        'user' => $reserva->cliente->user ? [
                             'name' => $reserva->cliente->user->name,
                             'email' => $reserva->cliente->user->email
                         ] : null
-                    ],
+                    ] : null,
+                    'empleado' => $reserva->empleado,
                     'entidad_nombre' => $tourNombre,
                     'tipo' => 'Tour',
                     'total' => $reserva->total,
                     'mayores_edad' => $reserva->mayores_edad,
-                    'menores_edad' => $reserva->menores_edad
+                    'menores_edad' => $reserva->menores_edad,
+                    'pagos' => $reserva->pagos
                 ];
             });
 
@@ -704,7 +707,7 @@ class ReservaController extends Controller
     public function show(Reserva $reserva)
     {
         // Mostrar los detalles de una reserva específica con sus relaciones
-        $reserva->load(['cliente', 'cliente.user', 'empleado']);
+        $reserva->load(['cliente', 'cliente.user', 'empleado', 'pagos']);
         return response()->json($reserva);
     }
 
@@ -744,10 +747,13 @@ class ReservaController extends Controller
                 // Eliminar la reserva
                 $reservaId = $reserva->id;
 
-                // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+                // 1. Eliminar pagos asociados (si existen)
+                \App\Models\Pago::where('reserva_id', $reserva->id)->delete();
+
+                // 2. Eliminar manualmente los detalles (por si CASCADE no funciona)
                 \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
 
-                // Luego eliminar la reserva
+                // 3. Luego eliminar la reserva
                 $reserva->delete();
 
                 Log::info('Reserva eliminada por actualización a CANCELADA', [
@@ -882,7 +888,10 @@ class ReservaController extends Controller
             $this->liberarCuposReserva($reserva, 'eliminación de reserva');
         }
 
-        // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
+        // Eliminar pagos asociados (si existen)
+        \App\Models\Pago::where('reserva_id', $reserva->id)->delete();
+
+        // Eliminar manualmente los detalles (por si CASCADE no funciona)
         \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
 
         // Eliminar la reserva
@@ -1225,15 +1234,20 @@ class ReservaController extends Controller
             // ELIMINAR RESERVA: En lugar de cambiar estado, eliminar completamente
             $reservaId = $reserva->id;
 
-            // Eliminar manualmente los detalles primero (por si CASCADE no funciona)
-            \App\Models\DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+            // 1. Eliminar pagos asociados (si existen)
+            $pagosEliminados = Pago::where('reserva_id', $reserva->id)->count();
+            Pago::where('reserva_id', $reserva->id)->delete();
 
-            // Luego eliminar la reserva
+            // 2. Eliminar manualmente los detalles (por si CASCADE no funciona)
+            DetalleReservaTour::where('reserva_id', $reserva->id)->delete();
+
+            // 3. Luego eliminar la reserva
             $reserva->delete();
 
             Log::info('Reserva eliminada por rechazo', [
                 'reserva_id' => $reservaId,
                 'motivo' => $motivo,
+                'pagos_eliminados' => $pagosEliminados,
                 'email_enviado' => !empty($clientData['email'])
             ]);
 

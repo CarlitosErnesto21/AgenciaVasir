@@ -82,7 +82,21 @@ const handleContinueEditing = () => {
     emit('continue-editing');
 };
 
-// Computed properties para v-model
+// Función para abrir Gmail
+const abrirGmail = (email) => {
+  if (!email) return;
+
+  // Detectar si es móvil
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // En móviles, usar mailto: que el sistema operativo maneje
+    window.location.href = `mailto:${email}`;
+  } else {
+    // En escritorio, abrir Gmail web directamente
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
+  }
+};// Computed properties para v-model
 const isVisible = computed({
     get: () => props.visible,
     set: (value) => emit('update:visible', value)
@@ -464,9 +478,10 @@ const updateDetallesVisible = (value) => {
                             <div v-if="cliente.user?.email" class="flex flex-wrap items-center gap-2">
                                 <span class="text-xs sm:text-sm break-all">{{ cliente.user.email }}</span>
                                 <a
-                                    :href="`mailto:${cliente.user.email}`"
-                                    class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200"
-                                    title="Enviar correo electrónico"
+                                    @click="abrirGmail(cliente.user.email)"
+                                    href="#"
+                                    class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200 cursor-pointer"
+                                    title="Abrir Gmail para enviar correo"
                                 >
                                     <FontAwesomeIcon :icon="faEnvelope" class="h-3 w-3" />
                                     <span class="hidden sm:inline">Enviar Email</span>
