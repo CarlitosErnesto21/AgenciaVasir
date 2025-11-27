@@ -13,11 +13,8 @@ return new class extends Migration
     {
         Schema::create('transportes', function (Blueprint $table) {
             $table->id();
-            $table->string('numero_placa', 10)->unique();
             $table->string('nombre', 50)->unique();
             $table->integer('capacidad');
-            $table->string('marca', 30);
-            $table->enum('estado', ['DISPONIBLE', 'NO_DISPONIBLE'])->default('DISPONIBLE');
             $table->timestamps();
         });
     }

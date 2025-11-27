@@ -136,7 +136,7 @@ const tiposInformes = [
     endpoint: `${window.location.origin}/descargar-informe-inventario`,
     requiereFechas: false,
     requiereCliente: false,
-    color: 'green'
+    color: 'gray'
   },
   {
     id: 'reservas-cliente',
@@ -156,7 +156,7 @@ const tiposInformes = [
     endpoint: `${window.location.origin}/descargar-informe-ventas-cliente`,
     requiereFechas: false,
     requiereCliente: true,
-    color: 'purple'
+    color: 'yellow'
   }
 ]
 

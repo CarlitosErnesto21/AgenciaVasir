@@ -1965,7 +1965,7 @@ const onPricePaste = (event) => {
                                         *
                                     </span>
                                 </label>
-                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="ATRIO DE CHALATENANGO, ETC"
+                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="ATRIO DE CATEDRAL DE CHALATENANGO, ETC"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="validatePuntoSalida" @paste="onPuntoSalidaPaste"/>
                         </div>
