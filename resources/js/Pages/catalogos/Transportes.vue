@@ -692,6 +692,16 @@ const handleToursClick = () => {
             <!-- Modal de formulario -->
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Transporte'" :modal="true" :style="dialogStyle"
                 :closable="false" :draggable="false">
+                <!-- Mensaje informativo -->
+                <div class="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded-r-md">
+                    <div class="flex items-start">
+                        <FontAwesomeIcon :icon="faInfoCircle" class="h-5 w-5 text-blue-400 mt-0.5 mr-3" />
+                        <div class="text-sm text-blue-800">
+                            <p class="font-medium mb-1">Información importante:</p>
+                            <p>La capacidad que definas aquí será el cupo máximo que se podrá asignar en los tours que utilicen este transporte.</p>
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">

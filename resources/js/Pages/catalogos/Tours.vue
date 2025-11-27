@@ -1026,11 +1026,27 @@ const saveOrUpdate = async () => {
         originalTourData.value = null;
         resetForm();
     } catch (err) {
+        let errorMessage = "Por favor revisa los campos e intenta nuevamente.";
+        
+        // Si es un error 422 (validación), extraer los mensajes específicos
+        if (err.response && err.response.status === 422) {
+            if (err.response.data && err.response.data.message) {
+                errorMessage = err.response.data.message;
+            } else if (err.response.data && err.response.data.errors) {
+                // Si hay errores de validación específicos, mostrar el primero
+                const errors = err.response.data.errors;
+                const firstError = Object.values(errors)[0];
+                if (firstError && firstError.length > 0) {
+                    errorMessage = firstError[0];
+                }
+            }
+        }
+        
         toast.add({
             severity: "warn",
             summary: "Error de validación",
-            detail: "Por favor revisa los campos e intenta nuevamente.",
-            life: 6000
+            detail: errorMessage,
+            life: 8000
         });
     } finally {
         isLoading.value = false;

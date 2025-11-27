@@ -52,6 +52,8 @@ Route::middleware(['auth', 'verified', RutasAdmin::class])->group(function () {
     Route::get('/descargar-informe-inventario', [InformePDFController::class, 'descargarInformeInventario']);
     Route::get('/descargar-informe-reservas-cliente', [InformePDFController::class, 'descargarInformeReservasCliente']);
     Route::get('/descargar-informe-ventas-cliente', [InformePDFController::class, 'descargarInformeVentasCliente']);
+
+
     Route::get('/configuracion/backup', [BackupController::class, 'showBackupPage'])->name('backups')->middleware('password.confirm');
 
     // Configuración del Sistema - Solo para Administradores
@@ -70,6 +72,10 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::post('/profile/request-deletion', [ProfileController::class, 'requestDeletion'])->name('profile.request-deletion');
+
+    // Rutas para PDFs del perfil de cliente
+    Route::get('/mi-perfil/descargar-reservaciones', [InformePDFController::class, 'descargarInformeReservacionesPerfil']);
+    Route::get('/mi-perfil/descargar-compras', [InformePDFController::class, 'descargarInformeComprasPerfil']);
 
     // ✅ PROTEGIDO: Rutas de carrito y pagos con validación de integridad
     Route::middleware('venta.integrity')->group(function () {

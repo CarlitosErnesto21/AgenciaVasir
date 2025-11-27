@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Mail;
 use Carbon\Carbon;
+use Illuminate\Validation\ValidationException;
 
 class TourController extends Controller
 {
@@ -140,6 +141,13 @@ class TourController extends Controller
         $validated['nombre'] = $this->validateAndFormatNombre($validated['nombre']);
         $validated['punto_salida'] = $this->validateAndFormatPuntoSalida($validated['punto_salida']);
 
+        // Validar disponibilidad del transporte
+        $this->validarDisponibilidadTransporte(
+            $validated['transporte_id'],
+            $validated['fecha_salida'],
+            $validated['fecha_regreso']
+        );
+
         // Preparar datos para crear el tour
         $tourData = $validated;
         unset($tourData['imagenes']); // Remover imagenes del array principal
@@ -235,6 +243,14 @@ class TourController extends Controller
         // Aplicar validaciones de formato a los campos específicos
         $validated['nombre'] = $this->validateAndFormatNombre($validated['nombre']);
         $validated['punto_salida'] = $this->validateAndFormatPuntoSalida($validated['punto_salida']);
+
+        // Validar disponibilidad del transporte (excluyendo el tour actual en la edición)
+        $this->validarDisponibilidadTransporte(
+            $validated['transporte_id'],
+            $validated['fecha_salida'],
+            $validated['fecha_regreso'],
+            $tour->id
+        );
 
         // Validar límite total de imágenes (existentes + nuevas - eliminadas)
         $imagenesExistentes = $tour->imagenes()->count();
@@ -1232,6 +1248,60 @@ class TourController extends Controller
             return response()->json([
                 'error' => 'Error al cargar tours con reservas pendientes'
             ], 500);
+        }
+    }
+
+    /**
+     * Validar que el transporte esté disponible en las fechas especificadas
+     */
+    private function validarDisponibilidadTransporte($transporteId, $fechaSalida, $fechaRegreso, $tourIdAExcluir = null)
+    {
+        // Convertir fechas a Carbon para comparación
+        $fechaSalidaNueva = Carbon::parse($fechaSalida);
+        $fechaRegresoNueva = Carbon::parse($fechaRegreso);
+
+        // Buscar tours que usen el mismo transporte y tengan fechas en conflicto
+        $query = Tour::where('transporte_id', $transporteId)
+            ->whereNotIn('estado', ['CANCELADA', 'FINALIZADO']) // Excluir tours cancelados o finalizados
+            ->where(function ($query) use ($fechaSalidaNueva, $fechaRegresoNueva) {
+                // Verificar si hay solapamiento de fechas
+                $query->where(function ($subQuery) use ($fechaSalidaNueva, $fechaRegresoNueva) {
+                    // Caso 1: El tour existente comienza antes de que termine el nuevo
+                    $subQuery->where('fecha_salida', '<=', $fechaRegresoNueva)
+                             ->where('fecha_regreso', '>=', $fechaSalidaNueva);
+                })
+                ->orWhere(function ($subQuery) use ($fechaSalidaNueva, $fechaRegresoNueva) {
+                    // Caso 2: El nuevo tour está completamente dentro del existente
+                    $subQuery->where('fecha_salida', '<=', $fechaSalidaNueva)
+                             ->where('fecha_regreso', '>=', $fechaRegresoNueva);
+                })
+                ->orWhere(function ($subQuery) use ($fechaSalidaNueva, $fechaRegresoNueva) {
+                    // Caso 3: El tour existente está completamente dentro del nuevo
+                    $subQuery->where('fecha_salida', '>=', $fechaSalidaNueva)
+                             ->where('fecha_regreso', '<=', $fechaRegresoNueva);
+                });
+            });
+
+        // Si estamos editando un tour, excluirlo de la validación
+        if ($tourIdAExcluir) {
+            $query->where('id', '!=', $tourIdAExcluir);
+        }
+
+        $tourEnConflicto = $query->first();
+
+        if ($tourEnConflicto) {
+            $fechaSalidaConflicto = Carbon::parse($tourEnConflicto->fecha_salida)->format('d/m/Y H:i');
+            $fechaRegresoConflicto = Carbon::parse($tourEnConflicto->fecha_regreso)->format('d/m/Y H:i');
+
+            $validator = validator([], []);
+            $validator->errors()->add(
+                'transporte_id',
+                "El transporte seleccionado ya está asignado al tour '{$tourEnConflicto->nombre}' " .
+                "\nDesde {$fechaSalidaConflicto} \nHasta {$fechaRegresoConflicto}. " .
+                "\nLas fechas se superponen con el tour. " .
+                "\nPor favor, seleccione otro transporte o cambie las fechas."
+            );
+            throw new ValidationException($validator);
         }
     }
 }

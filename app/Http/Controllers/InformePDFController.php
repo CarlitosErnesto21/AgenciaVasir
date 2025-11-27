@@ -17,6 +17,8 @@ use App\Models\Venta;
 use App\Models\DetalleVenta;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Spatie\Permission\Models\Role;
 
 class InformePDFController extends Controller
 {
@@ -568,6 +570,286 @@ class InformePDFController extends Controller
                 'error' => true,
                 'message' => 'Error interno del servidor al generar el informe de ventas del cliente.'
             ], 500);
+        }
+    }
+
+    /**
+     * Descargar informe de reservaciones para el perfil del cliente
+     */
+    public function descargarInformeReservacionesPerfil()
+    {
+        try {
+            Carbon::setLocale('es');
+
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Usuario no autorizado.'
+                ], 403);
+            }
+
+            // Verificar si el usuario tiene rol de Cliente
+            $isCliente = $user->roles && $user->roles->contains('name', 'Cliente');
+            if (!$isCliente) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Usuario no es cliente.'
+                ], 403);
+            }
+
+            $cliente = $user->cliente;
+            if (!$cliente) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Información de cliente no encontrada.'
+                ], 404);
+            }
+
+            // Obtener todas las reservas del cliente
+            $reservas = $cliente->reservas()
+                ->with(['empleado.user', 'detallesTours.tour'])
+                ->orderBy('fecha', 'desc')
+                ->get();
+
+            // Procesar datos de reservas
+            $reservasData = $reservas->map(function($reserva) {
+                $tours = $reserva->detallesTours->map(function($detalle) {
+                    return $detalle->tour ? $detalle->tour->nombre : 'Tour no disponible';
+                })->implode(', ');
+
+                return [
+                    'fecha' => Carbon::parse($reserva->fecha)->format('d/m/Y'),
+                    'tours' => $tours ?: 'Sin tours',
+                    'estado' => $this->getEstadoReservaLabel($reserva->estado),
+                    'total_pago' => $reserva->total_pago ?? 0,
+                    'empleado' => $reserva->empleado && $reserva->empleado->user ? $reserva->empleado->user->name : 'No asignado'
+                ];
+            });
+
+            try {
+                $empresaInfo = $this->getEmpresaInfo();
+            } catch (\Exception $e) {
+                Log::error('Error obteniendo información de empresa: ' . $e->getMessage());
+                $empresaInfo = ['telefono' => '+51 987 654 321', 'email' => 'info@vasir.com'];
+            }
+
+            // Información completa del cliente
+            $clienteInfo = [
+                'nombre' => $user->name,
+                'email' => $user->email,
+                'numero_identificacion' => $cliente->numero_identificacion ?? 'No registrado',
+                'tipo_documento' => $cliente->tipo_documento ?? 'No registrado',
+                'fecha_nacimiento' => $cliente->fecha_nacimiento ? Carbon::parse($cliente->fecha_nacimiento)->format('d/m/Y') : 'No registrada',
+                'genero' => $cliente->genero ?? 'No registrado',
+                'direccion' => $cliente->direccion ?? 'No registrada',
+                'telefono' => $cliente->telefono ?? 'No registrado',
+            ];
+
+            $data = [
+                'reservas' => $reservasData,
+                'cliente' => $clienteInfo,
+                'cliente_nombre' => $user->name,
+                'cliente_email' => $user->email,
+                'fecha_generacion' => Carbon::now()->format('d/m/Y H:i:s'),
+                'total_reservas' => $reservas->count(),
+                'reservas_completadas' => $reservas->where('estado', 'finalizada')->count(),
+                'reservas_confirmadas' => $reservas->where('estado', 'confirmada')->count(),
+                'reservas_pendientes' => $reservas->where('estado', 'pendiente')->count(),
+                'empresa' => $empresaInfo,
+            ];
+
+            $fecha_hora = Carbon::now()->format('Y_m_d_H_i_s');
+            $nombreArchivo = "mis_reservaciones_{$fecha_hora}.pdf";
+
+            // Verificar si la vista existe
+            if (!view()->exists('informes.mis-reservaciones')) {
+                throw new \Exception('Vista informes.mis-reservaciones no encontrada');
+            }
+
+            $pdf = Pdf::loadView('informes.mis-reservaciones', $data)
+                ->setPaper('letter', 'portrait');
+
+            // Enviar email con PDF adjunto
+            Mail::to($user->email)->send(new \App\Mail\InformeReservacionesMail([
+                'name' => $user->name,
+                'email' => $user->email
+            ], $data));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'El informe de reservaciones ha sido enviado a tu correo electrónico.'
+            ]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'error' => true,
+                'message' => 'Error interno del servidor al generar el informe de reservaciones.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Descargar informe de compras para el perfil del cliente
+     */
+    public function descargarInformeComprasPerfil()
+    {
+        try {
+            Carbon::setLocale('es');
+
+            $user = auth()->user();
+            if (!$user) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Usuario no autorizado.'
+                ], 403);
+            }
+
+            // Verificar si el usuario tiene rol de Cliente
+            $isCliente = $user->roles && $user->roles->contains('name', 'Cliente');
+            if (!$isCliente) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Usuario no es cliente.'
+                ], 403);
+            }
+
+            $cliente = $user->cliente;
+            if (!$cliente) {
+                return response()->json([
+                    'error' => true,
+                    'message' => 'Información de cliente no encontrada.'
+                ], 404);
+            }
+
+            // Obtener todas las ventas del cliente
+            $ventas = $cliente->ventas()
+                ->with(['detalleVentas.producto'])
+                ->orderBy('fecha', 'desc')
+                ->get();
+
+            // Procesar datos de ventas
+            $ventasData = $ventas->map(function($venta) {
+                $productos = $venta->detalleVentas->map(function($detalle) {
+                    return [
+                        'nombre' => $detalle->producto->nombre ?? 'Producto eliminado',
+                        'cantidad' => $detalle->cantidad,
+                        'precio' => $detalle->precio_unitario,
+                        'subtotal' => $detalle->cantidad * $detalle->precio_unitario,
+                    ];
+                });
+
+                return [
+                    'fecha' => Carbon::parse($venta->fecha)->format('d/m/Y'),
+                    'productos' => $productos,
+                    'total' => $venta->total,
+                    'estado' => $this->getEstadoVentaLabel($venta->estado),
+                ];
+            });
+
+            try {
+                $empresaInfo = $this->getEmpresaInfo();
+            } catch (\Exception $e) {
+                Log::error('Error obteniendo información de empresa: ' . $e->getMessage());
+                $empresaInfo = ['telefono' => '+51 987 654 321', 'email' => 'info@vasir.com'];
+            }
+
+            // Información completa del cliente
+            $clienteInfo = [
+                'nombre' => $user->name,
+                'email' => $user->email,
+                'numero_identificacion' => $cliente->numero_identificacion ?? 'No registrado',
+                'tipo_documento' => $cliente->tipo_documento ?? 'No registrado',
+                'fecha_nacimiento' => $cliente->fecha_nacimiento ? Carbon::parse($cliente->fecha_nacimiento)->format('d/m/Y') : 'No registrada',
+                'genero' => $cliente->genero ?? 'No registrado',
+                'direccion' => $cliente->direccion ?? 'No registrada',
+                'telefono' => $cliente->telefono ?? 'No registrado',
+            ];
+
+            $data = [
+                'ventas' => $ventasData,
+                'cliente' => $clienteInfo,
+                'cliente_nombre' => $user->name,
+                'cliente_email' => $user->email,
+                'fecha_generacion' => Carbon::now()->format('d/m/Y H:i:s'),
+                'total_ventas' => $ventas->count(),
+                'ventas_completadas' => $ventas->where('estado', 'completada')->count(),
+                'ventas_pendientes' => $ventas->where('estado', 'pendiente')->count(),
+                'ventas_canceladas' => $ventas->where('estado', 'cancelada')->count(),
+                'total_gastado' => $ventas->where('estado', 'completada')->sum('total'),
+                'empresa' => $empresaInfo,
+            ];
+
+            $fecha_hora = Carbon::now()->format('Y_m_d_H_i_s');
+            $nombreArchivo = "mis_compras_{$fecha_hora}.pdf";
+
+            // Verificar si la vista existe
+            if (!view()->exists('informes.mis-compras')) {
+                throw new \Exception('Vista informes.mis-compras no encontrada');
+            }
+
+            $pdf = Pdf::loadView('informes.mis-compras', $data)
+                ->setPaper('letter', 'portrait');
+
+            // Enviar email con PDF adjunto
+            Mail::to($user->email)->send(new \App\Mail\InformeComprasMail([
+                'name' => $user->name,
+                'email' => $user->email
+            ], $data));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'El informe de compras ha sido enviado a tu correo electrónico.'
+            ]);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'error' => true,
+                'message' => 'Error interno del servidor al generar el informe de compras.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Helper para obtener información de la empresa (usuario administrador)
+     */
+    private function getEmpresaInfo()
+    {
+        $admin = User::whereHas('roles', function($query) {
+            $query->where('name', 'Administrador');
+        })->first();
+
+        return [
+            'telefono' => ($admin && $admin->empleado && $admin->empleado->telefono)
+                ? $admin->empleado->telefono
+                : 'Teléfono no disponible',
+            'email' => ($admin && $admin->email)
+                ? $admin->email
+                : 'Email no disponible',
+            'direccion' => '2a Calle Oriente casa #12, Chalatenango, El Salvador'
+        ];
+    }
+
+    /**
+     * Helper para obtener etiquetas de estado de reserva
+     */
+    private function getEstadoReservaLabel($estado)
+    {
+        switch ($estado) {
+            case 'pendiente':
+                return 'Pendiente';
+            case 'confirmada':
+                return 'Confirmada';
+            case 'en_progreso':
+                return 'En Progreso';
+            case 'finalizada':
+                return 'Finalizada';
+            case 'cancelada':
+                return 'Cancelada';
+            default:
+                return ucfirst($estado);
         }
     }
 

@@ -7,7 +7,8 @@ import UpdateProfileInformationForm from './Partials/UpdateProfileInformationFor
 import { Head, usePage } from '@inertiajs/vue3';
 import { computed, ref, onMounted, onUnmounted } from 'vue';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
-import { faUser, faLock, faExclamationTriangle, faChevronLeft } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faLock, faExclamationTriangle, faChevronLeft, faFileAlt, faShoppingCart, faEnvelope } from '@fortawesome/free-solid-svg-icons';
+import { useToast } from 'primevue/usetoast';
 
 const props = defineProps({
     mustVerifyEmail: {
@@ -36,6 +37,7 @@ const props = defineProps({
 
 // Obtener información del usuario y sus roles
 const user = props.user || null;
+const toast = useToast();
 
 const isAdmin = computed(() => {
     if (!user?.roles || !Array.isArray(user.roles)) return false;
@@ -50,12 +52,267 @@ const layoutComponent = computed(() => {
 // Estado para mostrar el formulario seleccionado
 const selectedForm = ref(null); // null, 'profile', 'password', 'delete'
 
-const showForm = (form) => {
+// Estado de carga para deshabilitar tarjetas durante procesamiento
+const isLoadingReport = ref(false);
+
+// Estados de cooldown para evitar spam de correos (5 minutos)
+const cooldownReservaciones = ref(0);
+const cooldownCompras = ref(0);
+
+// Función para verificar y manejar cooldown
+const checkCooldown = (type) => {
+    const key = `report_cooldown_${type}`;
+    const lastRequest = localStorage.getItem(key);
+
+    if (lastRequest) {
+        const elapsed = Date.now() - parseInt(lastRequest);
+        const remaining = 300000 - elapsed; // 5 minutos en milisegundos
+
+        if (remaining > 0) {
+            return Math.ceil(remaining / 1000); // Devolver segundos restantes
+        } else {
+            localStorage.removeItem(key);
+            return 0;
+        }
+    }
+    return 0;
+};
+
+// Función para establecer cooldown
+const setCooldown = (type) => {
+    const key = `report_cooldown_${type}`;
+    localStorage.setItem(key, Date.now().toString());
+};
+
+// Función para formatear tiempo mm:ss
+const formatTime = (seconds) => {
+    const minutes = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
+// Verificar cooldowns al cargar la página
+onMounted(() => {
+    // Inicializar con valores seguros
+    cooldownReservaciones.value = 0;
+    cooldownCompras.value = 0;
+
+    // Verificar cooldowns existentes
+    const reservacionesCooldown = checkCooldown('reservaciones');
+    const comprasCooldown = checkCooldown('compras');
+
+    if (reservacionesCooldown > 0) {
+        cooldownReservaciones.value = reservacionesCooldown;
+        startCooldownTimer('reservaciones');
+    }
+    if (comprasCooldown > 0) {
+        cooldownCompras.value = comprasCooldown;
+        startCooldownTimer('compras');
+    }
+});// Función para iniciar temporizador de cooldown
+const startCooldownTimer = (type) => {
+    const timer = setInterval(() => {
+        const remaining = checkCooldown(type);
+
+        if (type === 'reservaciones') {
+            cooldownReservaciones.value = remaining;
+        } else {
+            cooldownCompras.value = remaining;
+        }
+
+        if (remaining <= 0) {
+            clearInterval(timer);
+        }
+    }, 1000);
+};
+
+const showForm = (form, event = null) => {
+    if (event) {
+        event.preventDefault(); // Prevenir comportamiento por defecto
+    }
     selectedForm.value = form;
 };
 
 const goBack = () => {
     selectedForm.value = null;
+};
+
+// Handlers para clicks
+const handleReservacionesClick = (event) => {
+    event.preventDefault(); // Prevenir comportamiento por defecto
+
+    if (isLoadingReport.value || cooldownReservaciones.value > 0) {
+        return;
+    }
+
+    solicitarInformeReservaciones();
+};
+
+const handleComprasClick = (event) => {
+    event.preventDefault(); // Prevenir comportamiento por defecto
+
+    if (isLoadingReport.value || cooldownCompras.value > 0) {
+        return;
+    }
+
+    solicitarInformeCompras();
+};
+
+// Funciones para solicitar informes por email - Solo para clientes
+const solicitarInformeReservaciones = async () => {
+    if (isLoadingReport.value) {
+        return;
+    }
+
+    // Verificar cooldown
+    if (cooldownReservaciones.value > 0) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Espera un momento',
+            detail: `Debes esperar ${formatTime(cooldownReservaciones.value)} antes de solicitar otro informe de reservaciones.`,
+            life: 5000
+        });
+        return;
+    }
+
+    isLoadingReport.value = true;    // Toast de preparando envío
+    toast.add({
+        severity: 'info',
+        summary: 'Preparando envío',
+        detail: 'Generando y preparando el envío de tu informe de reservaciones por correo...',
+        life: 4000
+    });
+
+    try {
+        const response = await fetch('/mi-perfil/descargar-reservaciones', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
+                // Establecer cooldown de 5 minutos
+                setCooldown('reservaciones');
+                cooldownReservaciones.value = 300; // 5 minutos en segundos
+                startCooldownTimer('reservaciones');
+
+                toast.add({
+                    severity: 'success',
+                    summary: 'Solicitud enviada',
+                    detail: data.message || 'El informe de reservaciones será enviado a tu correo electrónico.',
+                    life: 6000
+                });
+            } else {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error en la solicitud',
+                    detail: data.message || 'No se pudo procesar la solicitud del informe.',
+                    life: 6000
+                });
+            }
+        } else {
+            const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+
+            toast.add({
+                severity: 'error',
+                summary: 'Error del servidor',
+                detail: errorData.message || 'Error interno del servidor.',
+                life: 6000
+            });
+        }
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error de conexión',
+            detail: `Error: ${error.message}. Por favor, intenta nuevamente.`,
+            life: 6000
+        });
+    } finally {
+        isLoadingReport.value = false;
+    }
+};
+
+const solicitarInformeCompras = async () => {
+    if (isLoadingReport.value) {
+        return;
+    }
+
+    // Verificar cooldown
+    if (cooldownCompras.value > 0) {
+        toast.add({
+            severity: 'warn',
+            summary: 'Espera un momento',
+            detail: `Debes esperar ${formatTime(cooldownCompras.value)} antes de solicitar otro informe de compras.`,
+            life: 5000
+        });
+        return;
+    }
+
+    isLoadingReport.value = true;    // Toast de preparando envío
+    toast.add({
+        severity: 'info',
+        summary: 'Preparando envío',
+        detail: 'Generando y preparando el envío de tu informe de compras por correo...',
+        life: 4000
+    });
+
+    try {
+        const response = await fetch('/mi-perfil/descargar-compras', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+
+            if (data.success) {
+                // Establecer cooldown de 5 minutos
+                setCooldown('compras');
+                cooldownCompras.value = 300; // 5 minutos en segundos
+                startCooldownTimer('compras');
+
+                toast.add({
+                    severity: 'success',
+                    summary: 'Solicitud enviada',
+                    detail: data.message || 'El informe de compras será enviado a tu correo electrónico.',
+                    life: 6000
+                });
+            } else {
+                toast.add({
+                    severity: 'error',
+                    summary: 'Error en la solicitud',
+                    detail: data.message || 'No se pudo procesar la solicitud del informe.',
+                    life: 6000
+                });
+            }
+        } else {
+            const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
+
+            toast.add({
+                severity: 'error',
+                summary: 'Error del servidor',
+                detail: errorData.message || 'Error interno del servidor.',
+                life: 6000
+            });
+        }
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Error de conexión',
+            detail: `Error: ${error.message}. Por favor, intenta nuevamente.`,
+            life: 6000
+        });
+    } finally {
+        isLoadingReport.value = false;
+    }
 };
 </script>
 
@@ -95,7 +352,10 @@ const goBack = () => {
                     <template v-if="!selectedForm">
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <!-- Tarjeta Información Personal -->
-                            <div @click="showForm('profile')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
+                            <div @click="(event) => !isLoadingReport && showForm('profile', event)" :class="{
+                                'cursor-pointer bg-white hover:shadow-2xl': !isLoadingReport,
+                                'cursor-not-allowed bg-gray-50 opacity-50': isLoadingReport
+                            }" class="rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center transition-all group">
                                 <div class="bg-red-100 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faUser" class="w-8 h-8 text-red-600" />
                                 </div>
@@ -103,15 +363,59 @@ const goBack = () => {
                                 <p class="text-gray-600 text-sm text-center">Actualiza tu información de perfil y correo electrónico</p>
                             </div>
                             <!-- Tarjeta Seguridad -->
-                            <div @click="showForm('password')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
+                            <div @click="(event) => !isLoadingReport && showForm('password', event)" :class="{
+                                'cursor-pointer bg-white hover:shadow-2xl': !isLoadingReport,
+                                'cursor-not-allowed bg-gray-50 opacity-50': isLoadingReport
+                            }" class="rounded-2xl shadow-lg border border-gray-100 p-6 flex flex-col items-center transition-all group">
                                 <div class="bg-red-100 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faLock" class="w-8 h-8 text-red-600" />
                                 </div>
                                 <h3 class="text-lg font-bold text-gray-900 mb-1">Seguridad</h3>
                                 <p class="text-gray-600 text-sm text-center">Cambia tu contraseña y mantén tu cuenta segura</p>
                             </div>
+                            <!-- Tarjeta Solicitar Informe de Reservaciones - Solo para Clientes -->
+                            <div v-if="!isAdmin" @click="handleReservacionesClick" :class="{
+                                'cursor-pointer bg-white hover:shadow-2xl': !isLoadingReport && cooldownReservaciones === 0,
+                                'cursor-not-allowed bg-gray-50 opacity-50': isLoadingReport || cooldownReservaciones > 0
+                            }" class="rounded-2xl shadow-lg border border-blue-200 p-6 flex flex-col items-center transition-all group">
+                                <div class="bg-blue-100 rounded-full p-4 mb-4">
+                                    <FontAwesomeIcon :icon="faEnvelope" class="w-8 h-8 text-blue-600" />
+                                </div>
+                                <h3 class="text-lg font-bold text-blue-900 mb-1">
+                                    {{ cooldownReservaciones > 0 ? 'Disponible en' : 'Solicitar Informe de Reservaciones' }}
+                                </h3>
+                                <p class="text-blue-700 text-sm text-center">
+                                    {{ cooldownReservaciones > 0
+                                        ? `${formatTime(cooldownReservaciones)} - Evita spam de correos`
+                                        : 'Recibe por correo un PDF detallado de todas tus reservaciones'
+                                    }}
+                                </p>
+                            </div>
+
+                            <!-- Tarjeta Solicitar Informe de Compras - Solo para Clientes -->
+                            <div v-if="!isAdmin" @click="handleComprasClick" :class="{
+                                'cursor-pointer bg-white hover:shadow-2xl': !isLoadingReport && cooldownCompras === 0,
+                                'cursor-not-allowed bg-gray-50 opacity-50': isLoadingReport || cooldownCompras > 0
+                            }" class="rounded-2xl shadow-lg border border-green-200 p-6 flex flex-col items-center transition-all group">
+                                <div class="bg-green-100 rounded-full p-4 mb-4">
+                                    <FontAwesomeIcon :icon="faEnvelope" class="w-8 h-8 text-green-600" />
+                                </div>
+                                <h3 class="text-lg font-bold text-green-900 mb-1">
+                                    {{ cooldownCompras > 0 ? 'Disponible en' : 'Solicitar Informe de Compras' }}
+                                </h3>
+                                <p class="text-green-700 text-sm text-center">
+                                    {{ cooldownCompras > 0
+                                        ? `${formatTime(cooldownCompras)} - Evita spam de correos`
+                                        : 'Recibe por correo un PDF detallado de todas tus compras'
+                                    }}
+                                </p>
+                            </div>
+
                             <!-- Tarjeta Eliminar Cuenta -->
-                            <div @click="showForm('delete')" class="cursor-pointer bg-white rounded-2xl shadow-lg border border-red-200 p-6 flex flex-col items-center hover:shadow-2xl transition-all group">
+                            <div @click="(event) => !isLoadingReport && showForm('delete', event)" :class="{
+                                'cursor-pointer bg-white hover:shadow-2xl': !isLoadingReport,
+                                'cursor-not-allowed bg-gray-50 opacity-50': isLoadingReport
+                            }" class="rounded-2xl shadow-lg border border-red-200 p-6 flex flex-col items-center transition-all group">
                                 <div class="bg-red-200 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faExclamationTriangle" class="w-8 h-8 text-red-700" />
                                 </div>
