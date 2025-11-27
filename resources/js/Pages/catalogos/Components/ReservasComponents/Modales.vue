@@ -497,6 +497,18 @@ onUnmounted(() => {
             </span>
             <span class="ml-2 text-gray-400 italic" v-else>Sin referencia</span>
           </div>
+          <div>
+            <span class="font-medium text-gray-700">Estado de Pago:</span>
+            <span
+              class="ml-2 px-2 py-1 rounded-full text-xs font-medium"
+              :class="{
+                'bg-green-100 text-green-800': reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved',
+                'bg-yellow-100 text-yellow-800': !reserva.pagos || reserva.pagos.length === 0 || reserva.pagos[0].estado !== 'approved'
+              }"
+            >
+              {{ (reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved') ? 'Pagado' : 'Pendiente de Pago' }}
+            </span>
+          </div>
         </div>
       </div>
     </div>

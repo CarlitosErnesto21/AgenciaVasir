@@ -1,16 +1,17 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head, Link, router } from "@inertiajs/vue3";
+import { Head, Link, router, usePage } from "@inertiajs/vue3";
 import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faHandPointUp, faListDots, faMagnifyingGlass, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faClock, faHandPointUp, faInfoCircle, faListDots, faMagnifyingGlass, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import axios from "axios";
 
 const toast = useToast();
+const page = usePage();
 // Variables para listas de incluye/no incluye
 const incluyeLista = ref([]);
 const noIncluyeLista = ref([]);
@@ -42,6 +43,11 @@ const isClearingFilters = ref(false);
 const isNavigatingToTransportes = ref(false);
 const isLoadingTable = ref(true);
 
+// Variables para modal de tours con reservas pendientes
+const toursPendientesDialog = ref(false);
+const toursPendientes = ref([]);
+const isLoadingToursPendientes = ref(false);
+
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
     categoria: { value: null, matchMode: FilterMatchMode.EQUALS },
@@ -58,6 +64,7 @@ const rowsPerPage = ref(10);
 const rowsPerPageOptions = ref([5, 10, 20, 50]);
 const btnTitle = ref("Guardar");
 const horaRegresoCalendar = ref(null);
+const hasRestrictedReservations = ref(false);
 const url = "/api/tours";
 const IMAGE_PATH = "/storage/tours/";
 const tipoTransportes = ref([]);
@@ -346,7 +353,29 @@ onMounted(() => {
     if (typeof window !== 'undefined') {
         window.addEventListener('resize', handleResize);
     }
+
+    // Verificar si se debe abrir el modal de edición automáticamente
+    checkForAutoEdit();
 });
+
+// Función para verificar si debe abrir automáticamente el modal de edición
+const checkForAutoEdit = () => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const editTourId = urlParams.get('editTour');
+    
+    if (editTourId) {
+        // Buscar el tour en la lista
+        setTimeout(() => {
+            const tourToEdit = tours.value.find(t => t.id == editTourId);
+            if (tourToEdit) {
+                editTour(tourToEdit);
+                // Limpiar el parámetro de la URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, '', newUrl);
+            }
+        }, 1000); // Dar tiempo para que se carguen los tours
+    }
+};
 
 // Listener para cambios de tamaño de ventana
 const handleResize = () => {
@@ -374,10 +403,28 @@ const fetchTours = async () => {
             // Agregar campos para filtros
             'transporte.nombre': t.transporte?.nombre,
         })).sort((a, b) => {
-            // Ordenar por fecha de creación descendente (más recientes primero)
-            const dateA = new Date(a.created_at);
-            const dateB = new Date(b.created_at);
-            return dateB - dateA;
+            // Ordenar primero por prioridad de estado, luego por fecha de salida
+            const estadoPrioridad = {
+                'EN_CURSO': 1,
+                'COMPLETO': 2,
+                'REPROGRAMADA': 3,
+                'DISPONIBLE': 4,
+                'FINALIZADO': 5,
+                'CANCELADA': 6
+            };
+
+            const prioridadA = estadoPrioridad[a.estado] || 99;
+            const prioridadB = estadoPrioridad[b.estado] || 99;
+
+            // Si tienen diferente prioridad de estado, ordenar por prioridad
+            if (prioridadA !== prioridadB) {
+                return prioridadA - prioridadB;
+            }
+
+            // Si tienen el mismo estado, ordenar por fecha de salida (más próximos primero)
+            const dateA = new Date(a.fecha_salida);
+            const dateB = new Date(b.fecha_salida);
+            return dateA - dateB;
         });
 
     } catch (err) {
@@ -409,10 +456,28 @@ const fetchToursWithToasts = async () => {
             // Agregar campos para filtros
             'transporte.nombre': t.transporte?.nombre,
         })).sort((a, b) => {
-            // Ordenar por fecha de creación descendente (más recientes primero)
-            const dateA = new Date(a.created_at);
-            const dateB = new Date(b.created_at);
-            return dateB - dateA;
+            // Ordenar primero por prioridad de estado, luego por fecha de salida
+            const estadoPrioridad = {
+                'EN_CURSO': 1,
+                'COMPLETO': 2,
+                'REPROGRAMADA': 3,
+                'DISPONIBLE': 4,
+                'FINALIZADO': 5,
+                'CANCELADA': 6
+            };
+
+            const prioridadA = estadoPrioridad[a.estado] || 99;
+            const prioridadB = estadoPrioridad[b.estado] || 99;
+
+            // Si tienen diferente prioridad de estado, ordenar por prioridad
+            if (prioridadA !== prioridadB) {
+                return prioridadA - prioridadB;
+            }
+
+            // Si tienen el mismo estado, ordenar por fecha de salida (más próximos primero)
+            const dateA = new Date(a.fecha_salida);
+            const dateB = new Date(b.fecha_salida);
+            return dateA - dateB;
         });
 
         // Mostrar toast de éxito
@@ -437,6 +502,58 @@ const fetchTipoTransportes = async () => {
         tipoTransportes.value = [];
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
     }
+};
+
+// Función para obtener tours con reservas pendientes
+const fetchToursPendientes = async () => {
+    isLoadingToursPendientes.value = true;
+    try {
+        const response = await axios.get('/api/tours-reservas-pendientes');
+
+        // Ordenar por prioridad de estado: COMPLETO → REPROGRAMADA → DISPONIBLE
+        const estadoPrioridadPendientes = {
+            'COMPLETO': 1,
+            'REPROGRAMADA': 2,
+            'DISPONIBLE': 3
+        };
+
+        toursPendientes.value = response.data.sort((a, b) => {
+            const prioridadA = estadoPrioridadPendientes[a.estado] || 99;
+            const prioridadB = estadoPrioridadPendientes[b.estado] || 99;
+
+            // Si tienen diferente prioridad de estado, ordenar por prioridad
+            if (prioridadA !== prioridadB) {
+                return prioridadA - prioridadB;
+            }
+
+            // Si tienen el mismo estado, ordenar por fecha de salida (más próximos primero)
+            const dateA = new Date(a.fecha_salida_formatted);
+            const dateB = new Date(b.fecha_salida_formatted);
+            return dateA - dateB;
+        });
+    } catch (error) {
+        console.error('Error al cargar tours con reservas pendientes:', error);
+        toast.add({
+            severity: "error",
+            summary: "Error",
+            detail: "No se pudieron cargar los tours con reservas pendientes.",
+            life: 4000
+        });
+    } finally {
+        isLoadingToursPendientes.value = false;
+    }
+};
+
+// Función para abrir modal de tours pendientes
+const openToursPendientesModal = async () => {
+    toursPendientesDialog.value = true;
+    await fetchToursPendientes();
+};
+
+// Función para navegar a reservas del tour específico
+const navegarAReservas = (tourId) => {
+    toursPendientesDialog.value = false; // Cerrar modal
+    router.visit(`/catalogos/reservas?tour=${tourId}`);
 };
 
 // Funciones para manejar filtros
@@ -538,6 +655,7 @@ const openNew = () => {
     resetForm();
     btnTitle.value = "Guardar";
     submitted.value = false; // Asegurar que no hay estado de validación
+    hasRestrictedReservations.value = false; // Resetear restricciones para nuevo tour
     dialog.value = true;
     // Configurar estado inicial para detectar cambios en tours nuevos
     nextTick(() => {
@@ -553,77 +671,117 @@ const openNew = () => {
 };
 
 const editTour = async (t) => {
-    // Verificar si el tour tiene reservas antes de permitir editarlo
-    try {
-        const response = await axios.get(`/api/tours/${t.id}/verificar-reservas`);
+    // Verificar primero el estado del tour
+    if (t.estado === 'COMPLETO') {
+        toast.add({
+            severity: 'warn',
+            summary: 'No se puede editar',
+            detail: `No puedes editar el tour "${t.nombre}" porque ya está completo.`,
+            life: 5000
+        });
+        return; // Salir sin abrir modal
+    }
 
-        if (response.data.success && response.data.tiene_reservas) {
-            toast.add({
-                severity: 'warn',
-                summary: 'No se puede editar',
-                detail: `No puedes editar el tour "${response.data.tour_nombre}" porque tiene ${response.data.cantidad_reservas} reserva(s) asociada(s).`,
-                life: 5000
-            });
-            return; // Salir sin abrir el modal
+    // Verificar estado de las reservas del tour
+    try {
+        const reservasResponse = await axios.get(`/api/tours/${t.id}/reservas`);
+        const reservas = reservasResponse.data.reservas || [];
+
+        if (reservas.length === 0) {
+            // Sin reservas: edición completa
+            hasRestrictedReservations.value = false;
+        } else {
+            // Clasificar estados de reservas
+            const estadosQuePermiten = ['CANCELADA', 'PENDIENTE', 'REPROGRAMADA', 'CONFIRMADA'];
+            const estadosQueBloquean = ['EN_CURSO', 'FINALIZADA'];
+
+            const tieneEstadosQueBloquean = reservas.some(reserva =>
+                estadosQueBloquean.includes(reserva.estado)
+            );
+
+            const tieneEstadosQuePermiten = reservas.some(reserva =>
+                estadosQuePermiten.includes(reserva.estado)
+            );
+
+            if (tieneEstadosQueBloquean) {
+                // NO abrir modal - reservas activas impiden edición
+                toast.add({
+                    severity: 'warn',
+                    summary: 'No se puede editar',
+                    detail: `No puedes editar el tour "${t.nombre}" porque tiene reservas en curso o finalizadas.`,
+                    life: 5000
+                });
+                return; // Salir sin abrir modal
+            } else if (tieneEstadosQuePermiten) {
+                // Abrir modal con restricciones - solo cupos
+                hasRestrictedReservations.value = true;
+                toast.add({
+                    severity: 'info',
+                    summary: 'Edición limitada',
+                    detail: `El tour tiene reservas especiales. Solo puedes modificar los cupos.`,
+                    life: 5000
+                });
+            }
         }
+
+        // Proceder con la edición (solo si llegamos aquí)
+        resetForm();
+        submitted.value = false; // Limpiar estado de validación
+        tour.value = {
+            ...t,
+            transporte_id: t.transporte?.id || t.transporte_id || null,
+        };
+        // Cargar fecha_salida correctamente
+        if (t.fecha_salida) {
+            if (typeof t.fecha_salida === 'string') {
+                tour.value.fecha_salida = new Date(t.fecha_salida);
+            } else {
+                tour.value.fecha_salida = t.fecha_salida;
+            }
+        }
+        // Cargar fecha_regreso correctamente para horaRegresoCalendar
+        if (t.fecha_regreso) {
+            if (typeof t.fecha_regreso === 'string') {
+                horaRegresoCalendar.value = new Date(t.fecha_regreso);
+            } else {
+                horaRegresoCalendar.value = t.fecha_regreso;
+            }
+        }
+        imagenPreviewList.value = (t.imagenes || []).map(img => typeof img === "string" ? img : img.nombre);
+        // Cargar listas desde el texto existente
+        incluyeLista.value = textoALista(t.incluye);
+        noIncluyeLista.value = textoALista(t.no_incluye);
+        hasUnsavedChanges.value = false;
+        btnTitle.value = "Actualizar";
+        dialog.value = true;
+        // Guardar datos originales después de que todo esté cargado
+        nextTick(() => {
+            originalTourData.value = {
+                ...tour.value,
+                fecha_regreso: horaRegresoCalendar.value,
+                incluye_lista: [...incluyeLista.value],
+                no_incluye_lista: [...noIncluyeLista.value],
+                imagenes_originales: [...imagenPreviewList.value]
+            };
+            hasUnsavedChanges.value = false;
+        });
+
     } catch (error) {
         console.error('Error verificando reservas:', error);
+        hasRestrictedReservations.value = false;
         toast.add({
             severity: 'error',
             summary: 'Error',
             detail: 'Error al verificar las reservas del tour',
             life: 3000
         });
-        return;
     }
-
-    // Si no tiene reservas, proceder con la edición
-    resetForm();
-    submitted.value = false; // Limpiar estado de validación
-    tour.value = {
-        ...t,
-        transporte_id: t.transporte?.id || t.transporte_id || null,
-    };
-    // Cargar fecha_salida correctamente
-    if (t.fecha_salida) {
-        if (typeof t.fecha_salida === 'string') {
-            tour.value.fecha_salida = new Date(t.fecha_salida);
-        } else {
-            tour.value.fecha_salida = t.fecha_salida;
-        }
-    }
-    // Cargar fecha_regreso correctamente para horaRegresoCalendar
-    if (t.fecha_regreso) {
-        if (typeof t.fecha_regreso === 'string') {
-            horaRegresoCalendar.value = new Date(t.fecha_regreso);
-        } else {
-            horaRegresoCalendar.value = t.fecha_regreso;
-        }
-    }
-    imagenPreviewList.value = (t.imagenes || []).map(img => typeof img === "string" ? img : img.nombre);
-    // Cargar listas desde el texto existente
-    incluyeLista.value = textoALista(t.incluye);
-    noIncluyeLista.value = textoALista(t.no_incluye);
-    hasUnsavedChanges.value = false;
-    btnTitle.value = "Actualizar";
-    dialog.value = true;
-    // Guardar datos originales después de que todo esté cargado
-    nextTick(() => {
-        originalTourData.value = {
-            ...tour.value,
-            fecha_regreso: horaRegresoCalendar.value,
-            incluye_lista: [...incluyeLista.value],
-            no_incluye_lista: [...noIncluyeLista.value],
-            imagenes_originales: [...imagenPreviewList.value]
-        };
-        hasUnsavedChanges.value = false;
-    });
 };
 
-// Función para validar conflictos de fechas
+// Función para validar límite máximo de tours por día (máximo 3 tours activos por fecha de salida)
 const validarConflictosFechas = async () => {
     if (!tour.value.fecha_salida || !horaRegresoCalendar.value) {
-        return true; // Si no hay fechas, no validamos conflictos
+        return true; // Si no hay fechas, no validamos límites
     }
 
     try {
@@ -668,20 +826,28 @@ const validarConflictosFechas = async () => {
         if (!response.data.success) {
             if (response.data.tiene_conflictos) {
                 const conflictos = response.data.conflictos;
-                let mensaje = `Las fechas seleccionadas se superponen con ${conflictos.length} tour(s) existente(s):\n\n`;
+                let mensaje = `${response.data.message}`;
 
-                conflictos.forEach((conflicto, index) => {
-                    mensaje += `${index + 1}. ${conflicto.nombre}\n`;
-                    mensaje += `   Fechas: ${conflicto.fecha_salida} al ${conflicto.fecha_regreso}\n\n`;
-                });
-
-                mensaje += 'Por favor selecciona fechas que no se superpongan con tours existentes.';
+                // Si hay conflictos de tours, mostrar la lista
+                if (conflictos && conflictos.length > 0) {
+                    mensaje += ':\n\n';
+                    mensaje += `Tours activos programados para esta fecha:\n`;
+                    conflictos.forEach((conflicto, index) => {
+                        mensaje += `${index + 1}. ${conflicto.nombre}\n`;
+                        mensaje += `   Fechas: ${conflicto.fecha_salida} al ${conflicto.fecha_regreso}\n\n`;
+                    });
+                    mensaje += 'Nota: Solo se permiten 3 tours activos por fecha de salida (no se cuentan tours cancelados o finalizados).\n';
+                    mensaje += 'Por favor selecciona una fecha de salida diferente.';
+                } else {
+                    // Error general
+                    mensaje += '.\n\nPor favor verifica la información del tour.';
+                }
 
                 toast.add({
-                    severity: "error",
-                    summary: "Conflicto de fechas",
+                    severity: "warn",
+                    summary: "Límite diario alcanzado",
                     detail: mensaje,
-                    life: 8000
+                    life: 10000
                 });
                 return false;
             }
@@ -740,7 +906,7 @@ const saveOrUpdate = async () => {
         return;
     }
 
-    // Validar conflictos de fechas con otros tours
+    // Validar límite máximo de tours por día (máximo 3 tours activos por fecha de salida)
     const fechasValidas = await validarConflictosFechas();
     if (!fechasValidas) {
         return; // El toast ya se muestra en la función de validación
@@ -1327,6 +1493,17 @@ const dialogStyle = computed(() => {
     }
 });
 
+// Estilo responsive específico para el modal de tours pendientes
+const dialogStylePendientes = computed(() => {
+    if (windowWidth.value < 640) { // sm - móviles más alto
+        return { width: '95vw', maxWidth: '400px' };
+    } else if (windowWidth.value < 768) { // md - tablet
+        return { width: '500px' };
+    } else { // lg+ - escritorio más grande
+        return { width: '600px' };
+    }
+});
+
 // Función para abrir el modal de más acciones (corregida para usar selectedTour)
 const openMoreActionsModal = (tourData) => {
     selectedTour.value = tourData;
@@ -1597,8 +1774,36 @@ const onPricePaste = (event) => {
                     <div class="text-center sm:text-left">
                         <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours</h1>
                         <p class="text-gray-600">Gestión completa de paquetes turísticos</p>
+                        <div class="mt-3 space-y-2">
+                            <div class="flex items-start gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200/50 rounded-lg text-xs text-blue-700">
+                                <i class="fas fa-info-circle mt-0.5 text-blue-500 flex-shrink-0"></i>
+                                <div>
+                                    <span class="font-semibold">Ordenamiento:</span> Tours por estado (En Curso → Completo → Reprogramada → Disponible → Finalizado) y fecha próxima.
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-2 px-3 py-2 bg-green-50/70 border border-green-200/50 rounded-lg text-xs text-green-700">
+                                <i class="fas fa-calendar-check mt-0.5 text-green-500 flex-shrink-0"></i>
+                                <div>
+                                    <span class="font-semibold">Reservas:</span> Usa botón "Más" (⋮) → "Ver reservas" para gestionar reservas individuales.
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-2 px-3 py-2 bg-orange-50/70 border border-orange-200/50 rounded-lg text-xs text-orange-700">
+                                <i class="fas fa-clock mt-0.5 text-orange-500 flex-shrink-0"></i>
+                                <div>
+                                    <span class="font-semibold">Pendientes:</span> Botón "Pendientes" muestra tours con reservas por confirmar.
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
+                    <!-- Tarjeta de Tours con Reservas Pendientes -->
+                    <button
+                        @click="openToursPendientesModal"
+                        class="bg-orange-500 border border-orange-500 p-2 text-sm text-white shadow-md hover:shadow-lg rounded-md hover:-translate-y-1 transition-transform duration-300 flex items-center gap-2">
+                        <FontAwesomeIcon :icon="faClock" class="h-4 w-4" />
+                        <span class="hidden sm:block">Pendientes</span>
+                        <span class="block sm:hidden">Pendientes</span>
+                    </button>
                     <Link
                         :href="route('transportes')"
                         @click="handleTransportesClick"
@@ -1882,11 +2087,24 @@ const onPricePaste = (event) => {
 
             <!-- Modal del formulario -->
             <Dialog v-model:visible="dialog" :header="btnTitle + ' Tour'" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+                <!-- Mensaje informativo para edición restringida -->
+                <div v-if="hasRestrictedReservations" class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <FontAwesomeIcon :icon="faInfoCircle" class="h-5 w-5 text-yellow-400" />
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Edición restringida:</strong> Este tour tiene reservas en estados especiales (Cancelada, Pendiente o Reprogramada). Solo puedes modificar el cupo mínimo y máximo. Los demás campos están deshabilitados para mantener la integridad de los datos.
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
                             <label for="nombre" class="flex items-center gap-1">Tour: <span class="text-red-500 font-bold">*</span></label>
-                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), }" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="TOUR AL CERRO EL PITAL, ETC" @input="validateNombre" @keypress="preventSpecialChars" @paste="onNombrePaste"/>
+                            <InputText v-model.trim="tour.nombre" id="nombre" name="nombre" :maxlength="200" :disabled="hasRestrictedReservations" :class="{'p-invalid': submitted && (!tour.nombre || tour.nombre.length < 10 || tour.nombre.length > 200), 'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}" class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md" placeholder="TOUR AL CERRO EL PITAL, ETC" @input="validateNombre" @keypress="preventSpecialChars" @paste="onNombrePaste"/>
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.nombre && tour.nombre.length < 10">
                             El nombre debe tener al menos 10 caracteres. Actual: {{ tour.nombre.length }}/10
@@ -1905,18 +2123,19 @@ const onPricePaste = (event) => {
                             </label>
                             <div class="flex w-full flex-col">
                                 <div class="flex gap-2 mb-3">
-                                    <input v-model="nuevoItemIncluye" type="text" placeholder="Agregar nuevo elemento..."
+                                    <input v-model="nuevoItemIncluye" type="text" placeholder="Agregar nuevo elemento..." :disabled="hasRestrictedReservations"
+                                        :class="{'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}"
                                         class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                         @keyup.enter="agregarItemIncluye"
                                     />
-                                    <button type="button" @click="agregarItemIncluye" :disabled="!nuevoItemIncluye.trim()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
+                                    <button type="button" @click="agregarItemIncluye" :disabled="!nuevoItemIncluye.trim() || hasRestrictedReservations" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
                                         <FontAwesomeIcon :icon="faPlus" class="h-5"/>
                                     </button>
                                 </div>
                                 <div class="space-y-2 max-h-40 overflow-y-auto">
                                     <div v-for="(item, index) in incluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-md border">
                                         <span class="flex-1">{{ item }}</span>
-                                        <button type="button" @click="eliminarItemIncluye(index)" class="text-red-500 hover:text-red-700 p-1">
+                                        <button type="button" @click="eliminarItemIncluye(index)" :disabled="hasRestrictedReservations" class="text-red-500 hover:text-red-700 p-1 disabled:text-gray-400 disabled:cursor-not-allowed">
                                             <FontAwesomeIcon :icon="faXmark" class="h-5"/>
                                         </button>
                                     </div>
@@ -1935,10 +2154,11 @@ const onPricePaste = (event) => {
                             </label>
                             <div class="flex w-full flex-col">
                                 <div class="flex gap-2 mb-3">
-                                    <input v-model="nuevoItemNoIncluye" type="text" placeholder="Agregar nuevo elemento..."
+                                    <input v-model="nuevoItemNoIncluye" type="text" placeholder="Agregar nuevo elemento..." :disabled="hasRestrictedReservations"
+                                        :class="{'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}"
                                         class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                         @keyup.enter="agregarItemNoIncluye"/>
-                                    <button type="button" @click="agregarItemNoIncluye" :disabled="!nuevoItemNoIncluye.trim()"
+                                    <button type="button" @click="agregarItemNoIncluye" :disabled="!nuevoItemNoIncluye.trim() || hasRestrictedReservations"
                                         class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
                                         <FontAwesomeIcon :icon="faPlus" class="h-5"/>
                                     </button>
@@ -1946,7 +2166,7 @@ const onPricePaste = (event) => {
                                 <div class="space-y-2 max-h-40 overflow-y-auto" v-if="noIncluyeLista.length > 0">
                                     <div v-for="(item, index) in noIncluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-md border">
                                         <span class="flex-1">{{ item }}</span>
-                                        <button type="button" @click="eliminarItemNoIncluye(index)" class="text-red-500 hover:text-red-700 p-1">
+                                        <button type="button" @click="eliminarItemNoIncluye(index)" :disabled="hasRestrictedReservations" class="text-red-500 hover:text-red-700 p-1 disabled:text-gray-400 disabled:cursor-not-allowed">
                                             <FontAwesomeIcon :icon="faXmark" class="h-5"/>
                                         </button>
                                     </div>
@@ -1965,7 +2185,7 @@ const onPricePaste = (event) => {
                                         *
                                     </span>
                                 </label>
-                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), }" placeholder="ATRIO DE CATEDRAL DE CHALATENANGO, ETC"
+                            <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :disabled="hasRestrictedReservations" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), 'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}" placeholder="ATRIO DE CATEDRAL DE CHALATENANGO, ETC"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="validatePuntoSalida" @paste="onPuntoSalidaPaste"/>
                         </div>
@@ -1977,8 +2197,8 @@ const onPricePaste = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-3.5">
                             <label for="transporte_id" class="w-24 flex items-center gap-1">Transporte:<span class="text-red-500 font-bold">*</span></label>
-                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id"
-                            class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.transporte_id, }" />
+                            <Select v-model="tour.transporte_id" :options="tipoTransportes" optionLabel="nombre" optionValue="id" id="transporte_id" name="transporte_id" :disabled="hasRestrictedReservations"
+                            class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.transporte_id}" :style="hasRestrictedReservations ? 'opacity: 0.5; background-color: #f3f4f6; cursor: not-allowed; pointer-events: none;' : ''" />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.transporte_id">El tipo de transporte es obligatorio.</small>
                     </div>
@@ -2036,18 +2256,20 @@ const onPricePaste = (event) => {
                     <div class="flex gap-4">
                         <div class="flex-1">
                             <label for="fecha_salida" class="flex items-center gap-1 mb-2">Fecha y hora de salida:<span class="text-red-500 font-bold">*</span></label>
-                            <DatePicker v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()"
-                                :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida()) }"
+                            <DatePicker v-model="tour.fecha_salida" id="fecha_salida" name="fecha_salida" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDate()" :maxDate="getMaxDateSalida()" :disabled="hasRestrictedReservations"
+                                :class="{'p-invalid': (submitted && !tour.fecha_salida) || (tour.fecha_salida && !validateFechaSalida())}"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :style="hasRestrictedReservations ? 'opacity: 0.5; background-color: #f3f4f6; cursor: not-allowed; pointer-events: none;' : ''"
                                 :manualInput="false" @dateSelect="validateFechaSalida" @input="validateFechaSalida"
                             />
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !tour.fecha_salida" >Fecha y hora de salida requerida.</small>
                         </div>
                         <div class="flex-1">
                             <label for="horaRegresoCalendar" class="flex items-center gap-1 mb-2">Fecha y hora regreso:<span class="text-red-500 font-bold">*</span></label>
-                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false"
-                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso()) }"
+                            <DatePicker v-model="horaRegresoCalendar" id="horaRegresoCalendar" name="horaRegresoCalendar" showIcon showTime hourFormat="12" dateFormat="yy-mm-dd" :minDate="getMinDateRegreso()" :manualInput="false" :disabled="hasRestrictedReservations"
+                                :class="{'p-invalid': (submitted && !horaRegresoCalendar) || (horaRegresoCalendar && !validateFechaRegreso())}"
                                 class="w-full border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                :style="hasRestrictedReservations ? 'opacity: 0.5; background-color: #f3f4f6; cursor: not-allowed; pointer-events: none;' : ''"
                                 @dateSelect="validateFechaRegreso" @input="validateFechaRegreso"/>
                             <small class="text-red-500 block text-xs mt-1" v-if="submitted && !horaRegresoCalendar">Fecha y hora de regreso requerida.</small>
                         </div>
@@ -2063,8 +2285,9 @@ const onPricePaste = (event) => {
                                     name="precio"
                                     type="text"
                                     inputmode="decimal"
+                                    :disabled="hasRestrictedReservations"
                                     class="w-full pl-8 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                    :class="{'p-invalid': submitted && (!tour.precio || tour.precio < 0.01 || tour.precio > 9999.99),}"
+                                    :class="{'p-invalid': submitted && (!tour.precio || tour.precio < 0.01 || tour.precio > 9999.99), 'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}"
                                     placeholder="0.00"
                                     @keydown="onPriceKeyDown"
                                     @paste="onPricePaste"
@@ -2076,8 +2299,9 @@ const onPricePaste = (event) => {
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-5">
                             <label for="categoria" class="w-24 flex items-center gap-1">Categoría:<span class="text-red-500 font-bold">*</span></label>
-                            <Select v-model="tour.categoria" :options="categoriasOptions" optionLabel="label" optionValue="value" id="categoria" name="categoria"
-                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.categoria,}"
+                            <Select v-model="tour.categoria" :options="categoriasOptions" optionLabel="label" optionValue="value" id="categoria" name="categoria" :disabled="hasRestrictedReservations"
+                                class="w-full rounded-md border-2 border-gray-400 hover:border-gray-500" placeholder="Seleccionar" :class="{'p-invalid': submitted && !tour.categoria}"
+                                :style="hasRestrictedReservations ? 'opacity: 0.5; background-color: #f3f4f6; cursor: not-allowed; pointer-events: none;' : ''"
                             />
                         </div>
                         <small class="text-red-500 ml-28" v-if="submitted && !tour.categoria">La categoría es obligatoria.</small>
@@ -2174,6 +2398,101 @@ const onPricePaste = (event) => {
             <!-- Modal de Cambiar Estado removido - ahora se maneja desde ReservasPorTour -->
             </div>
         </div>
+
+        <!-- Modal de Tours con Reservas Pendientes -->
+        <Dialog
+            v-model:visible="toursPendientesDialog"
+            header="Tours con Reservas Pendientes"
+            :modal="true"
+            :style="dialogStylePendientes"
+            :closable="false"
+            :draggable="false">            <div v-if="isLoadingToursPendientes" class="text-center py-8">
+                <i class="fas fa-spinner animate-spin text-2xl text-blue-500 mb-2"></i>
+                <p class="text-gray-600">Cargando tours con reservas pendientes...</p>
+            </div>
+
+            <div v-else-if="toursPendientes.length === 0" class="text-center py-8">
+                <i class="fas fa-check-circle text-4xl text-green-500 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">¡Excelente!</h3>
+                <p class="text-gray-600">No hay tours con reservas pendientes en este momento.</p>
+            </div>
+
+            <div v-else class="space-y-3">
+                <div class="bg-orange-50 border border-orange-200 rounded-lg p-2 mb-3">
+                    <div class="flex items-center gap-2">
+                        <i class="fas fa-exclamation-triangle text-orange-500 text-sm"></i>
+                        <span class="font-semibold text-orange-800 text-sm">{{ toursPendientes.length }} tour(s) pendiente(s)</span>
+                    </div>
+                </div>
+
+                <div class="p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 mb-3">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>Navegación:</strong> Haz clic en cualquier tour para ir directamente a sus reservas pendientes.
+                </div>
+
+                <div class="max-h-80 overflow-y-auto space-y-2">
+                    <div
+                        v-for="tour in toursPendientes"
+                        :key="tour.id"
+                        class="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow cursor-pointer hover:bg-gray-50"
+                        @click="navegarAReservas(tour.id)">
+
+                        <div class="flex justify-between items-start mb-2">
+                            <h4 class="font-semibold text-sm text-blue-600 leading-tight hover:text-blue-800 transition-colors">{{ tour.nombre }}</h4>
+                            <div class="flex items-center gap-2 ml-2 flex-shrink-0">
+                                <span class="px-2 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                    {{ tour.reservas_pendientes_count }}
+                                </span>
+                                <i class="fas fa-external-link-alt text-blue-500 text-xs"></i>
+                            </div>
+                        </div>
+
+                        <div class="space-y-1 text-xs text-gray-600 mb-2">
+                            <div><strong>Fecha:</strong> {{ tour.fecha_salida_formatted }}</div>
+                            <div><strong>Estado:</strong> {{ tour.estado }}</div>
+                            <div><strong>Precio:</strong> ${{ tour.precio }}</div>
+                            <div class="flex items-center gap-2">
+                                <strong>Cupo mínimo:</strong>
+                                <span v-if="tour.cupo_minimo_alcanzado" class="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                    ✓ Alcanzado ({{ tour.cupos_reservados }}/{{ tour.cupo_min }})
+                                </span>
+                                <span v-else class="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded-full">
+                                    ✗ Pendiente ({{ tour.cupos_reservados }}/{{ tour.cupo_min }})
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded p-2">
+                            <h5 class="font-medium text-gray-800 text-xs mb-1">Reservas:</h5>
+                            <div class="space-y-1">
+                                <div
+                                    v-for="reserva in tour.reservas_pendientes"
+                                    :key="reserva.id"
+                                    class="text-xs">
+                                    <div class="flex justify-between items-start">
+                                        <span class="font-medium">{{ reserva.cliente_nombre }}</span>
+                                        <span class="text-gray-500 ml-2">{{ reserva.cupos_reservados }} cupo(s)</span>
+                                    </div>
+                                    <div class="text-gray-400 text-xs">{{ reserva.fecha_reserva }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex justify-center gap-4 w-full mt-6">
+                    <button
+                        type="button"
+                        class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
+                        @click="toursPendientesDialog = false">
+                        <FontAwesomeIcon :icon="faXmark" class="h-5" />
+                        Cerrar
+                    </button>
+                </div>
+            </template>
+        </Dialog>
     </AuthenticatedLayout>
 </template>
 

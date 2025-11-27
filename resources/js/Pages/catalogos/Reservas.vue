@@ -40,6 +40,7 @@ const tourId = ref(null)
 const tourActual = ref(null)
 const loadingTour = ref(false)
 const loadingVolver = ref(false)
+
 const accionesTourLoading = ref({
   cambiarEstado: false
 })
@@ -71,6 +72,10 @@ const motivoCancelacionTour = ref('') // Motivo separado para cancelar tour
 const fechaNuevaReprogramacion = ref(null)
 const motivoReprogramacion = ref('')
 const observacionesReprogramacion = ref('')
+
+// Variables para validación de fechas en reprogramación
+const errorFechaSalidaReprogramacion = ref('')
+const errorFechaRegresoReprogramacion = ref('')
 
 // Variable reactiva para el ancho de ventana
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
@@ -260,6 +265,11 @@ const cambiarEstadoDirecto = async (nuevoEstado) => {
       fechaRegreso: tourActual.value.fecha_regreso ? new Date(tourActual.value.fecha_regreso) : null,
       motivo: ''
     }
+
+    // Limpiar errores de validación
+    errorFechaSalidaReprogramacion.value = ''
+    errorFechaRegresoReprogramacion.value = ''
+
     modalReprogramarTour.value = true
     return
   }
@@ -407,6 +417,7 @@ const cerrarTodosLosModales = () => {
   modalCambiarEstadoTour.value = false
   modalReprogramarTour.value = false
 
+
   // Limpiar variables relacionadas
   reservaSeleccionada.value = null
   tourSeleccionado.value = null
@@ -418,13 +429,102 @@ const cerrarTodosLosModales = () => {
 
   // Restaurar scroll
   limpiarScrollModal()
-}// Función para manejar reprogramación
+}
+
+// Funciones de validación de fechas para reprogramación
+const getMaxDateSalida = () => {
+  const maxDate = new Date()
+  maxDate.setFullYear(maxDate.getFullYear() + 1) // 1 año adelante
+  return maxDate
+}
+
+const getMinDateRegresoReprogramacion = () => {
+  if (!datosReprogramacion.value.fechaSalida) {
+    return new Date()
+  }
+  const minDate = new Date(datosReprogramacion.value.fechaSalida)
+  minDate.setHours(minDate.getHours() + 1) // Mínimo 1 hora después
+  return minDate
+}
+
+const validarFechaSalidaReprogramacion = () => {
+  errorFechaSalidaReprogramacion.value = ''
+
+  if (!datosReprogramacion.value.fechaSalida) return false
+
+  const ahora = new Date()
+  const fechaSalida = new Date(datosReprogramacion.value.fechaSalida)
+
+  // Solo validar que sea una fecha futura
+  if (fechaSalida <= ahora) {
+    errorFechaSalidaReprogramacion.value = 'La fecha de salida debe ser futura'
+    return false
+  }
+
+  return true
+}
+
+const validarFechaRegresoReprogramacion = () => {
+  errorFechaRegresoReprogramacion.value = ''
+
+  if (!datosReprogramacion.value.fechaRegreso || !datosReprogramacion.value.fechaSalida) return false
+
+  const fechaSalida = new Date(datosReprogramacion.value.fechaSalida)
+  const fechaRegreso = new Date(datosReprogramacion.value.fechaRegreso)
+
+  // Validar que regreso sea después de salida (al menos 1 hora)
+  const diferenciaHoras = (fechaRegreso - fechaSalida) / (1000 * 60 * 60)
+  if (diferenciaHoras < 1) {
+    errorFechaRegresoReprogramacion.value = 'La fecha de regreso debe ser al menos 1 hora después de la salida'
+    return false
+  }
+
+  return true
+}
+
+const validarLimiteToursPorDia = async () => {
+  if (!datosReprogramacion.value.fechaSalida) return false
+
+  try {
+    const response = await axios.post('/api/tours/validar-fechas', {
+      fecha_salida: datosReprogramacion.value.fechaSalida,
+      tour_id: tourActual.value?.id // Excluir el tour actual
+    })
+
+    if (!response.data.success || response.data.tiene_conflictos) {
+      // Solo mostrar advertencia pero permitir continuar en reprogramación
+      console.warn('Validación de límite:', response.data.message)
+      return true // Permitir continuar con reprogramación
+    }
+    return true
+  } catch (error) {
+    console.error('Error validando fechas:', error)
+    // En caso de error, permitir continuar
+    return true
+  }
+}
+
+// Función para manejar reprogramación
 const handleReprogramarTour = async () => {
   if (!datosReprogramacion.value.fechaSalida || !datosReprogramacion.value.fechaRegreso) {
     toast.add({
       severity: 'warn',
       summary: 'Campos requeridos',
       detail: 'Debe seleccionar las nuevas fechas de salida y regreso',
+      life: 4000
+    })
+    return
+  }
+
+  // Validar fechas antes de enviar
+  const fechaSalidaValida = validarFechaSalidaReprogramacion()
+  const fechaRegresoValida = validarFechaRegresoReprogramacion()
+
+  if (!fechaSalidaValida || !fechaRegresoValida) {
+    toast.add({
+      severity: 'error',
+      summary: 'Fechas inválidas',
+      detail: 'Por favor corrige los errores en las fechas antes de continuar',
       life: 4000
     })
     return
@@ -440,17 +540,7 @@ const handleReprogramarTour = async () => {
     return
   }
 
-  // Validar que la fecha de regreso sea al menos 1 hora después de la salida
-  const diferenciaHoras = (datosReprogramacion.value.fechaRegreso - datosReprogramacion.value.fechaSalida) / (1000 * 60 * 60)
-  if (diferenciaHoras < 1) {
-    toast.add({
-      severity: 'warn',
-      summary: 'Fechas inválidas',
-      detail: 'La fecha y hora de regreso debe ser al menos 1 hora después de la salida',
-      life: 4000
-    })
-    return
-  }
+  // La validación de diferencia de horas ya se hace en validarFechaRegresoReprogramacion()
 
   accionesTourLoading.value.cambiarEstado = true
 
@@ -512,7 +602,24 @@ const handleVolverATours = () => {
   loadingVolver.value = true
 }
 
-// Estilo responsive para el diálogo
+// Función para abrir modal de editar tour (navegar a Tours.vue con modal abierto)
+const abrirModalEditarTour = () => {
+  if (tourActual.value) {
+    // Navegar a la página de tours con el tour seleccionado para edición
+    router.visit('/tours', {
+      data: { editTour: tourActual.value.id },
+      preserveState: true,
+      onSuccess: () => {
+        toast.add({
+          severity: 'info',
+          summary: 'Redirigiendo...',
+          detail: 'Abriendo editor de tours',
+          life: 2000
+        })
+      }
+    })
+  }
+}// Estilo responsive para el diálogo
 const dialogStyle = computed(() => {
     if (windowWidth.value < 640) {
         return { width: '95vw', maxWidth: '380px' };
@@ -1029,14 +1136,27 @@ onUnmounted(() => {
               <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
               Haz clic en cualquier tarjeta para cambiar el estado del tour
             </p>
-            <p v-if="!cumpleCupoMinimo && tourActual.estado === 'DISPONIBLE' && tieneReservasActivas" class="text-sm text-amber-600 flex items-center gap-2 bg-amber-50 p-2 rounded-md">
-              <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-amber-500" />
-              <span>
-                Cupo mínimo no cumplido ({{ tourActual.cupo_min }} personas requeridas).
-                Actualmente hay {{ reservasFiltradas.filter(r => r.estado === 'CONFIRMADA').reduce((total, r) => total + (r.mayores_edad || 0) + (r.menores_edad || 0), 0) }} personas confirmadas.
-                Solo se puede cancelar el tour.
-              </span>
-            </p>
+            <div v-if="!cumpleCupoMinimo && tourActual.estado === 'DISPONIBLE' && tieneReservasActivas" class="bg-amber-50 p-3 rounded-md border border-amber-200">
+              <div class="flex items-start gap-2">
+                <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-amber-500 mt-0.5 flex-shrink-0" />
+                <div class="flex-1">
+                  <p class="text-sm text-amber-600 mb-2">
+                    Cupo mínimo no cumplido ({{ tourActual.cupo_min }} personas requeridas).
+                    Actualmente hay {{ reservasFiltradas.filter(r => r.estado === 'CONFIRMADA').reduce((total, r) => total + (r.mayores_edad || 0) + (r.menores_edad || 0), 0) }} personas confirmadas.
+                  </p>
+                  <div class="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+                    <span class="text-xs text-amber-700">Opciones: Esperar más confirmaciones o</span>
+                    <button
+                      @click="abrirModalEditarTour"
+                      class="inline-flex items-center gap-1 px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-medium rounded-md transition-colors duration-200 shadow-sm hover:shadow-md"
+                    >
+                      <FontAwesomeIcon :icon="faCalendarDays" class="h-3 w-3" />
+                      Actualizar cupo
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
             <p v-if="tourActual.estado === 'COMPLETO' && !todasReservasConfirmadas" class="text-sm text-blue-600 flex items-center gap-2 bg-blue-50 p-3 rounded-md border border-blue-200">
               <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
               <span class="font-medium">
@@ -1474,6 +1594,8 @@ onUnmounted(() => {
         </div>
       </Dialog>
 
+
+
       <!-- Modal específico para Reprogramar -->
       <Dialog
         v-model:visible="modalReprogramarTour"
@@ -1503,7 +1625,11 @@ onUnmounted(() => {
                 placeholder="Seleccionar fecha y hora"
                 class="w-full"
                 :minDate="new Date()"
+                :maxDate="getMaxDateSalida()"
+                @dateSelect="validarFechaSalidaReprogramacion"
+                @input="validarFechaSalidaReprogramacion"
               />
+              <small class="text-red-500 text-xs mt-1" v-if="errorFechaSalidaReprogramacion">{{ errorFechaSalidaReprogramacion }}</small>
             </div>
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">Regreso:</label>
@@ -1515,8 +1641,11 @@ onUnmounted(() => {
                 showIcon
                 placeholder="Seleccionar fecha y hora"
                 class="w-full"
-                :minDate="minDateRegreso"
+                :minDate="getMinDateRegresoReprogramacion()"
+                @dateSelect="validarFechaRegresoReprogramacion"
+                @input="validarFechaRegresoReprogramacion"
               />
+              <small class="text-red-500 text-xs mt-1" v-if="errorFechaRegresoReprogramacion">{{ errorFechaRegresoReprogramacion }}</small>
             </div>
           </div>
 

@@ -245,7 +245,10 @@ const decrementMenores = () => {
                 <div class="flex items-start gap-2">
                   <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 text-amber-600 mt-0.5 flex-shrink-0" />
                   <p class="text-gray-700 text-sm leading-relaxed">
-                    <span class="font-semibold text-gray-800">Restricción:</span> Solo se permite una reserva activa por tour por cliente. Si ya tiene una reserva para este tour, no podrá realizar otra hasta completar o cancelar la existente.
+                    <span class="font-semibold text-gray-800">Restricciones importantes:</span>
+                    <br>• Solo una reserva activa por tour por cliente
+                    <br>• No puede reservar tours en la misma fecha (no puedes estar en dos tours el mismo día)
+                    <br>• Si ya tienes una reserva activa, debes completarla o solicitar su cancelación antes de hacer una nueva.
                   </p>
                 </div>
               </div>
@@ -254,7 +257,7 @@ const decrementMenores = () => {
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p class="text-gray-700 font-medium text-xs sm:text-sm text-center">
                 <FontAwesomeIcon :icon="faMessage" class="h-4 text-blue-500 inline-block mr-2" />
-                Nuestro equipo se pondrá en contacto para coordinar los detalles finales
+                Gracias por elegirnos para tu aventura. <br> ¡Estamos emocionados de ayudarte a crear recuerdos inolvidables!
               </p>
             </div>
           </div>

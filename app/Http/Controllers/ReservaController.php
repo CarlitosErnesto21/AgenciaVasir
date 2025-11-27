@@ -554,9 +554,35 @@ class ReservaController extends Controller
                 DB::rollBack();
                 return response()->json([
                     'success' => false,
-                    'message' => "Ya tiene una reserva con (Estado: {$reservaExistente->estado}). No puedes reservar el mismo tour múltiples veces. Si necesita modificar su reserva, ponte en contacto con nosotros.",
+                    'message' => "Ya tiene una reserva activa para este tour (Estado: {$reservaExistente->estado}). No puede reservar el mismo tour múltiples veces. Si necesita modificar su reserva, póngase en contacto con nosotros.",
                     'data' => [
                         'reserva_existente' => $reservaExistente->load('detallesTours.tour')
+                    ]
+                ], 422);
+            }
+
+            // 3.2. Verificar que el cliente no tenga reservas activas en la misma fecha de salida
+            $fechaSalidaTour = Carbon::parse($tour->fecha_salida)->toDateString();
+
+            $reservaEnMismaFecha = Reserva::where('cliente_id', $cliente->id)
+                ->whereHas('detallesTours.tour', function($query) use ($fechaSalidaTour) {
+                    $query->whereDate('fecha_salida', $fechaSalidaTour);
+                })
+                ->whereNotIn('estado', [Reserva::CANCELADA, Reserva::FINALIZADA])
+                ->with('detallesTours.tour')
+                ->first();
+
+            if ($reservaEnMismaFecha) {
+                $tourConflicto = $reservaEnMismaFecha->detallesTours->first()->tour ?? null;
+                $nombreTourConflicto = $tourConflicto ? $tourConflicto->nombre : 'Tour desconocido';
+
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => "Ya tiene una reserva activa para el día " . Carbon::parse($fechaSalidaTour)->format('d/m/Y') . " (Tour: {$nombreTourConflicto}). No puede estar en dos tours el mismo día. Si necesita cambiar su reserva, póngase en contacto con nosotros.",
+                    'data' => [
+                        'reserva_en_misma_fecha' => $reservaEnMismaFecha,
+                        'tour_en_conflicto' => $nombreTourConflicto
                     ]
                 ], 422);
             }

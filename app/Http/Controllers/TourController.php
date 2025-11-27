@@ -1059,10 +1059,10 @@ class TourController extends Controller
         try {
             $tour = Tour::findOrFail($id);
 
-            // Contar reservas asociadas al tour (excluyendo canceladas)
+            // Contar reservas asociadas al tour (solo las que bloquean completamente la edición)
             $cantidadReservas = DetalleReservaTour::where('tour_id', $id)
                 ->whereHas('reserva', function($query) {
-                    $query->where('estado', '!=', 'CANCELADA');
+                    $query->whereIn('estado', ['EN_CURSO', 'FINALIZADA']);
                 })
                 ->count();
 
@@ -1082,51 +1082,70 @@ class TourController extends Controller
     }
 
     /**
-     * Valida si las fechas del tour no se superponen con tours existentes
+     * Obtener las reservas de un tour específico
+     */
+    public function obtenerReservas($id)
+    {
+        try {
+            $tour = Tour::findOrFail($id);
+
+            // Obtener todas las reservas del tour con sus estados
+            $reservas = DetalleReservaTour::where('tour_id', $id)
+                ->with('reserva:id,estado,fecha')
+                ->get()
+                ->map(function($detalle) {
+                    return [
+                        'id' => $detalle->reserva->id,
+                        'estado' => $detalle->reserva->estado,
+                        'fecha' => $detalle->reserva->fecha
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'reservas' => $reservas,
+                'tour_nombre' => $tour->nombre
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener las reservas del tour'
+            ], 500);
+        }
+    }
+
+    /**
+     * Valida el límite máximo de tours por día (máximo 3 tours con la misma fecha de salida)
      */
     public function validarFechasTour(Request $request)
     {
         try {
             // Manejar diferentes formatos de fecha de manera más robusta
             $fechaSalida = Carbon::parse($request->fecha_salida)->setTimezone('America/El_Salvador');
-            $fechaRegreso = Carbon::parse($request->fecha_regreso)->setTimezone('America/El_Salvador');
-            $tourId = $request->tour_id; // Para edición, excluir el tour actual            // Buscar tours que se superpongan con las fechas solicitadas
-            $toursConflicto = Tour::where('estado', '!=', 'CANCELADA')
-                ->where(function($query) use ($fechaSalida, $fechaRegreso) {
-                    // Caso 1: El tour nuevo inicia durante un tour existente (incluyendo mismo día)
-                    $query->where(function($subQuery) use ($fechaSalida) {
-                        $subQuery->whereDate('fecha_salida', '<=', $fechaSalida->toDateString())
-                                 ->whereDate('fecha_regreso', '>=', $fechaSalida->toDateString());
-                    })
-                    // Caso 2: El tour nuevo termina durante un tour existente (incluyendo mismo día)
-                    ->orWhere(function($subQuery) use ($fechaRegreso) {
-                        $subQuery->whereDate('fecha_salida', '<=', $fechaRegreso->toDateString())
-                                 ->whereDate('fecha_regreso', '>=', $fechaRegreso->toDateString());
-                    })
-                    // Caso 3: El tour nuevo engloba completamente un tour existente
-                    ->orWhere(function($subQuery) use ($fechaSalida, $fechaRegreso) {
-                        $subQuery->whereDate('fecha_salida', '>=', $fechaSalida->toDateString())
-                                 ->whereDate('fecha_regreso', '<=', $fechaRegreso->toDateString());
-                    })
-                    // Caso 4: Un tour existente engloba completamente el tour nuevo
-                    ->orWhere(function($subQuery) use ($fechaSalida, $fechaRegreso) {
-                        $subQuery->whereDate('fecha_salida', '<=', $fechaSalida->toDateString())
-                                 ->whereDate('fecha_regreso', '>=', $fechaRegreso->toDateString());
-                    });
-                });
+            $tourId = $request->tour_id; // Para edición, excluir el tour actual
+
+            // Buscar tours que tengan la misma fecha de salida (mismo día)
+            $toursEnMismaFecha = Tour::whereNotIn('estado', ['CANCELADA', 'FINALIZADO'])
+                ->whereDate('fecha_salida', $fechaSalida->toDateString());
 
             // Si estamos editando, excluir el tour actual
             if ($tourId) {
-                $toursConflicto->where('id', '!=', $tourId);
+                $toursEnMismaFecha->where('id', '!=', $tourId);
             }
 
-            $conflictos = $toursConflicto->get(['id', 'nombre', 'fecha_salida', 'fecha_regreso']);
 
-            if ($conflictos->count() > 0) {
+
+            $cantidadTours = $toursEnMismaFecha->count();
+            $maxToursPorDia = 3; // Máximo 3 tours por día
+
+            if ($cantidadTours >= $maxToursPorDia) {
+                $conflictos = $toursEnMismaFecha->get(['id', 'nombre', 'fecha_salida', 'fecha_regreso']);
+
                 return response()->json([
                     'success' => false,
                     'tiene_conflictos' => true,
-                    'message' => 'Las fechas se superponen con tours existentes',
+                    'message' => "Ya existe el límite máximo de {$maxToursPorDia} tours para esta fecha de salida",
                     'conflictos' => $conflictos->map(function($tour) {
                         return [
                             'id' => $tour->id,
@@ -1143,13 +1162,75 @@ class TourController extends Controller
             return response()->json([
                 'success' => true,
                 'tiene_conflictos' => false,
-                'message' => 'Las fechas están disponibles'
+                'message' => 'La fecha está disponible'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error al validar las fechas: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtiene tours que tienen reservas con estado PENDIENTE
+     */
+    public function toursConReservasPendientes()
+    {
+        try {
+            $tours = Tour::with(['transporte'])
+                ->whereHas('detalleReservas.reserva', function($query) {
+                    $query->where('estado', 'PENDIENTE');
+                })
+                ->get()
+                ->map(function($tour) {
+                    // Obtener reservas pendientes para este tour
+                    $reservasPendientes = $tour->detalleReservas()
+                        ->whereHas('reserva', function($query) {
+                            $query->where('estado', 'PENDIENTE');
+                        })
+                        ->with(['reserva.cliente'])
+                        ->get()
+                        ->map(function($detalle) {
+                            return [
+                                'id' => $detalle->reserva->id,
+                                'cliente_nombre' => $detalle->reserva->cliente->nombre . ' ' . $detalle->reserva->cliente->apellido,
+                                'cupos_reservados' => $detalle->cupos_reservados,
+                                'fecha_reserva' => $detalle->reserva->created_at->format('d/m/Y H:i')
+                            ];
+                        });
+
+                    // Calcular cupos reservados (incluyendo pendientes)
+                    $cuposReservados = $tour->detalleReservas()
+                        ->whereHas('reserva', function($query) {
+                            $query->where('estado', '!=', 'CANCELADA');
+                        })
+                        ->sum('cupos_reservados');
+
+                    $cupoMinimoAlcanzado = $cuposReservados >= $tour->cupo_min;
+
+                    return [
+                        'id' => $tour->id,
+                        'nombre' => $tour->nombre,
+                        'punto_salida' => $tour->punto_salida,
+                        'fecha_salida_formatted' => $tour->fecha_salida->format('d/m/Y H:i'),
+                        'precio' => $tour->precio,
+                        'estado' => $tour->estado,
+                        'cupo_min' => $tour->cupo_min,
+                        'cupos_reservados' => $cuposReservados,
+                        'cupo_minimo_alcanzado' => $cupoMinimoAlcanzado,
+                        'reservas_pendientes_count' => $reservasPendientes->count(),
+                        'reservas_pendientes' => $reservasPendientes
+                    ];
+                });
+
+            return response()->json($tours);
+
+        } catch (\Exception $e) {
+            Log::error('Error al obtener tours con reservas pendientes: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error al cargar tours con reservas pendientes'
             ], 500);
         }
     }
