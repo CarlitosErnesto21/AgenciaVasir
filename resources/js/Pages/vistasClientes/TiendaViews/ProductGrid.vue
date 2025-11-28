@@ -101,11 +101,11 @@ const getImageUrl = (producto) => {
       v-for="producto in filteredProducts"
       :key="producto.id"
       class="border-2 border-gray-200 bg-gradient-to-br from-white via-blue-50/30 to-red-50/30 shadow-lg hover:shadow-2xl transition-all duration-500 flex flex-col transform hover:-translate-y-2 hover:border-red-300 group cursor-pointer rounded-xl overflow-hidden"
-      style="height: 360px; min-height: 340px;"
+      style="height: 360px; min-height: 350px;"
       @click="irADetalle(producto)"
     >
       <!-- Header: Imagen -->
-      <div class="w-full h-40 sm:h-44 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 overflow-hidden relative">
+      <div class="w-full h-60 bg-gradient-to-br from-gray-100 via-blue-100 to-red-100 overflow-hidden relative">
         <ImageWithFallback
           :src="getImageUrl(producto)"
           :alt="producto.nombre"
@@ -120,13 +120,8 @@ const getImageUrl = (producto) => {
       </div>
 
       <!-- Contenido con flexbox para layout fijo -->
-      <div class="flex flex-col p-3 sm:p-4 md:p-4" style="height: 200px;">
+      <div class="flex flex-col p-3 sm:p-4 md:p-4" style="height: 180px;">
         <!-- Categoría y Título -->
-        <div class="w-full overflow-hidden">
-          <span class="inline-block w-full px-1.5 py-0.5 sm:px-2 sm:py-0.5 rounded-full font-medium bg-gradient-to-r from-red-600 to-red-700 text-white border border-white/20 transform hover:scale-105 transition-all duration-300 truncate text-center" style="box-shadow: 0 8px 25px rgba(220, 38, 38, 0.4), 0 0 0 2px white; font-size: 10px; max-width: 100%;">
-            {{ producto.categoria }}
-          </span>
-        </div>
         <h3 class="product-title text-sm font-bold text-gray-800 leading-tight group-hover:text-red-700 transition-colors duration-300 truncate">
           {{ producto.nombre }}
             <div class="text-gray-500 text-xs italic">
