@@ -523,7 +523,8 @@ class ClienteController extends Controller
                 'ventas_count' => 0,
                 'pagos_reservas_count' => 0,
                 'pagos_ventas_count' => 0,
-                'total_pagos_count' => 0
+                'total_pagos_count' => 0,
+                'stock_reservations_count' => 0
             ];
 
             $userInfo = [

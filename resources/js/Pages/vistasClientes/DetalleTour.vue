@@ -125,6 +125,14 @@
                   </span>
                 </div>
 
+                <!-- Título de detalles del tour -->
+                <div class="mb-4 sm:mb-6">
+                  <h2 class="text-lg sm:text-xl font-semibold text-gray-900 text-center">
+
+                    Detalles del Tour
+                  </h2>
+                </div>
+
                 <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-calendar mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
@@ -145,6 +153,14 @@
                   <div v-if="tour.transporte" class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-car mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
                     <span><strong>Transporte:</strong> {{ tour.transporte.nombre }}</span>
+                  </div>
+                  <div v-if="tour.transporte" class="flex items-start text-gray-600 text-sm sm:text-base">
+                    <i class="pi pi-user-plus mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
+                    <span><strong>Cupo máximo:</strong> {{ tour.cupo_max }}</span>
+                  </div>
+                  <div v-if="tour.transporte" class="flex items-start text-gray-600 text-sm sm:text-base">
+                    <i class="pi pi-user-minus mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
+                    <span><strong>Cupo mínimo:</strong> {{ tour.cupo_min }}</span>
                   </div>
                   <div :class="[
                     'flex items-start text-sm sm:text-base p-3 rounded-lg border-l-4 transition-all duration-300',
@@ -209,7 +225,7 @@
                       <!-- Lo que incluye -->
                       <div>
                         <h3 class="text-sm font-semibold text-gray-900 mb-2 flex items-center">
-                          <i class="pi pi-check-circle mr-1 text-green-600 text-xs"></i>
+                          <i class="pi pi-check-circle mr-1 text-blue-600 text-xs"></i>
                           <span class="truncate">Lo que incluye</span>
                         </h3>
                         <div class="bg-green-50 rounded-lg p-2">
@@ -219,7 +235,9 @@
                               :key="index"
                               class="text-gray-700 text-xs leading-tight flex items-start"
                             >
-                              <span class="text-green-600 mr-1 mt-0.5 text-xs">▶</span>
+                              <span class="text-green-600 mr-1 mt-0.5 text-xs">
+                                <FontAwesomeIcon :icon="faDotCircle" class="text-blue-600 mr-1"/>
+                              </span>
                               <span>{{ item }}</span>
                             </li>
                           </ul>
@@ -240,7 +258,9 @@
                               :key="index"
                               class="text-gray-700 text-xs leading-tight flex items-start"
                             >
-                              <span class="text-red-600 mr-1 mt-0.5 text-xs">▶</span>
+                              <span class="text-red-600 mr-1 mt-0.5 text-xs">
+                                <FontAwesomeIcon :icon="faDotCircle" class="text-red-600 mr-1"/>
+                              </span>
                               <span>{{ item }}</span>
                             </li>
                           </ul>
@@ -255,7 +275,7 @@
                     <!-- Lo que incluye -->
                     <div class="mb-4 sm:mb-6">
                       <h3 class="text-lg sm:text-xl font-semibold text-gray-900 mb-2 sm:mb-3 flex items-center">
-                        <i class="pi pi-check-circle mr-2 text-green-600 text-sm sm:text-base"></i>
+                        <i class="pi pi-check-circle mr-2 text-blue-600 text-sm sm:text-base"></i>
                         Lo que incluye
                       </h3>
                       <div class="bg-green-50 rounded-lg p-3 sm:p-4">
@@ -265,7 +285,9 @@
                             :key="index"
                             class="text-gray-700 text-sm sm:text-base flex items-start"
                           >
-                            <span class="text-green-600 mr-2 mt-1 text-sm">▶</span>
+                            <span class="text-green-600 mr-2 mt-1 text-sm">
+                                <FontAwesomeIcon :icon="faDotCircle" class="text-blue-600 mr-1"/>
+                            </span>
                             <span>{{ item }}</span>
                           </li>
                         </ul>
@@ -286,7 +308,9 @@
                             :key="index"
                             class="text-gray-700 text-sm sm:text-base flex items-start"
                           >
-                            <span class="text-red-600 mr-2 mt-1 text-sm">▶</span>
+                            <span class="text-red-600 mr-2 mt-1 text-sm">
+                                <FontAwesomeIcon :icon="faDotCircle" class="text-red-600 mr-1"/>
+                            </span>
                             <span>{{ item }}</span>
                           </li>
                         </ul>
@@ -309,7 +333,7 @@
 
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <!-- Acreditaciones -->
-                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-green-500">
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-green-500 shadow-sm hover:shadow-lg transition-shadow duration-300">
                   <h4 class="font-semibold text-green-800 mb-2 text-sm flex items-center">
                     <span class="mr-1">
                         <FontAwesomeIcon :icon="faCertificate" class="text-green-500 mr-1"/>
@@ -324,7 +348,7 @@
                 </div>
 
                 <!-- Términos de Reserva -->
-                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-blue-500">
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-blue-500 shadow-sm hover:shadow-lg transition-shadow duration-300">
                   <h4 class="font-semibold text-blue-800 mb-2 text-sm flex items-center">
                     <span class="mr-1">
                         <FontAwesomeIcon :icon="faCreditCard" class="text-blue-500 mr-1"/>
@@ -338,7 +362,7 @@
                 </div>
 
                 <!-- Políticas de Cancelación -->
-                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-orange-500">
+                <div class="p-3 bg-white/70 rounded-lg border-l-4 border-orange-500 shadow-sm hover:shadow-lg transition-shadow duration-300">
                   <h4 class="font-semibold text-orange-800 mb-2 text-sm flex items-center">
                     <span class="mr-1">
                         <FontAwesomeIcon :icon="faClipboardList" class="text-orange-500 mr-1"/>
@@ -402,7 +426,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { router, usePage } from '@inertiajs/vue3'
 import { useToast } from 'primevue/usetoast'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
-import { faC, faCertificate, faClipboardList, faCreditCard } from '@fortawesome/free-solid-svg-icons'
+import { faC, faCertificate, faCheck, faClipboardList, faCreditCard, faDotCircle } from '@fortawesome/free-solid-svg-icons'
 
 const page = usePage()
 const user = computed(() => page.props.auth.user)

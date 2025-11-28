@@ -311,6 +311,7 @@ const deleteCliente = async (deletionReason) => {
             const pagosReservasCount = result.info?.pagos_reservas_count || 0;
             const pagosVentasCount = result.info?.pagos_ventas_count || 0;
             const totalPagosCount = result.info?.total_pagos_count || 0;
+            const stockReservationsCount = result.info?.stock_reservations_count || 0;
 
             let detailMessage = `Usuario y cliente eliminados completamente. Se eliminaron:\n`;
             detailMessage += `• Cuenta de usuario completa\n`;
@@ -329,6 +330,10 @@ const deleteCliente = async (deletionReason) => {
                 }
             } else {
                 detailMessage += `• Sin pagos asociados`;
+            }
+
+            if (stockReservationsCount > 0) {
+                detailMessage += `\n• ${stockReservationsCount} reserva(s) de stock`;
             }
 
             toast.add({

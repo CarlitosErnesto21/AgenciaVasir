@@ -42,34 +42,50 @@ class Cliente extends Model
     /**
      * Eliminar cliente con todos sus datos asociados en cascada
      * Incluye: reservas, ventas, detalles y pagos
-     * 
+     *
      * @param bool $eliminarCliente Si debe eliminar el registro del cliente también
      */
     public function eliminarEnCascada($eliminarCliente = true)
     {
         DB::beginTransaction();
-        
+
         try {
             // 1. Eliminar todas las reservas del cliente y sus relaciones
             foreach ($this->reservas as $reserva) {
-                // Eliminar pagos de la reserva primero
+                // Obtener referencias de Wompi de los pagos de esta reserva ANTES de eliminarlos
+                $referenciasWompi = $reserva->pagos()->pluck('referencia_wompi')->filter()->unique();
+
+                // Eliminar reservas de stock relacionadas por referencia Wompi
+                if ($referenciasWompi->isNotEmpty()) {
+                    StockReservation::whereIn('referencia_wompi', $referenciasWompi)->delete();
+                }
+
+                // Eliminar pagos de la reserva (esto eliminará stock_reservations con pago_id por CASCADE)
                 $reserva->pagos()->delete();
-                
+
                 // Eliminar detalles de tours de la reserva
                 $reserva->detallesTours()->delete();
-                
+
                 // Eliminar la reserva
                 $reserva->delete();
             }
 
             // 2. Eliminar todas las ventas del cliente y sus relaciones
             foreach ($this->ventas as $venta) {
-                // Eliminar pagos de la venta primero
+                // Obtener referencias de Wompi de los pagos de esta venta ANTES de eliminarlos
+                $referenciasWompi = $venta->pagos()->pluck('referencia_wompi')->filter()->unique();
+
+                // Eliminar reservas de stock relacionadas por referencia Wompi
+                if ($referenciasWompi->isNotEmpty()) {
+                    StockReservation::whereIn('referencia_wompi', $referenciasWompi)->delete();
+                }
+
+                // Eliminar pagos de la venta (esto eliminará stock_reservations con pago_id por CASCADE)
                 $venta->pagos()->delete();
-                
+
                 // Eliminar detalles de la venta
                 $venta->detalleVentas()->delete();
-                
+
                 // Eliminar la venta
                 $venta->delete();
             }
@@ -78,9 +94,9 @@ class Cliente extends Model
             if ($eliminarCliente) {
                 $this->delete();
             }
-            
+
             DB::commit();
-            
+
             return true;
         } catch (\Exception $e) {
             DB::rollBack();
@@ -95,21 +111,42 @@ class Cliente extends Model
     {
         $reservas = $this->reservas()->with('pagos')->get();
         $ventas = $this->ventas()->with('pagos')->get();
-        
+
         $pagoReservasCount = $reservas->sum(function($reserva) {
             return $reserva->pagos->count();
         });
-        
+
         $pagoVentasCount = $ventas->sum(function($venta) {
             return $venta->pagos->count();
         });
-        
+
+        // Contar reservas de stock asociadas
+        $todasReferencias = collect();
+
+        // Obtener referencias de reservas
+        foreach ($reservas as $reserva) {
+            $referencias = $reserva->pagos->pluck('referencia_wompi')->filter();
+            $todasReferencias = $todasReferencias->merge($referencias);
+        }
+
+        // Obtener referencias de ventas
+        foreach ($ventas as $venta) {
+            $referencias = $venta->pagos->pluck('referencia_wompi')->filter();
+            $todasReferencias = $todasReferencias->merge($referencias);
+        }
+
+        $stockReservationsCount = 0;
+        if ($todasReferencias->isNotEmpty()) {
+            $stockReservationsCount = StockReservation::whereIn('referencia_wompi', $todasReferencias->unique())->count();
+        }
+
         return [
             'reservas_count' => $reservas->count(),
             'ventas_count' => $ventas->count(),
             'pagos_reservas_count' => $pagoReservasCount,
             'pagos_ventas_count' => $pagoVentasCount,
-            'total_pagos_count' => $pagoReservasCount + $pagoVentasCount
+            'total_pagos_count' => $pagoReservasCount + $pagoVentasCount,
+            'stock_reservations_count' => $stockReservationsCount
         ];
     }
 
@@ -128,7 +165,7 @@ class Cliente extends Model
     public function eliminarPagosAsociados()
     {
         DB::beginTransaction();
-        
+
         try {
             // Eliminar pagos de reservas
             foreach ($this->reservas as $reserva) {
@@ -139,7 +176,7 @@ class Cliente extends Model
             foreach ($this->ventas as $venta) {
                 $venta->pagos()->delete();
             }
-            
+
             DB::commit();
             return true;
         } catch (\Exception $e) {
