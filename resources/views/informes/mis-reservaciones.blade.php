@@ -9,7 +9,7 @@
             background: #fff;
             color: #232323;
             margin: 0;
-            padding: 0;
+            padding: 0 0 60px 0;
             font-size: 12px;
         }
         .main-header {
@@ -78,14 +78,16 @@
             display: flex;
             justify-content: space-between;
             margin-bottom: 20px;
-            gap: 15px;
+            gap: 6px;
+            flex-wrap: wrap;
         }
         .resumen-card {
             flex: 1;
+            min-width: 13%;
             background: #fff;
             border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 12px;
+            border-radius: 6px;
+            padding: 8px;
             text-align: center;
         }
         .resumen-numero {
@@ -132,15 +134,23 @@
         .estado-pendiente { background: #fff3cd; color: #856404; }
         .estado-confirmada { background: #d4edda; color: #155724; }
         .estado-en-progreso { background: #cce7ff; color: #004085; }
+        .estado-en_curso { background: #007bff; color: #ffffff; }
+        .estado-reprogramada { background: #6f42c1; color: #ffffff; }
         .estado-finalizada { background: #d1ecf1; color: #0c5460; }
         .estado-cancelada { background: #f8d7da; color: #721c24; }
         .footer {
-            margin-top: 30px;
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
             text-align: center;
             font-size: 10px;
             color: #888;
             border-top: 1px solid #ddd;
-            padding-top: 10px;
+            padding: 10px 0;
+            background: white;
+            z-index: 1000;
         }
         .no-data {
             text-align: center;
@@ -161,9 +171,6 @@
                     Dirección: {{ $empresa['direccion'] }}
                 </div>
             </div>
-        </div>
-        <div class="fecha">
-            Generado el {{ $fecha_generacion }}
         </div>
     </div>
 
@@ -189,34 +196,70 @@
         </div>
     </div>
 
-    <div class="resumen-container">
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $total_reservas }}</div>
-            <div class="resumen-label">Total Reservas</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $reservas_completadas }}</div>
-            <div class="resumen-label">Finalizadas</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $reservas_confirmadas }}</div>
-            <div class="resumen-label">Confirmadas</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $reservas_pendientes }}</div>
-            <div class="resumen-label">Pendientes</div>
-        </div>
+    <!-- Tabla de Resumen de Estados -->
+    <div style="margin-bottom: 25px;">
+        <table style="width: 100%; border-collapse: collapse; border: 2px solid #7c1d1d; border-radius: 8px; overflow: hidden;">
+            <thead>
+                <tr style="background: #7c1d1d;">
+                    <th colspan="7" style="color: white; padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold;">
+                        RESUMEN DE RESERVAS POR ESTADO
+                    </th>
+                </tr>
+                <tr style="background: #f8f9fa;">
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Total</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Pendientes</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Confirmadas</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">En Curso</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Reprogramadas</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Finalizadas</th>
+                    <th style="padding: 10px; text-align: center; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd;">Total Gastos</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; color: #7c1d1d; border: 1px solid #ddd; background: #f8f9fa;">
+                        {{ $total_reservas }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; color: #ffc107; border: 1px solid #ddd;">
+                        {{ $reservas_pendientes }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; color: #28a745; border: 1px solid #ddd;">
+                        {{ $reservas_confirmadas }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; color: #007bff; border: 1px solid #ddd;">
+                        {{ $reservas_en_curso ?? 0 }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; color: #6f42c1; border: 1px solid #ddd;">
+                        {{ $reservas_reprogramadas ?? 0 }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; color: #6c757d; border: 1px solid #ddd;">
+                        {{ $reservas_completadas }}
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-size: 1.2rem; font-weight: bold; color: #dc3545; border: 1px solid #ddd; background: #fff3cd;">
+                        ${{ number_format($total_gastos ?? 0, 2) }}
+                        <br><small style="font-size: 0.7rem; color: #856404; font-weight: normal;">(Solo reservas finalizadas)</small>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
     </div>
 
     @if(count($reservas) > 0)
         <table class="table">
             <thead>
+                <tr style="background: #7c1d1d;">
+                    <th colspan="7" style="color: white; padding: 12px; text-align: center; font-size: 1.1rem; font-weight: bold; border: none;">
+                        DETALLE DE RESERVACIONES
+                    </th>
+                </tr>
                 <tr>
-                    <th style="width: 15%">Fecha</th>
-                    <th style="width: 35%">Tours</th>
+                    <th style="width: 20%">Fecha</th>
+                    <th style="width: 25%">Tours</th>
+                    <th style="width: 10%">Menores</th>
+                    <th style="width: 10%">Mayores</th>
+                    <th style="width: 10%">Total Cupos</th>
                     <th style="width: 15%">Estado</th>
-                    <th style="width: 15%">Total</th>
-                    <th style="width: 20%">Empleado</th>
+                    <th style="width: 10%">Total</th>
                 </tr>
             </thead>
             <tbody>
@@ -224,17 +267,21 @@
                     <tr>
                         <td>{{ $reserva['fecha'] }}</td>
                         <td>{{ $reserva['tours'] }}</td>
+                        <td style="text-align: center;">{{ $reserva['menores_edad'] }}</td>
+                        <td style="text-align: center;">{{ $reserva['mayores_edad'] }}</td>
+                        <td style="text-align: center; font-weight: bold;">{{ $reserva['total_cupos'] }}</td>
                         <td>
                             <span class="estado estado-{{ strtolower(str_replace(' ', '-', $reserva['estado'])) }}">
                                 {{ $reserva['estado'] }}
                             </span>
                         </td>
-                        <td>S/. {{ number_format($reserva['total_pago'], 2) }}</td>
-                        <td>{{ $reserva['empleado'] }}</td>
+                        <td style="text-align: center; font-weight: bold;">${{ number_format($reserva['total'], 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
         </table>
+
+
     @else
         <div class="no-data">
             <p>No se encontraron reservaciones registradas.</p>

@@ -5,12 +5,14 @@
 
     <div class="container mx-auto px-4 py-6">
       <div class="mb-3 text-center sm:text-left">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Inventarios</h1>
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">Inventario</h1>
         <p class="text-gray-600">Monitoreo y análisis del estado del inventario</p>
-        <p class="text-gray-500 text-sm text-center sm:text-start mt-1">
-                Para gestionar stock, ve a
-              <span class="text-blue-600 font-medium">Productos > Más Acciones > Actualizar Stock</span>
-            </p>
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mt-3 rounded-r-md">
+          <p class="text-blue-700 text-sm">
+            <FontAwesomeIcon :icon="faHandPointUp" class="mr-2 text-yellow-500" />
+            <strong>Tip:</strong> Para gestionar stock, ve a Productos > Más Acciones > Actualizar Stock
+          </p>
+        </div>
       </div>
 
       <!-- Tarjetas de Resumen -->

@@ -198,7 +198,7 @@ const solicitarInformeReservaciones = async () => {
             if (data.success) {
                 // Establecer cooldown de 5 minutos
                 setCooldown('reservaciones');
-                cooldownReservaciones.value = 300; // 5 minutos en segundos
+                cooldownReservaciones.value = 300; // 5 minutos
                 startCooldownTimer('reservaciones');
 
                 toast.add({
@@ -276,7 +276,7 @@ const solicitarInformeCompras = async () => {
             if (data.success) {
                 // Establecer cooldown de 5 minutos
                 setCooldown('compras');
-                cooldownCompras.value = 300; // 5 minutos en segundos
+                cooldownCompras.value = 300; // 5 minutos
                 startCooldownTimer('compras');
 
                 toast.add({
@@ -381,13 +381,13 @@ const solicitarInformeCompras = async () => {
                                 <div class="bg-blue-100 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faEnvelope" class="w-8 h-8 text-blue-600" />
                                 </div>
-                                <h3 class="text-lg font-bold text-blue-900 mb-1">
-                                    {{ cooldownReservaciones > 0 ? 'Disponible en' : 'Solicitar Informe de Reservaciones' }}
+                                <h3 class="text-lg text-center font-bold text-blue-900 mb-1">
+                                    {{ cooldownReservaciones > 0 ? 'Disponible en' : 'Reservaciones' }}
                                 </h3>
                                 <p class="text-blue-700 text-sm text-center">
                                     {{ cooldownReservaciones > 0
                                         ? `${formatTime(cooldownReservaciones)} - Evita spam de correos`
-                                        : 'Recibe por correo un PDF detallado de todas tus reservaciones'
+                                        : 'Solicitar informe PDF de los detalles de tus reservaciones'
                                     }}
                                 </p>
                             </div>
@@ -400,13 +400,13 @@ const solicitarInformeCompras = async () => {
                                 <div class="bg-green-100 rounded-full p-4 mb-4">
                                     <FontAwesomeIcon :icon="faEnvelope" class="w-8 h-8 text-green-600" />
                                 </div>
-                                <h3 class="text-lg font-bold text-green-900 mb-1">
-                                    {{ cooldownCompras > 0 ? 'Disponible en' : 'Solicitar Informe de Compras' }}
+                                <h3 class="text-lg text-center font-bold text-green-900 mb-1">
+                                    {{ cooldownCompras > 0 ? 'Disponible en' : 'Compras' }}
                                 </h3>
                                 <p class="text-green-700 text-sm text-center">
                                     {{ cooldownCompras > 0
                                         ? `${formatTime(cooldownCompras)} - Evita spam de correos`
-                                        : 'Recibe por correo un PDF detallado de todas tus compras'
+                                        : 'Solicitar informe PDF de los detalles de tus compras'
                                     }}
                                 </p>
                             </div>

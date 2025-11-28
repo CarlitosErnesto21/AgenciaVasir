@@ -362,7 +362,7 @@ onMounted(() => {
 const checkForAutoEdit = () => {
     const urlParams = new URLSearchParams(window.location.search);
     const editTourId = urlParams.get('editTour');
-    
+
     if (editTourId) {
         // Buscar el tour en la lista
         setTimeout(() => {
@@ -1027,7 +1027,7 @@ const saveOrUpdate = async () => {
         resetForm();
     } catch (err) {
         let errorMessage = "Por favor revisa los campos e intenta nuevamente.";
-        
+
         // Si es un error 422 (validación), extraer los mensajes específicos
         if (err.response && err.response.status === 422) {
             if (err.response.data && err.response.data.message) {
@@ -1041,7 +1041,7 @@ const saveOrUpdate = async () => {
                 }
             }
         }
-        
+
         toast.add({
             severity: "warn",
             summary: "Error de validación",
@@ -1788,22 +1788,22 @@ const onPricePaste = (event) => {
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
                     <div class="text-center sm:text-left">
-                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours</h1>
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Catálogo de Tours y Control de Reservaciones</h1>
                         <p class="text-gray-600">Gestión completa de paquetes turísticos</p>
-                        <div class="mt-3 space-y-2">
-                            <div class="flex items-start gap-2 px-3 py-2 bg-blue-50/70 border border-blue-200/50 rounded-lg text-xs text-blue-700">
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mt-3 rounded-r-md space-y-2">
+                            <div class="flex items-start gap-2 text-xs text-blue-700">
                                 <i class="fas fa-info-circle mt-0.5 text-blue-500 flex-shrink-0"></i>
                                 <div>
                                     <span class="font-semibold">Ordenamiento:</span> Tours por estado (En Curso → Completo → Reprogramada → Disponible → Finalizado) y fecha próxima.
                                 </div>
                             </div>
-                            <div class="flex items-start gap-2 px-3 py-2 bg-green-50/70 border border-green-200/50 rounded-lg text-xs text-green-700">
+                            <div class="flex items-start gap-2 text-xs text-green-700">
                                 <i class="fas fa-calendar-check mt-0.5 text-green-500 flex-shrink-0"></i>
                                 <div>
                                     <span class="font-semibold">Reservas:</span> Usa botón "Más" (⋮) → "Ver reservas" para gestionar reservas individuales.
                                 </div>
                             </div>
-                            <div class="flex items-start gap-2 px-3 py-2 bg-orange-50/70 border border-orange-200/50 rounded-lg text-xs text-orange-700">
+                            <div class="flex items-start gap-2 text-xs text-orange-700">
                                 <i class="fas fa-clock mt-0.5 text-orange-500 flex-shrink-0"></i>
                                 <div>
                                     <span class="font-semibold">Pendientes:</span> Botón "Pendientes" muestra tours con reservas por confirmar.

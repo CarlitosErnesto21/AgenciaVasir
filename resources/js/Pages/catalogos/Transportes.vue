@@ -531,14 +531,14 @@ const handleToursClick = () => {
                     :href="route('tours')"
                     @click="handleToursClick"
                     :class="{'opacity-50 cursor-not-allowed': isNavigatingToTours}"
-                    class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+                    class="inline-flex p-2 items-center bg-blue-500 hover:bg-blue-600 text-white hover:text-gray-200 rounded-md transition-colors duration-200 mb-4"
                     title="Regresar a Tours">
                     <FontAwesomeIcon
                         :icon="isNavigatingToTours ? faSpinner : faArrowLeft"
                         :class="{'animate-spin': isNavigatingToTours}"
                         class="h-5 w-5 mr-2"
                     />
-                    <span class="font-medium">Volver a Tours</span>
+                    Volver a Tours
                 </Link>
             </div>
 
@@ -547,7 +547,7 @@ const handleToursClick = () => {
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
                     <div class="text-center sm:text-left">
                         <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Transportes</h1>
-                        <p class="text-gray-600">Gestión de vehículos y transportes</p>
+                        <p class="text-gray-600">Gestión de los transportes asociados a los tours</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button

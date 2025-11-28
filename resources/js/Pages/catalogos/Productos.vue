@@ -1382,8 +1382,14 @@ const onStockMinimoPaste = (event) => {
             <div class="bg-white rounded-lg shadow-md">
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
                     <div class="w-full">
-                        <h1 class="text-3xl font-bold text-blue-600 mb-2 text-center sm:text-start">Catálogo de Productos</h1>
-                        <p class="text-gray-600 text-center sm:text-start">Gestión completa del inventario de productos</p>
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2 text-center sm:text-start">Catálogo de Productos y Gestión de Stock</h1>
+                        <p class="text-gray-600 text-center sm:text-start">Visualiza y administra todos los productos y su inventario en el sistema.</p>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-3 mt-3 rounded-r-md">
+                            <p class="text-blue-700 text-sm">
+                                <FontAwesomeIcon :icon="faHandPointUp" class="mr-2 text-yellow-500" />
+                                <strong>Tip:</strong> Para gestionar el stock de un producto, haz clic en el botón "Más" y luego selecciona "Actualizar stock".
+                            </p>
+                        </div>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                     <Link

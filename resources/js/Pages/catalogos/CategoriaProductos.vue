@@ -337,12 +337,12 @@ const onNombrePaste = (event) => {
         <Toast class="z-[9999]" />
 
         <div class="container mx-auto px-4 py-6">
-            <div class="mb-6">
+            <div class="mb-6 mt-2">
                 <Link
                     :href="route('productos')"
                     @click="handleProductosClick"
                     :class="{'opacity-50 cursor-not-allowed': isNavigatingToProductos}"
-                    class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 mb-4"
+                    class="inline-flex p-2 items-center bg-blue-500 hover:bg-blue-600 text-white hover:text-gray-200 rounded-md transition-colors duration-200 mb-4"
                     title="Regresar a Productos">
                     <FontAwesomeIcon
                         :icon="isNavigatingToProductos ? faSpinner : faArrowLeft"
@@ -353,10 +353,10 @@ const onNombrePaste = (event) => {
             </div>
 
             <div class="bg-white rounded-lg shadow-md">
-                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-4">
+                <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center gap-4 p-1 sm:p-1 md:p-3 lg:p-4">
                     <div class="text-center sm:text-left">
-                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de Categorías</h1>
-                        <p class="text-gray-600">Gestión de categorías de productos</p>
+                        <h1 class="text-3xl font-bold text-blue-600 mb-2">Control de las Categorías de Productos</h1>
+                        <p class="text-gray-600">Gestiona las categorías de productos del inventario</p>
                     </div>
                     <div class="flex items-center gap-2 w-full justify-center lg:w-auto lg:justify-end">
                         <button

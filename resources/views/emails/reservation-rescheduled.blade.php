@@ -49,6 +49,13 @@
             margin: 20px 0;
             border-left: 4px solid #ffc107;
         }
+        .warning-section {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
         .detail-row {
             display: flex;
             justify-content: space-between;
@@ -210,10 +217,10 @@
 
         <!-- Cambio de fechas -->
         <div class="date-change-section">
-            <h3 style="margin-top: 0; color: #856404;">📅 Cambio de Fechas del Tour</h3>
+            <h3 style="margin-top: 0; color: #856404;">Cambio de Fechas del Tour</h3>
 
             <!-- Fecha de Salida -->
-            <h4 style="color: #856404; margin-bottom: 10px;">🚌 Fecha de Salida</h4>
+            <h4 style="color: #856404; margin-bottom: 10px;">Fecha de Salida</h4>
             <div class="date-comparison">
                 <div class="date-box old-date">
                     <h5 style="margin: 0; font-size: 14px;">FECHA ANTERIOR</h5>
@@ -236,7 +243,7 @@
 
             @if(isset($reservation['fecha_regreso_anterior']) && $reservation['fecha_regreso_anterior'] && isset($reservation['fecha_regreso_nueva']) && $reservation['fecha_regreso_nueva'])
             <!-- Fecha de Regreso -->
-            <h4 style="color: #856404; margin: 20px 0 10px 0;">🏠 Fecha de Regreso</h4>
+            <h4 style="color: #856404; margin: 20px 0 10px 0;">Fecha de Regreso</h4>
             <div class="date-comparison">
                 <div class="date-box old-date">
                     <h5 style="margin: 0; font-size: 14px;">FECHA ANTERIOR</h5>
@@ -325,7 +332,7 @@
 
         <!-- Políticas de cancelación -->
         <div style="background-color: #f1f3f4; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #6c757d;">
-            <h4 style="margin-top: 0; color: #495057;">📋 Recordatorio de Políticas</h4>
+            <h4 style="margin-top: 0; color: #495057;">Recordatorio de Políticas</h4>
             <p style="margin: 5px 0; font-size: 13px; color: #6c757d;">
                 • Si necesitas cancelar: Contáctanos con al menos 72 horas de anticipación<br>
                 • Para cambios adicionales: Sujeto a disponibilidad y posibles cargos<br>
@@ -335,15 +342,15 @@
 
         <!-- Sección de contacto y redes sociales -->
         <div class="info-section" style="text-align: center;">
-            <h3>🌟 ¡Mantente conectado con nosotros!</h3>
+            <h3>¡Mantente conectado con nosotros!</h3>
             <p>Síguenos en nuestras redes sociales para más ofertas y destinos:</p>
             <p style="font-size: 14px; color: #666; margin-bottom: 20px;">
-                <strong>🗃️ Contacto:</strong> {{ $adminData['name'] }}<br>
+                <strong>Contacto:</strong> {{ $adminData['name'] }}<br>
                 @if($adminData['phone'])
-                    📞 <strong>Teléfono:</strong> <a href="tel:{{ $adminData['phone'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a><br>
+                    <strong>Teléfono:</strong> <a href="tel:{{ $adminData['phone'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['phone'] }}</a><br>
                 @endif
-                📧 <strong>Email:</strong> <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a><br>
-                🌐 <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
+                <strong>Email:</strong> <a href="mailto:{{ $adminData['email'] }}" style="color: #ff0000; text-decoration: none;">{{ $adminData['email'] }}</a><br>
+                <strong>Sitio web:</strong> <a href="{{ config('app.url') }}" style="color: #ff0000; text-decoration: none;">{{ config('app.url') }}</a>
             </p>
 
             <!-- Iconos de redes sociales -->
@@ -397,7 +404,7 @@
 
         <div class="footer">
             <p>¡Gracias por tu comprensión y paciencia!</p>
-            <p><strong>¡Nos vemos en la nueva fecha! 🎉✈️</strong></p>
+            <p><strong>¡Nos vemos en la nueva fecha!</strong></p>
             <hr>
             <p><small>
                 Este correo confirma los cambios en tu reservación. Guárdalo como comprobante actualizado.

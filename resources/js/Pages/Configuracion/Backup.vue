@@ -5,7 +5,7 @@
             <div class="mb-4 sm:mb-6 mt-1 sm:mt-2">
                 <div class="flex items-center">
                     <Link :href="route('settings')"
-                        class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-2 py-1 rounded-md hover:bg-blue-50"
+                        class="inline-flex p-2 items-center bg-blue-500 hover:bg-blue-600 text-white hover:text-gray-200 rounded-md transition-colors duration-200 mb-4"
                         :disabled="isLoading || isGenerating">
                         <FontAwesomeIcon
                             :icon="(isLoading || isGenerating) ? faSpinner : faArrowLeft"

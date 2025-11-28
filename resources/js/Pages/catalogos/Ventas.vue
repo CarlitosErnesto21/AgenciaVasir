@@ -5,8 +5,8 @@
 
     <div class="container mx-auto px-4 py-6">
       <div class="mb-6 text-center sm:text-left">
-        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Ventas</h1>
-        <p class="text-gray-600">Control completo del sistema de ventas</p>
+        <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Ventas de Productos</h1>
+        <p class="text-gray-600">Visualiza y administra todas las ventas de productos realizadas en el sistema.</p>
       </div>
 
       <!-- Tarjetas de estadísticas -->

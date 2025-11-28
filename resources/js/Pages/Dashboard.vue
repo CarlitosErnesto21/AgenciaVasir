@@ -488,7 +488,7 @@ onMounted(() => {
         <div v-else class="px-2 sm:px-4 lg:px-6 py-4 sm:py-6 space-y-4 sm:space-y-6 mt-1 sm:mt-1">
             <!-- Header con botón de actualizar -->
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl sm:text-3xl font-bold text-blue-600">Panel Administrativo</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-blue-600">Bienvenido al Sistema de la Agencia VASIR</h1>
                 <button
                     @click="fetchDashboardData(true)"
                     :disabled="loading"

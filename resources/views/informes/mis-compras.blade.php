@@ -74,31 +74,37 @@
             margin: 4px 0;
             color: #444;
         }
-        .resumen-container {
-            display: flex;
-            justify-content: space-between;
+        .resumen-table {
+            width: 100%;
+            border-collapse: collapse;
             margin-bottom: 20px;
-            gap: 15px;
-        }
-        .resumen-card {
-            flex: 1;
-            background: #fff;
             border: 1px solid #ddd;
-            border-radius: 8px;
+        }
+        .resumen-table th {
+            background: #7c1d1d;
+            color: white;
             padding: 12px;
             text-align: center;
+            font-weight: bold;
+            border: 1px solid #ddd;
+            font-size: 11px;
         }
-        .resumen-numero {
-            font-size: 1.5rem;
+        .resumen-table td {
+            background: #f9f9f9;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
             font-weight: bold;
             color: #7c1d1d;
-            margin-bottom: 4px;
+            font-size: 14px;
         }
-        .resumen-label {
-            font-size: 0.85rem;
-            color: #666;
-            text-transform: uppercase;
+        .resumen-header {
+            background: #7c1d1d;
+            color: white;
+            text-align: center;
+            padding: 8px;
             font-weight: bold;
+            font-size: 12px;
         }
         .venta-card {
             border: 1px solid #ddd;
@@ -155,12 +161,17 @@
         .estado-completada { background: #d4edda; color: #155724; }
         .estado-cancelada { background: #f8d7da; color: #721c24; }
         .footer {
-            margin-top: 30px;
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            right: 0;
             text-align: center;
             font-size: 10px;
             color: #888;
             border-top: 1px solid #ddd;
             padding-top: 10px;
+            background: white;
+            z-index: 1000;
         }
         .no-data {
             text-align: center;
@@ -171,8 +182,22 @@
         .text-right {
             text-align: right;
         }
+        .text-center {
+            text-align: center;
+        }
         .font-bold {
             font-weight: bold;
+        }
+        .info-note {
+            background: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 5px;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            font-size: 10px;
+            color: #0c5460;
+            font-style: italic;
+            text-align: center;
         }
     </style>
 </head>
@@ -187,9 +212,6 @@
                     Dirección: {{ $empresa['direccion'] }}
                 </div>
             </div>
-        </div>
-        <div class="fecha">
-            Generado el {{ $fecha_generacion }}
         </div>
     </div>
 
@@ -215,26 +237,32 @@
         </div>
     </div>
 
-    <div class="resumen-container">
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $total_ventas }}</div>
-            <div class="resumen-label">Total Compras</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $ventas_completadas }}</div>
-            <div class="resumen-label">Completadas</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">{{ $ventas_pendientes }}</div>
-            <div class="resumen-label">Pendientes</div>
-        </div>
-        <div class="resumen-card">
-            <div class="resumen-numero">S/. {{ number_format($total_gastado, 2) }}</div>
-            <div class="resumen-label">Total Gastado</div>
-        </div>
+    <div class="resumen-header">RESUMEN DE COMPRAS</div>
+    <table class="resumen-table">
+        <thead>
+            <tr>
+                <th>TOTAL COMPRAS</th>
+                <th>COMPLETADAS</th>
+                <th>PENDIENTES</th>
+                <th>TOTAL GASTADO</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ $total_ventas }}</td>
+                <td>{{ $ventas_completadas }}</td>
+                <td>{{ $ventas_pendientes }}</td>
+                <td>$ {{ number_format($total_gastado, 2) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="info-note">
+        El total gastado corresponde únicamente a compras con estado COMPLETADA
     </div>
 
     @if(count($ventas) > 0)
+        <div class="resumen-header">DETALLE DE COMPRAS</div>
         @foreach($ventas as $venta)
             <div class="venta-card">
                 <div class="venta-header">
@@ -244,25 +272,25 @@
                             {{ $venta['estado'] }}
                         </span>
                     </div>
-                    <div class="venta-total">Total: S/. {{ number_format($venta['total'], 2) }}</div>
+                    <div class="venta-total">Total: $ {{ number_format($venta['total'], 2) }}</div>
                 </div>
 
                 <table class="table">
                     <thead>
                         <tr>
                             <th style="width: 40%">Producto</th>
-                            <th style="width: 15%" class="text-right">Cantidad</th>
-                            <th style="width: 20%" class="text-right">Precio Unit.</th>
-                            <th style="width: 25%" class="text-right">Subtotal</th>
+                            <th style="width: 15%; text-align: center;">Cantidad</th>
+                            <th style="width: 20%; text-align: right;">Precio Unit.</th>
+                            <th style="width: 25%; text-align: right;">Subtotal</th>
                         </tr>
                     </thead>
                     <tbody>
                         @foreach($venta['productos'] as $producto)
                             <tr>
                                 <td>{{ $producto['nombre'] }}</td>
-                                <td class="text-right">{{ $producto['cantidad'] }}</td>
-                                <td class="text-right">S/. {{ number_format($producto['precio'], 2) }}</td>
-                                <td class="text-right font-bold">S/. {{ number_format($producto['subtotal'], 2) }}</td>
+                                <td style="text-align: center;">{{ $producto['cantidad'] }}</td>
+                                <td style="text-align: right;">$ {{ number_format($producto['precio'], 2) }}</td>
+                                <td style="text-align: right; font-weight: bold;">$ {{ number_format($producto['subtotal'], 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>

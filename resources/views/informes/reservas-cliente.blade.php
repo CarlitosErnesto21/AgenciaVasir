@@ -293,7 +293,6 @@
             <thead>
                 <tr>
                     <th>ID</th>
-                    <th>Fecha</th>
                     <th>Tour</th>
                     <th>Personas</th>
                     <th>Estado</th>
@@ -305,7 +304,6 @@
                 @foreach($reservas as $reserva)
                 <tr>
                     <td>#{{ $reserva['id'] }}</td>
-                    <td>{{ $reserva['fecha'] }}</td>
                     <td style="text-align: left; font-size: 0.65rem; padding: 4px;">{{ $reserva['tours'] }}</td>
                     <td>{{ $reserva['personas'] }}</td>
                     <td class="estado-{{ strtolower($reserva['estado']) }}">{{ $reserva['estado'] }}</td>

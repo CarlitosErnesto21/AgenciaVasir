@@ -1114,7 +1114,7 @@ onUnmounted(() => {
           :href="route('tours')"
           @click="handleVolverATours"
           :class="{'opacity-50 cursor-not-allowed': loadingVolver}"
-          class="flex items-center text-blue-600 hover:text-blue-700 transition-colors duration-200 px-3 py-2 rounded-lg"
+          class="inline-flex p-2 items-center bg-blue-500 hover:bg-blue-600 text-white hover:text-gray-200 rounded-md transition-colors duration-200"
           title="Regresar a Tours"
         >
           <FontAwesomeIcon

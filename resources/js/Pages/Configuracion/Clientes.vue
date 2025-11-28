@@ -8,7 +8,7 @@
                 <div class="flex flex-col sm:flex-row lg:justify-between lg:items-center text-center sm:text-left gap-4 p-4">
                     <div class="w-full">
                         <h1 class="text-3xl font-bold text-blue-600 mb-2">Gestión de Clientes</h1>
-                        <p class="text-gray-600">Visualización de clientes del sistema</p>
+                        <p class="text-gray-600">Visualización de la información de los clientes del sistema</p>
                     </div>
                 </div>
 

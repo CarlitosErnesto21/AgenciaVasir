@@ -618,12 +618,18 @@ class InformePDFController extends Controller
                     return $detalle->tour ? $detalle->tour->nombre : 'Tour no disponible';
                 })->implode(', ');
 
+                // Formatear fecha con hora en formato AM/PM
+                $fechaCompleta = Carbon::parse($reserva->fecha);
+                $fechaFormateada = $fechaCompleta->format('d/m/Y g:i A');
+
                 return [
-                    'fecha' => Carbon::parse($reserva->fecha)->format('d/m/Y'),
+                    'fecha' => $fechaFormateada,
                     'tours' => $tours ?: 'Sin tours',
+                    'menores_edad' => $reserva->menores_edad ?? 0,
+                    'mayores_edad' => $reserva->mayores_edad ?? 0,
+                    'total_cupos' => ($reserva->mayores_edad ?? 0) + ($reserva->menores_edad ?? 0),
                     'estado' => $this->getEstadoReservaLabel($reserva->estado),
-                    'total_pago' => $reserva->total_pago ?? 0,
-                    'empleado' => $reserva->empleado && $reserva->empleado->user ? $reserva->empleado->user->name : 'No asignado'
+                    'total' => $reserva->total ?? 0
                 ];
             });
 
@@ -646,6 +652,14 @@ class InformePDFController extends Controller
                 'telefono' => $cliente->telefono ?? 'No registrado',
             ];
 
+            // Calcular totales de cupos
+            $totalMenoresEdad = $reservas->sum('menores_edad');
+            $totalMayoresEdad = $reservas->sum('mayores_edad');
+            $totalCupos = $totalMenoresEdad + $totalMayoresEdad;
+
+            // Calcular total de gastos solo de reservas finalizadas
+            $totalGastos = $reservas->where('estado', 'FINALIZADA')->sum('total');
+
             $data = [
                 'reservas' => $reservasData,
                 'cliente' => $clienteInfo,
@@ -653,9 +667,12 @@ class InformePDFController extends Controller
                 'cliente_email' => $user->email,
                 'fecha_generacion' => Carbon::now()->format('d/m/Y H:i:s'),
                 'total_reservas' => $reservas->count(),
-                'reservas_completadas' => $reservas->where('estado', 'finalizada')->count(),
-                'reservas_confirmadas' => $reservas->where('estado', 'confirmada')->count(),
-                'reservas_pendientes' => $reservas->where('estado', 'pendiente')->count(),
+                'reservas_completadas' => $reservas->where('estado', 'FINALIZADA')->count(),
+                'reservas_confirmadas' => $reservas->where('estado', 'CONFIRMADA')->count(),
+                'reservas_pendientes' => $reservas->where('estado', 'PENDIENTE')->count(),
+                'reservas_en_curso' => $reservas->where('estado', 'EN_CURSO')->count(),
+                'reservas_reprogramadas' => $reservas->where('estado', 'REPROGRAMADA')->count(),
+                'total_gastos' => $totalGastos,
                 'empresa' => $empresaInfo,
             ];
 
