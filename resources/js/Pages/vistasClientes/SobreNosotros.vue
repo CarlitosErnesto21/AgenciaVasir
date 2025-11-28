@@ -24,7 +24,7 @@ const { siteSettings, companyValues } = defineProps({
         <!-- Header Professional - Ancho completo de la pantalla -->
         <div class="w-full bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6 mt-20 md:mt-24 lg:mt-28 xl:mt-28 mb-6 sm:mb-8 shadow-xl">
             <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-                <FontAwesomeIcon :icon="faUserCircle" class="text-yellow-300 mr-2" />
+                <FontAwesomeIcon :icon="faUserCircle" class="text-yellow-300 mr-2 rotate-animation" />
                 Sobre Nosotros</h1>
             <p class="text-base sm:text-lg text-red-100 px-4">Descubre la historia y pasión detrás de VASIR</p>
         </div>
@@ -47,3 +47,28 @@ const { siteSettings, companyValues } = defineProps({
         </div>
     </Catalogo>
 </template>
+
+<style scoped>
+@keyframes rotate-pulse {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  25% {
+    transform: rotate(12deg) scale(1.1);
+  }
+  50% {
+    transform: rotate(0deg) scale(1);
+  }
+  75% {
+    transform: rotate(-12deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(0deg) scale(1);
+  }
+}
+
+.rotate-animation {
+  animation: rotate-pulse 3s ease-in-out infinite;
+  transform-origin: center;
+}
+</style>

@@ -504,7 +504,7 @@ Gracias.`
       <!-- Overlay con glassmorphism mejorado -->
       <div
         v-if="isSidebarOpen"
-        class="fixed inset-0 z-[9998] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm xl:hidden"
+        class="fixed inset-0 z-[10000] bg-gradient-to-br from-black/50 via-red-900/20 to-blue-900/30 backdrop-blur-sm xl:hidden"
         @click="isSidebarOpen = false"
         @touchmove.prevent
         @scroll.prevent
@@ -518,7 +518,7 @@ Gracias.`
     >
       <aside
         v-if="isSidebarOpen"
-        class="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white/95 via-blue-50/90 to-red-50/95 backdrop-blur-xl shadow-2xl z-[9999] flex flex-col xl:hidden border-r border-white/30 overflow-hidden"
+        class="fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-white/95 via-blue-50/90 to-red-50/95 backdrop-blur-xl shadow-2xl z-[10001] flex flex-col xl:hidden border-r border-white/30 overflow-hidden"
         @touchmove.stop
       >
         <!-- Elementos decorativos de fondo -->

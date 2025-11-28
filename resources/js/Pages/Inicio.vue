@@ -411,12 +411,12 @@ onUnmounted(() => {
               </p>
               <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0">
                 <Link :href="route('tours-nacionales')">
-                  <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 !py-3 sm:!py-4 !text-yellow-700 font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base">
+                  <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 !py-3 sm:!py-4 !text-yellow-700 font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base pulse-scale-1">
                     <FontAwesomeIcon :icon="faVolcano" class="text-yellow-700" />Ver Tours Nacionales
                   </Button>
                 </Link>
                 <Link :href="route('tours-internacionales')">
-                  <Button outlined class="w-full sm:w-auto !border-2 !border-white/80 !text-yellow-400 !px-6 sm:!px-8 !py-3 sm:!py-4 font-bold rounded-xl hover:!bg-white/20 hover:!border-white backdrop-blur-sm transform hover:scale-105 transition-all duration-300 shadow-lg text-sm sm:text-base">
+                  <Button outlined class="w-full sm:w-auto !border-2 !border-white/80 !text-yellow-400 !px-6 sm:!px-8 !py-3 sm:!py-4 font-bold rounded-xl hover:!bg-white/20 hover:!border-white backdrop-blur-sm transform hover:scale-105 transition-all duration-300 shadow-lg text-sm sm:text-base pulse-scale-2">
                     <FontAwesomeIcon :icon="faMapLocationDot" class="text-yellow-400" />Ver Tours Internacionales
                   </Button>
                 </Link>
@@ -425,27 +425,47 @@ onUnmounted(() => {
           </div>
         </section>
 
-        <!-- CTA Final -->
-        <section class="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-white via-white to-white relative overflow-hidden">
-          <div class="relative max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 text-center">
-            <div class="mb-6 sm:mb-8">
-              <span class="bg-red-600 backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg">
-                ¡Comienza Tu Aventura!
-              </span>
+        <!-- Servicios -->
+        <section class="py-10 sm:py-16 md:py-20 lg:py-22 bg-gradient-to-br from-gray-50 via-blue-50/40 to-red-50/40 relative">
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
+          <div class="relative mx-auto px-2 md:px-3 lg:px-4 xl:px-5">
+            <div class="text-center mb-8 sm:mb-12 md:mb-16">
+              <div class="inline-block mb-3 sm:mb-4">
+                <span class="bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg">
+                  Servicios Premium
+                </span>
+              </div>
+              <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-700 to-red-600 bg-clip-text text-transparent mb-4 sm:mb-6">
+                <FontAwesomeIcon :icon="faBullseye" class="text-red-600 mr-2" />Nuestros Servicios
+              </h2>
+              <p class="text-sm sm:text-base md:text-lg text-gray-600 max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
+                Ofrecemos una gama completa de servicios turísticos profesionales para hacer realidad
+                tus sueños de viaje con la más alta calidad y atención personalizada.
+              </p>
             </div>
-            <h2 class="text-red-600 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
-              <FontAwesomeIcon :icon="faRocketchat" class="text-red-600 mr-2" />¿Listo para tu próxima aventura?
-            </h2>
-            <p class="text-black text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-8 sm:mb-10 md:mb-12 opacity-90 max-w-xs sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto leading-relaxed px-4 sm:px-0">
-              Permítenos ser parte de tus mejores recuerdos. Contáctanos hoy mismo y comienza a planificar
-              la experiencia de viaje que siempre has soñado. Tu próxima gran aventura te está esperando.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0">
-              <Link :href="route('contactos')">
-                <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 md:!px-10 !py-3 sm:!py-4 !text-black font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base">
-                  <FontAwesomeIcon :icon="faPhone" class="text-red-600" />Contactar Ahora
-                </Button>
-              </Link>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
+              <div
+                v-for="(servicio, index) in servicios"
+                :key="servicio.titulo"
+                class="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-4 shadow-lg sm:shadow-xl border border-white/40 text-center hover:shadow-2xl transform hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300 group hover:bg-white/90 flex flex-col justify-between"
+              >
+                <div class="text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:animate-bounce">
+                  <FontAwesomeIcon :icon="servicio.icono" :class="[servicio.color, `pulse-scale-${(index % 4) + 1}`]" class="md:pt-4"/>
+                </div>
+                <h3 :class="['text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight', servicio.tituloColor]">{{ servicio.titulo}}</h3>
+                <p class="text-gray-800 mb-4 sm:mb-5 md:mb-6 text-xs sm:text-sm md:text-lg leading-relaxed opacity-90">{{ servicio.descripcion }}</p>
+                <Link :href="servicio.enlace" class="md:mb-4">
+                  <Button
+                    v-if="servicio.label"
+                    :label="servicio.label"
+                    :class="servicio.botonColor"
+                    outlined
+                    class="w-full sm:w-auto /*!border-2 !border-red-600 !text-red-600*/ !px-4 sm:!px-6 !py-1.5 sm:!py-2 !text-xs sm:!text-sm font-semibold rounded-lg sm:rounded-xl /*hover:!bg-red-600 hover:!text-white*/ transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
+                    size="small"
+                  />
+                </Link>
+              </div>
             </div>
           </div>
         </section>
@@ -625,47 +645,27 @@ onUnmounted(() => {
           </div>
         </section>
 
-        <!-- Servicios -->
-        <section class="py-10 sm:py-16 md:py-20 lg:py-22 bg-gradient-to-br from-gray-50 via-blue-50/40 to-red-50/40 relative">
-          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"></div>
-          <div class="relative mx-auto px-2 md:px-3 lg:px-4 xl:px-5">
-            <div class="text-center mb-8 sm:mb-12 md:mb-16">
-              <div class="inline-block mb-3 sm:mb-4">
-                <span class="bg-gradient-to-r from-red-600 to-red-500 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg">
-                  Servicios Premium
-                </span>
-              </div>
-              <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-700 to-red-600 bg-clip-text text-transparent mb-4 sm:mb-6">
-                <FontAwesomeIcon :icon="faBullseye" class="text-red-600 mr-2" />Nuestros Servicios
-              </h2>
-              <p class="text-sm sm:text-base md:text-lg text-gray-600 max-w-sm sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto leading-relaxed px-4 sm:px-0">
-                Ofrecemos una gama completa de servicios turísticos profesionales para hacer realidad
-                tus sueños de viaje con la más alta calidad y atención personalizada.
-              </p>
+        <!-- CTA Final -->
+        <section class="py-12 sm:py-16 md:py-20 lg:py-24 bg-gradient-to-br from-white via-white to-white relative overflow-hidden">
+          <div class="relative max-w-3xl sm:max-w-4xl lg:max-w-5xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 text-center">
+            <div class="mb-6 sm:mb-8">
+              <span class="bg-red-600 backdrop-blur-sm text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-full font-semibold text-xs sm:text-sm shadow-lg">
+                ¡Comienza Tu Aventura!
+              </span>
             </div>
-
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-3 md:gap-3 lg:gap-4 xl:gap-5">
-              <div
-                v-for="servicio in servicios"
-                :key="servicio.titulo"
-                class="bg-white/80 backdrop-blur-sm rounded-xl sm:rounded-2xl p-4 sm:p-6 md:p-4 shadow-lg sm:shadow-xl border border-white/40 text-center hover:shadow-2xl transform hover:-translate-y-1 sm:hover:-translate-y-2 transition-all duration-300 group hover:bg-white/90 flex flex-col justify-between"
-              >
-                <div class="text-3xl sm:text-4xl md:text-5xl mb-3 sm:mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 group-hover:animate-bounce">
-                  <FontAwesomeIcon :icon="servicio.icono" :class="servicio.color" class="md:pt-4"/>
-                </div>
-                <h3 :class="['text-base sm:text-lg md:text-xl font-bold mb-2 sm:mb-3 md:mb-4 leading-tight', servicio.tituloColor]">{{ servicio.titulo}}</h3>
-                <p class="text-gray-800 mb-4 sm:mb-5 md:mb-6 text-xs sm:text-sm md:text-lg leading-relaxed opacity-90">{{ servicio.descripcion }}</p>
-                <Link :href="servicio.enlace" class="md:mb-4">
-                  <Button
-                    v-if="servicio.label"
-                    :label="servicio.label"
-                    :class="servicio.botonColor"
-                    outlined
-                    class="w-full sm:w-auto /*!border-2 !border-red-600 !text-red-600*/ !px-4 sm:!px-6 !py-1.5 sm:!py-2 !text-xs sm:!text-sm font-semibold rounded-lg sm:rounded-xl /*hover:!bg-red-600 hover:!text-white*/ transition-all duration-300 shadow-md hover:shadow-lg transform hover:scale-105"
-                    size="small"
-                  />
-                </Link>
-              </div>
+            <h2 class="text-red-600 text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold mb-4 sm:mb-6 leading-tight">
+              <FontAwesomeIcon :icon="faRocketchat" class="text-red-600 mr-2" />¿Listo para tu próxima aventura?
+            </h2>
+            <p class="text-black text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl mb-8 sm:mb-10 md:mb-12 opacity-90 max-w-xs sm:max-w-2xl md:max-w-3xl lg:max-w-4xl mx-auto leading-relaxed px-4 sm:px-0">
+              Permítenos ser parte de tus mejores recuerdos. Contáctanos hoy mismo y comienza a planificar
+              la experiencia de viaje que siempre has soñado. Tu próxima gran aventura te está esperando.
+            </p>
+            <div class="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center px-4 sm:px-0">
+              <Link :href="route('contactos')">
+                <Button class="w-full sm:w-auto !bg-gradient-to-r !from-yellow-500 !to-yellow-400 !border-none !px-6 sm:!px-8 md:!px-10 !py-3 sm:!py-4 !text-black font-bold rounded-xl hover:!from-yellow-400 hover:!to-yellow-300 transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl text-sm sm:text-base pulse-scale-5">
+                  <FontAwesomeIcon :icon="faPhone" class="text-red-600" />Contactar Ahora
+                </Button>
+              </Link>
             </div>
           </div>
         </section>
@@ -694,11 +694,16 @@ onUnmounted(() => {
 
             <div class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-4 md:gap-3 lg:gap-4 xl:gap-8">
               <div
-                v-for="stat in estadisticas"
+                v-for="(stat, index) in estadisticas"
                 :key="stat.descripcion"
                 class="text-center p-4 sm:p-6 md:p-8 bg-white/15 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-white/20 hover:bg-white/25 transition-all duration-300 transform hover:-translate-y-1 sm:hover:-translate-y-2 hover:scale-105 group shadow-lg sm:shadow-xl"
               >
-                <div class="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300"><FontAwesomeIcon :icon="stat.icono" :class="stat.color" /></div>
+                <div class="text-3xl sm:text-4xl md:text-5xl mb-2 sm:mb-3 md:mb-4 group-hover:scale-110 transition-transform duration-300">
+                  <FontAwesomeIcon
+                    :icon="stat.icono"
+                    :class="stat.color"
+                  />
+                </div>
                 <div class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold mb-2 sm:mb-3 bg-gradient-to-r from-yellow-300 to-yellow-400 bg-clip-text text-transparent">{{ stat.numero }}</div>
                 <div class="text-xs sm:text-sm md:text-base opacity-90 font-medium px-1">{{ stat.descripcion }}</div>
               </div>
@@ -850,3 +855,70 @@ onUnmounted(() => {
     </Dialog>
   </Catalogo>
 </template>
+
+<style scoped>
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.pulse-scale-1 {
+  animation: pulse-scale 2s ease-in-out infinite;
+}
+
+.pulse-scale-2 {
+  animation: pulse-scale 2s ease-in-out infinite;
+  animation-delay: 1s;
+}
+
+.pulse-scale-3 {
+  animation: pulse-scale 2s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.pulse-scale-4 {
+  animation: pulse-scale 2s ease-in-out infinite;
+  animation-delay: 1.5s;
+}
+
+.pulse-scale-5 {
+  animation: pulse-scale 2s ease-in-out infinite;
+  animation-delay: 0.25s;
+}
+
+/* Animación de pulso tipo ola para estadísticas */
+.pulso-ola-1 {
+  animation: pulso-ola 3s ease-in-out infinite;
+  animation-delay: 0s;
+}
+
+.pulso-ola-2 {
+  animation: pulso-ola 3s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.pulso-ola-3 {
+  animation: pulso-ola 3s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+.pulso-ola-4 {
+  animation: pulso-ola 3s ease-in-out infinite;
+  animation-delay: 0.9s;
+}
+
+@keyframes pulso-ola {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(251, 191, 36, 0.3));
+  }
+  50% {
+    transform: scale(1.15);
+    filter: drop-shadow(0 0 15px rgba(251, 191, 36, 0.6)) drop-shadow(0 0 25px rgba(251, 191, 36, 0.4));
+  }
+}
+</style>

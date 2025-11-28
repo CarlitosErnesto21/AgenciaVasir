@@ -355,7 +355,7 @@ const recargarDatos = async () => {
           </div>
 
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-            <FontAwesomeIcon :icon="faStore" class="mr-2 text-yellow-300" /> Productos
+            <FontAwesomeIcon :icon="faStore" class="mr-2 text-yellow-300 swing-animation" /> Productos
           </h1>
           <p class="text-base sm:text-lg text-red-100 px-4">Encuentra los mejores productos para tu viaje</p>
         </div>
@@ -440,3 +440,25 @@ const recargarDatos = async () => {
     <CarritoCompras />
   </Catalogo>
 </template>
+
+<style scoped>
+@keyframes swing {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  20% {
+    transform: rotate(8deg);
+  }
+  60% {
+    transform: rotate(-8deg);
+  }
+  80% {
+    transform: rotate(4deg);
+  }
+}
+
+.swing-animation {
+  animation: swing 2.5s ease-in-out infinite;
+  transform-origin: top center;
+}
+</style>

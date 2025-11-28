@@ -508,7 +508,7 @@ const verMasInfo = (tour) => {
       <!-- Header con gradiente -->
       <div class="bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
-           <FontAwesomeIcon :icon="faGlobeAmericas" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400 drop-shadow-lg" />
+           <FontAwesomeIcon :icon="faGlobeAmericas" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400 drop-shadow-lg rotacion-globo" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Tours Internacionales
           </h1>
@@ -922,5 +922,58 @@ const verMasInfo = (tour) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Animación de rotación del globo */
+.rotacion-globo {
+  animation: rotacion-globo 8s linear infinite;
+}
+
+@keyframes rotacion-globo {
+  0% {
+    transform: rotate(0deg) scale(1);
+    color: #fde047;
+    filter: drop-shadow(0 4px 6px rgba(253, 224, 71, 0.4));
+  }
+  12.5% {
+    transform: rotate(45deg) scale(1.05);
+    color: #a7f3d0;
+    filter: drop-shadow(2px 2px 8px rgba(167, 243, 208, 0.5));
+  }
+  25% {
+    transform: rotate(90deg) scale(1.1);
+    color: #93c5fd;
+    filter: drop-shadow(4px 0px 10px rgba(147, 197, 253, 0.6));
+  }
+  37.5% {
+    transform: rotate(135deg) scale(1.05);
+    color: #c4b5fd;
+    filter: drop-shadow(2px -2px 8px rgba(196, 181, 253, 0.5));
+  }
+  50% {
+    transform: rotate(180deg) scale(1);
+    color: #fca5a5;
+    filter: drop-shadow(0px -4px 6px rgba(252, 165, 165, 0.4));
+  }
+  62.5% {
+    transform: rotate(225deg) scale(1.05);
+    color: #fdba74;
+    filter: drop-shadow(-2px -2px 8px rgba(253, 186, 116, 0.5));
+  }
+  75% {
+    transform: rotate(270deg) scale(1.1);
+    color: #67e8f9;
+    filter: drop-shadow(-4px 0px 10px rgba(103, 232, 249, 0.6));
+  }
+  87.5% {
+    transform: rotate(315deg) scale(1.05);
+    color: #bef264;
+    filter: drop-shadow(-2px 2px 8px rgba(190, 242, 100, 0.5));
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    color: #fde047;
+    filter: drop-shadow(0 4px 6px rgba(253, 224, 71, 0.4));
+  }
 }
 </style>

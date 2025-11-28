@@ -51,7 +51,7 @@ watch(() => carritoStore.triggerAnimation, () => {
       title="Ver carrito de compras"
     >
       <!-- Icono del carrito -->
-      <div class="carrito-icon">
+      <div class="carrito-icon vibra-y-rueda">
         <FontAwesomeIcon :icon="faShoppingCart" />
       </div>
 
@@ -243,6 +243,161 @@ watch(() => carritoStore.triggerAnimation, () => {
   100% {
     transform: scale(0);
     opacity: 0;
+  }
+}
+
+/* Animación vibra y rueda para el icono del carrito */
+.vibra-y-rueda {
+  animation: vibra-y-rueda 7s infinite;
+}
+
+/* Animación del botón cuando el carrito regresa */
+.carrito-button {
+  animation: boton-transformacion 7s infinite;
+}
+
+@keyframes vibra-y-rueda {
+  0% {
+    transform: translateX(0);
+  }
+  /* Pausa inicial */
+  12% {
+    transform: translateX(0);
+  }
+  /* Sale empujado hacia la derecha (desaparece) */
+  14% {
+    transform: translateX(10px);
+    opacity: 1;
+  }
+  16% {
+    transform: translateX(30px);
+    opacity: 1;
+  }
+  17% {
+    transform: translateX(50px);
+    opacity: 0.3;
+  }
+  18% {
+    transform: translateX(60px);
+    opacity: 0;
+  }
+  /* Momento invisible mientras "da la vuelta" */
+  20% {
+    transform: translateX(-60px);
+    opacity: 0;
+  }
+  /* Reaparece desde la izquierda */
+  21% {
+    transform: translateX(-50px);
+    opacity: 0.3;
+  }
+  22% {
+    transform: translateX(-30px);
+    opacity: 0.7;
+  }
+  24% {
+    transform: translateX(-15px);
+    opacity: 0.8;
+  }
+  28% {
+    transform: translateX(-5px);
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  /* Vibración cuando llega (después del portal) */
+  32%, 34%, 36%, 38%, 40% {
+    transform: translateX(-3px);
+    opacity: 1;
+  }
+  33%, 35%, 37%, 39% {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  42% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  /* Pausa larga de 4 segundos */
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Animación del botón - portal que se abre */
+@keyframes boton-transformacion {
+  0% {
+    transform: rotate(0deg) scale(1);
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+  /* Mantiene estado normal mientras carrito sale */
+  24% {
+    transform: rotate(0deg) scale(1);
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+  /* Portal empieza a abrirse - giro fluido */
+  25% {
+    transform: rotate(30deg) scale(1.05);
+    background: linear-gradient(135deg, #3b82f6 20%, #1e40af 80%);
+    box-shadow: 0 5px 18px rgba(59, 130, 246, 0.35);
+  }
+  26% {
+    transform: rotate(120deg) scale(1.15);
+    background: linear-gradient(135deg, #1e40af 0%, #10b981 100%);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+  }
+  27% {
+    transform: rotate(200deg) scale(1.25);
+    background: linear-gradient(135deg, #1e40af 30%, #10b981 70%);
+    box-shadow: 0 7px 23px rgba(16, 185, 129, 0.45);
+  }
+  28% {
+    transform: rotate(250deg) scale(1.3);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  }
+  /* Portal completamente abierto */
+  30% {
+    transform: rotate(300deg) scale(1.3);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.6), 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+  /* Portal empieza a cerrarse - continúa girando fluidamente */
+  31% {
+    transform: rotate(340deg) scale(1.25);
+    background: linear-gradient(135deg, #059669 30%, #1e40af 70%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  }
+  32% {
+    transform: rotate(360deg) scale(1.2);
+    background: linear-gradient(135deg, #059669 0%, #1e40af 100%);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+  }
+  34% {
+    transform: rotate(360deg) scale(1.1);
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+  }
+  36% {
+    transform: rotate(360deg) scale(1.05);
+    background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+  /* Regresa al tamaño normal y pausa larga de 4 segundos */
+  43% {
+    transform: rotate(360deg) scale(1);
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+    box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3);
   }
 }
 

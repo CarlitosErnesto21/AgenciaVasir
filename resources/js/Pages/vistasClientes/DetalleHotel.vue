@@ -134,7 +134,7 @@
                 <div class="text-center">
                   <button
                     @click="contactarHotel"
-                    class="group inline-flex items-center justify-center gap-3 font-bold py-4 px-10 rounded-xl transition-all duration-300 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1"
+                    class="group inline-flex items-center justify-center gap-3 font-bold py-4 px-10 rounded-xl transition-all duration-300 text-lg bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-xl hover:shadow-2xl transform hover:scale-105 hover:-translate-y-1 pulse-scale-whatsapp"
                   >
                     <FontAwesomeIcon :icon="faWhatsapp" class="w-6 h-6 group-hover:animate-pulse"/>
                     <span>Contactar por WhatsApp</span>
@@ -311,3 +311,18 @@ const regresar = () => {
   router.visit('/reservaciones')
 }
 </script>
+
+<style scoped>
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.pulse-scale-whatsapp {
+  animation: pulse-scale 2.3s ease-in-out infinite;
+}
+</style>

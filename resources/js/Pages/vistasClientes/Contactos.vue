@@ -227,7 +227,7 @@ const faqsFiltradas = computed(() => {
     <!-- Header Professional - Ancho completo de la pantalla -->
     <div class="w-full bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6 mt-20 md:mt-24 lg:mt-28 xl:mt-28 mb-6 sm:mb-8 shadow-xl">
       <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
-        <FontAwesomeIcon :icon="faPhone" class="text-yellow-300 mr-2" />
+        <FontAwesomeIcon :icon="faPhone" class="text-yellow-300 mr-2 vibrate-animation" />
         Contáctanos</h1>
       <p class="text-base sm:text-lg text-red-100 px-4">¿Tienes dudas? ¡Estamos aquí para ayudarte!</p>
     </div>
@@ -266,11 +266,11 @@ const faqsFiltradas = computed(() => {
 
               <!-- Lista de FAQs por categoría - completamente responsiva -->
               <div class="space-y-3 sm:space-y-4 md:space-y-6">
-                <div v-for="categoria in faqsFiltradas" :key="categoria.categoria" class="space-y-2 sm:space-y-3 md:space-y-4">
+                <div v-for="(categoria, index) in faqsFiltradas" :key="categoria.categoria" class="space-y-2 sm:space-y-3 md:space-y-4">
                   <!-- Título de categoría responsivo -->
                   <h3 class="text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-red-600 to-blue-600 bg-clip-text text-transparent border-b-2 border-red-200 pb-1 sm:pb-2 md:pb-3 flex items-center gap-2">
                     <template v-if="typeof categoria.categoria === 'object' && categoria.categoria.icono">
-                      <FontAwesomeIcon :icon="categoria.categoria.icono" class="text-blue-700" />
+                      <FontAwesomeIcon :icon="categoria.categoria.icono" :class="`text-blue-700 bounce-animation-${(index % 4) + 1}`" />
                       <span>{{ categoria.categoria.texto }}</span>
                     </template>
                     <template v-else>
@@ -338,7 +338,7 @@ const faqsFiltradas = computed(() => {
                 <!-- WhatsApp -->
                 <button
                   @click="abrirWhatsApp('general')"
-                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg sm:rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
+                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg sm:rounded-xl hover:from-green-100 hover:to-green-200 hover:border-green-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer pulse-scale-whatsapp"
                 >
                   <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faWhatsapp" class="text-white text-base sm:text-2xl"/>
@@ -346,7 +346,7 @@ const faqsFiltradas = computed(() => {
                   </div>
                   <div class="flex-1 text-left">
                     <p class="font-bold text-green-700 text-sm sm:text-base">WhatsApp</p>
-                    <p class="text-xs sm:text-sm text-green-600">Respuesta inmediata</p>
+                    <p class="text-xs sm:text-sm text-green-600">Clic para chatear</p>
                   </div>
                   <div class="text-green-600 opacity-75 group-hover:opacity-100 transition-opacity">
                     <FontAwesomeIcon :icon="faArrowRight" class="text-green-600"/>
@@ -356,7 +356,7 @@ const faqsFiltradas = computed(() => {
                 <!-- Email -->
                 <button
                   @click="abrirEmail()"
-                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg sm:rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer"
+                  class="w-full flex items-center p-3 sm:p-4 md:p-5 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg sm:rounded-xl hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 shadow-md sm:shadow-lg hover:shadow-xl transform hover:-translate-y-1 group cursor-pointer pulse-scale-email"
                 >
                   <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center mr-3 sm:mr-4 shadow-lg group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faEnvelope" class="text-white text-base sm:text-xl"/>
@@ -409,3 +409,70 @@ const faqsFiltradas = computed(() => {
     </div>
   </Catalogo>
 </template>
+
+<style scoped>
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.pulse-scale-whatsapp {
+  animation: pulse-scale 2.5s ease-in-out infinite;
+}
+
+.pulse-scale-email {
+  animation: pulse-scale 2.5s ease-in-out infinite;
+  animation-delay: 1.25s;
+}
+
+@keyframes bounce-icon {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-8px);
+  }
+  60% {
+    transform: translateY(-4px);
+  }
+}
+
+.bounce-animation-1 {
+  animation: bounce-icon 1.8s ease-in-out infinite;
+}
+
+.bounce-animation-2 {
+  animation: bounce-icon 1.8s ease-in-out infinite;
+  animation-delay: 0.3s;
+}
+
+.bounce-animation-3 {
+  animation: bounce-icon 1.8s ease-in-out infinite;
+  animation-delay: 0.6s;
+}
+
+.bounce-animation-4 {
+  animation: bounce-icon 1.8s ease-in-out infinite;
+  animation-delay: 0.9s;
+}
+
+@keyframes vibrate {
+  0%, 70%, 100% {
+    transform: translateX(0);
+  }
+  72%, 76%, 80% {
+    transform: translateX(-4px);
+  }
+  74%, 78%, 82% {
+    transform: translateX(4px);
+  }
+}
+
+.vibrate-animation {
+  animation: vibrate 2.5s ease-in-out infinite;
+}
+</style>

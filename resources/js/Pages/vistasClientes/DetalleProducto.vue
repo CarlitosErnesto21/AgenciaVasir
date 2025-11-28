@@ -185,10 +185,10 @@
                   @click="comprarProducto"
                   :disabled="(producto.stock_actual || 0) === 0"
                   :class="[
-                    'w-full font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base flex items-center justify-center gap-2',
+                    'w-3/4 mx-auto font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 text-sm sm:text-base flex items-center justify-center gap-2 shadow-lg hover:shadow-xl',
                     (producto.stock_actual || 0) === 0
-                      ? 'bg-gray-400 text-white cursor-not-allowed'
-                      : 'bg-red-600 hover:bg-red-700 text-white'
+                      ? 'bg-gradient-to-r from-gray-300 via-gray-400 to-gray-600 text-white cursor-not-allowed opacity-60'
+                      : 'bg-gradient-to-r from-red-400 via-red-500 to-red-800 hover:from-red-500 hover:via-red-600 hover:to-red-900 text-white transform hover:scale-105 pulse-scale-carrito'
                   ]"
                 >
                   <template v-if="(producto.stock_actual || 0) === 0">
@@ -471,3 +471,53 @@ onUnmounted(() => {
   detenerCarrusel()
 })
 </script>
+
+<style scoped>
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.pulse-scale-carrito {
+  animation: pulse-scale 2.5s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-scale-carrito::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  z-index: 10;
+  pointer-events: none;
+  transform: skewX(-20deg);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pulse-scale-carrito:hover::after {
+  animation: shine 1.5s ease-in-out;
+}
+</style>

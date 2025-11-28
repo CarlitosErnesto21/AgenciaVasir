@@ -187,12 +187,12 @@
                   @click="reservarTour"
                   :disabled="esTourCompleto(tour)"
                   :class="[
-                    'w-full font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-colors duration-200 text-sm sm:text-base',
+                    'w-3/4 mx-auto block font-semibold py-2 sm:py-3 px-4 sm:px-6 rounded-lg transition-all duration-300 text-sm sm:text-base shadow-lg hover:shadow-xl',
                     esTourCompleto(tour)
-                      ? 'bg-gray-400 text-white cursor-not-allowed opacity-60'
+                      ? 'bg-gradient-to-r from-gray-300 via-gray-400 to-gray-600 text-white cursor-not-allowed opacity-60'
                       : tipo === 'nacional'
-                        ? 'bg-red-600 hover:bg-red-700 text-white transform hover:scale-105'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white transform hover:scale-105'
+                        ? 'bg-gradient-to-r from-red-400 via-red-500 to-red-800 hover:from-red-500 hover:via-red-600 hover:to-red-900 text-white transform hover:scale-105 pulse-scale-tour'
+                        : 'bg-gradient-to-r from-blue-400 via-blue-500 to-blue-800 hover:from-blue-500 hover:via-blue-600 hover:to-blue-900 text-white transform hover:scale-105 pulse-scale-tour'
                   ]"
                 >
                   {{ esTourCompleto(tour) ? (tour.estado === 'EN_CURSO' ? 'Tour en Curso' : 'Tour Completo - Sin Cupos') : 'Reservar Tour' }}
@@ -711,3 +711,53 @@ const regresar = () => {
   router.visit(ruta)
 }
 </script>
+
+<style scoped>
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes shine {
+  0% {
+    left: -100%;
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    left: 100%;
+    opacity: 0;
+  }
+}
+
+.pulse-scale-tour {
+  animation: pulse-scale 2.8s ease-in-out infinite;
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-scale-tour::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  z-index: 10;
+  pointer-events: none;
+  transform: skewX(-20deg);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.pulse-scale-tour:hover::after {
+  animation: shine 1.5s ease-in-out;
+}
+</style>

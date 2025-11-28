@@ -494,7 +494,7 @@ const verMasInfo = (tour) => {
       <div class="bg-gradient-to-r from-red-500 via-blue-600 to-blue-600 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
           <!-- <img src="/images/sv.png" alt="Bandera El Salvador" class="w-8 h-8 sm:w-12 sm:h-12 shadow-lg rounded-full border-2 border-white/30" /> -->
-          <FontAwesomeIcon :icon="faVolcano" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 drop-shadow-lg" />
+          <FontAwesomeIcon :icon="faVolcano" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 drop-shadow-lg erupcion-volcan" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Tours Nacionales
           </h1>
@@ -909,5 +909,85 @@ const verMasInfo = (tour) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Animación de erupción volcánica */
+.erupcion-volcan {
+  animation: erupcion-volcan 4s infinite;
+}
+
+@keyframes erupcion-volcan {
+  0% {
+    transform: scale(1) rotate(0deg);
+    color: #fcd34d;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
+  /* Temblor previo a la erupción */
+  10%, 12%, 14%, 16%, 18% {
+    transform: scale(1.02) rotate(-1deg);
+    color: #f59e0b;
+  }
+  11%, 13%, 15%, 17% {
+    transform: scale(1.02) rotate(1deg);
+    color: #f59e0b;
+  }
+  20% {
+    transform: scale(1) rotate(0deg);
+    color: #fcd34d;
+  }
+  /* Erupción intensa */
+  25% {
+    transform: scale(1.15) rotate(-2deg);
+    color: #ef4444;
+    filter: drop-shadow(0 6px 20px rgba(239, 68, 68, 0.6)) drop-shadow(0 0 15px rgba(251, 146, 60, 0.8));
+  }
+  30% {
+    transform: scale(1.2) rotate(2deg);
+    color: #dc2626;
+    filter: drop-shadow(0 8px 25px rgba(220, 38, 38, 0.7)) drop-shadow(0 0 20px rgba(251, 146, 60, 0.9));
+  }
+  35% {
+    transform: scale(1.25) rotate(-1deg);
+    color: #b91c1c;
+    filter: drop-shadow(0 10px 30px rgba(185, 28, 28, 0.8)) drop-shadow(0 0 25px rgba(251, 146, 60, 1));
+  }
+  /* Pico de erupción */
+  40% {
+    transform: scale(1.3) rotate(0deg);
+    color: #991b1b;
+    filter: drop-shadow(0 12px 35px rgba(153, 27, 27, 0.9)) drop-shadow(0 0 30px rgba(251, 146, 60, 1)) drop-shadow(0 0 15px rgba(255, 255, 255, 0.5));
+  }
+  /* Enfriamiento gradual */
+  50% {
+    transform: scale(1.2) rotate(1deg);
+    color: #dc2626;
+    filter: drop-shadow(0 8px 25px rgba(220, 38, 38, 0.7)) drop-shadow(0 0 20px rgba(251, 146, 60, 0.8));
+  }
+  60% {
+    transform: scale(1.1) rotate(-0.5deg);
+    color: #ef4444;
+    filter: drop-shadow(0 6px 20px rgba(239, 68, 68, 0.5)) drop-shadow(0 0 15px rgba(251, 146, 60, 0.6));
+  }
+  70% {
+    transform: scale(1.05) rotate(0deg);
+    color: #f59e0b;
+    filter: drop-shadow(0 4px 15px rgba(245, 158, 11, 0.4));
+  }
+  80% {
+    transform: scale(1.02) rotate(0deg);
+    color: #fbbf24;
+    filter: drop-shadow(0 4px 10px rgba(251, 191, 36, 0.3));
+  }
+  /* Vuelta al estado normal */
+  90% {
+    transform: scale(1.01) rotate(0deg);
+    color: #fcd34d;
+    filter: drop-shadow(0 4px 8px rgba(252, 211, 77, 0.2));
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    color: #fcd34d;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+  }
 }
 </style>s

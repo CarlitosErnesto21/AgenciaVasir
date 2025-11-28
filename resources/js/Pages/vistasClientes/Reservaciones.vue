@@ -405,7 +405,7 @@ const irAImagen = (index) => {
       <!-- Header con gradiente -->
       <div class="bg-gradient-to-r from-blue-600 via-blue-600 to-red-500 text-white text-center py-4 sm:py-6">
         <div class="flex items-center justify-center gap-3 mb-1">
-          <FontAwesomeIcon :icon="faHotel" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 shadow-lg" />
+          <FontAwesomeIcon :icon="faHotel" class="w-8 h-8 sm:w-12 sm:h-12 text-yellow-300 shadow-lg vibracion-hotel" />
           <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold mb-2">
             Hoteles y Boletos Aéreos
           </h1>
@@ -777,7 +777,7 @@ const irAImagen = (index) => {
               <button
                 @click="abrirWhatsApp('aerolíneas')"
                 type="button"
-                class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 sm:px-6 md:px-8 py-2 mt-4 sm:mt-11 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 group cursor-pointer"
+                class="inline-flex items-center justify-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-4 sm:px-6 md:px-8 py-2 mt-4 sm:mt-11 rounded-lg sm:rounded-xl font-semibold text-sm sm:text-base transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-2 group cursor-pointer pulse-scale-whatsapp"
               >
                 <span>¿Necesitas información?</span>
                 <span class="px-2 py-2 rounded-full">
@@ -802,26 +802,26 @@ const irAImagen = (index) => {
             <!-- Contenido -->
             <div class="p-2 md:p-8">
               <div class="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-8">
-                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200">
-                  <div class="text-blue-600 mb-3">
+                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl border border-blue-200 hover:shadow-xl hover:scale-105 hover:bg-gradient-to-br hover:from-blue-100 hover:to-blue-200 hover:border-blue-300 transition-all duration-300 cursor-pointer group">
+                  <div class="text-blue-600 mb-3 group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faCheckCircle" class="text-3xl md:text-4xl" />
                   </div>
-                  <h3 class="font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2 text-lg">Hoteles Verificados</h3>
-                  <p class="text-gray-600 text-sm leading-relaxed">Todos nuestros hoteles están verificados y seleccionados cuidadosamente</p>
+                  <h3 class="font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent mb-2 text-lg group-hover:from-blue-700 group-hover:to-blue-800">Hoteles Verificados</h3>
+                  <p class="text-gray-600 text-sm leading-relaxed group-hover:text-gray-700">Todos nuestros hoteles están verificados y seleccionados cuidadosamente</p>
                 </div>
-                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200">
-                  <div class="text-purple-600 mb-3">
+                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl border border-purple-200 hover:shadow-xl hover:scale-105 hover:bg-gradient-to-br hover:from-purple-100 hover:to-purple-200 hover:border-purple-300 transition-all duration-300 cursor-pointer group">
+                  <div class="text-purple-600 mb-3 group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faUser" class="text-3xl md:text-4xl" />
                   </div>
-                  <h3 class="font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2 text-lg">Atención Personalizada</h3>
-                  <p class="text-gray-600 text-sm leading-relaxed">Te asesoramos personalmente para encontrar el alojamiento perfecto</p>
+                  <h3 class="font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent mb-2 text-lg group-hover:from-purple-700 group-hover:to-purple-800">Atención Personalizada</h3>
+                  <p class="text-gray-600 text-sm leading-relaxed group-hover:text-gray-700">Te asesoramos personalmente para encontrar el alojamiento perfecto</p>
                 </div>
-                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200">
-                  <div class="text-red-600 mb-3">
+                <div class="text-center p-2 md:p-6 bg-gradient-to-br from-red-50 to-red-100 rounded-xl border border-red-200 hover:shadow-xl hover:scale-105 hover:bg-gradient-to-br hover:from-red-100 hover:to-red-200 hover:border-red-300 transition-all duration-300 cursor-pointer group">
+                  <div class="text-red-600 mb-3 group-hover:scale-110 transition-transform duration-300">
                     <FontAwesomeIcon :icon="faZap" class="text-3xl md:text-4xl" />
                   </div>
-                  <h3 class="font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2 text-lg">Respuesta Rápida</h3>
-                  <p class="text-gray-600 text-sm leading-relaxed">Respuesta inmediata por WhatsApp y email para tus consultas</p>
+                  <h3 class="font-bold bg-gradient-to-r from-red-600 to-red-700 bg-clip-text text-transparent mb-2 text-lg group-hover:from-red-700 group-hover:to-red-800">Respuesta Rápida</h3>
+                  <p class="text-gray-600 text-sm leading-relaxed group-hover:text-gray-700">Respuesta inmediata por WhatsApp y email para tus consultas</p>
                 </div>
               </div>
             </div>
@@ -941,5 +941,51 @@ const irAImagen = (index) => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+@keyframes pulse-scale {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.pulse-scale-whatsapp {
+  animation: pulse-scale 2.5s ease-in-out infinite;
+}
+
+/* Animación de vibración/caminata del hotel */
+.vibracion-hotel {
+  animation: vibracion-hotel 3s infinite;
+}
+
+@keyframes vibracion-hotel {
+  0% {
+    transform: translateY(0);
+  }
+  /* Trote rápido */
+  5%, 15%, 25%, 35%, 45% {
+    transform: translateY(-3px);
+  }
+  10%, 20%, 30%, 40%, 50% {
+    transform: translateY(0);
+  }
+  /* Pausa */
+  65% {
+    transform: translateY(0);
+  }
+  /* Trote más suave */
+  70%, 80%, 90% {
+    transform: translateY(-2px);
+  }
+  75%, 85%, 95% {
+    transform: translateY(0);
+  }
+  /* Vuelta al reposo */
+  100% {
+    transform: translateY(0);
+  }
 }
 </style>
