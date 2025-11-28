@@ -91,26 +91,19 @@ Gracias.`;
 
         <!-- ✅ Contenedor principal responsive -->
         <div class="w-full max-w-sm sm:max-w-md lg:max-w-lg xl:max-w-xl">
-            <!-- ✅ Logo centrado responsive -->
-            <div class="flex justify-center mb-6 sm:mb-8">
-                <Link href="/">
-                    <img
-                        src="/images/logo.png"
-                        alt="VASIR Logo"
-                        class="h-8 sm:h-10 lg:h-12 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
-                        title="Ir al inicio"
-                    />
-                </Link>
-            </div>
-
             <!-- ✅ Tarjeta principal responsive -->
             <div class="bg-white rounded-xl sm:rounded-2xl shadow-lg sm:shadow-xl p-6 sm:p-8 lg:p-10 border border-gray-100">
-                <!-- ✅ Título con icono responsive -->
+                <!-- ✅ Título con logo responsive -->
                 <div class="text-center mb-4 sm:mb-6">
-                    <div class="mx-auto w-12 h-12 sm:w-14 sm:h-14 lg:w-16 lg:h-16 bg-red-100 rounded-full flex items-center justify-center mb-3 sm:mb-4">
-                        <svg class="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
-                        </svg>
+                    <div class="flex justify-center mb-3 sm:mb-4">
+                        <Link href="/">
+                            <img
+                                src="/images/logo.png"
+                                alt="VASIR Logo"
+                                class="h-12 sm:h-14 lg:h-16 w-auto cursor-pointer hover:scale-105 transition-transform duration-200"
+                                title="Ir al inicio"
+                            />
+                        </Link>
                     </div>
                     <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">
                         Verificación de Email
