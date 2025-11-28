@@ -601,9 +601,10 @@ class InformePDFController extends Controller
             $cliente = $user->cliente;
             if (!$cliente) {
                 return response()->json([
-                    'error' => true,
-                    'message' => 'Información de cliente no encontrada.'
-                ], 404);
+                    'success' => false,
+                    'message' => 'Tu perfil de cliente necesita ser configurado. Por favor completa tu información de perfil primero.',
+                    'type' => 'warning'
+                ], 200);
             }
 
             // Obtener todas las reservas del cliente
@@ -611,6 +612,15 @@ class InformePDFController extends Controller
                 ->with(['empleado.user', 'detallesTours.tour'])
                 ->orderBy('fecha', 'desc')
                 ->get();
+
+            // Verificar si el cliente tiene reservas
+            if ($reservas->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes reservaciones registradas aún. Cuando realices tu primera reservación, podrás descargar tu informe aquí.',
+                    'type' => 'info'
+                ], 200);
+            }
 
             // Procesar datos de reservas
             $reservasData = $reservas->map(function($reserva) {
@@ -735,9 +745,10 @@ class InformePDFController extends Controller
             $cliente = $user->cliente;
             if (!$cliente) {
                 return response()->json([
-                    'error' => true,
-                    'message' => 'Información de cliente no encontrada.'
-                ], 404);
+                    'success' => false,
+                    'message' => 'Tu perfil de cliente necesita ser configurado. Por favor completa tu información de perfil primero.',
+                    'type' => 'warning'
+                ], 200);
             }
 
             // Obtener todas las ventas del cliente
@@ -745,6 +756,15 @@ class InformePDFController extends Controller
                 ->with(['detalleVentas.producto'])
                 ->orderBy('fecha', 'desc')
                 ->get();
+
+            // Verificar si el cliente tiene compras
+            if ($ventas->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No tienes compras registradas aún. Cuando realices tu primera compra en nuestra tienda, podrás descargar tu informe aquí.',
+                    'type' => 'info'
+                ], 200);
+            }
 
             // Procesar datos de ventas
             $ventasData = $ventas->map(function($venta) {

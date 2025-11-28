@@ -175,7 +175,8 @@ const solicitarInformeReservaciones = async () => {
         return;
     }
 
-    isLoadingReport.value = true;    // Toast de preparando envío
+    isLoadingReport.value = true;
+
     toast.add({
         severity: 'info',
         summary: 'Preparando envío',
@@ -190,9 +191,7 @@ const solicitarInformeReservaciones = async () => {
                 'Accept': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest'
             }
-        });
-
-        if (response.ok) {
+        });        if (response.ok) {
             const data = await response.json();
 
             if (data.success) {
@@ -208,24 +207,43 @@ const solicitarInformeReservaciones = async () => {
                     life: 6000
                 });
             } else {
+                // Manejar diferentes tipos de respuesta
+                let severity, summary;
+
+                if (data.type === 'info') {
+                    severity = 'info';
+                    summary = 'Sin reservaciones';
+                } else if (data.type === 'warning') {
+                    severity = 'warn';
+                    summary = 'Configuración requerida';
+                } else {
+                    severity = 'warn';
+                    summary = 'Aviso';
+                }
+
                 toast.add({
-                    severity: 'error',
-                    summary: 'Error en la solicitud',
+                    severity: severity,
+                    summary: summary,
                     detail: data.message || 'No se pudo procesar la solicitud del informe.',
-                    life: 6000
+                    life: 8000
                 });
             }
         } else {
-            const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));
-
-            toast.add({
+            const errorData = await response.json().catch(() => ({ message: 'Error desconocido' }));            toast.add({
                 severity: 'error',
-                summary: 'Error del servidor',
-                detail: errorData.message || 'Error interno del servidor.',
-                life: 6000
+                summary: `Error del servidor (${response.status})`,
+                detail: errorData.message || `Error ${response.status}: ${response.statusText}`,
+                life: 8000
             });
         }
     } catch (error) {
+        console.error('🚨 Error de conexión completo:', {
+            name: error.name,
+            message: error.message,
+            stack: error.stack,
+            cause: error.cause
+        });
+
         toast.add({
             severity: 'error',
             summary: 'Error de conexión',
@@ -286,11 +304,25 @@ const solicitarInformeCompras = async () => {
                     life: 6000
                 });
             } else {
+                // Manejar diferentes tipos de respuesta
+                let severity, summary;
+
+                if (data.type === 'info') {
+                    severity = 'info';
+                    summary = 'Sin compras';
+                } else if (data.type === 'warning') {
+                    severity = 'warn';
+                    summary = 'Configuración requerida';
+                } else {
+                    severity = 'warn';
+                    summary = 'Aviso';
+                }
+
                 toast.add({
-                    severity: 'error',
-                    summary: 'Error en la solicitud',
+                    severity: severity,
+                    summary: summary,
                     detail: data.message || 'No se pudo procesar la solicitud del informe.',
-                    life: 6000
+                    life: 8000
                 });
             }
         } else {
