@@ -1,8 +1,8 @@
 <script setup>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faCheck, faExclamationTriangle, faEye, faTrashCan, faXmark, faSpinner, faUsers, faPencil, faUserEdit, faEnvelope, faFileText, faUser, faDatabase, faChartLine, faDownload, faCalendarCheck, faShoppingCart, faPhone } from "@fortawesome/free-solid-svg-icons";
+import { faCheck, faExclamationTriangle, faEye, faTrashCan, faXmark, faSpinner, faUsers, faPencil, faUserEdit, faEnvelope, faFileText, faUser, faDatabase, faChartLine, faDownload, faCalendarCheck, faShoppingCart, faPhone, faCreditCard } from "@fortawesome/free-solid-svg-icons";
 import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
-import { ref, computed } from "vue";
+import { ref, computed, watch } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import Dialog from 'primevue/dialog';
 
@@ -40,6 +40,9 @@ const emit = defineEmits([
 const confirmationText = ref('');
 // Variable para el motivo de eliminación
 const deletionReason = ref('');
+// Estadísticas de eliminación
+const estadisticasEliminacion = ref(null);
+const cargandoEstadisticas = ref(false);
 
 // Funciones para manejar eventos
 const handleViewDetails = () => {
@@ -51,6 +54,49 @@ const handleViewReports = () => {
     isVisible.value = false; // Cerrar modal de más acciones
     // Navegar a la vista de informes usando Inertia SPA
     router.visit('/generar-informes');
+};
+
+// Cargar estadísticas de eliminación
+const cargarEstadisticasEliminacion = async () => {
+    if (!props.cliente) return;
+    
+    cargandoEstadisticas.value = true;
+    try {
+        const identificador = props.cliente.id || props.cliente.user_id;
+        const response = await fetch(`/api/clientes/${identificador}/estadisticas-eliminacion`, {
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            }
+        });
+
+        const result = await response.json();
+        
+        if (response.ok && result.success) {
+            estadisticasEliminacion.value = result.estadisticas;
+        } else {
+            // En caso de error, usar valores por defecto
+            estadisticasEliminacion.value = {
+                reservas_count: 0,
+                ventas_count: 0,
+                pagos_reservas_count: 0,
+                pagos_ventas_count: 0,
+                total_pagos_count: 0
+            };
+        }
+    } catch (error) {
+        console.error('Error cargando estadísticas:', error);
+        // Usar valores por defecto
+        estadisticasEliminacion.value = {
+            reservas_count: 0,
+            ventas_count: 0,
+            pagos_reservas_count: 0,
+            pagos_ventas_count: 0,
+            total_pagos_count: 0
+        };
+    } finally {
+        cargandoEstadisticas.value = false;
+    }
 };
 
 const handleToggleStatus = () => {
@@ -133,6 +179,16 @@ const updateUnsavedChangesVisible = (value) => {
 const updateDetallesVisible = (value) => {
     emit('update:detalles-visible', value);
 };
+
+// Watcher para cargar estadísticas cuando se abre el modal de eliminación
+watch(() => props.deleteVisible, (newValue) => {
+    if (newValue && props.cliente) {
+        cargarEstadisticasEliminacion();
+        // Reset form values
+        confirmationText.value = '';
+        deletionReason.value = '';
+    }
+});
 </script>
 
 <template>
@@ -235,18 +291,38 @@ const updateDetallesVisible = (value) => {
                         Al eliminar este cliente se eliminarán <strong>PERMANENTEMENTE</strong>:
                     </p>
 
-                    <ul class="space-y-1 sm:space-y-2 text-red-700">
+                    <!-- Estadísticas específicas -->
+                    <div v-if="cargandoEstadisticas" class="flex items-center justify-center py-4">
+                        <FontAwesomeIcon :icon="faSpinner" class="h-5 w-5 animate-spin text-red-600 mr-2" />
+                        <span class="text-red-700 text-sm">Calculando impacto...</span>
+                    </div>
+                    
+                    <ul v-else class="space-y-1 sm:space-y-2 text-red-700">
                         <li class="flex items-start gap-2 text-xs sm:text-sm">
                             <FontAwesomeIcon :icon="faUser" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
                             <span>Su cuenta de usuario completa</span>
                         </li>
                         <li class="flex items-start gap-2 text-xs sm:text-sm">
                             <FontAwesomeIcon :icon="faCalendarCheck" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                            <span>Todas sus reservas (activas e históricas)</span>
+                            <span>
+                                {{ estadisticasEliminacion?.reservas_count || 0 }} reserva(s)
+                                <span v-if="estadisticasEliminacion?.reservas_count > 0" class="font-semibold">(activas e históricas)</span>
+                            </span>
                         </li>
                         <li class="flex items-start gap-2 text-xs sm:text-sm">
                             <FontAwesomeIcon :icon="faShoppingCart" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
-                            <span>Todas sus ventas y transacciones</span>
+                            <span>
+                                {{ estadisticasEliminacion?.ventas_count || 0 }} venta(s) y transacciones
+                            </span>
+                        </li>
+                        <li class="flex items-start gap-2 text-xs sm:text-sm">
+                            <FontAwesomeIcon :icon="faCreditCard" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
+                            <span>
+                                <strong>{{ estadisticasEliminacion?.total_pagos_count || 0 }} pago(s) total</strong>
+                                <span v-if="estadisticasEliminacion && (estadisticasEliminacion.pagos_reservas_count > 0 || estadisticasEliminacion.pagos_ventas_count > 0)" class="block text-xs mt-1 ml-5">
+                                    {{ estadisticasEliminacion.pagos_reservas_count }} de reservas, {{ estadisticasEliminacion.pagos_ventas_count }} de ventas
+                                </span>
+                            </span>
                         </li>
                         <li class="flex items-start gap-2 text-xs sm:text-sm">
                             <FontAwesomeIcon :icon="faDatabase" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
@@ -272,6 +348,21 @@ const updateDetallesVisible = (value) => {
                             <FontAwesomeIcon :icon="faChartLine" class="h-3 w-3" />
                             Ir a Informes
                         </button>
+                    </div>
+
+                    <!-- Advertencia especial para pagos -->
+                    <div v-if="estadisticasEliminacion && estadisticasEliminacion.total_pagos_count > 0" class="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-200 border-l-4 border-red-600 rounded-r">
+                        <div class="flex items-start gap-2">
+                            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-red-700 mt-0.5 flex-shrink-0" />
+                            <div>
+                                <p class="text-red-900 font-bold text-xs sm:text-sm">
+                                    ¡CUIDADO! Este cliente tiene {{ estadisticasEliminacion.total_pagos_count }} pago(s) registrado(s)
+                                </p>
+                                <p class="text-red-800 text-xs mt-1">
+                                    Al eliminarlo se perderá el historial completo de transacciones y pagos. Esta información no se puede recuperar.
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div class="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-100 border border-red-200 rounded">

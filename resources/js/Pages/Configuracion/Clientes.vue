@@ -306,11 +306,34 @@ const deleteCliente = async (deletionReason) => {
         const result = await response.json();
 
         if (response.ok) {
+            const reservasCount = result.info?.reservas_count || 0;
+            const ventasCount = result.info?.ventas_count || 0;
+            const pagosReservasCount = result.info?.pagos_reservas_count || 0;
+            const pagosVentasCount = result.info?.pagos_ventas_count || 0;
+            const totalPagosCount = result.info?.total_pagos_count || 0;
+
+            let detailMessage = `Cliente eliminado correctamente. Se eliminaron:\n`;
+            detailMessage += `• ${reservasCount} reserva(s)\n`;
+            detailMessage += `• ${ventasCount} venta(s)\n`;
+
+            if (totalPagosCount > 0) {
+                detailMessage += `• ${totalPagosCount} pago(s) total`;
+                if (pagosReservasCount > 0 && pagosVentasCount > 0) {
+                    detailMessage += ` (${pagosReservasCount} de reservas, ${pagosVentasCount} de ventas)`;
+                } else if (pagosReservasCount > 0) {
+                    detailMessage += ` (todos de reservas)`;
+                } else if (pagosVentasCount > 0) {
+                    detailMessage += ` (todos de ventas)`;
+                }
+            } else {
+                detailMessage += `• Sin pagos asociados`;
+            }
+
             toast.add({
                 severity: 'success',
-                summary: 'Cliente eliminado',
-                detail: `Cliente eliminado correctamente. Se eliminaron ${result.info?.reservas_count || 0} reservas y ${result.info?.ventas_count || 0} ventas asociadas.`,
-                life: 5000
+                summary: 'Cliente eliminado correctamente',
+                detail: detailMessage,
+                life: 6000
             });
 
             // Recargar la página para actualizar la lista de clientes

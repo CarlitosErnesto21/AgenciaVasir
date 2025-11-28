@@ -174,6 +174,7 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [ClienteController::class, 'store']);
             Route::get('/{cliente}', [ClienteController::class, 'show']);
             Route::put('/{cliente}', [ClienteController::class, 'update']);
+            Route::get('/{cliente}/estadisticas-eliminacion', [ClienteController::class, 'getEstadisticasEliminacion']);
             Route::delete('/{cliente}', [ClienteController::class, 'destroy']);
             Route::patch('/{cliente}/toggle-status', [ClienteController::class, 'toggleStatus']);
             Route::get('/tipos-documento-options', [ClienteController::class, 'getTiposDocumento']);

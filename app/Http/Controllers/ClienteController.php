@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\AccountDeletedByAdminMail;
+use App\Models\Empleado;
 use Inertia\Inertia;
 
 class ClienteController extends Controller
@@ -410,7 +411,7 @@ class ClienteController extends Controller
         }
 
         // Validar que el teléfono no exista en la tabla empleados
-        $existeTelefonoEmpleado = \App\Models\Empleado::where('telefono', $validated['telefono'])->first();
+        $existeTelefonoEmpleado = Empleado::where('telefono', $validated['telefono'])->first();
         if ($existeTelefonoEmpleado) {
             return response()->json([
                 'success' => false,
@@ -420,6 +421,64 @@ class ClienteController extends Controller
 
         $cliente->update($validated);
         return response()->json($cliente);
+    }
+
+    // Obtener estadísticas de eliminación antes de eliminar el cliente
+    public function getEstadisticasEliminacion($id)
+    {
+        try {
+            // Buscar cliente por ID o usuario por ID
+            $user = null;
+            $cliente = null;
+
+            if ($id) {
+                // Intentar encontrar cliente por ID
+                $cliente = Cliente::with(['user', 'reservas.pagos', 'ventas.pagos'])->find($id);
+
+                if ($cliente) {
+                    $user = $cliente->user;
+                } else {
+                    // Si no se encuentra cliente, buscar usuario directamente con rol Cliente
+                    $user = User::whereHas('roles', function($query) {
+                        $query->where('name', 'Cliente');
+                    })->with(['cliente.reservas.pagos', 'cliente.ventas.pagos'])->find($id);
+
+                    $cliente = $user ? $user->cliente : null;
+                }
+            }
+
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Usuario no encontrado'
+                ], 404);
+            }
+
+            // Obtener estadísticas
+            $estadisticas = $cliente ? $cliente->getEstadisticasEliminacion() : [
+                'reservas_count' => 0,
+                'ventas_count' => 0,
+                'pagos_reservas_count' => 0,
+                'pagos_ventas_count' => 0,
+                'total_pagos_count' => 0
+            ];
+
+            return response()->json([
+                'success' => true,
+                'estadisticas' => $estadisticas,
+                'cliente_info' => [
+                    'nombre' => $user->name,
+                    'email' => $user->email,
+                    'tiene_datos_cliente' => $cliente !== null
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     // Eliminar un usuario con rol cliente y todos sus datos relacionados
@@ -458,13 +517,19 @@ class ClienteController extends Controller
             // Obtener el motivo de eliminación del request
             $deletionReason = $request->input('deletion_reason', 'No se especificó un motivo');
 
-            // Información del usuario antes de eliminar
+            // Obtener estadísticas antes de eliminar
+            $estadisticas = $cliente ? $cliente->getEstadisticasEliminacion() : [
+                'reservas_count' => 0,
+                'ventas_count' => 0,
+                'pagos_reservas_count' => 0,
+                'pagos_ventas_count' => 0,
+                'total_pagos_count' => 0
+            ];
+
             $userInfo = [
                 'nombre' => $user->name,
                 'email' => $user->email,
-                'reservas_count' => $cliente ? $cliente->reservas->count() : 0,
-                'ventas_count' => $cliente ? $cliente->ventas->count() : 0
-            ];
+            ] + $estadisticas;
 
             // Enviar correo de notificación antes de eliminar
             try {
@@ -474,39 +539,24 @@ class ClienteController extends Controller
                 // Continuar con la eliminación aunque falle el envío del correo
             }
 
-            // Si el usuario tiene datos de cliente, eliminar datos asociados
+            // Si el usuario tiene datos de cliente, usar eliminación en cascada
             if ($cliente) {
-                // 1. Eliminar todas las reservas del cliente
-                foreach ($cliente->reservas as $reserva) {
-                    // Eliminar detalles de la reserva de tours si existen
-                    $reserva->detallesTours()->delete();
-
-                    // Eliminar la reserva
-                    $reserva->delete();
-                }
-
-                // 2. Eliminar todas las ventas del cliente
-                foreach ($cliente->ventas as $venta) {
-                    // Eliminar detalles de la venta
-                    $venta->detalleVentas()->delete();
-
-                    // Eliminar pagos asociados a la venta
-                    $venta->pagos()->delete();
-
-                    // Eliminar la venta
-                    $venta->delete();
-                }
+                // Usar el método optimizado de eliminación en cascada
+                $cliente->eliminarEnCascada();
             }
 
-            // 3. Eliminar el usuario (esto también eliminará el cliente por el evento booted si existe)
-            $user->delete();
+            // Eliminar el usuario (si no tenía datos de cliente)
+            if (!$cliente) {
+                $user->delete();
+            }
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Usuario cliente eliminado correctamente junto con todos sus datos. Se ha enviado una notificación por correo.',
+                'message' => 'Usuario cliente eliminado correctamente junto con todos sus datos asociados. Se ha enviado una notificación por correo.',
                 'info' => $userInfo,
-                'deletion_reason' => $deletionReason
+                'deletion_reason' => $deletionReason,
+                'details' => "Se eliminaron {$userInfo['reservas_count']} reservas, {$userInfo['ventas_count']} ventas y {$userInfo['total_pagos_count']} pagos en total."
             ]);
 
         } catch (\Exception $e) {
