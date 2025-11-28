@@ -539,16 +539,21 @@ class ClienteController extends Controller
                 // Continuar con la eliminación aunque falle el envío del correo
             }
 
-            // Si el usuario tiene datos de cliente, usar eliminación en cascada
+            // Si el usuario tiene datos de cliente, eliminar datos asociados primero
             if ($cliente) {
-                // Usar el método optimizado de eliminación en cascada
-                $cliente->eliminarEnCascada();
+                // Eliminar solo los datos asociados (reservas, ventas, pagos), NO el cliente
+                $cliente->eliminarEnCascada(false);
             }
 
-            // Eliminar el usuario (si no tenía datos de cliente)
-            if (!$cliente) {
-                $user->delete();
-            }
+            // Eliminar el usuario (esto también eliminará el cliente automáticamente por CASCADE)
+            $user->delete();
+            
+            Log::info('Usuario y cliente eliminados correctamente', [
+                'user_id' => $userInfo['nombre'],
+                'email' => $userInfo['email'],
+                'tenia_datos_cliente' => $cliente !== null,
+                'deletion_reason' => $deletionReason
+            ]);
 
             DB::commit();
 

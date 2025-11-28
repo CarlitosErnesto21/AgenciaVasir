@@ -312,7 +312,9 @@ const deleteCliente = async (deletionReason) => {
             const pagosVentasCount = result.info?.pagos_ventas_count || 0;
             const totalPagosCount = result.info?.total_pagos_count || 0;
 
-            let detailMessage = `Cliente eliminado correctamente. Se eliminaron:\n`;
+            let detailMessage = `Usuario y cliente eliminados completamente. Se eliminaron:\n`;
+            detailMessage += `• Cuenta de usuario completa\n`;
+            detailMessage += `• Datos del cliente\n`;
             detailMessage += `• ${reservasCount} reserva(s)\n`;
             detailMessage += `• ${ventasCount} venta(s)\n`;
 
@@ -331,7 +333,7 @@ const deleteCliente = async (deletionReason) => {
 
             toast.add({
                 severity: 'success',
-                summary: 'Cliente eliminado correctamente',
+                summary: 'Usuario eliminado completamente',
                 detail: detailMessage,
                 life: 6000
             });

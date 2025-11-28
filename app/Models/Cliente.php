@@ -42,8 +42,10 @@ class Cliente extends Model
     /**
      * Eliminar cliente con todos sus datos asociados en cascada
      * Incluye: reservas, ventas, detalles y pagos
+     * 
+     * @param bool $eliminarCliente Si debe eliminar el registro del cliente también
      */
-    public function eliminarEnCascada()
+    public function eliminarEnCascada($eliminarCliente = true)
     {
         DB::beginTransaction();
         
@@ -72,8 +74,10 @@ class Cliente extends Model
                 $venta->delete();
             }
 
-            // 3. Finalmente eliminar el cliente
-            $this->delete();
+            // 3. Eliminar el cliente solo si se solicita
+            if ($eliminarCliente) {
+                $this->delete();
+            }
             
             DB::commit();
             

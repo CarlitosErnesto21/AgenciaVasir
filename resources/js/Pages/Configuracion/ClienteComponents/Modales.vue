@@ -59,7 +59,7 @@ const handleViewReports = () => {
 // Cargar estadísticas de eliminación
 const cargarEstadisticasEliminacion = async () => {
     if (!props.cliente) return;
-    
+
     cargandoEstadisticas.value = true;
     try {
         const identificador = props.cliente.id || props.cliente.user_id;
@@ -71,7 +71,7 @@ const cargarEstadisticasEliminacion = async () => {
         });
 
         const result = await response.json();
-        
+
         if (response.ok && result.success) {
             estadisticasEliminacion.value = result.estadisticas;
         } else {
@@ -272,15 +272,15 @@ watch(() => props.deleteVisible, (newValue) => {
     </Dialog>
 
     <!-- Modal de Eliminar Cliente -->
-    <Dialog v-model:visible="isDeleteVisible" header="Eliminar cliente" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
+    <Dialog v-model:visible="isDeleteVisible" header="Eliminar usuario y cliente" :modal="true" :style="dialogStyle" :closable="false" :draggable="false">
         <div class="space-y-3 sm:space-y-4 p-1 sm:p-0">
             <!-- Encabezado de advertencia -->
             <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3">
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="h-6 w-6 sm:h-8 sm:w-8 text-red-500 flex-shrink-0" />
                 <div class="flex flex-col flex-1">
-                    <span class="text-sm sm:text-lg font-semibold">¿Estás seguro de eliminar el cliente:</span>
+                    <span class="text-sm sm:text-lg font-semibold">¿Estás seguro de eliminar completamente al usuario:</span>
                     <span class="font-bold text-blue-600 text-sm sm:text-lg break-words">{{ cliente.user?.name }}?</span>
-                    <span class="text-red-600 text-xs sm:text-sm font-medium mt-1 sm:mt-2">Esta acción es irreversible.</span>
+                    <span class="text-red-600 text-xs sm:text-sm font-medium mt-1 sm:mt-2">Se eliminará su cuenta y todos sus datos. Esta acción es irreversible.</span>
                 </div>
             </div>
 
@@ -296,7 +296,7 @@ watch(() => props.deleteVisible, (newValue) => {
                         <FontAwesomeIcon :icon="faSpinner" class="h-5 w-5 animate-spin text-red-600 mr-2" />
                         <span class="text-red-700 text-sm">Calculando impacto...</span>
                     </div>
-                    
+
                     <ul v-else class="space-y-1 sm:space-y-2 text-red-700">
                         <li class="flex items-start gap-2 text-xs sm:text-sm">
                             <FontAwesomeIcon :icon="faUser" class="h-3 w-3 sm:h-4 sm:w-4 mt-0.5 flex-shrink-0" />
