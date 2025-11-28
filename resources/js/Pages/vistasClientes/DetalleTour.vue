@@ -125,15 +125,7 @@
                   </span>
                 </div>
 
-                <!-- Título de detalles del tour -->
-                <div class="mb-4 sm:mb-6">
-                  <h2 class="text-lg sm:text-xl font-semibold text-gray-900 text-center">
-
-                    Detalles del Tour
-                  </h2>
-                </div>
-
-                <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
+              <div class="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                   <div class="flex items-start text-gray-600 text-sm sm:text-base">
                     <i class="pi pi-calendar mr-2 sm:mr-3 text-blue-600 mt-0.5 text-sm sm:text-base"></i>
                     <span><strong>Fecha de salida:</strong> {{ formatearFecha(tour.fecha_salida) }}</span>
