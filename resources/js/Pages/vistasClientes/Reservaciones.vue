@@ -452,23 +452,6 @@ const irAImagen = (index) => {
           </div>
         </div>
 
-        <!-- Estado vacío por filtro de búsqueda -->
-        <div v-else-if="!loading && hoteles.length > 0 && allFilteredHoteles.length === 0" class="text-center py-12">
-          <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
-            <div class="text-6xl mb-4">
-                <FontAwesomeIcon :icon="faSearch" class="text-blue-400"/>
-            </div>
-            <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">No se encontraron hoteles</h3>
-            <p class="text-gray-600 mb-4 leading-relaxed">No hay hoteles que coincidan con tu búsqueda "{{ searchQuery }}".</p>
-            <button
-              @click="limpiarBusqueda"
-              class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
-            >
-              Limpiar búsqueda
-            </button>
-          </div>
-        </div>
-
         <!-- Barra de búsqueda optimizada -->
         <div v-if="hoteles.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
           <div class="max-w-xl mx-auto">
@@ -509,6 +492,23 @@ const irAImagen = (index) => {
                 }}
               </p>
             </div>
+          </div>
+        </div>
+
+        <!-- Estado vacío por filtro de búsqueda -->
+        <div v-if="!loading && hoteles.length > 0 && allFilteredHoteles.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
+            <div class="text-6xl mb-4">
+                <FontAwesomeIcon :icon="faSearch" class="text-blue-400"/>
+            </div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-3">No se encontraron hoteles</h3>
+            <p class="text-gray-600 mb-4 leading-relaxed">No hay hoteles que coincidan con tu búsqueda "{{ searchQuery }}".</p>
+            <button
+              @click="limpiarBusqueda"
+              class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+            >
+              Limpiar búsqueda
+            </button>
           </div>
         </div>
 

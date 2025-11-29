@@ -545,7 +545,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Estado vacío -->
-        <div v-else-if="!loading && allFilteredTours.length === 0" class="text-center py-12">
+        <div v-else-if="!loading && tours.length === 0" class="text-center py-12">
           <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
             <div class="text-6xl mb-4">
                 <FontAwesomeIcon :icon="faGlobeAmericas" class="w-16 h-16 text-blue-400" />
@@ -557,7 +557,7 @@ const verMasInfo = (tour) => {
         </div>
 
         <!-- Barra de búsqueda optimizada -->
-        <div v-if="allFilteredTours.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
+        <div v-if="tours.length > 0" class="bg-gradient-to-br from-white to-blue-50 rounded-2xl p-4 shadow-lg border border-blue-200 mb-6">
           <div class="max-w-xl mx-auto">
             <div class="text-center mb-3">
               <div class="flex items-center justify-center gap-2 mb-2">
@@ -596,6 +596,23 @@ const verMasInfo = (tour) => {
                 }}
               </p>
             </div>
+          </div>
+        </div>
+
+        <!-- Estado vacío por filtro de búsqueda -->
+        <div v-if="!loading && tours.length > 0 && allFilteredTours.length === 0" class="text-center py-12">
+          <div class="bg-gradient-to-br from-gray-50 to-blue-50 border-2 border-blue-200 rounded-xl shadow-lg p-8 max-w-lg mx-auto">
+            <div class="text-6xl mb-4">
+                <FontAwesomeIcon :icon="faSearch" class="text-blue-400" />
+            </div>
+            <h3 class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent mb-3">No se encontraron tours internacionales</h3>
+            <p class="text-gray-600 mb-4 leading-relaxed">No hay tours internacionales que coincidan con tu búsqueda "{{ searchQuery }}".</p>
+            <button
+              @click="limpiarBusqueda"
+              class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-1"
+            >
+              Limpiar búsqueda
+            </button>
           </div>
         </div>
 
