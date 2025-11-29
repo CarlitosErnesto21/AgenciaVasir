@@ -30,7 +30,7 @@ class ReservaController extends Controller
     public function index(Request $request)
     {
         try {
-            $query = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour', 'pagos']);
+            $query = Reserva::with(['cliente', 'cliente.user', 'detallesTours.tour', 'pagos', 'pagoActivo']);
 
             // Aplicar filtros por tipo (solo tours por ahora)
             if ($request->filled('tipo')) {
@@ -81,7 +81,7 @@ class ReservaController extends Controller
 
             // Si no hay filtros, devolver formato transformado con relaciones completas
             if (!$request->hasAny(['tipo', 'estado', 'fecha_inicio', 'fecha_fin', 'busqueda', 'per_page', 'tour_id', 'desde'])) {
-                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour', 'pagos'])->get();
+                $reservas = Reserva::with(['cliente', 'cliente.user', 'empleado', 'detallesTours.tour', 'pagos', 'pagoActivo'])->get();
 
                 // Transformar los datos igual que en el flujo paginado
                 $transformedData = $reservas->map(function ($reserva) {

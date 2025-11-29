@@ -1058,6 +1058,25 @@ class PagoController extends Controller
             try {
                 DB::beginTransaction();
 
+                // 🔄 INVALIDAR PAGOS PENDIENTES ANTERIORES PARA ESTA RESERVA
+                $pagosAnterioresPendientes = Pago::where('reserva_id', $validated['reserva_id'])
+                    ->where('estado', 'pending')
+                    ->where('metodo_pago', 'enlace_pago')
+                    ->get();
+
+                foreach ($pagosAnterioresPendientes as $pagoAnterior) {
+                    $pagoAnterior->update([
+                        'estado' => 'voided',
+                        'mensaje_error' => 'Enlace invalidado - Se generó un nuevo enlace de pago'
+                    ]);
+
+                    Log::info('🔄 Pago anterior invalidado', [
+                        'pago_anterior_id' => $pagoAnterior->id,
+                        'reserva_id' => $validated['reserva_id'],
+                        'referencia_anterior' => $pagoAnterior->referencia_wompi
+                    ]);
+                }
+
                 $pago = Pago::create([
                     'reserva_id' => $validated['reserva_id'],
                     'monto' => $validated['amount'],
@@ -1368,5 +1387,37 @@ class PagoController extends Controller
             ->paginate(20);
 
         return response()->json($pagos);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener el pago activo (más reciente y válido) de una reserva
+     * Este método devuelve el pago que debe considerarse como el estado actual del pago de la reserva
+     */
+    public function getPagoActivoReserva($reservaId)
+    {
+        // Buscar primero un pago aprobado (el más importante)
+        $pagoAprobado = Pago::where('reserva_id', $reservaId)
+            ->where('estado', 'approved')
+            ->orderBy('updated_at', 'desc')
+            ->first();
+
+        if ($pagoAprobado) {
+            return $pagoAprobado;
+        }
+
+        // Si no hay pago aprobado, buscar el pago pendiente más reciente
+        $pagoPendiente = Pago::where('reserva_id', $reservaId)
+            ->where('estado', 'pending')
+            ->orderBy('created_at', 'desc')
+            ->first();
+
+        if ($pagoPendiente) {
+            return $pagoPendiente;
+        }
+
+        // Como último recurso, devolver el pago más reciente sin importar estado
+        return Pago::where('reserva_id', $reservaId)
+            ->orderBy('created_at', 'desc')
+            ->first();
     }
 }

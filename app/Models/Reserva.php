@@ -59,4 +59,41 @@ class Reserva extends Model
     {
         return $this->hasMany(Pago::class, 'reserva_id');
     }
+
+    /**
+     * ✅ NUEVO: Relación para obtener el pago activo (más relevante) de la reserva
+     * Prioriza: 1) Pago aprobado más reciente, 2) Pago pendiente más reciente, 3) Cualquier pago más reciente
+     */
+    public function pagoActivo()
+    {
+        return $this->hasOne(Pago::class, 'reserva_id')
+            ->selectRaw('*, CASE
+                WHEN estado = "approved" THEN 1
+                WHEN estado = "pending" THEN 2
+                ELSE 3
+            END as prioridad')
+            ->orderByRaw('prioridad ASC, updated_at DESC');
+    }
+
+    /**
+     * ✅ NUEVO: Accessor para obtener el estado del pago de forma sencilla
+     */
+    public function getEstadoPagoAttribute()
+    {
+        $pagoActivo = $this->pagoActivo;
+
+        if (!$pagoActivo) {
+            return 'sin_pago';
+        }
+
+        return $pagoActivo->estado;
+    }
+
+    /**
+     * ✅ NUEVO: Accessor para saber si la reserva está pagada
+     */
+    public function getEstaPagadaAttribute()
+    {
+        return $this->estado_pago === 'approved';
+    }
 }

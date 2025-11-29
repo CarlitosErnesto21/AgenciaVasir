@@ -362,23 +362,21 @@ const puedeGenerarEnlace = (reserva) => {
   // Solo reservas pendientes pueden generar enlaces
   const estadosPermitidos = ['PENDIENTE', 'pendiente'];
 
-  // Verificar si ya tiene un pago aprobado
-  const tienePagoAprobado = reserva.pagos &&
-    reserva.pagos.length > 0 &&
-    reserva.pagos.some(pago => pago.estado === 'approved');
+  // Verificar si ya tiene un pago aprobado usando el pago activo
+  const tienePagoAprobado = reserva.pago_activo && reserva.pago_activo.estado === 'approved';
 
   return estadosPermitidos.includes(reserva.estado) && !tienePagoAprobado;
 };
 
 // Computed para verificar si el pago está pendiente
 const tienePagoPendiente = computed(() => {
-  if (!props.reserva || !props.reserva.pagos) return true; // Si no hay pagos, consideramos pendiente
+  if (!props.reserva) return true;
 
-  // Si no hay pagos registrados
-  if (props.reserva.pagos.length === 0) return true;
+  // Si no hay pago activo, consideramos pendiente
+  if (!props.reserva.pago_activo) return true;
 
-  // Verificar si todos los pagos están pendientes o no aprobados
-  return !props.reserva.pagos.some(pago => pago.estado === 'approved');
+  // Verificar si el pago activo no está aprobado
+  return props.reserva.pago_activo.estado !== 'approved';
 });
 
 // Watchers para controlar el scroll cuando se abran/cierren los modales
@@ -689,17 +687,17 @@ onUnmounted(() => {
             <span
               class="px-2 py-1 rounded-full text-xs font-medium"
               :class="{
-                'bg-green-100 text-green-800': reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved',
-                'bg-yellow-100 text-yellow-800': !reserva.pagos || reserva.pagos.length === 0 || reserva.pagos[0].estado !== 'approved'
+                'bg-green-100 text-green-800': reserva.pago_activo && reserva.pago_activo.estado === 'approved',
+                'bg-yellow-100 text-yellow-800': !reserva.pago_activo || reserva.pago_activo.estado !== 'approved'
               }"
             >
-              {{ (reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved') ? 'Pagado' : 'Pendiente de Pago' }}
+              {{ (reserva.pago_activo && reserva.pago_activo.estado === 'approved') ? 'Pagado' : 'Pendiente de Pago' }}
             </span>
           </div>
           <div class="flex items-center gap-2">
             <span class="font-medium text-gray-700">Ref. Wompi:</span>
-            <span v-if="reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].referencia_wompi" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-              {{ reserva.pagos[0].referencia_wompi }}
+            <span v-if="reserva.pago_activo && reserva.pago_activo.referencia_wompi" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+              {{ reserva.pago_activo.referencia_wompi }}
             </span>
             <span v-else class="text-gray-400 italic text-sm">Sin referencia</span>
           </div>
