@@ -61,6 +61,37 @@ class EmailVerificationPromptController extends Controller
      */
     public function resend(Request $request): RedirectResponse
     {
+        $user = $request->user();
+
+        // Si es un usuario autenticado que necesita verificar su email
+        if ($user && !$user->hasVerifiedEmail()) {
+            // Usar el mismo sistema que EmailVerificationNotificationController
+            if ($user->hasRole('Cliente')) {
+                // Para clientes, usar el sistema personalizado
+                $verificationUrl = URL::temporarySignedRoute(
+                    'custom.verification.verify',
+                    now()->addMinutes(15),
+                    [
+                        'email' => $user->email,
+                        'hash' => sha1($user->email),
+                    ]
+                );
+
+                $userData = [
+                    'name' => $user->name,
+                    'email' => $user->email,
+                ];
+
+                Mail::to($user->email)->send(new WelcomeUserMail($userData, $verificationUrl));
+            } else {
+                // Para empleados/admin, usar sistema por defecto
+                $user->sendEmailVerificationNotification();
+            }
+
+            return back()->with('status', 'verification-link-sent');
+        }
+
+        // Proceso para usuarios no autenticados (nuevos registros)
         $request->validate([
             'email' => 'required|email',
         ]);

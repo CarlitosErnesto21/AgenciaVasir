@@ -278,9 +278,8 @@ watch(() => props.deleteVisible, (newValue) => {
             <div class="flex flex-col sm:flex-row items-start gap-2 sm:gap-3">
                 <FontAwesomeIcon :icon="faExclamationTriangle" class="h-6 w-6 sm:h-8 sm:w-8 text-red-500 flex-shrink-0" />
                 <div class="flex flex-col flex-1">
-                    <span class="text-sm sm:text-lg font-semibold">¿Estás seguro de eliminar completamente al usuario:</span>
+                    <span class="text-sm sm:text-lg font-semibold">¿Eliminar completamente al usuario:</span>
                     <span class="font-bold text-blue-600 text-sm sm:text-lg break-words">{{ cliente.user?.name }}?</span>
-                    <span class="text-red-600 text-xs sm:text-sm font-medium mt-1 sm:mt-2">Se eliminará su cuenta y todos sus datos. Esta acción es irreversible.</span>
                 </div>
             </div>
 
@@ -348,27 +347,6 @@ watch(() => props.deleteVisible, (newValue) => {
                             <FontAwesomeIcon :icon="faChartLine" class="h-3 w-3" />
                             Ir a Informes
                         </button>
-                    </div>
-
-                    <!-- Advertencia especial para pagos -->
-                    <div v-if="estadisticasEliminacion && estadisticasEliminacion.total_pagos_count > 0" class="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-200 border-l-4 border-red-600 rounded-r">
-                        <div class="flex items-start gap-2">
-                            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-red-700 mt-0.5 flex-shrink-0" />
-                            <div>
-                                <p class="text-red-900 font-bold text-xs sm:text-sm">
-                                    ¡CUIDADO! Este cliente tiene {{ estadisticasEliminacion.total_pagos_count }} pago(s) registrado(s)
-                                </p>
-                                <p class="text-red-800 text-xs mt-1">
-                                    Al eliminarlo se perderá el historial completo de transacciones y pagos. Esta información no se puede recuperar.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="mt-2 sm:mt-3 p-2 sm:p-3 bg-red-100 border border-red-200 rounded">
-                        <p class="text-red-800 font-bold text-center text-xs sm:text-sm">
-                            TODOS estos datos serán eliminados permanentemente
-                        </p>
                     </div>
                 </div>
             </div>

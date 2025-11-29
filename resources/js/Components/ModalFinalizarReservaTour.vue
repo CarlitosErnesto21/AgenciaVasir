@@ -119,10 +119,10 @@
               />
               {{
                 procesandoPago
-                  ? 'Procesando reserva...'
+                  ? 'Procesando Reserva...'
                   : reservaData.total > 1000
                     ? 'Monto excede límite'
-                    : 'Reservar y Pagar con Wompi'
+                    : 'Reservar y Pagar'
               }}
             </button>
           </div>

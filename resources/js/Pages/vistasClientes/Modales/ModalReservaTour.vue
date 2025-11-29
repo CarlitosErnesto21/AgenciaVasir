@@ -189,7 +189,7 @@ const cerrarModalPago = () => {
 
 const manejarPagoCompletado = (pagoData) => {
   showModalPago.value = false
-  
+
   // Mostrar mensaje de éxito
   toast.add({
     severity: 'success',
@@ -348,16 +348,16 @@ watch(() => props.visible, async (newValue) => {
           :disabled="isConfirmingReserva"
           class="bg-red-500 hover:bg-red-700 text-white border-none px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <FontAwesomeIcon 
+          <FontAwesomeIcon
             v-if="!isConfirmingReserva"
-            :icon="faCheck" 
-            class="h-5 text-white" 
+            :icon="faCheck"
+            class="h-5 text-white"
           />
-          <div 
+          <div
             v-else
             class="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"
           ></div>
-          {{ isConfirmingReserva ? 'Procesando...' : 'Continuar y Pagar' }}
+          {{ isConfirmingReserva ? 'Procesando...' : 'Continuar' }}
         </button>
         <button
           @click="cerrarModal"

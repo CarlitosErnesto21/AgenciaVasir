@@ -359,15 +359,14 @@
             </span>
           </div>
           <div>
-            <strong>Cantidad:</strong>
+            <strong>Cantidad: </strong>
             <span :class="movimientoSeleccionado.tipo_movimiento === 'ENTRADA' ? 'text-green-600' : 'text-red-600'">
               {{ movimientoSeleccionado.tipo_movimiento === 'ENTRADA' ? '+' : '-' }}{{ movimientoSeleccionado.cantidad }}
             </span>
           </div>
           <div class="col-span-2">
-            <strong>Usuario:</strong> {{ movimientoSeleccionado.user?.name || 'Sistema' }}
+            <strong>¿Quién realizó el movimiento?</strong><br><strong class="text-sm text-gray-600">Usuario:</strong> <span class="text-sm text-gray-600">{{ movimientoSeleccionado.user?.name || 'Sistema' }}</span>
             <div v-if="movimientoSeleccionado.user" class="text-sm text-gray-600 mt-1">
-              <div><strong>Email:</strong> {{ movimientoSeleccionado.user.email }}</div>
               <div v-if="movimientoSeleccionado.user.roles && movimientoSeleccionado.user.roles.length > 0">
                 <strong>Rol:</strong> {{ movimientoSeleccionado.user.roles[0].name }}
               </div>

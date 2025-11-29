@@ -59,6 +59,8 @@ class PagoController extends Controller
 
 
 
+
+
     /**
      * Crear venta desde carrito de compras (público)
      */
@@ -1001,7 +1003,7 @@ class PagoController extends Controller
             // Crear descripción para tour
             $cuposTotales = $validated['tour_data']['cupos_adultos'] + $validated['tour_data']['cupos_menores'];
             $descripcionDetallada = "Reserva de tour: {$validated['tour_data']['nombre']} - {$cuposTotales} cupos";
-            
+
             if ($validated['tour_data']['cupos_adultos'] > 0 && $validated['tour_data']['cupos_menores'] > 0) {
                 $descripcionDetallada .= " ({$validated['tour_data']['cupos_adultos']} adultos, {$validated['tour_data']['cupos_menores']} menores)";
             } elseif ($validated['tour_data']['cupos_adultos'] > 0) {
@@ -1088,7 +1090,7 @@ class PagoController extends Controller
 
             } catch (Exception $e) {
                 DB::rollBack();
-                
+
                 Log::error('Error creando registro de pago para tour', [
                     'reserva_id' => $validated['reserva_id'],
                     'error' => $e->getMessage(),

@@ -16,12 +16,48 @@ use Illuminate\Support\Str;
 class CustomVerifyEmailController extends Controller
 {
     /**
-     * Verificar email y crear usuario
+     * Verificar email y crear usuario o verificar email existente
      */
     public function verify(Request $request): RedirectResponse
     {
         // El middleware CustomSignedMiddleware ya validó la URL
 
+        // Verificar si es un usuario existente que cambió su email
+        $existingUser = User::where('email', $request->email)->first();
+
+        if ($existingUser) {
+            // Usuario existente que cambió su email
+            if ($existingUser->hasVerifiedEmail()) {
+                // Si ya está verificado, redirigir según el rol
+                if ($existingUser->hasRole('Administrador') || $existingUser->hasRole('Empleado')) {
+                    return redirect()->route('dashboard')
+                        ->with('success', 'Tu email ya estaba verificado.');
+                } else {
+                    return redirect()->route('inicio')
+                        ->with('success', 'Tu email ya estaba verificado.');
+                }
+            }
+
+            // Marcar el email como verificado
+            $existingUser->markEmailAsVerified();
+            event(new Verified($existingUser));
+
+            // Si no está autenticado, hacer login
+            if (!Auth::check()) {
+                Auth::login($existingUser);
+            }
+
+            // Redirigir según el rol
+            if ($existingUser->hasRole('Administrador') || $existingUser->hasRole('Empleado')) {
+                return redirect()->route('dashboard')
+                    ->with('success', '¡Email verificado exitosamente!');
+            } else {
+                return redirect()->route('inicio')
+                    ->with('success', '¡Email verificado exitosamente!');
+            }
+        }
+
+        // Proceso para nuevos usuarios (registro)
         // Obtener datos de registro pendientes de la sesión
         $pendingData = session('pending_registration');
 
@@ -34,12 +70,6 @@ class CustomVerifyEmailController extends Controller
         if ($pendingData['email'] !== $request->email) {
             return redirect()->route('register')
                 ->withErrors(['email' => 'El enlace no coincide con los datos de registro.']);
-        }
-
-        // Verificar si ya existe un usuario con este email
-        if (User::where('email', $request->email)->exists()) {
-            return redirect()->route('login')
-                ->withErrors(['email' => 'Esta cuenta ya existe. Por favor, inicia sesión.']);
         }
 
         try {

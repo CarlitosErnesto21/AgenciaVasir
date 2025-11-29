@@ -340,19 +340,47 @@
     <Dialog
       v-model:visible="modalDetalles"
       :style="dialogStyle"
-      header="Detalles de la Venta"
       :modal="true"
       :closable="false"
       :draggable="false"
     >
+      <!-- Header personalizado con estado y fecha prominentes -->
+      <template #header>
+        <div class="w-full">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+                Detalles de la Venta
+              </h3>
+            </div>
+
+            <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <!-- Estado de la venta -->
+              <div class="flex items-center gap-2">
+                <span :class="'px-3 py-1.5 rounded-full text-sm font-bold shadow-md border-2 border-white ' + getEstadoClass(ventaSeleccionada.estado)">
+                  {{ getEstadoLabel(ventaSeleccionada.estado) }}
+                </span>
+              </div>
+
+              <!-- Fecha de la venta -->
+              <div class="flex items-center gap-2">
+                <FontAwesomeIcon :icon="faCalendar" class="text-blue-600 text-lg" />
+                <div class="text-right">
+                  <p class="text-sm font-bold text-blue-700 leading-tight">
+                    {{ formatDate(ventaSeleccionada.fecha) }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <div v-if="ventaSeleccionada" class="space-y-4">
         <!-- Información General -->
         <div class="bg-white rounded-lg border p-4">
-          <div class="flex items-center justify-between mb-4">
+          <div class="mb-4">
             <h4 class="text-lg font-semibold text-gray-800">Información General</h4>
-            <span :class="'inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ' + getEstadoClass(ventaSeleccionada.estado)">
-              {{ getEstadoLabel(ventaSeleccionada.estado) }}
-            </span>
           </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div class="space-y-3">
@@ -361,16 +389,160 @@
                 <strong>ID:</strong> #{{ ventaSeleccionada.id }}
               </div>
               <div class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="faCalendar" class="text-gray-500 text-sm" />
-                <strong>Fecha:</strong> {{ formatDate(ventaSeleccionada.fecha) }}
-              </div>
-              <div class="flex items-center gap-2">
                 <FontAwesomeIcon :icon="faUser" class="text-gray-500 text-sm" />
                 <strong>Cliente:</strong> {{ ventaSeleccionada.cliente?.user?.name || 'N/A' }}
               </div>
-              <div class="flex items-center gap-2">
-                <FontAwesomeIcon :icon="faEnvelope" class="text-gray-500 text-sm" />
-                <strong>Email:</strong> {{ ventaSeleccionada.cliente?.user?.email || 'N/A' }}
+              <div class="flex flex-col gap-1">
+                <span class="font-medium text-gray-700">Email:</span>
+                <div v-if="ventaSeleccionada.cliente?.user?.email" class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs sm:text-sm break-all">{{ ventaSeleccionada.cliente.user.email }}</span>
+                  <a
+                    @click="abrirGmail(ventaSeleccionada.cliente.user.email)"
+                    href="#"
+                    class="inline-flex items-center gap-1 px-2 py-1 bg-red-500 hover:bg-red-600 text-white text-xs rounded-md transition-colors duration-200 cursor-pointer"
+                    title="Abrir Gmail para enviar correo"
+                  >
+                    <FontAwesomeIcon :icon="faEnvelope" class="h-3 w-3" />
+                    <span class="hidden sm:inline">Enviar Email</span>
+                  </a>
+                </div>
+                <span v-else class="text-gray-500 italic text-xs sm:text-sm">Email no disponible</span>
+              </div>
+              <div class="flex flex-col gap-1">
+                <span class="font-medium text-gray-700">Teléfono:</span>
+                <div v-if="ventaSeleccionada.cliente?.telefono" class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs sm:text-sm">{{ ventaSeleccionada.cliente.telefono }}</span>
+                  <div class="flex gap-1">
+                    <a
+                      :href="`https://wa.me/${ventaSeleccionada.cliente.telefono.replace(/[^0-9]/g, '')}`"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      class="inline-flex items-center gap-1 px-2 py-1 bg-green-500 hover:bg-green-600 text-white text-xs rounded-md transition-colors duration-200"
+                      title="Enviar mensaje por WhatsApp"
+                    >
+                      <FontAwesomeIcon :icon="faWhatsapp" class="h-3 w-3" />
+                      <span class="hidden sm:inline">WhatsApp</span>
+                    </a>
+                    <a
+                      :href="`tel:${ventaSeleccionada.cliente.telefono}`"
+                      class="inline-flex items-center gap-1 px-2 py-1 bg-blue-500 hover:bg-blue-600 text-white text-xs rounded-md transition-colors duration-200"
+                      title="Llamar por teléfono"
+                    >
+                      <FontAwesomeIcon :icon="faPhone" class="h-3 w-3" />
+                      <span class="hidden sm:inline">Llamar</span>
+                    </a>
+                  </div>
+                </div>
+                <span v-else class="text-gray-500 italic text-xs sm:text-sm">Teléfono no disponible</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Generador de Enlaces de Pago Wompi -->
+        <div v-if="ventaSeleccionada.estado === 'pendiente'" class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300 p-4">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <FontAwesomeIcon :icon="faLink" class="text-orange-600 text-lg" />
+              <h4 class="text-lg font-semibold text-gray-800">Generar Enlace de Pago Wompi</h4>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                <FontAwesomeIcon :icon="faDollarSign" class="mr-1" />
+                Total: ${{ formatCurrency(ventaSeleccionada.total) }}
+              </span>
+            </div>
+          </div>
+
+          <div class="space-y-3">
+            <p class="text-sm text-gray-600">
+              <FontAwesomeIcon :icon="faInfo" class="text-blue-500 mr-1" />
+              <strong>¿El cliente aún no ha pagado?</strong><br>
+              Genera un enlace de pago personalizado para que el cliente pueda pagar esta venta directamente.
+            </p>
+
+            <!-- Botón para generar enlace -->
+            <div v-if="!showEnlaceWompi" class="flex justify-center">
+              <button
+                @click="generarEnlaceWompi"
+                :disabled="generandoEnlace"
+                class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+              >
+                <FontAwesomeIcon
+                  :icon="generandoEnlace ? faSpinner : faLink"
+                  :class="{ 'animate-spin': generandoEnlace }"
+                />
+                {{ generandoEnlace ? 'Generando enlace...' : 'Generar Enlace de Pago' }}
+              </button>
+            </div>
+
+            <!-- Enlace generado -->
+            <div v-if="showEnlaceWompi && enlaceWompiGenerado" class="space-y-3">
+              <div class="bg-white rounded-lg border border-yellow-300 p-4">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-sm font-medium text-gray-700">Enlace de Pago Generado:</span>
+                  <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                    <FontAwesomeIcon :icon="faCheckCircle" class="mr-1" />
+                    ¡Listo para usar!
+                  </span>
+                </div>
+
+                <div class="bg-gray-50 rounded-md p-3 mb-3">
+                  <p class="text-sm text-gray-800 break-all font-mono">
+                    {{ enlaceWompiGenerado.payment_link }}
+                  </p>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                  <span>Referencia: {{ enlaceWompiGenerado.reference }}</span>
+                  <span>ID: {{ enlaceWompiGenerado.link_id }}</span>
+                </div>
+              </div>
+
+              <!-- Botones de acción para el enlace -->
+              <div class="flex flex-wrap gap-2 justify-center">
+                <button
+                  @click="copiarEnlace"
+                  :class="[
+                    'px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium',
+                    copiedSuccess
+                      ? 'bg-green-500 text-white'
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  ]"
+                >
+                  <FontAwesomeIcon :icon="copiedSuccess ? faCheckCircle : faCopy" />
+                  {{ copiedSuccess ? '¡Copiado!' : 'Copiar Enlace' }}
+                </button>
+
+                <button
+                  @click="abrirEnlace"
+                  class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+                >
+                  <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                  Ver Enlace
+                </button>
+
+                <button
+                  @click="limpiarEnlace"
+                  class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+                >
+                  <FontAwesomeIcon :icon="faTrash" />
+                  Limpiar
+                </button>
+              </div>
+
+              <!-- Instrucciones de uso -->
+              <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <h5 class="text-sm font-medium text-blue-800 mb-2">
+                  <FontAwesomeIcon :icon="faLightbulb" class="mr-1" />
+                  Instrucciones de uso:
+                </h5>
+                <ul class="text-xs text-blue-700 space-y-1">
+                  <li>• Copia el enlace y envíalo al cliente por WhatsApp, email o SMS</li>
+                  <li>• El cliente podrá pagar correctamente su carrito</li>
+                  <li>• Recibirás notificación automática cuando se complete el pago</li>
+                  <li>• El enlace es seguro y está protegido por Wompi</li>
+                </ul>
               </div>
             </div>
           </div>
@@ -426,7 +598,7 @@
         <div class="flex justify-center gap-4 w-full mt-6">
           <button
             class="bg-blue-500 hover:bg-blue-700 text-white px-6 py-2 rounded-md transition-all duration-200 ease-in-out flex items-center gap-2"
-            @click="modalDetalles = false"
+            @click="cerrarModal"
           >
             <FontAwesomeIcon :icon="faXmark" class="h-5" />
             Cerrar
@@ -586,8 +758,17 @@ import {
   faRefresh,
   faEnvelope,
   faHandPointUp,
-  faMagnifyingGlass
+  faMagnifyingGlass,
+  faLink,
+  faInfo,
+  faCheckCircle,
+  faCopy,
+  faExternalLinkAlt,
+  faTrash,
+  faLightbulb,
+  faPhone
 } from "@fortawesome/free-solid-svg-icons";
+import { faWhatsapp } from "@fortawesome/free-brands-svg-icons";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import Dialog from 'primevue/dialog';
@@ -630,6 +811,12 @@ const accionConfirmacion = ref({
   textoBoton: '',
   importante: ''
 });
+
+// 🔗 Estados para generador de enlaces de Wompi
+const generandoEnlace = ref(false);
+const enlaceWompiGenerado = ref(null);
+const showEnlaceWompi = ref(false);
+const copiedSuccess = ref(false);
 
 // Variables de loading
 const isClearingFilters = ref(false);
@@ -984,7 +1171,129 @@ const cancelarAccion = () => {
   accionConfirmacion.value = { tipo: null, venta: null };
 };
 
+// 🔗 Funciones para generar enlaces de pago Wompi
+const generarEnlaceWompi = async () => {
+  if (!ventaSeleccionada.value) return;
 
+  generandoEnlace.value = true;
+  enlaceWompiGenerado.value = null;
+  showEnlaceWompi.value = false;
+
+  try {
+    const venta = ventaSeleccionada.value;
+    const productos = venta.detalle_ventas || [];
+
+    // Preparar datos para Wompi
+    const productosData = productos.map(detalle => ({
+      id: detalle.producto.id,
+      nombre: detalle.producto.nombre,
+      precio: detalle.precio_unitario,
+      cantidad: detalle.cantidad,
+      imagen: detalle.producto.primera_imagen || null,
+      subtotal: detalle.subtotal
+    }));
+
+    const descripcion = `Venta #${venta.id} - ${productos.length} producto(s) - Cliente: ${venta.cliente?.user?.name || 'Cliente'}`;
+
+    const response = await axios.post('/api/wompi/payment-link', {
+      customer_email: venta.cliente?.user?.email || '',
+      amount: parseFloat(venta.total),
+      description: descripcion,
+      reference: `VENTA-${venta.id}-${Date.now()}`,
+      customer_name: venta.cliente?.user?.name || 'Cliente',
+      venta_id: venta.id,
+      productos: productosData
+    });
+
+    if (response.data.success) {
+      enlaceWompiGenerado.value = {
+        payment_link: response.data.payment_link,
+        reference: response.data.reference,
+        link_id: response.data.link_id
+      };
+      showEnlaceWompi.value = true;
+
+      toast.add({
+        severity: 'success',
+        summary: '¡Enlace generado!',
+        detail: 'Enlace de pago de Wompi creado exitosamente',
+        life: 4000
+      });
+    } else {
+      throw new Error(response.data.message || 'Error al generar enlace');
+    }
+
+  } catch (error) {
+    console.error('Error generando enlace Wompi:', error);
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: error.response?.data?.message || 'No se pudo generar el enlace de pago',
+      life: 5000
+    });
+  } finally {
+    generandoEnlace.value = false;
+  }
+};
+
+// Función para copiar enlace al portapapeles
+const copiarEnlace = async () => {
+  if (!enlaceWompiGenerado.value?.payment_link) return;
+
+  try {
+    await navigator.clipboard.writeText(enlaceWompiGenerado.value.payment_link);
+    copiedSuccess.value = true;
+
+    toast.add({
+      severity: 'success',
+      summary: '¡Copiado!',
+      detail: 'Enlace copiado al portapapeles',
+      life: 3000
+    });
+
+    setTimeout(() => {
+      copiedSuccess.value = false;
+    }, 3000);
+  } catch (error) {
+    // Fallback para navegadores que no soportan clipboard API
+    const textArea = document.createElement('textarea');
+    textArea.value = enlaceWompiGenerado.value.payment_link;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+
+    toast.add({
+      severity: 'info',
+      summary: 'Enlace copiado',
+      detail: 'Enlace copiado usando método alternativo',
+      life: 3000
+    });
+  }
+};
+
+// Función para abrir enlace en nueva pestaña
+const abrirEnlace = () => {
+  if (enlaceWompiGenerado.value?.payment_link) {
+    window.open(enlaceWompiGenerado.value.payment_link, '_blank');
+  }
+};
+
+// Función para limpiar el enlace generado
+const limpiarEnlace = () => {
+  enlaceWompiGenerado.value = null;
+  showEnlaceWompi.value = false;
+  copiedSuccess.value = false;
+};
+
+// Función para cerrar el modal y limpiar estado
+const cerrarModal = () => {
+  modalDetalles.value = false;
+  // Limpiar estado del generador de enlaces al cerrar
+  setTimeout(() => {
+    limpiarEnlace();
+  }, 200);
+};
 
 // Función para manejar el clic en la fila
 const onRowClick = (event) => {
@@ -1039,6 +1348,22 @@ const getEstadoLabel = (estado) => {
       return 'Cancelada';
     default:
       return 'Desconocido';
+  }
+};
+
+// Función para abrir Gmail
+const abrirGmail = (email) => {
+  if (!email) return;
+
+  // Detectar si es móvil
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // En móviles, usar mailto: que el sistema operativo maneje
+    window.location.href = `mailto:${email}`;
+  } else {
+    // En escritorio, abrir Gmail web directamente
+    window.open(`https://mail.google.com/mail/?view=cm&fs=1&to=${email}`, '_blank');
   }
 };
 

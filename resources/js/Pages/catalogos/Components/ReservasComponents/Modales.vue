@@ -2,14 +2,20 @@
 import { computed, ref, watch, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
+import Toast from 'primevue/toast';
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import { useToast } from 'primevue/usetoast';
 import axios from 'axios';
 import {
   faCheck, faXmark, faCalendarDays, faEye,
-  faExclamationTriangle, faInfoCircle, faSpinner, faTimes, faPhone
+  faExclamationTriangle, faInfoCircle, faSpinner, faTimes, faPhone,
+  faCopy, faExternalLinkAlt, faLink, faCreditCard, faTrash
 } from '@fortawesome/free-solid-svg-icons';
 import { faWhatsapp } from '@fortawesome/free-brands-svg-icons';
 import { faEnvelope } from '@fortawesome/free-solid-svg-icons';
+
+// Inicializar toast
+const toast = useToast();
 
 // Props
 const props = defineProps({
@@ -104,6 +110,11 @@ const isRechazarVisible = computed({
 // Estado local para los formularios
 const motivoRechazo = ref('');
 
+// 🔗 Estados para el generador de enlaces de pago Wompi
+const generandoEnlace = ref(false);
+const enlaceWompiGenerado = ref(null);
+const showEnlaceWompi = ref(false);
+
 // Funciones para obtener acciones disponibles según el estado
 // NOTA: Se eliminó 'reprogramar' - ahora solo se reprograma desde el TOUR
 const getAccionesDisponibles = (reserva) => {
@@ -193,6 +204,11 @@ const verDetalles = async () => {
 };// Limpiar formularios al cerrar modales
 const limpiarFormularios = () => {
   motivoRechazo.value = '';
+
+  // Limpiar estados de Wompi
+  enlaceWompiGenerado.value = null;
+  showEnlaceWompi.value = false;
+  generandoEnlace.value = false;
 };
 
 // Función para controlar el scroll del body
@@ -228,6 +244,143 @@ const abrirGmail = (email) => {
   }
 };
 
+// 🔗 Funciones para generar enlaces de pago Wompi
+const generarEnlaceWompi = async () => {
+  if (!props.reserva) return;
+
+  generandoEnlace.value = true;
+  enlaceWompiGenerado.value = null;
+  showEnlaceWompi.value = false;
+
+  try {
+    const reserva = props.reserva;
+
+    // Preparar datos para Wompi según la validación del backend
+    const tourData = {
+      id: props.tour?.id || reserva.tour_id || 1, // Requerido por validación
+      nombre: props.tour?.nombre || reserva.entidad_nombre || 'Tour reservado',
+      cupos_adultos: reserva.mayores_edad || 0, // Nombre correcto según validación
+      cupos_menores: reserva.menores_edad || 0, // Nombre correcto según validación
+      total: parseFloat(reserva.total)
+    };
+
+    const customerEmail = reserva.cliente?.user?.email || reserva.cliente?.correo;
+
+    // Validar que tengamos un email
+    if (!customerEmail) {
+      throw new Error('No se encontró email del cliente para generar el enlace de pago');
+    }
+
+    const requestData = {
+      reserva_id: reserva.id,
+      amount: parseFloat(reserva.total),
+      customer_email: customerEmail,
+      tour_data: tourData
+    };
+
+    console.log('🔗 Enviando datos a Wompi:', requestData);
+
+    const response = await axios.post('/api/wompi/payment-link-tour', requestData);
+
+    if (response.data.success) {
+      enlaceWompiGenerado.value = {
+        url: response.data.payment_link,
+        reference: response.data.reference,
+        amount: requestData.amount
+      };
+      showEnlaceWompi.value = true;
+      console.log('✅ Enlace generado exitosamente:', enlaceWompiGenerado.value);
+    } else {
+      throw new Error(response.data.message || 'Error al generar enlace');
+    }
+  } catch (error) {
+    console.error('❌ Error generando enlace Wompi:', error);
+
+    let errorMessage = 'Error al generar enlace de pago';
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    // Mostrar error con toast
+    toast.add({
+      severity: 'error',
+      summary: 'Error',
+      detail: errorMessage,
+      life: 5000
+    });
+  } finally {
+    generandoEnlace.value = false;
+  }
+};
+
+const copiarEnlace = async () => {
+  if (!enlaceWompiGenerado.value?.url) return;
+
+  try {
+    await navigator.clipboard.writeText(enlaceWompiGenerado.value.url);
+    // Mostrar éxito con toast
+    toast.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Enlace copiado al portapapeles',
+      life: 3000
+    });
+  } catch (error) {
+    console.error('Error copiando enlace:', error);
+    // Fallback para navegadores que no soportan clipboard
+    const textArea = document.createElement('textarea');
+    textArea.value = enlaceWompiGenerado.value.url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    toast.add({
+      severity: 'success',
+      summary: 'Éxito',
+      detail: 'Enlace copiado al portapapeles',
+      life: 3000
+    });
+  }
+};
+
+const abrirEnlace = () => {
+  if (!enlaceWompiGenerado.value?.url) return;
+  window.open(enlaceWompiGenerado.value.url, '_blank');
+};
+
+const limpiarEnlace = () => {
+  enlaceWompiGenerado.value = null;
+  showEnlaceWompi.value = false;
+};
+
+// Función auxiliar para verificar si la reserva puede generar enlace
+const puedeGenerarEnlace = (reserva) => {
+  if (!reserva) return false;
+
+  // Solo reservas pendientes pueden generar enlaces
+  const estadosPermitidos = ['PENDIENTE', 'pendiente'];
+
+  // Verificar si ya tiene un pago aprobado
+  const tienePagoAprobado = reserva.pagos &&
+    reserva.pagos.length > 0 &&
+    reserva.pagos.some(pago => pago.estado === 'approved');
+
+  return estadosPermitidos.includes(reserva.estado) && !tienePagoAprobado;
+};
+
+// Computed para verificar si el pago está pendiente
+const tienePagoPendiente = computed(() => {
+  if (!props.reserva || !props.reserva.pagos) return true; // Si no hay pagos, consideramos pendiente
+
+  // Si no hay pagos registrados
+  if (props.reserva.pagos.length === 0) return true;
+
+  // Verificar si todos los pagos están pendientes o no aprobados
+  return !props.reserva.pagos.some(pago => pago.estado === 'approved');
+});
+
 // Watchers para controlar el scroll cuando se abran/cierren los modales
 watch(isVisible, (newValue) => {
   if (newValue) {
@@ -244,6 +397,8 @@ watch(isDetallesVisible, (newValue) => {
   if (newValue) {
     bloquearScroll();
   } else {
+    // Limpiar estados de Wompi al cerrar
+    limpiarEnlace();
     // Solo restaurar scroll si ningún otro modal está abierto
     if (!isVisible.value && !isRechazarVisible.value) {
       restaurarScroll();
@@ -269,6 +424,9 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Toast para notificaciones -->
+  <Toast />
+
   <!-- Modal de Más Acciones -->
   <Dialog
     v-model:visible="isVisible"
@@ -302,6 +460,23 @@ onUnmounted(() => {
             <div class="text-xs opacity-90">Información completa de la reserva</div>
           </div>
         </button>
+
+        <!-- Mensaje de advertencia para pago pendiente -->
+        <div
+          v-if="getAccionesDisponibles(reserva).includes('confirmar') && tienePagoPendiente"
+          class="bg-orange-50 border border-orange-200 rounded-lg p-3"
+        >
+          <div class="flex items-center gap-2 mb-2">
+            <FontAwesomeIcon :icon="faExclamationTriangle" class="h-4 w-4 text-orange-600" />
+            <span class="font-semibold text-orange-800 text-sm">Pago Pendiente</span>
+            <span class="px-2 py-0.5 bg-orange-200 text-orange-800 text-xs font-medium rounded-full ml-auto">
+              No Confirmar
+            </span>
+          </div>
+          <p class="text-orange-700 text-xs leading-relaxed">
+            El cliente no ha pagado. Revisa el estado en <span class="font-semibold">"Ver Detalles"</span> antes de confirmar.
+          </p>
+        </div>
 
         <!-- Botón para confirmar -->
         <button
@@ -380,11 +555,44 @@ onUnmounted(() => {
   <Dialog
     v-model:visible="isDetallesVisible"
     modal
-    header="Detalles de la Reserva"
     :style="{ width: '95vw', maxWidth: '800px' }"
     :closable="false"
     :draggable="false"
   >
+    <!-- Header personalizado con estado y fecha prominentes -->
+    <template #header>
+      <div class="w-full">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div>
+            <h3 class="text-lg sm:text-xl font-bold text-gray-800 mb-1">
+              Detalles de la Reserva
+            </h3>
+          </div>
+
+          <div class="flex flex-col sm:flex-row gap-3 sm:items-center">
+            <!-- Estado de la reserva -->
+            <div class="flex items-center gap-2">
+              <span
+                :class="getColorEstadoReserva(reserva.estado)"
+                class="px-3 py-1.5 rounded-full text-sm font-bold shadow-md border-2 border-white"
+              >
+                {{ estadosReservas.find(e => e.value === reserva.estado)?.label || reserva.estado }}
+              </span>
+            </div>
+
+            <!-- Fecha de la reserva -->
+            <div class="flex items-center gap-2">
+              <FontAwesomeIcon :icon="faCalendarDays" class="text-blue-600 text-lg" />
+              <div class="text-right">
+                <p class="text-sm font-bold text-blue-700 leading-tight">
+                  {{ formatearFecha(reserva.fecha_reserva) }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </template>
     <div v-if="reserva" class="space-y-4 sm:space-y-6">
       <!-- Información del cliente -->
       <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 sm:p-4">
@@ -447,30 +655,6 @@ onUnmounted(() => {
         </div>
       </div>
 
-      <!-- Información del servicio -->
-      <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-4">
-        <h4 class="font-semibold text-gray-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
-          <FontAwesomeIcon :icon="faCalendarDays" class="text-gray-600 text-sm sm:text-base" />
-          Información del Servicio
-        </h4>
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs sm:text-sm">
-          <div class="break-words">
-            <span class="font-medium text-gray-700">Servicio:</span>
-            <span class="ml-2">{{ reserva.entidad_nombre || 'Problema al obtener servicio o no existe' }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Reservado:</span>
-            <span class="ml-2">{{ formatearFecha(reserva.fecha_reserva) || 'Problema al obtener fecha o no existe' }}</span>
-          </div>
-          <div>
-            <span class="font-medium text-gray-700">Estado:</span>
-            <span :class="getColorEstadoReserva(reserva.estado)" class="ml-2 px-2 py-1 rounded-full text-xs font-medium">
-              {{ estadosReservas.find(e => e.value === reserva.estado)?.label || reserva.estado || 'Problema al obtener estado o no existe' }}
-            </span>
-          </div>
-        </div>
-      </div>
-
       <!-- Información de personas y precio -->
       <div class="bg-green-50 border border-green-200 rounded-lg p-3 sm:p-4">
         <h4 class="font-semibold text-green-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
@@ -490,17 +674,20 @@ onUnmounted(() => {
             <span class="font-medium text-gray-700">Total:</span>
             <span class="ml-2 font-bold text-green-600">${{ Number(reserva.total || 0).toFixed(2) }}</span>
           </div>
-          <div>
-            <span class="font-medium text-gray-700">Ref. Wompi:</span>
-            <span class="ml-2" v-if="reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].referencia_wompi">
-              {{ reserva.pagos[0].referencia_wompi }}
-            </span>
-            <span class="ml-2 text-gray-400 italic" v-else>Sin referencia</span>
-          </div>
-          <div>
+        </div>
+      </div>
+
+      <!-- Información de Pagos -->
+      <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 sm:p-4">
+        <h4 class="font-semibold text-slate-800 mb-2 sm:mb-3 flex items-center gap-2 text-sm sm:text-base">
+          <FontAwesomeIcon :icon="faCreditCard" class="text-slate-600 text-sm sm:text-base" />
+          Información de Pagos
+        </h4>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div class="flex items-center gap-2">
             <span class="font-medium text-gray-700">Estado de Pago:</span>
             <span
-              class="ml-2 px-2 py-1 rounded-full text-xs font-medium"
+              class="px-2 py-1 rounded-full text-xs font-medium"
               :class="{
                 'bg-green-100 text-green-800': reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved',
                 'bg-yellow-100 text-yellow-800': !reserva.pagos || reserva.pagos.length === 0 || reserva.pagos[0].estado !== 'approved'
@@ -508,6 +695,117 @@ onUnmounted(() => {
             >
               {{ (reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].estado === 'approved') ? 'Pagado' : 'Pendiente de Pago' }}
             </span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-medium text-gray-700">Ref. Wompi:</span>
+            <span v-if="reserva.pagos && reserva.pagos.length > 0 && reserva.pagos[0].referencia_wompi" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
+              {{ reserva.pagos[0].referencia_wompi }}
+            </span>
+            <span v-else class="text-gray-400 italic text-sm">Sin referencia</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 🔗 Generador de Enlaces de Pago Wompi -->
+      <div v-if="puedeGenerarEnlace(reserva)" class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg border-2 border-yellow-300 p-4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-2">
+            <FontAwesomeIcon :icon="faLink" class="text-orange-600 text-lg" />
+            <h4 class="text-lg font-semibold text-gray-800">Generar Enlace de Pago Wompi</h4>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+              <FontAwesomeIcon :icon="faCreditCard" class="mr-1" />
+              Total: ${{ Number(reserva.total || 0).toFixed(2) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="space-y-3">
+          <p class="text-sm text-gray-600">
+            <FontAwesomeIcon :icon="faInfoCircle" class="text-blue-500 mr-1" />
+            <strong>¿El cliente aún no ha pagado?</strong><br>
+            Genera un enlace de pago personalizado para que el cliente pueda pagar esta reserva directamente.
+          </p>
+
+          <!-- Botón para generar enlace -->
+          <div v-if="!showEnlaceWompi" class="flex justify-center">
+            <button
+              @click="generarEnlaceWompi"
+              :disabled="generandoEnlace"
+              class="bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 disabled:opacity-50 disabled:cursor-not-allowed text-white px-6 py-3 rounded-lg transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+            >
+              <FontAwesomeIcon
+                :icon="generandoEnlace ? faSpinner : faLink"
+                :class="{ 'animate-spin': generandoEnlace }"
+              />
+              {{ generandoEnlace ? 'Generando enlace...' : 'Generar Enlace de Pago' }}
+            </button>
+          </div>
+
+          <!-- Enlace generado -->
+          <div v-if="showEnlaceWompi && enlaceWompiGenerado" class="space-y-3">
+            <div class="bg-white rounded-lg border border-yellow-300 p-4">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700">Enlace de Pago Generado:</span>
+                <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                  <FontAwesomeIcon :icon="faCheck" class="mr-1" />
+                  ¡Listo para usar!
+                </span>
+              </div>
+
+              <div class="bg-gray-50 rounded-md p-3 mb-3">
+                <p class="text-sm text-gray-800 break-all font-mono">
+                  {{ enlaceWompiGenerado.url }}
+                </p>
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-gray-500 mb-3">
+                <span>Referencia: {{ enlaceWompiGenerado.reference }}</span>
+                <span>Monto: ${{ enlaceWompiGenerado.amount.toFixed(2) }}</span>
+              </div>
+            </div>
+
+            <!-- Botones de acción para el enlace -->
+            <div class="flex flex-wrap gap-2 justify-center">
+              <button
+                @click="copiarEnlace"
+                class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+              >
+                <FontAwesomeIcon :icon="faCopy" />
+                Copiar Enlace
+              </button>
+
+              <button
+                @click="abrirEnlace"
+                class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+              >
+                <FontAwesomeIcon :icon="faExternalLinkAlt" />
+                Ver Enlace
+              </button>
+
+              <button
+                @click="limpiarEnlace"
+                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+              >
+                <FontAwesomeIcon :icon="faTrash" />
+                Limpiar
+              </button>
+            </div>
+
+            <!-- Instrucciones de uso -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <h5 class="text-sm font-medium text-blue-800 mb-2">
+                <FontAwesomeIcon :icon="faInfoCircle" class="mr-1" />
+                Instrucciones de uso:
+              </h5>
+              <ul class="text-xs text-blue-700 space-y-1">
+                <li>• Copia el enlace y envíalo al cliente por WhatsApp, email o SMS</li>
+                <li>• El cliente podrá pagar su reserva de manera segura</li>
+                <li>• Recibirás notificación automática cuando se complete el pago</li>
+                <li>• El enlace es seguro y está protegido por Wompi</li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -536,33 +834,23 @@ onUnmounted(() => {
     :draggable="false"
   >
     <div class="space-y-3 sm:space-y-4">
-      <!-- Advertencia sobre eliminación permanente -->
-      <div class="bg-orange-50 border border-orange-200 rounded-lg p-3 sm:p-4 mb-4">
+      <!-- Información de la reserva a rechazar -->
+      <div v-if="reserva" class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4 mb-4">
         <div class="flex items-start gap-2 sm:gap-3">
-          <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-600 text-base sm:text-lg mt-1 flex-shrink-0" />
-          <div>
-            <h4 class="font-semibold text-orange-800 text-sm sm:text-base mb-2">¡ADVERTENCIA - Acción Permanente!</h4>
-            <div class="text-xs sm:text-sm text-orange-700 space-y-1">
-              <p><strong>• Esta acción NO se puede deshacer</strong></p>
-              <p>• La reserva será ELIMINADA completamente de la base de datos</p>
-              <p>• Se liberarán automáticamente los cupos del tour</p>
-              <p>• Se enviará una notificación por email al cliente</p>
-              <p>• No será posible recuperar esta información posteriormente</p>
+          <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-base sm:text-lg mt-1 flex-shrink-0" />
+          <div class="flex-1">
+            <h4 class="font-semibold text-red-800 text-sm sm:text-base mb-2">Rechazar Reserva</h4>
+            <div class="text-xs sm:text-sm text-red-700 mb-3 space-y-1">
+              <p><strong>• Acción permanente:</strong> elimina la reserva y notifica al cliente</p>
+              <p>• Los cupos se liberan automáticamente</p>
+            </div>
+            <div class="bg-white bg-opacity-60 rounded p-2 text-xs sm:text-sm space-y-1">
+              <p class="break-words"><strong>Cliente:</strong> {{ (reserva.cliente?.user?.name) || (reserva.cliente?.nombres) || 'N/A' }}</p>
+              <p class="break-words"><strong>Servicio:</strong> {{ reserva.entidad_nombre }}</p>
+              <p><strong>Fecha:</strong> {{ formatearFecha(reserva.fecha_reserva) }}</p>
+              <p><strong>Total:</strong> ${{ Number(reserva.total || 0).toFixed(2) }}</p>
             </div>
           </div>
-        </div>
-      </div>
-
-      <div v-if="reserva" class="bg-red-50 border border-red-200 rounded-lg p-3 sm:p-4">
-        <div class="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-          <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-base sm:text-lg" />
-          <h4 class="font-medium text-red-800 text-sm sm:text-base">Confirmar Rechazo</h4>
-        </div>
-        <div class="text-xs sm:text-sm space-y-1">
-          <p class="break-words"><strong>Cliente:</strong> {{ (reserva.cliente?.user?.name) || (reserva.cliente?.nombres) || 'N/A' }}</p>
-          <p class="break-words"><strong>Servicio:</strong> {{ reserva.entidad_nombre }}</p>
-          <p><strong>Fecha:</strong> {{ formatearFecha(reserva.fecha_reserva) }}</p>
-          <p><strong>Total:</strong> ${{ Number(reserva.total || 0).toFixed(2) }}</p>
         </div>
       </div>
 

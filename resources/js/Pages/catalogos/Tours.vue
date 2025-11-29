@@ -47,6 +47,7 @@ const isLoadingTable = ref(true);
 const toursPendientesDialog = ref(false);
 const toursPendientes = ref([]);
 const isLoadingToursPendientes = ref(false);
+const searchToursPendientes = ref("");
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -207,6 +208,27 @@ const cupoMaxError = computed(() => {
 const maxCupoAllowed = computed(() => {
     const transporteSeleccionado = tipoTransportes.value.find(t => t.id === tour.value.transporte_id);
     return transporteSeleccionado ? transporteSeleccionado.capacidad : 30;
+});
+
+// Computed para filtrar tours con reservas pendientes por nombre del cliente
+const filteredToursPendientes = computed(() => {
+    if (!searchToursPendientes.value || searchToursPendientes.value.trim() === '') {
+        return toursPendientes.value;
+    }
+
+    const searchTerm = searchToursPendientes.value.toLowerCase().trim();
+
+    return toursPendientes.value.map(tour => {
+        const reservasFiltradas = tour.reservas_pendientes.filter(reserva => {
+            return reserva.cliente_nombre.toLowerCase().includes(searchTerm);
+        });
+
+        // Solo mostrar el tour si tiene reservas que coinciden con la búsqueda
+        return reservasFiltradas.length > 0 ? {
+            ...tour,
+            reservas_pendientes: reservasFiltradas
+        } : null;
+    }).filter(tour => tour !== null);
 });
 
 // Watcher para detectar cambios en el modal
@@ -2422,7 +2444,42 @@ const onPricePaste = (event) => {
             :modal="true"
             :style="dialogStylePendientes"
             :closable="false"
-            :draggable="false">            <div v-if="isLoadingToursPendientes" class="text-center py-8">
+            :draggable="false">
+
+            <!-- Input de búsqueda -->
+            <div class="mb-6">
+                <div class="relative flex items-center bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 focus-within:border-gray-400 focus-within:shadow-md">
+                    <div class="pl-4 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input
+                        v-model="searchToursPendientes"
+                        type="text"
+                        placeholder="Buscar por nombre del cliente..."
+                        class="flex-1 px-3 py-3 text-sm bg-transparent border-0 outline-none focus:ring-0 placeholder-gray-400"
+                        :disabled="isLoadingToursPendientes"
+                        maxlength="30"
+                    />
+                    <div
+                        v-if="searchToursPendientes"
+                        class="pr-3 flex items-center">
+                        <button
+                            @click="searchToursPendientes = ''"
+                            class="p-1.5 rounded-full bg-gray-200 hover:bg-red-500 text-gray-500 hover:text-white transition-all duration-200 transform hover:scale-110"
+                            title="Limpiar búsqueda"
+                            :disabled="isLoadingToursPendientes"
+                        >
+                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div v-if="isLoadingToursPendientes" class="text-center py-8">
                 <i class="fas fa-spinner animate-spin text-2xl text-blue-500 mb-2"></i>
                 <p class="text-gray-600">Cargando tours con reservas pendientes...</p>
             </div>
@@ -2433,22 +2490,27 @@ const onPricePaste = (event) => {
                 <p class="text-gray-600">No hay tours con reservas pendientes en este momento.</p>
             </div>
 
+            <!-- Mostrar mensaje cuando no se encuentran resultados de búsqueda -->
+            <div v-else-if="searchToursPendientes && filteredToursPendientes.length === 0" class="text-center py-8">
+                <i class="fas fa-search text-4xl text-gray-400 mb-4"></i>
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Sin resultados</h3>
+                <p class="text-gray-600">No se encontraron reservas con el nombre "{{ searchToursPendientes }}"</p>
+            </div>
+
             <div v-else class="space-y-3">
                 <div class="bg-orange-50 border border-orange-200 rounded-lg p-2 mb-3">
                     <div class="flex items-center gap-2">
                         <i class="fas fa-exclamation-triangle text-orange-500 text-sm"></i>
-                        <span class="font-semibold text-orange-800 text-sm">{{ toursPendientes.length }} tour(s) pendiente(s)</span>
+                        <span class="font-semibold text-orange-800 text-sm">
+                            {{ searchToursPendientes ? filteredToursPendientes.length : toursPendientes.length }}
+                            {{ searchToursPendientes ? 'resultado(s) encontrado(s)' : 'tour(s) pendiente(s)' }}
+                        </span>
                     </div>
-                </div>
-
-                <div class="p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 mb-3">
-                    <i class="fas fa-info-circle mr-1"></i>
-                    <strong>Navegación:</strong> Haz clic en cualquier tour para ir directamente a sus reservas pendientes.
                 </div>
 
                 <div class="max-h-80 overflow-y-auto space-y-2">
                     <div
-                        v-for="tour in toursPendientes"
+                        v-for="tour in filteredToursPendientes"
                         :key="tour.id"
                         class="border border-gray-200 rounded-lg p-3 hover:shadow-sm transition-shadow cursor-pointer hover:bg-gray-50"
                         @click="navegarAReservas(tour.id)">
@@ -2476,6 +2538,11 @@ const onPricePaste = (event) => {
                                     ✗ Pendiente ({{ tour.cupos_reservados }}/{{ tour.cupo_min }})
                                 </span>
                             </div>
+                        </div>
+
+                        <div class="text-xs text-gray-500 italic mb-2 px-1">
+                            <i class="fas fa-mouse-pointer mr-1 text-gray-400"></i>
+                            Clic para ver reservas
                         </div>
 
                         <div class="bg-gray-50 rounded p-2">

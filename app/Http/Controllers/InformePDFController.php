@@ -320,9 +320,19 @@ class InformePDFController extends Controller
                     return $detalle->tour ? $detalle->tour->nombre : 'Tour no disponible';
                 })->implode(', ');
 
+                // Obtener la fecha de salida del primer tour de la reserva
+                $fechaSalidaTour = null;
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalidaTour = Carbon::parse($primerDetalle->tour->fecha_salida);
+                } else {
+                    // Fallback a la fecha de la reserva si no hay tour
+                    $fechaSalidaTour = Carbon::parse($reserva->fecha);
+                }
+
                 return [
                     'id' => $reserva->id,
-                    'fecha' => Carbon::parse($reserva->fecha)->format('d/m/Y'),
+                    'fecha' => $fechaSalidaTour->format('d/m/Y'),
                     'personas' => $reserva->mayores_edad + ($reserva->menores_edad ?? 0),
                     'estado' => $reserva->estado,
                     'total' => $reserva->total,
@@ -628,9 +638,18 @@ class InformePDFController extends Controller
                     return $detalle->tour ? $detalle->tour->nombre : 'Tour no disponible';
                 })->implode(', ');
 
+                // Obtener la fecha de salida del primer tour de la reserva
+                $fechaSalidaTour = null;
+                $primerDetalle = $reserva->detallesTours->first();
+                if ($primerDetalle && $primerDetalle->tour) {
+                    $fechaSalidaTour = Carbon::parse($primerDetalle->tour->fecha_salida);
+                } else {
+                    // Fallback a la fecha de la reserva si no hay tour
+                    $fechaSalidaTour = Carbon::parse($reserva->fecha);
+                }
+
                 // Formatear fecha con hora en formato AM/PM
-                $fechaCompleta = Carbon::parse($reserva->fecha);
-                $fechaFormateada = $fechaCompleta->format('d/m/Y g:i A');
+                $fechaFormateada = $fechaSalidaTour->format('d/m/Y g:i A');
 
                 return [
                     'fecha' => $fechaFormateada,

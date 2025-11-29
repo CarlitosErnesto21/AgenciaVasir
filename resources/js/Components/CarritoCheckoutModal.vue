@@ -117,10 +117,10 @@
               />
               {{
                 procesandoPago
-                  ? 'Generando enlace...'
+                  ? 'Procesando Compra...'
                   : carritoStore.totalPrice > 1000
                     ? 'Monto excede límite'
-                    : 'Pagar con Wompi'
+                    : 'Confirmar y Pagar'
               }}
             </button>
           </div>

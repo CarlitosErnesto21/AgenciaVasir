@@ -20,6 +20,7 @@ import {
   faCalendarCheck, faInfoCircle, faExclamationTriangle,
   faSpinner, faListDots,
   faHandPointUp, faArrowLeft, faMagnifyingGlass,
+  faPlayCircle, faStopCircle, faTag, faBus,
 } from '@fortawesome/free-solid-svg-icons'
 import axios from 'axios'
 import ReservaModales from './Components/ReservasComponents/Modales.vue'
@@ -224,12 +225,62 @@ const estadisticas = computed(() => {
   }
 })
 
+// 📅 Funciones para formatear fechas y horas del tour
+const formatearFechaTour = (fechaISO) => {
+  if (!fechaISO) return 'No especificada'
+  try {
+    const fecha = new Date(fechaISO)
+    return fecha.toLocaleDateString('es-ES', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+  } catch (error) {
+    console.error('Error formateando fecha del tour:', error)
+    return 'Fecha inválida'
+  }
+}
+
+const extraerHoraTour = (fechaISO) => {
+  if (!fechaISO) return 'No especificada'
+  try {
+    const fecha = new Date(fechaISO)
+    return fecha.toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    })
+  } catch (error) {
+    console.error('Error extrayendo hora del tour:', error)
+    return 'Hora inválida'
+  }
+}
+
+// Computed para datos del tour formateados
+const tourFormateado = computed(() => {
+  if (!tourActual.value) return null
+
+  return {
+    ...tourActual.value,
+    categoriaTexto: typeof tourActual.value.categoria === 'string'
+      ? tourActual.value.categoria
+      : tourActual.value.categoria?.nombre || 'No especificada',
+    fechaSalidaFormateada: formatearFechaTour(tourActual.value.fecha_salida),
+    horaSalida: extraerHoraTour(tourActual.value.fecha_salida),
+    fechaRegresoFormateada: formatearFechaTour(tourActual.value.fecha_regreso),
+    horaRegreso: extraerHoraTour(tourActual.value.fecha_regreso)
+  }
+})
+
 // Funciones para cargar tour específico
 const cargarTour = async (id) => {
   loadingTour.value = true
   try {
     const response = await axios.get(`/api/tours/${id}`)
     tourActual.value = response.data
+
+
+
   } catch (error) {
     console.error('Error cargando tour:', error)
     toast.add({
@@ -1130,7 +1181,75 @@ onUnmounted(() => {
       <div class="bg-white rounded-lg shadow-md">
         <!-- Estados del Tour (cambio directo) -->
         <div v-if="tourActual" class="p-6 border-b border-gray-200">
-          <h3 class="text-lg font-semibold text-blue-600 mb-2" style="word-break: break-all; overflow-wrap: break-word; max-width: 100%; white-space: pre-wrap;">{{ tourActual.nombre }}</h3>
+          <h3 class="text-lg font-semibold text-blue-600 mb-4" style="word-break: break-all; overflow-wrap: break-word; max-width: 100%; white-space: pre-wrap;">{{ tourActual.nombre }}</h3>
+
+          <!-- Detalles del Tour -->
+          <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl p-3 mb-4 shadow-sm">
+            <h4 class="text-xs font-semibold text-gray-700 mb-3 flex items-center gap-2 uppercase tracking-wide">
+              <FontAwesomeIcon :icon="faInfoCircle" class="h-3 w-3 text-blue-500" />
+              Información del Tour
+            </h4>
+            <!-- Información básica - Siempre visible -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 mb-3">
+              <div class="bg-white rounded-lg p-2 shadow-sm border border-gray-100">
+                <div class="text-gray-500 font-medium mb-1 text-xs uppercase tracking-wider flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faTag" class="h-3 w-3" />
+                  Categoría
+                </div>
+                <div class="text-gray-800 font-semibold truncate">{{ tourFormateado?.categoriaTexto || 'N/E' }}</div>
+              </div>
+
+              <div class="bg-white rounded-lg p-2 shadow-sm border border-gray-100">
+                <div class="text-gray-500 font-medium mb-1 text-xs uppercase tracking-wider flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faBus" class="h-3 w-3" />
+                  Transporte
+                </div>
+                <div class="text-gray-800 font-semibold truncate" :title="tourActual.transporte?.nombre">{{ tourActual.transporte?.nombre || 'N/E' }}</div>
+              </div>
+
+              <div class="bg-white rounded-lg p-2 shadow-sm border border-gray-100">
+                <div class="text-gray-500 font-medium mb-1 text-xs uppercase tracking-wider">Precio</div>
+                <div class="text-green-600 font-bold">${{ tourActual.precio || 0 }}</div>
+              </div>
+
+              <div class="bg-white rounded-lg p-2 shadow-sm border border-gray-100">
+                <div class="text-gray-500 font-medium mb-1 text-xs uppercase tracking-wider">Cupos</div>
+                <div class="text-gray-800 font-semibold">
+                  <span class="text-xs">Min:</span> {{ tourActual.cupo_min || 0 }}
+                  <span class="text-gray-400 mx-1">|</span>
+                  <span class="text-xs">Max:</span> {{ tourActual.cupo_max || '∞' }}
+                </div>
+              </div>
+            </div>
+
+            <!-- Fechas y horarios - Layout responsivo -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <!-- Salida -->
+              <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-2 border border-blue-200">
+                <div class="text-blue-700 font-medium mb-2 text-xs uppercase tracking-wider flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faPlayCircle" class="h-3 w-3" />
+                  Salida
+                </div>
+                <div class="space-y-1">
+                  <div class="text-gray-800 font-semibold text-xs">{{ tourFormateado?.fechaSalidaFormateada || 'Fecha N/E' }}</div>
+                  <div class="text-blue-600 font-bold">{{ tourFormateado?.horaSalida || 'Hora N/E' }}</div>
+                </div>
+              </div>
+
+              <!-- Regreso -->
+              <div class="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-2 border border-purple-200">
+                <div class="text-purple-700 font-medium mb-2 text-xs uppercase tracking-wider flex items-center gap-1">
+                  <FontAwesomeIcon :icon="faStopCircle" class="h-3 w-3" />
+                  Regreso
+                </div>
+                <div class="space-y-1">
+                  <div class="text-gray-800 font-semibold text-xs">{{ tourFormateado?.fechaRegresoFormateada || 'Fecha N/E' }}</div>
+                  <div class="text-purple-600 font-bold">{{ tourFormateado?.horaRegreso || 'Hora N/E' }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <div class="mb-4 space-y-2">
             <p class="text-sm text-blue-600 flex items-center gap-2">
               <FontAwesomeIcon :icon="faInfoCircle" class="h-4 w-4 text-blue-500" />
@@ -1519,41 +1638,18 @@ onUnmounted(() => {
       >
         <div class="space-y-4">
           <!-- Advertencia sobre eliminación permanente -->
-          <div class="bg-orange-50 p-4 rounded-lg border border-orange-200 mb-4">
+          <div class="bg-red-50 p-4 rounded-lg border border-red-200 mb-4">
             <div class="flex items-start gap-3">
-              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-orange-600 text-lg mt-1 flex-shrink-0" />
+              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600 text-lg mt-1 flex-shrink-0" />
               <div>
-                <h4 class="font-bold text-orange-800 mb-2">¡ADVERTENCIA - ELIMINACIÓN MASIVA PERMANENTE!</h4>
-                <div class="text-sm text-orange-700 space-y-2">
-                  <p><strong>• Esta acción NO se puede deshacer bajo ninguna circunstancia</strong></p>
-                  <p>• Se eliminarán TODAS las reservas del tour de forma PERMANENTE</p>
-                  <p>• Se eliminarán TODOS los detalles asociados a cada reserva</p>
-                  <p>• Los cupos del tour serán liberados automáticamente</p>
-                  <p>• Se enviarán emails de cancelación a TODOS los clientes</p>
-                  <p>• No será posible recuperar ninguna información posteriormente</p>
-                  <div class="mt-3 p-2 bg-orange-100 rounded border border-orange-300">
-                    <p class="font-semibold text-orange-900 text-xs">
-                      Asegúrese de que realmente desea eliminar toda la información antes de continuar
-                    </p>
-                  </div>
+                <h4 class="font-bold text-red-800 mb-2">Cancelar Tour: {{ tourActual?.nombre }}</h4>
+                <div class="text-sm text-red-700 space-y-1">
+                  <p><strong>• Acción PERMANENTE e IRREVERSIBLE</strong></p>
+                  <p>• Elimina todas las {{ reservas.length }} reserva(s) y sus datos</p>
+                  <p>• Envía notificaciones automáticas a los clientes</p>
                 </div>
               </div>
             </div>
-          </div>
-
-          <!-- Información del tour -->
-          <div class="bg-red-50 p-4 rounded-lg border border-red-200">
-            <div class="flex items-center gap-2 mb-2">
-              <FontAwesomeIcon :icon="faExclamationTriangle" class="text-red-600" />
-              <h4 class="font-semibold text-red-800">Cancelar Tour: {{ tourActual?.nombre }}</h4>
-            </div>
-            <p class="text-sm text-red-700">
-              Esta acción cancelará el tour completo y TODAS las reservas asociadas.
-              Se enviarán notificaciones por correo a todos los clientes.
-            </p>
-            <p class="text-xs text-red-600 mt-2">
-              <strong>Reservas que serán ELIMINADAS PERMANENTEMENTE: {{ reservas.length }}</strong>
-            </p>
           </div>
 
           <!-- Motivo de la cancelación -->

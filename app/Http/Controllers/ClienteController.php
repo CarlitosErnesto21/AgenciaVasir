@@ -460,7 +460,8 @@ class ClienteController extends Controller
                 'ventas_count' => 0,
                 'pagos_reservas_count' => 0,
                 'pagos_ventas_count' => 0,
-                'total_pagos_count' => 0
+                'total_pagos_count' => 0,
+                'stock_reservations_count' => 0
             ];
 
             return response()->json([
@@ -548,7 +549,7 @@ class ClienteController extends Controller
 
             // Eliminar el usuario (esto también eliminará el cliente automáticamente por CASCADE)
             $user->delete();
-            
+
             Log::info('Usuario y cliente eliminados correctamente', [
                 'user_id' => $userInfo['nombre'],
                 'email' => $userInfo['email'],

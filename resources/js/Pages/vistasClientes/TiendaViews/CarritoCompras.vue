@@ -352,7 +352,7 @@ const getImageUrl = (producto) => {
               ]"
             >
               <FontAwesomeIcon v-if="!loadingCheckout" :icon="faCreditCard" />
-              {{ loadingCheckout ? 'Procesando...' : 'Proceder al Checkout' }}
+              {{ loadingCheckout ? 'Procesando...' : 'Completar Pago' }}
             </button>
 
             <button

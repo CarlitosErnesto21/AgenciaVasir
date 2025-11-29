@@ -253,7 +253,7 @@
                     </th>
                 </tr>
                 <tr>
-                    <th style="width: 20%">Fecha</th>
+                    <th style="width: 20%">Fecha de Salida</th>
                     <th style="width: 25%">Tours</th>
                     <th style="width: 10%">Menores</th>
                     <th style="width: 10%">Mayores</th>

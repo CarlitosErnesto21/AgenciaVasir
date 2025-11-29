@@ -72,6 +72,7 @@ Route::middleware('auth:sanctum')->post('/users/validar-email', [ApiAuthControll
 // RUTAS DE WOMPI (PAGOS) - PÚBLICAS
 // ═══════════════════════════════════════════════════════════
 Route::get('/wompi/config', [PagoController::class, 'getPublicConfig']);
+
 Route::get('/wompi/acceptance-token', [PagoController::class, 'getAcceptanceToken']);
 Route::post('/wompi/payment-link', [PagoController::class, 'createPaymentLinkFromCart']);
 Route::post('/wompi/payment-link-tour', [PagoController::class, 'createPaymentLinkFromTour']);
@@ -172,12 +173,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::prefix('clientes')->group(function () {
             Route::get('/', [ClienteController::class, 'getClientes']);
             Route::post('/', [ClienteController::class, 'store']);
+            Route::get('/tipos-documento-options', [ClienteController::class, 'getTiposDocumento']); // SE PUEDE ELIMINAR
+            Route::get('/{cliente}/estadisticas-eliminacion', [ClienteController::class, 'getEstadisticasEliminacion']);
             Route::get('/{cliente}', [ClienteController::class, 'show']);
             Route::put('/{cliente}', [ClienteController::class, 'update']);
-            Route::get('/{cliente}/estadisticas-eliminacion', [ClienteController::class, 'getEstadisticasEliminacion']);
             Route::delete('/{cliente}', [ClienteController::class, 'destroy']);
             Route::patch('/{cliente}/toggle-status', [ClienteController::class, 'toggleStatus']);
-            Route::get('/tipos-documento-options', [ClienteController::class, 'getTiposDocumento']);
         });
 
         // Rutas de Inventario
