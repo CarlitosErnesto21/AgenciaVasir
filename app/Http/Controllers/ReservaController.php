@@ -109,7 +109,8 @@ class ReservaController extends Controller
                         'total' => $reserva->total,
                         'mayores_edad' => $reserva->mayores_edad,
                         'menores_edad' => $reserva->menores_edad,
-                        'pagos' => $reserva->pagos
+                        'pagos' => $reserva->pagos,
+                        'pago_activo' => $reserva->pagoActivo
                     ];
                 });
 
@@ -145,7 +146,8 @@ class ReservaController extends Controller
                     'total' => $reserva->total,
                     'mayores_edad' => $reserva->mayores_edad,
                     'menores_edad' => $reserva->menores_edad,
-                    'pagos' => $reserva->pagos
+                    'pagos' => $reserva->pagos,
+                    'pago_activo' => $reserva->pagoActivo
                 ];
             });
 
