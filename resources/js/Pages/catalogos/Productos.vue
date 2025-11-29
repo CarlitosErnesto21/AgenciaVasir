@@ -1689,7 +1689,7 @@ const onStockMinimoPaste = (event) => {
                                     :filter="true"
                                     filterPlaceholder="Buscar categoría..."
                                     :showClear="false"
-                                    class="w-12 sm:w-64 ml-8 rounded-md border-2 border-gray-400 hover:border-gray-500 truncate-select"
+                                    class="w-12 sm:w-48 ml-8 rounded-md border-2 border-gray-400 hover:border-gray-500 truncate-select"
                                     placeholder="Seleccionar categoría"
                                     :class="{'p-invalid': submitted && !producto.categoria_id}"
                                 />
