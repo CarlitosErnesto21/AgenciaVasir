@@ -733,7 +733,7 @@ class ReservaController extends Controller
     public function show(Reserva $reserva)
     {
         // Mostrar los detalles de una reserva específica con sus relaciones
-        $reserva->load(['cliente', 'cliente.user', 'empleado', 'pagos']);
+        $reserva->load(['cliente', 'cliente.user', 'empleado', 'pagos', 'pagoActivo']);
         return response()->json($reserva);
     }
 
