@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch, onUnmounted } from 'vue';
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
 import Toast from 'primevue/toast';
@@ -372,6 +372,56 @@ const puedeGenerarEnlace = (reserva) => {
 const tienePagoPendiente = computed(() => {
   if (!props.reserva) return true;
 
+  // DEBUG: Log súper detallado
+  console.log('==================================================');
+  console.log('🔍 DEBUG SÚPER DETALLADO - PAGO ACTIVO');
+  console.log('==================================================');
+  console.log('1. DATOS GENERALES DE RESERVA:');
+  console.log('   - ID de reserva:', props.reserva.id);
+  console.log('   - Estado de reserva:', props.reserva.estado);
+  console.log('   - Objeto reserva completo:', JSON.stringify(props.reserva, null, 2));
+
+  console.log('2. VERIFICACIÓN PAGO_ACTIVO:');
+  console.log('   - pago_activo existe (boolean):', !!props.reserva.pago_activo);
+  console.log('   - pago_activo es null:', props.reserva.pago_activo === null);
+  console.log('   - pago_activo es undefined:', props.reserva.pago_activo === undefined);
+  console.log('   - typeof pago_activo:', typeof props.reserva.pago_activo);
+
+  if (props.reserva.pago_activo) {
+    console.log('3. DATOS DE PAGO_ACTIVO:');
+    console.log('   - ID del pago:', props.reserva.pago_activo.id);
+    console.log('   - Estado del pago:', props.reserva.pago_activo.estado);
+    console.log('   - Tipo de estado (typeof):', typeof props.reserva.pago_activo.estado);
+    console.log('   - Estado === "approved":', props.reserva.pago_activo.estado === 'approved');
+    console.log('   - Estado == "approved":', props.reserva.pago_activo.estado == 'approved');
+    console.log('   - Referencia Wompi:', props.reserva.pago_activo.referencia_wompi);
+    console.log('   - Monto:', props.reserva.pago_activo.monto);
+    console.log('   - Moneda:', props.reserva.pago_activo.moneda);
+    console.log('   - Created at:', props.reserva.pago_activo.created_at);
+    console.log('   - Updated at:', props.reserva.pago_activo.updated_at);
+    console.log('   - Objeto pago_activo completo:', JSON.stringify(props.reserva.pago_activo, null, 2));
+  } else {
+    console.log('3. PAGO_ACTIVO ES NULL/UNDEFINED - VERIFICANDO PAGOS ARRAY:');
+    console.log('   - props.reserva.pagos existe:', !!props.reserva.pagos);
+    console.log('   - props.reserva.pagos length:', props.reserva.pagos?.length);
+    if (props.reserva.pagos && props.reserva.pagos.length > 0) {
+      console.log('   - Todos los pagos:', JSON.stringify(props.reserva.pagos, null, 2));
+      props.reserva.pagos.forEach((pago, index) => {
+        console.log(`   - Pago ${index}: ID=${pago.id}, Estado=${pago.estado}, Ref=${pago.referencia_wompi}`);
+      });
+    }
+  }
+
+  console.log('4. LÓGICA DE DECISIÓN:');
+  const resultado = !props.reserva.pago_activo || props.reserva.pago_activo.estado !== 'approved';
+  console.log('   - Resultado tienePagoPendiente:', resultado);
+  console.log('   - Razón:',
+    !props.reserva.pago_activo ? 'No hay pago_activo' :
+    props.reserva.pago_activo.estado !== 'approved' ? `Estado "${props.reserva.pago_activo.estado}" no es "approved"` :
+    'Pago está aprobado'
+  );
+  console.log('==================================================');
+
   // Si no hay pago activo, consideramos pendiente
   if (!props.reserva.pago_activo) return true;
 
@@ -402,7 +452,24 @@ watch(isDetallesVisible, (newValue) => {
       restaurarScroll();
     }
   }
-});watch(isRechazarVisible, (newValue) => {
+});
+
+// Watcher para detectar cambios en la reserva
+watch(() => props.reserva, (newReserva, oldReserva) => {
+  console.log('📊 WATCHER - CAMBIO EN PROPS.RESERVA:');
+  console.log('   - Reserva anterior:', oldReserva);
+  console.log('   - Reserva nueva:', newReserva);
+  console.log('   - ID anterior:', oldReserva?.id);
+  console.log('   - ID nuevo:', newReserva?.id);
+  console.log('   - pago_activo anterior:', oldReserva?.pago_activo);
+  console.log('   - pago_activo nuevo:', newReserva?.pago_activo);
+  if (newReserva?.pago_activo) {
+    console.log('   - Estado nuevo del pago:', newReserva.pago_activo.estado);
+    console.log('   - Referencia nueva del pago:', newReserva.pago_activo.referencia_wompi);
+  }
+}, { deep: true });
+
+watch(isRechazarVisible, (newValue) => {
   if (newValue) {
     bloquearScroll();
   } else {
@@ -411,6 +478,14 @@ watch(isDetallesVisible, (newValue) => {
       restaurarScroll();
     }
   }
+});
+
+// Log inicial al montar el componente
+onMounted(() => {
+  console.log('🚀 COMPONENTE MONTADO - DATOS INICIALES:');
+  console.log('   - Props reserva completa:', JSON.stringify(props.reserva, null, 2));
+  console.log('   - pago_activo inicial:', props.reserva?.pago_activo);
+  console.log('   - Estado inicial del pago:', props.reserva?.pago_activo?.estado);
 });
 
 // Limpiar scroll al desmontar el componente
@@ -690,16 +765,57 @@ onUnmounted(() => {
                 'bg-green-100 text-green-800': reserva.pago_activo && reserva.pago_activo.estado === 'approved',
                 'bg-yellow-100 text-yellow-800': !reserva.pago_activo || reserva.pago_activo.estado !== 'approved'
               }"
+              @click="console.log('🎯 CLICK EN ESTADO - pago_activo:', reserva.pago_activo, 'estado:', reserva.pago_activo?.estado)"
             >
-              {{ (reserva.pago_activo && reserva.pago_activo.estado === 'approved') ? 'Pagado' : 'Pendiente de Pago' }}
+              {{
+                (() => {
+                  console.log('🎨 RENDERIZANDO ESTADO DE PAGO:');
+                  console.log('   - reserva.pago_activo:', reserva.pago_activo);
+                  console.log('   - reserva.pago_activo?.estado:', reserva.pago_activo?.estado);
+                  console.log('   - Condición completa:', reserva.pago_activo && reserva.pago_activo.estado === 'approved');
+                  const resultado = (reserva.pago_activo && reserva.pago_activo.estado === 'approved') ? 'Pagado' : 'Pendiente de Pago';
+                  console.log('   - Texto que se mostrará:', resultado);
+                  return resultado;
+                })()
+              }}
             </span>
           </div>
           <div class="flex items-center gap-2">
             <span class="font-medium text-gray-700">Ref. Wompi:</span>
-            <span v-if="reserva.pago_activo && reserva.pago_activo.referencia_wompi" class="text-xs bg-gray-100 px-2 py-1 rounded font-mono">
-              {{ reserva.pago_activo.referencia_wompi }}
+            <span
+              v-if="reserva.pago_activo && reserva.pago_activo.referencia_wompi"
+              class="text-xs bg-gray-100 px-2 py-1 rounded font-mono"
+              @click="console.log('🎯 CLICK EN REFERENCIA - pago_activo:', reserva.pago_activo, 'referencia:', reserva.pago_activo?.referencia_wompi)"
+            >
+              {{
+                (() => {
+                  console.log('📋 RENDERIZANDO REFERENCIA WOMPI:');
+                  console.log('   - reserva.pago_activo:', reserva.pago_activo);
+                  console.log('   - reserva.pago_activo?.referencia_wompi:', reserva.pago_activo?.referencia_wompi);
+                  console.log('   - Condición v-if:', reserva.pago_activo && reserva.pago_activo.referencia_wompi);
+                  console.log('   - Referencia que se mostrará:', reserva.pago_activo.referencia_wompi);
+                  return reserva.pago_activo.referencia_wompi;
+                })()
+              }}
             </span>
-            <span v-else class="text-gray-400 italic text-sm">Sin referencia</span>
+            <span
+              v-else
+              class="text-gray-400 italic text-sm"
+              @click="console.log('🚫 CLICK EN SIN REFERENCIA - pago_activo:', reserva.pago_activo, 'condición v-else ejecutada')"
+            >
+              {{
+                (() => {
+                  console.log('❌ RENDERIZANDO "SIN REFERENCIA":');
+                  console.log('   - reserva.pago_activo:', reserva.pago_activo);
+                  console.log('   - reserva.pago_activo?.referencia_wompi:', reserva.pago_activo?.referencia_wompi);
+                  console.log('   - ¿Por qué v-else? No cumple:', reserva.pago_activo && reserva.pago_activo.referencia_wompi);
+                  console.log('   - Razones posibles:');
+                  console.log('     - No hay pago_activo:', !reserva.pago_activo);
+                  console.log('     - No hay referencia_wompi:', !reserva.pago_activo?.referencia_wompi);
+                  return 'Sin referencia';
+                })()
+              }}
+            </span>
           </div>
         </div>
       </div>
