@@ -2148,6 +2148,19 @@ const onPricePaste = (event) => {
                         </div>
                     </div>
                 </div>
+                <!-- Texto informativo general -->
+                <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <FontAwesomeIcon :icon="faInfoCircle" class="h-5 w-5 text-blue-400" />
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm text-blue-700">
+                                <strong>Importante:</strong> Asegúrese de que el transporte que vaya a seleccionar no esté asignado a otro tour para la misma fecha de salida.
+                            </p>
+                        </div>
+                    </div>
+                </div>
                 <div class="space-y-4">
                     <div class="w-full flex flex-col">
                         <div class="flex items-center gap-4">
