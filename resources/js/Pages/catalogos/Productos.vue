@@ -492,23 +492,41 @@ const saveOrUpdate = async () => {
     submitted.value = true;
 
     // Validar nombre específicamente
-    if (!producto.value.nombre || producto.value.nombre.length < 3 || producto.value.nombre.length > 100) {
+    if (!producto.value.nombre || producto.value.nombre.length < 3) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
-            detail: "Por favor verifica que todos los campos obligatorios estén completos y cumplan los requisitos.",
+            detail: "El nombre debe tener al menos 3 caracteres.",
             life: 4000
+        });
+        return;
+    }
+    if (producto.value.nombre.length > 200) {
+        toast.add({
+            severity: "error",
+            summary: "Error de validación",
+            detail: "El nombre no puede exceder 200 caracteres.",
+            life: 5000
         });
         return;
     }
 
     // Validar descripción específicamente
-    if (!producto.value.descripcion || producto.value.descripcion.length < 10 || producto.value.descripcion.length > 255) {
+    if (!producto.value.descripcion || producto.value.descripcion.length < 10) {
         toast.add({
             severity: "warn",
             summary: "Campos requeridos",
-            detail: "Por favor verifica que todos los campos obligatorios estén completos y cumplan los requisitos.",
+            detail: "La descripción debe tener al menos 10 caracteres.",
             life: 4000
+        });
+        return;
+    }
+    if (producto.value.descripcion.length > 400) {
+        toast.add({
+            severity: "error",
+            summary: "Error de validación",
+            detail: "La descripción no puede exceder 400 caracteres.",
+            life: 5000
         });
         return;
     }
@@ -1057,8 +1075,8 @@ const validateNombre = () => {
         producto.value.nombre = producto.value.nombre.replace(/[^A-ZÁÉÍÓÚÑÜ\s]/g, '');
 
         // Limitar longitud
-        if (producto.value.nombre.length > 100) {
-            producto.value.nombre = producto.value.nombre.substring(0, 100);
+        if (producto.value.nombre.length > 200) {
+            producto.value.nombre = producto.value.nombre.substring(0, 200);
         }
     }
 };
@@ -1103,8 +1121,8 @@ const onNombrePaste = (event) => {
     let newValue = beforeCursor + cleanText + afterCursor;
 
     // Limitar longitud
-    if (newValue.length > 100) {
-        newValue = newValue.substring(0, 100);
+    if (newValue.length > 200) {
+        newValue = newValue.substring(0, 200);
     }
 
     // Actualizar el valor
@@ -1171,8 +1189,8 @@ const onDescripcionPaste = (event) => {
     let newValue = beforeCursor + cleanText + afterCursor;
 
     // Limitar longitud
-    if (newValue.length > 255) {
-        newValue = newValue.substring(0, 255);
+    if (newValue.length > 400) {
+        newValue = newValue.substring(0, 400);
     }
 
     // Actualizar el valor
@@ -1194,8 +1212,8 @@ const validateDescripcion = () => {
         producto.value.descripcion = producto.value.descripcion.replace(/[^A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"']/g, '');
 
         // Limitar longitud
-        if (producto.value.descripcion.length > 255) {
-            producto.value.descripcion = producto.value.descripcion.substring(0, 255);
+        if (producto.value.descripcion.length > 400) {
+            producto.value.descripcion = producto.value.descripcion.substring(0, 400);
         }
     }
 };
@@ -1618,8 +1636,8 @@ const onStockMinimoPaste = (event) => {
                                 v-model="producto.nombre"
                                 id="nombre"
                                 name="nombre"
-                                :maxlength="100"
-                                :class="{'p-invalid': submitted && (!producto.nombre || producto.nombre.length < 3 || producto.nombre.length > 100)}"
+                                :maxlength="200"
+                                :class="{'p-invalid': submitted && (!producto.nombre || producto.nombre.length < 3 || producto.nombre.length > 200)}"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 placeholder="TAZA PARA CAFÉ, ETC."
                                 @input="validateNombre"
@@ -1631,10 +1649,10 @@ const onStockMinimoPaste = (event) => {
                             El nombre debe tener al menos 3 caracteres. Actual: {{ producto.nombre.length }}/3
                         </small>
                         <small class="text-red-500 ml-28" v-if="producto.nombre && producto.nombre.length >= 3 && checkNombreDuplicado()">
-                            ⚠️ Ya existe un producto con este nombre.
+                            Ya existe un producto con este nombre.
                         </small>
-                        <small class="text-orange-500 ml-28" v-if="producto.nombre && producto.nombre.length >= 90 && producto.nombre.length <= 100">
-                            Caracteres restantes: {{ 100 - producto.nombre.length }}
+                        <small class="text-orange-500 ml-28" v-if="producto.nombre && producto.nombre.length >= 180 && producto.nombre.length <= 200">
+                            Caracteres restantes: {{ 200 - producto.nombre.length }}
                         </small>
                         <small class="text-red-500 ml-28" v-if="submitted && !producto.nombre">
                             El nombre es obligatorio.
@@ -1651,9 +1669,9 @@ const onStockMinimoPaste = (event) => {
                                 v-model="producto.descripcion"
                                 id="descripcion"
                                 name="descripcion"
-                                :maxlength="255"
+                                :maxlength="400"
                                 rows="3"
-                                :class="{'p-invalid': submitted && (!producto.descripcion || producto.descripcion.length < 10 || producto.descripcion.length > 255)}"
+                                :class="{'p-invalid': submitted && (!producto.descripcion || producto.descripcion.length < 10 || producto.descripcion.length > 400)}"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
                                 @input="validateDescripcion"
                                 @keydown="onDescripcionKeyDown"
@@ -1664,8 +1682,8 @@ const onStockMinimoPaste = (event) => {
                         <small class="text-red-500 ml-28" v-if="producto.descripcion && producto.descripcion.length < 10">
                             La descripción debe tener al menos 10 caracteres. Actual: {{ producto.descripcion.length }}/10
                         </small>
-                        <small class="text-orange-500 ml-28" v-if="producto.descripcion && producto.descripcion.length >= 230 && producto.descripcion.length <= 255">
-                            Caracteres restantes: {{ 255 - producto.descripcion.length }}
+                        <small class="text-orange-500 ml-28" v-if="producto.descripcion && producto.descripcion.length >= 380 && producto.descripcion.length <= 400">
+                            Caracteres restantes: {{ 400 - producto.descripcion.length }}
                         </small>
                         <small class="text-red-500 ml-28" v-if="submitted && !producto.descripcion">
                             La descripción es obligatoria.

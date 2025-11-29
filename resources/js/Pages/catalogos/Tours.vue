@@ -2164,12 +2164,16 @@ const onPricePaste = (event) => {
                                     <input v-model="nuevoItemIncluye" type="text" placeholder="Agregar nuevo elemento..." :disabled="hasRestrictedReservations"
                                         :class="{'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}"
                                         class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                        maxlength="100"
                                         @keyup.enter="agregarItemIncluye"
                                     />
                                     <button type="button" @click="agregarItemIncluye" :disabled="!nuevoItemIncluye.trim() || hasRestrictedReservations" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
                                         <FontAwesomeIcon :icon="faPlus" class="h-5"/>
                                     </button>
                                 </div>
+                                <small class="text-gray-500 ml-2 text-xs block text-right select-none">
+                                    {{ 100 - nuevoItemIncluye.length }} caracteres restantes
+                                </small>
                                 <div class="space-y-2 max-h-40 overflow-y-auto">
                                     <div v-for="(item, index) in incluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-md border">
                                         <span class="flex-1">{{ item }}</span>
@@ -2195,12 +2199,16 @@ const onPricePaste = (event) => {
                                     <input v-model="nuevoItemNoIncluye" type="text" placeholder="Agregar nuevo elemento..." :disabled="hasRestrictedReservations"
                                         :class="{'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}"
                                         class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
+                                        maxlength="100"
                                         @keyup.enter="agregarItemNoIncluye"/>
                                     <button type="button" @click="agregarItemNoIncluye" :disabled="!nuevoItemNoIncluye.trim() || hasRestrictedReservations"
                                         class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors">
                                         <FontAwesomeIcon :icon="faPlus" class="h-5"/>
                                     </button>
                                 </div>
+                                <small class="text-gray-500 ml-2 text-xs block text-right select-none">
+                                    {{ 100 - nuevoItemNoIncluye.length }} caracteres restantes
+                                </small>
                                 <div class="space-y-2 max-h-40 overflow-y-auto" v-if="noIncluyeLista.length > 0">
                                     <div v-for="(item, index) in noIncluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-md border">
                                         <span class="flex-1">{{ item }}</span>
@@ -2225,7 +2233,9 @@ const onPricePaste = (event) => {
                                 </label>
                             <InputText v-model.trim="tour.punto_salida" id="punto_salida" name="punto_salida" :maxlength="200" :disabled="hasRestrictedReservations" :class="{'p-invalid': submitted && (!tour.punto_salida || tour.punto_salida.length < 5), 'opacity-50 bg-gray-100 cursor-not-allowed': hasRestrictedReservations}" placeholder="ATRIO DE CATEDRAL DE CHALATENANGO, ETC"
                                 class="flex-1 border-2 border-gray-400 hover:border-gray-500 focus:border-gray-500 focus:ring-0 focus:shadow-none rounded-md"
-                                @input="validatePuntoSalida" @paste="onPuntoSalidaPaste"/>
+                                @input="validatePuntoSalida" @paste="onPuntoSalidaPaste"
+                                maxlength="200"
+                            />
                         </div>
                         <small class="text-red-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length < 5" >Debe tener al menos 5 caracteres. Actual: {{ tour.punto_salida.length }}/5</small>
                         <small class="text-orange-500 ml-28" v-if="tour.punto_salida && tour.punto_salida.length >= 180 && tour.punto_salida.length <= 200">Caracteres restantes: {{ 200 - tour.punto_salida.length }}</small>
@@ -2447,35 +2457,24 @@ const onPricePaste = (event) => {
             :draggable="false">
 
             <!-- Input de búsqueda -->
-            <div class="mb-6">
-                <div class="relative flex items-center bg-white border-2 border-gray-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-200 focus-within:border-gray-400 focus-within:shadow-md">
-                    <div class="pl-4 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
+            <div class="mb-4">
+                <div class="flex items-center gap-2 p-2 bg-white border border-gray-300 rounded-lg focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
+                    <i class="fas fa-search text-gray-400 ml-1"></i>
                     <input
                         v-model="searchToursPendientes"
                         type="text"
                         placeholder="Buscar por nombre del cliente..."
-                        class="flex-1 px-3 py-3 text-sm bg-transparent border-0 outline-none focus:ring-0 placeholder-gray-400"
+                        class="flex-1 border-none outline-none bg-transparent"
                         :disabled="isLoadingToursPendientes"
-                        maxlength="30"
                     />
-                    <div
+                    <span
                         v-if="searchToursPendientes"
-                        class="pr-3 flex items-center">
-                        <button
-                            @click="searchToursPendientes = ''"
-                            class="p-1.5 rounded-full bg-gray-200 hover:bg-red-500 text-gray-500 hover:text-white transition-all duration-200 transform hover:scale-110"
-                            title="Limpiar búsqueda"
-                            :disabled="isLoadingToursPendientes"
-                        >
-                            <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    </div>
+                        @click="searchToursPendientes = ''"
+                        class="cursor-pointer text-gray-400 hover:text-red-500 p-1 rounded transition-colors bg-gray-100 hover:bg-red-100"
+                        title="Limpiar búsqueda"
+                    >
+                        ✕
+                    </span>
                 </div>
             </div>
 
@@ -2508,6 +2507,11 @@ const onPricePaste = (event) => {
                     </div>
                 </div>
 
+                <div class="p-2 bg-blue-50 border border-blue-200 rounded-md text-xs text-blue-700 mb-3">
+                    <i class="fas fa-info-circle mr-1"></i>
+                    <strong>Navegación:</strong> Haz clic en cualquier tour para ir directamente a sus reservas pendientes.
+                </div>
+
                 <div class="max-h-80 overflow-y-auto space-y-2">
                     <div
                         v-for="tour in filteredToursPendientes"
@@ -2538,11 +2542,6 @@ const onPricePaste = (event) => {
                                     ✗ Pendiente ({{ tour.cupos_reservados }}/{{ tour.cupo_min }})
                                 </span>
                             </div>
-                        </div>
-
-                        <div class="text-xs text-gray-500 italic mb-2 px-1">
-                            <i class="fas fa-mouse-pointer mr-1 text-gray-400"></i>
-                            Clic para ver reservas
                         </div>
 
                         <div class="bg-gray-50 rounded p-2">

@@ -51,7 +51,7 @@ class ProductoController extends Controller
                     'required',
                     'string',
                     'min:3',
-                    'max:100',
+                    'max:200',
                     'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/',
                     'unique:productos,nombre'
                 ],
@@ -59,7 +59,7 @@ class ProductoController extends Controller
                     'required',
                     'string',
                     'min:10',
-                    'max:255',
+                    'max:400',
                     'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"\']+$/'
                 ],
                 'precio' => 'required|numeric|min:0.01|max:9999.99',
@@ -71,6 +71,8 @@ class ProductoController extends Controller
             ], [
                 'nombre.regex' => 'El nombre solo puede contener letras mayúsculas, acentos y espacios.',
                 'nombre.unique' => 'Ya existe un producto con este nombre.',
+                'nombre.max' => 'El nombre no puede exceder 200 caracteres.',
+                'descripcion.max' => 'La descripción no puede exceder 400 caracteres.',
                 'descripcion.regex' => 'La descripción solo puede contener letras mayúsculas, números, acentos, espacios y caracteres especiales comunes.'
             ]);
 
@@ -179,7 +181,7 @@ class ProductoController extends Controller
                     'required',
                     'string',
                     'min:3',
-                    'max:100',
+                    'max:200',
                     'regex:/^[A-ZÁÉÍÓÚÑÜ\s]+$/',
                     'unique:productos,nombre,' . $id
                 ],
@@ -187,7 +189,7 @@ class ProductoController extends Controller
                     'required',
                     'string',
                     'min:10',
-                    'max:255',
+                    'max:400',
                     'regex:/^[A-ZÁÉÍÓÚÑÜ0-9\s.,;:!?¡¿()\/\-_@#$%&*+=\[\]{}|\\~`"\']+$/'
                 ],
                 'precio' => 'required|numeric|min:0.01|max:9999.99',
@@ -199,6 +201,8 @@ class ProductoController extends Controller
             ], [
                 'nombre.regex' => 'El nombre solo puede contener letras mayúsculas, acentos y espacios.',
                 'nombre.unique' => 'Ya existe un producto con este nombre.',
+                'nombre.max' => 'El nombre no puede exceder 200 caracteres.',
+                'descripcion.max' => 'La descripción no puede exceder 400 caracteres.',
                 'descripcion.regex' => 'La descripción solo puede contener letras mayúsculas, números, acentos, espacios y caracteres especiales comunes.'
             ]);
 
@@ -356,7 +360,7 @@ class ProductoController extends Controller
 
     /**
      * 🔍 Verificar si el producto está siendo usado en otras tablas
-     * 
+     *
      * REGLAS DE NEGOCIO:
      * ❌ NO permitir eliminar si tiene registros en detalle_ventas
      * ❌ NO permitir eliminar si tiene movimientos de inventario
@@ -380,7 +384,7 @@ class ProductoController extends Controller
 
                 $totalVentas = $ventasDetalladas->unique('venta_id')->count();
                 $totalVendido = $ventasDetalladas->sum('cantidad');
-                
+
                 $restricciones[] = "Tiene {$totalVentas} venta(s) registrada(s) ({$totalVendido} unidades total)";
             }
         } catch (Exception $e) {

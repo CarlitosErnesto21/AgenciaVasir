@@ -1176,6 +1176,7 @@ const onDescripcionInput = (event) => {
                                 placeholder="Agregar nuevo elemento..."
                                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 @keyup.enter="agregarItemIncluye"
+                                maxlength="100"
                             />
                             <button
                                 type="button"
@@ -1186,6 +1187,9 @@ const onDescripcionInput = (event) => {
                                 <FontAwesomeIcon :icon="faPlus" class="h-4"/>
                             </button>
                         </div>
+                        <small class="text-gray-500 ml-2 text-xs block text-right select-none">
+                            {{ 100 - nuevoItemIncluye.length }} caracteres restantes
+                        </small>
                         <div class="space-y-2 max-h-40 overflow-y-auto">
                             <div v-for="(item, index) in incluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-lg border">
                                 <span class="flex-1">{{ item }}</span>
@@ -1209,6 +1213,7 @@ const onDescripcionInput = (event) => {
                                 placeholder="Agregar nuevo elemento..."
                                 class="flex-1 border border-gray-300 rounded-lg px-3 py-2 transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 @keyup.enter="agregarItemNoIncluye"
+                                maxlength="100"
                             />
                             <button
                                 type="button"
@@ -1219,6 +1224,9 @@ const onDescripcionInput = (event) => {
                                 <FontAwesomeIcon :icon="faPlus" class="h-4"/>
                             </button>
                         </div>
+                        <small class="text-gray-500 ml-2 text-xs block text-right select-none">
+                            {{ 100 - nuevoItemNoIncluye.length }} caracteres restantes
+                        </small>
                         <div class="space-y-2 max-h-40 overflow-y-auto" v-if="noIncluyeLista.length > 0">
                             <div v-for="(item, index) in noIncluyeLista" :key="index" class="flex items-center justify-between bg-gray-50 p-2 rounded-lg border">
                                 <span class="flex-1">{{ item }}</span>
