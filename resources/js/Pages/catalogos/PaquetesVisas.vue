@@ -248,13 +248,6 @@ const fetchPaquetes = async () => {
 const fetchPaquetesWithToasts = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando paquetes...",
-        life: 2000
-    });
-
     try {
         const response = await axios.get(url);
 
@@ -263,13 +256,6 @@ const fetchPaquetesWithToasts = async () => {
                 const dateA = new Date(a.created_at);
                 const dateB = new Date(b.created_at);
                 return dateB - dateA;
-            });
-
-            // Mostrar toast de éxito
-            toast.add({
-                severity: "success",
-                summary: "Paquetes cargados",
-                life: 2000
             });
         } else {
             toast.add({
@@ -924,7 +910,14 @@ const onDescripcionInput = (event) => {
                     </div>
                 </div>
 
+                <!-- Loading independiente -->
+                <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-8 w-8 text-blue-600 mb-3" />
+                    <p class="text-gray-600 font-medium">Cargando paquetes...</p>
+                </div>
+
                 <DataTable
+                v-else
                 :value="filteredPaquetes"
                 dataKey="id"
                 :paginator="true"
@@ -1005,10 +998,17 @@ const onDescripcionInput = (event) => {
                 </template>
 
                 <template #empty>
-                    <div class="py-12 text-center">
-                        <FontAwesomeIcon :icon="faTags" class="mb-4 h-12 w-12 text-gray-300" />
-                        <p class="text-xl font-semibold text-gray-500">No hay paquetes</p>
-                        <p class="text-gray-400">No se encontraron paquetes de visa</p>
+                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                        <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+                        <p class="text-xl font-semibold text-gray-600 mb-2">NO HAY PAQUETES AGREGADOS</p>
+                        <p class="text-gray-500 mb-6">Comienza agregando tu primer paquete de visa al catálogo</p>
+                        <button
+                            @click="openNew"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                        >
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                            Agregar Paquete
+                        </button>
                     </div>
                 </template>
 

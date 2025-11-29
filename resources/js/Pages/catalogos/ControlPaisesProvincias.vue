@@ -30,6 +30,7 @@ const modalCambiosSinGuardar = ref(false);
 const isLoading = ref(false);
 const isDeleting = ref(false);
 const isNavigatingToHoteles = ref(false);
+const isLoadingTable = ref(false);
 
 // Variable reactiva para el ancho de ventana
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024);
@@ -79,24 +80,13 @@ const handleHotelesClick = () => {
 
 // Cargar datos
 const cargarTodosLosDatos = async () => {
+  isLoadingTable.value = true;
   try {
-    // Mostrar toast de carga
-    toast.add({
-      severity: "info",
-      summary: "Cargando datos...",
-      life: 2000
-    });
-
     await Promise.all([cargarPaises(), cargarProvincias()]);
-
-    // Mostrar toast de éxito
-    toast.add({
-      severity: "success",
-      summary: "Datos cargados",
-      life: 2000
-    });
   } catch (error) {
     // Los errores específicos ya son manejados en cada función individual
+  } finally {
+    isLoadingTable.value = false;
   }
 };
 
@@ -487,8 +477,17 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Loading independiente -->
+        <div v-if="isLoadingTable" class="flex justify-center items-center py-12">
+          <div class="flex items-center space-x-3">
+            <FontAwesomeIcon :icon="faSpinner" class="h-8 w-8 text-blue-500 animate-spin" />
+            <span class="text-lg font-medium text-gray-700">Cargando datos...</span>
+          </div>
+        </div>
+
       <!-- 📊 TABLA OPTIMIZADA -->
       <DataTable
+        v-else
         :value="datosFiltrados"
         dataKey="id"
         :paginator="true"
@@ -605,6 +604,25 @@ onMounted(() => {
             </div>
           </template>
         </Column>
+
+        <template #empty>
+          <div class="flex flex-col items-center justify-center py-12 text-center">
+            <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+            <p class="text-xl font-semibold text-gray-600 mb-2">
+              {{ modoSeleccionado === 'País' ? 'NO HAY PAÍSES AGREGADOS' : 'NO HAY DEPARTAMENTOS/PROVINCIAS AGREGADOS' }}
+            </p>
+            <p class="text-gray-500 mb-6">
+              {{ modoSeleccionado === 'País' ? 'Comienza agregando tu primer país' : 'Comienza agregando tu primer departamento/provincia' }}
+            </p>
+            <button
+              @click="abrirModalAgregar"
+              class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+            >
+              <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+              Agregar {{ modoSeleccionado === 'País' ? 'País' : 'Departamento/Provincia' }}
+            </button>
+          </div>
+        </template>
       </DataTable>
 
       <!-- 📝 Modal Agregar CON VALIDACIÓN VISUAL MEJORADA -->

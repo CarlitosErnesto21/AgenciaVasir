@@ -21,6 +21,7 @@ const categoria = ref({
 const isLoading = ref(false)
 const isDeleting = ref(false)
 const isNavigatingToProductos = ref(false)
+const isLoadingTable = ref(true)
 
 // Variable reactiva para el ancho de ventana
 const windowWidth = ref(typeof window !== 'undefined' ? window.innerWidth : 1024)
@@ -131,12 +132,7 @@ const cargarCategorias = async () => {
 }
 
 const cargarCategoriasWithToasts = async () => {
-    // Mostrar toast de carga
-    toast.add({
-        severity: "info",
-        summary: "Cargando categorías...",
-        life: 2000
-    });
+    isLoadingTable.value = true;
 
     try {
         const response = await axios.get(`/api/categorias-productos`)
@@ -145,12 +141,6 @@ const cargarCategoriasWithToasts = async () => {
             categoria_id: cat.id
         })).sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
 
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Categorías cargadas",
-            life: 2000
-        });
     } catch (error) {
         toast.add({
             severity: 'error',
@@ -158,6 +148,8 @@ const cargarCategoriasWithToasts = async () => {
             detail: `No se pudieron cargar las categorías de productos.`,
             life: 4000
         })
+    } finally {
+        isLoadingTable.value = false;
     }
 }
 
@@ -368,7 +360,14 @@ const onNombrePaste = (event) => {
                     </div>
                 </div>
 
+            <!-- Loading independiente -->
+            <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-lg shadow-md">
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-10 w-10 text-blue-600" />
+                <span class="text-gray-600 font-medium text-lg">Cargando categorías...</span>
+            </div>
+
             <DataTable
+                v-else
                 :value="categoriasFiltradas"
                 dataKey="id"
                 :paginator="true"
@@ -422,6 +421,23 @@ const onNombrePaste = (event) => {
                         </div>
                     </template>
                 </Column>
+                
+                <!-- Template para cuando no hay datos -->
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                        <FontAwesomeIcon :icon="faHandPointUp" class="h-12 w-12 text-gray-400" />
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">NO HAY CATEGORÍAS AGREGADAS</h3>
+                            <p class="text-gray-500 mb-4">Comienza agregando tu primera categoría haciendo clic en el botón "Agregar"</p>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md shadow-md transition-all duration-200 flex items-center gap-2 mx-auto"
+                                @click="openNew">
+                                <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                Agregar Categoría
+                            </button>
+                        </div>
+                    </div>
+                </template>
             </DataTable>
 
             <!-- Modal de formulario -->

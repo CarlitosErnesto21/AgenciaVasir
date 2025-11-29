@@ -53,8 +53,14 @@
       </div>
 
       <div class="bg-white rounded-lg shadow-md">
+        <!-- Loading independiente -->
+        <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12">
+          <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-8 w-8 text-blue-600 mb-3" />
+          <p class="text-gray-600 font-medium">Cargando ventas...</p>
+        </div>
 
         <DataTable
+          v-else
           :value="ventasFiltradas"
           dataKey="id"
           :paginator="true"
@@ -332,6 +338,14 @@
               </div>
             </template>
           </Column>
+
+          <template #empty>
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+              <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+              <p class="text-xl font-semibold text-gray-600 mb-2">NO HAY VENTAS REGISTRADAS</p>
+              <p class="text-gray-500 mb-6">Las ventas aparecerán aquí cuando se realicen compras</p>
+            </div>
+          </template>
         </DataTable>
       </div>
     </div>
@@ -822,6 +836,7 @@ const copiedSuccess = ref(false);
 const isClearingFilters = ref(false);
 const isDeleting = ref(false); // Solo para el modal
 const isReloading = ref(false); // Solo para el botón de recargar
+const isLoadingTable = ref(true);
 
 // Loading individual por venta
 const processingVentas = ref(new Set());
@@ -977,13 +992,7 @@ const aplicarFiltros = () => {
 // 🔄 Función para recargar ventas con toasts
 const fetchVentasWithToasts = async () => {
   isReloading.value = true;
-
-  // Mostrar toast de carga
-  toast.add({
-    severity: "info",
-    summary: "Cargando ventas...",
-    life: 2000
-  });
+  isLoadingTable.value = true;
 
   try {
     // Usar Inertia para recargar la página actual con los datos actualizados
@@ -992,16 +1001,6 @@ const fetchVentasWithToasts = async () => {
       preserveScroll: true, // Mantener la posición del scroll
       preserveState: true // Mantener el estado de los filtros
     });
-
-    // Mostrar toast de éxito después de la recarga
-    setTimeout(() => {
-      toast.add({
-        severity: "success",
-        summary: "Ventas actualizadas",
-        detail: `${ventas.value.length} registros cargados`,
-        life: 2000
-      });
-    }, 300);
 
   } catch (error) {
     console.error('Error al cargar las ventas:', error);
@@ -1015,6 +1014,7 @@ const fetchVentasWithToasts = async () => {
     // El loading se desactiva después de la recarga
     setTimeout(() => {
       isReloading.value = false;
+      isLoadingTable.value = false;
     }, 500);
   }
 };
@@ -1380,21 +1380,13 @@ const refreshVentas = () => {
 };
 
 onMounted(() => {
-  // Toast de carga inicial
-  toast.add({
-    severity: "info",
-    summary: "Cargando ventas...",
-    life: 2000
-  });
-
-  // Toast de éxito después de cargar
+  // Activar loading inicial
+  isLoadingTable.value = true;
+  
+  // Simular carga inicial
   setTimeout(() => {
-    toast.add({
-      severity: "success",
-      summary: "Ventas cargadas",
-      life: 2000
-    });
-  }, 1000);
+    isLoadingTable.value = false;
+  }, 1500);
 
   // 🔄 Auto-refresh cada 30 segundos para actualizar estados de pago
   refreshInterval = setInterval(() => {

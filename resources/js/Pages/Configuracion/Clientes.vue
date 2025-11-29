@@ -12,7 +12,14 @@
                     </div>
                 </div>
 
-                            <DataTable
+                <!-- Loading independiente -->
+                <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12">
+                    <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-8 w-8 text-blue-600 mb-3" />
+                    <p class="text-gray-600 font-medium">Cargando clientes...</p>
+                </div>
+
+                <DataTable
+                v-else
                 :value="filteredClientes"
                 dataKey="id"
                 :paginator="true"
@@ -148,6 +155,14 @@
                             </div>
                         </template>
                     </Column>
+
+                    <template #empty>
+                        <div class="flex flex-col items-center justify-center py-12 text-center">
+                            <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+                            <p class="text-xl font-semibold text-gray-600 mb-2">NO HAY CLIENTES REGISTRADOS</p>
+                            <p class="text-gray-500 mb-6">Los clientes aparecerán aquí cuando se registren en el sistema</p>
+                        </div>
+                    </template>
                 </DataTable>
 
                 <!-- Componente de Modales de Clientes -->
@@ -462,29 +477,17 @@ const continueEditing = () => {
 // =====================================================
 // ✅ INICIALIZACIÓN
 // =====================================================
-// ✅ FUNCIÓN PARA MOSTRAR TOASTS DE CARGA
+// ✅ FUNCIÓN DE CARGA INICIAL
 // =====================================================
-const showLoadingToasts = () => {
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando clientes...",
-        life: 2000
-    });
-
-    // Simular carga y mostrar toast de éxito
+const initializeComponent = () => {
+    // Simular carga inicial
     setTimeout(() => {
-        toast.add({
-            severity: "success",
-            summary: "Clientes cargados",
-            life: 2000
-        });
         isLoadingTable.value = false;
     }, 1000);
 };
 
 // =====================================================
 onMounted(() => {
-    showLoadingToasts();
+    initializeComponent();
 });
 </script>

@@ -68,7 +68,7 @@ const isClearingFilters = ref(false);
 const isUploadingImages = ref(false);
 const isOpeningGallery = ref(false);
 const isLoading = ref(false);
-const isLoadingTable = ref(true);
+const isLoadingTable = ref(false);
 
 // 📂 Datos de apoyo
 const paises = ref([]);
@@ -229,30 +229,19 @@ function resetForm() {
     submitted.value = false;
 }
 
-// Función para cargar todos los datos con toast unificado
+// Función para cargar todos los datos
 const cargarTodosLosDatos = async () => {
+    isLoadingTable.value = true;
     try {
-        // Mostrar toast de carga
-        toast.add({
-            severity: "info",
-            summary: "Cargando datos...",
-            life: 2000
-        });
-
         await Promise.all([
             fetchHoteles(),
             fetchPaises(),
             fetchProvincias()
         ]);
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Datos cargados",
-            life: 2000
-        });
     } catch (error) {
         // Los errores específicos ya son manejados en cada función individual
+    } finally {
+        isLoadingTable.value = false;
     }
 };
 
@@ -308,13 +297,6 @@ const fetchHoteles = async () => {
 const fetchHotelesWithToasts = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando hoteles...",
-        life: 2000
-    });
-
     try {
         const response = await axios.get(url);
         hoteles.value = (response.data.data || response.data || []).map((hotel) => ({
@@ -326,13 +308,6 @@ const fetchHotelesWithToasts = async () => {
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
             return dateB - dateA;
-        });
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Hoteles cargados",
-            life: 2000
         });
 
     } catch (err) {
@@ -1271,7 +1246,16 @@ const handlePasteDescripcion = (event) => {
                     </div>
                 </div>
 
+                <!-- Loading independiente -->
+                <div v-if="isLoadingTable" class="flex justify-center items-center py-12">
+                    <div class="flex items-center space-x-3">
+                        <FontAwesomeIcon :icon="faSpinner" class="h-8 w-8 text-blue-500 animate-spin" />
+                        <span class="text-lg font-medium text-gray-700">Cargando hoteles...</span>
+                    </div>
+                </div>
+
                 <DataTable
+                v-else
                 :value="filteredHoteles"
                 dataKey="id"
                 :paginator="true"
@@ -1421,6 +1405,21 @@ const handlePasteDescripcion = (event) => {
                         </div>
                     </template>
                 </Column>
+                
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 text-center">
+                        <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+                        <p class="text-xl font-semibold text-gray-600 mb-2">NO HAY HOTELES AGREGADOS</p>
+                        <p class="text-gray-500 mb-6">Comienza agregando tu primer hotel al catálogo</p>
+                        <button
+                            @click="openNew"
+                            class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+                        >
+                            <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                            Agregar Hotel
+                        </button>
+                    </div>
+                </template>
             </DataTable>
 
             <!-- Modal de formulario para agregar/editar hoteles -->

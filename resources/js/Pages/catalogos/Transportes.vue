@@ -28,10 +28,11 @@ const hasUnsavedChanges = ref(false);
 const originalTransporteData = ref(null);
 
 // Variables de loading para los botones
-const isLoading = ref(false);
-const isDeleting = ref(false);
-const isClearingFilters = ref(false);
-const isNavigatingToTours = ref(false);
+const isLoading = ref(false)
+const isDeleting = ref(false)
+const isClearingFilters = ref(false)
+const isNavigatingToTours = ref(false)
+const isLoadingTable = ref(true)
 
 const filters = ref({
     global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -226,48 +227,24 @@ onUnmounted(() => {
 
 const fetchTransportes = async () => {
     try {
-        // Mostrar toast de carga
-        toast.add({
-            severity: "info",
-            summary: "Cargando transportes...",
-            life: 2000
-        });
-
         const response = await axios.get("/api/transportes");
         transportes.value = response.data.sort((a, b) => b.id - a.id);
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Transportes cargados",
-            life: 2000
-        });
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
     }
 };
 
 const fetchTransportesWithToasts = async () => {
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando transportes...",
-        life: 2000
-    });
+    isLoadingTable.value = true;
 
     try {
         const response = await axios.get("/api/transportes");
         transportes.value = response.data.sort((a, b) => b.id - a.id);
 
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Transportes cargados",
-            life: 2000
-        });
-
     } catch (err) {
         toast.add({ severity: "error", summary: "Error", detail: "No se pudieron cargar los transportes.", life: 4000 });
+    } finally {
+        isLoadingTable.value = false;
     }
 };
 
@@ -559,8 +536,14 @@ const handleToursClick = () => {
                     </div>
                 </div>
 
+            <!-- Loading independiente -->
+            <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-lg shadow-md">
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-10 w-10 text-blue-600" />
+                <span class="text-gray-600 font-medium text-lg">Cargando transportes...</span>
+            </div>
 
             <DataTable
+                v-else
                 :value="filteredTransportes"
                 v-model:selection="selectedTransportes"
                 dataKey="id"
@@ -687,6 +670,23 @@ const handleToursClick = () => {
                         </div>
                     </template>
                 </Column>
+
+                <!-- Template para cuando no hay datos -->
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                        <FontAwesomeIcon :icon="faBusSimple" class="h-12 w-12 text-gray-400" />
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">NO HAY TRANSPORTES AGREGADOS</h3>
+                            <p class="text-gray-500 mb-4">Comienza agregando tu primer transporte haciendo clic en el botón "Agregar"</p>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md shadow-md transition-all duration-200 flex items-center gap-2 mx-auto"
+                                @click="openNew">
+                                <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                Agregar Transporte
+                            </button>
+                        </div>
+                    </div>
+                </template>
             </DataTable>
 
             <!-- Modal de formulario -->

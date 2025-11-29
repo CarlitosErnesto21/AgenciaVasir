@@ -5,7 +5,7 @@ import { ref, onMounted, computed, watch, nextTick, onUnmounted } from "vue";
 import { useToast } from "primevue/usetoast";
 import { FilterMatchMode } from "@primevue/core/api";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faBusSimple, faCheck, faClock, faHandPointUp, faInfoCircle, faListDots, faMagnifyingGlass, faPencil, faPlus, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
+import { faBusSimple, faCheck, faClock, faHandPointUp, faInfoCircle, faListDots, faMagnifyingGlass, faPencil, faPlus, faRoute, faSpinner, faTrashCan, faXmark } from "@fortawesome/free-solid-svg-icons";
 import DatePicker from "primevue/datepicker";
 import TourModals from "./Components/TourComponents/Modales.vue";
 import axios from "axios";
@@ -459,13 +459,6 @@ const fetchTours = async () => {
 const fetchToursWithToasts = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando tours...",
-        life: 2000
-    });
-
     try {
         const response = await axios.get(url);
         tours.value = response.data.map((t) => ({
@@ -500,13 +493,6 @@ const fetchToursWithToasts = async () => {
             const dateA = new Date(a.fecha_salida);
             const dateB = new Date(b.fecha_salida);
             return dateA - dateB;
-        });
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Tours cargados",
-            life: 2000
         });
 
     } catch (err) {
@@ -1862,7 +1848,15 @@ const onPricePaste = (event) => {
                     </button>
                 </div>
             </div>
+
+            <!-- Loading independiente -->
+            <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-lg shadow-md">
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-10 w-10 text-blue-600" />
+                <span class="text-gray-600 font-medium text-lg">Cargando tours...</span>
+            </div>
+
             <DataTable
+                v-else
                 :value="filteredTours"
                 v-model:selection="selectedTours"
                 dataKey="id"
@@ -2121,6 +2115,22 @@ const onPricePaste = (event) => {
                         </div>
                     </template>
                 </Column>
+                <!-- Template para cuando no hay datos -->
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                        <FontAwesomeIcon :icon="faRoute" class="h-12 w-12 text-gray-400" />
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">NO HAY TOURS AGREGADOS</h3>
+                            <p class="text-gray-500 mb-4">Comienza agregando tu primer tour haciendo clic en el botón "Agregar"</p>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md shadow-md transition-all duration-200 flex items-center gap-2 mx-auto"
+                                @click="openNew">
+                                <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                Agregar Tour
+                            </button>
+                        </div>
+                    </div>
+                </template>
             </DataTable>
 
             <!-- Modal del formulario -->
@@ -2456,25 +2466,37 @@ const onPricePaste = (event) => {
             :closable="false"
             :draggable="false">
 
-            <!-- Input de búsqueda -->
-            <div class="mb-4">
-                <div class="flex items-center gap-2 p-2 bg-white border border-gray-300 rounded-lg focus-within:border-blue-500 focus-within:ring-1 focus-within:ring-blue-500">
-                    <i class="fas fa-search text-gray-400 ml-1"></i>
+            <!-- Input de búsqueda mejorado -->
+            <div class="pt-2 mb-6">
+                <div class="relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <FontAwesomeIcon :icon="faMagnifyingGlass" class="h-4 w-4 text-gray-400" />
+                    </div>
                     <input
                         v-model="searchToursPendientes"
                         type="text"
                         placeholder="Buscar por nombre del cliente..."
-                        class="flex-1 border-none outline-none bg-transparent"
+                        class="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-400 focus:border-gray-500 transition-all duration-200 text-sm placeholder-gray-500 shadow-sm"
+                        :class="{
+                            'bg-gray-50 cursor-not-allowed': isLoadingToursPendientes,
+                            'bg-white': !isLoadingToursPendientes
+                        }"
                         :disabled="isLoadingToursPendientes"
                     />
-                    <span
-                        v-if="searchToursPendientes"
-                        @click="searchToursPendientes = ''"
-                        class="cursor-pointer text-gray-400 hover:text-red-500 p-1 rounded transition-colors bg-gray-100 hover:bg-red-100"
-                        title="Limpiar búsqueda"
-                    >
-                        ✕
-                    </span>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3">
+                        <button
+                            v-if="searchToursPendientes"
+                            @click="searchToursPendientes = ''"
+                            class="p-1 rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-all duration-200"
+                            title="Limpiar búsqueda"
+                            type="button"
+                        >
+                            <FontAwesomeIcon :icon="faXmark" class="h-4 w-4" />
+                        </button>
+                        <div v-else-if="isLoadingToursPendientes" class="animate-spin">
+                            <FontAwesomeIcon :icon="faSpinner" class="h-4 w-4 text-blue-500" />
+                        </div>
+                    </div>
                 </div>
             </div>
 

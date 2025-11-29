@@ -1484,8 +1484,15 @@ onUnmounted(() => {
           </div>
         </div>
 
+        <!-- Loading independiente -->
+        <div v-if="loading" class="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-lg shadow-md">
+            <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-10 w-10 text-blue-600" />
+            <span class="text-gray-600 font-medium text-lg">Cargando reservas...</span>
+        </div>
+
         <!-- Tabla de reservas mejorada -->
         <DataTable
+          v-else
           :value="reservasFiltradas"
               paginator
               :rows="10"
@@ -1508,12 +1515,23 @@ onUnmounted(() => {
               }"
             >
               <template #empty>
-                <div class="text-center py-12">
-                  <FontAwesomeIcon :icon="faInfoCircle" class="text-4xl text-gray-400 mb-4" />
-                  <p class="text-gray-500 text-lg">No se encontraron reservas</p>
-                  <p class="text-gray-400 text-sm mt-2">
-                    Ajusta los filtros para encontrar las reservas que buscas
-                  </p>
+                <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                  <FontAwesomeIcon :icon="faHandPointUp" class="h-12 w-12 text-gray-400" />
+                  <div class="text-center">
+                    <h3 class="text-lg font-semibold text-gray-700 mb-2">NO HAY RESERVAS DISPONIBLES</h3>
+                    <p class="text-gray-500 mb-2">
+                      {{ filtros.busqueda || filtros.fechaDesde || filtros.fechaHasta || filtros.estado 
+                        ? 'No se encontraron reservas que coincidan con los filtros aplicados.' 
+                        : 'Este tour aún no tiene reservas registradas.' 
+                      }}
+                    </p>
+                    <p class="text-gray-400 text-sm">
+                      {{ filtros.busqueda || filtros.fechaDesde || filtros.fechaHasta || filtros.estado 
+                        ? 'Intenta ajustar o limpiar los filtros para ver más resultados.' 
+                        : 'Las reservas aparecerán aquí cuando los clientes reserven este tour.' 
+                      }}
+                    </p>
+                  </div>
                 </div>
               </template>
 

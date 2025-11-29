@@ -263,13 +263,6 @@ const fetchProductos = async () => {
 const fetchProductosWithToasts = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando productos...",
-        life: 2000
-    });
-
     try {
         const response = await axios.get(url);
         productos.value = (response.data.data || response.data || []).map((p) => ({
@@ -281,13 +274,6 @@ const fetchProductosWithToasts = async () => {
             const dateA = new Date(a.created_at);
             const dateB = new Date(b.created_at);
             return dateB - dateA;
-        });
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Productos cargados",
-            life: 2000
         });
 
     } catch (err) {
@@ -1431,7 +1417,14 @@ const onStockMinimoPaste = (event) => {
                 </div>
             </div>
 
+            <!-- Loading independiente -->
+            <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12 space-y-4 bg-white rounded-lg shadow-md">
+                <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-10 w-10 text-blue-600" />
+                <span class="text-gray-600 font-medium text-lg">Cargando productos...</span>
+            </div>
+
             <DataTable
+                v-else
                 :value="filteredProductos"
                 dataKey="id"
                 :paginator="true"
@@ -1621,6 +1614,23 @@ const onStockMinimoPaste = (event) => {
                         </div>
                     </template>
                 </Column>
+                
+                <!-- Template para cuando no hay datos -->
+                <template #empty>
+                    <div class="flex flex-col items-center justify-center py-12 space-y-4">
+                        <FontAwesomeIcon :icon="faHandPointUp" class="h-12 w-12 text-gray-400" />
+                        <div class="text-center">
+                            <h3 class="text-lg font-semibold text-gray-700 mb-2">NO HAY PRODUCTOS AGREGADOS</h3>
+                            <p class="text-gray-500 mb-4">Comienza agregando tu primer producto haciendo clic en el botón "Agregar"</p>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-md shadow-md transition-all duration-200 flex items-center gap-2 mx-auto"
+                                @click="openNew">
+                                <FontAwesomeIcon :icon="faPlus" class="h-4 w-4" />
+                                Agregar Producto
+                            </button>
+                        </div>
+                    </div>
+                </template>
             </DataTable>
 
             <!--Modal de formulario -->

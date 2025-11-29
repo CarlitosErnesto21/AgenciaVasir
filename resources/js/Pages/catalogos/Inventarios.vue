@@ -80,8 +80,14 @@
 
       <!-- Tabla de Movimientos -->
       <div class="bg-white rounded-lg shadow-md">
+        <!-- Loading independiente -->
+        <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12">
+          <FontAwesomeIcon :icon="faSpinner" class="animate-spin h-8 w-8 text-blue-600 mb-3" />
+          <p class="text-gray-600 font-medium">Cargando inventario...</p>
+        </div>
 
         <DataTable
+          v-else
           :value="movimientosFiltrados"
           dataKey="id"
           :paginator="true"
@@ -319,7 +325,13 @@
             </template>
           </Column>
 
-
+          <template #empty>
+            <div class="flex flex-col items-center justify-center py-12 text-center">
+              <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400 mb-4" />
+              <p class="text-xl font-semibold text-gray-600 mb-2">NO HAY MOVIMIENTOS DE INVENTARIO</p>
+              <p class="text-gray-500 mb-6">Los movimientos aparecerán aquí cuando se realicen cambios de stock</p>
+            </div>
+          </template>
         </DataTable>
       </div>
     </div>
@@ -607,6 +619,7 @@ const mostrarModalEliminacion = ref(false)
 const movimientoAEliminar = ref(null)
 const isDeleting = ref(false)
 const isNavigatingToProductos = ref(false)
+const isLoadingTable = ref(true)
 
 // Filtros
 const filtros = ref({
@@ -743,25 +756,20 @@ const cargarDatos = async () => {
 
 const cargarDatosWithToasts = async () => {
   cargando.value = true
-
-  // Mostrar toast de carga con duración automática
-  toast.add({
-    severity: "info",
-    summary: "Cargando inventario...",
-    life: 2000
-  })
+  isLoadingTable.value = true
 
   try {
     await cargarDatos()
-
-    // Mostrar toast de éxito
+  } catch (error) {
     toast.add({
-      severity: "success",
-      summary: "Inventario cargado",
-      life: 2000
+      severity: "error",
+      summary: "Error",
+      detail: "No se pudieron cargar los datos del inventario",
+      life: 3000
     })
   } finally {
     cargando.value = false
+    isLoadingTable.value = false
   }
 }
 

@@ -162,7 +162,7 @@ function resetForm() {
 
 // 📊 Cargar datos
 onMounted(() => {
-    fetchEmpleadosWithToasts();
+    initializeComponent();
 });
 
 const fetchEmpleados = async () => {
@@ -183,31 +183,13 @@ const fetchEmpleados = async () => {
     }
 };
 
-const fetchEmpleadosWithToasts = async () => {
+const initializeComponent = async () => {
     isLoadingTable.value = true;
 
-    // Mostrar toast de carga con duración automática
-    toast.add({
-        severity: "info",
-        summary: "Cargando empleados...",
-        life: 2000
-    });
-
     try {
-        const response = await axios.get(url);
-        empleados.value = (response.data.data || response.data || []).sort((a, b) => {
-            const dateA = new Date(a.created_at);
-            const dateB = new Date(b.created_at);
-            return dateB - dateA;
-        });
-
-        // Mostrar toast de éxito
-        toast.add({
-            severity: "success",
-            summary: "Empleados cargados",
-            life: 2000
-        });
-
+        // Simular tiempo de carga para mostrar el loading
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        await fetchEmpleados();
     } catch (err) {
         toast.add({
             severity: "error",
@@ -639,7 +621,7 @@ const updatePassword = async (passwordData) => {
         });
 
         // 🔄 Recargar la lista de empleados para reflejar cualquier cambio
-        await fetchEmpleadosWithToasts();
+        await fetchEmpleados();
 
     } catch (err) {
         if (err.response?.status === 422) {
@@ -1016,7 +998,14 @@ const telefonoErrors = computed(() => {
                     </div>
                 </div>
 
+                <!-- Loading independiente -->
+                <div v-if="isLoadingTable" class="flex flex-col items-center justify-center py-12 px-4">
+                    <FontAwesomeIcon :icon="faSpinner" class="h-6 w-6 text-blue-600 animate-spin" />
+                    <span class="text-blue-700 font-medium text-lg">Cargando empleados...</span>
+                </div>
+
                 <DataTable
+                    v-else
                     :value="filteredEmpleados"
                     dataKey="id"
                     :paginator="true"
@@ -1189,6 +1178,26 @@ const telefonoErrors = computed(() => {
                             </div>
                         </template>
                     </Column>
+
+                    <template #empty>
+                        <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+                            <div class="bg-gray-50 rounded-full p-6 mb-6">
+                                <FontAwesomeIcon :icon="faHandPointUp" class="h-16 w-16 text-gray-400" />
+                            </div>
+                            <h3 class="text-xl font-semibold text-gray-700 mb-3">NO HAY EMPLEADOS REGISTRADOS</h3>
+                            <p class="text-gray-500 max-w-md mx-auto mb-6">
+                                Los empleados aparecerán aquí cuando se registren en el sistema.
+                                Puedes agregar un nuevo empleado haciendo clic en el botón "Agregar".
+                            </p>
+                            <button
+                                class="bg-red-500 hover:bg-red-600 text-white px-6 py-3 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2"
+                                @click="openNew"
+                            >
+                                <FontAwesomeIcon :icon="faPlus" class="h-5 w-5" />
+                                <span>Agregar primer empleado</span>
+                            </button>
+                        </div>
+                    </template>
                 </DataTable>
 
                 <!--Modal de formulario -->
