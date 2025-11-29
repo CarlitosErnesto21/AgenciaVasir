@@ -6,7 +6,11 @@ import { faRoute, faDoorOpen, faChevronDown, faUser, faHotel, faGear, faBoxesSta
             faClipboardList, faBox, faHouseChimneyUser, faBars, faFileInvoice, faUserPen,
             faTimes, faUsers, faCog, faStore,
             faIdCard,
-            faList} from "@fortawesome/free-solid-svg-icons";
+            faList,
+            faShoppingCart,
+            faTags,
+            faWarehouse,
+            faPassport} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import { route } from "ziggy-js";
 
@@ -455,7 +459,7 @@ onBeforeUnmount(() => {
                                         ]"
                                         @click.prevent="navigateAndCloseSidebar('productos')"
                                     >
-                                        <FontAwesomeIcon :icon="faBox" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
+                                        <FontAwesomeIcon :icon="faTags" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Productos y Stock</span>
                                     </Link>
                                     <Link
@@ -494,7 +498,7 @@ onBeforeUnmount(() => {
                                         ]"
                                         @click.prevent="navigateAndCloseSidebar('paquetesVisas')"
                                     >
-                                        <FontAwesomeIcon :icon="faIdCard" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
+                                        <FontAwesomeIcon :icon="faPassport" class="w-4 h-4 mr-3 group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium">Paquetes de Visa</span>
                                     </Link>
                                 </div>
@@ -517,7 +521,7 @@ onBeforeUnmount(() => {
                                 @click.prevent="navigateAndCloseSidebar('ventas')"
                             >
                                 <FontAwesomeIcon
-                                    :icon="faFileInvoice"
+                                    :icon="faShoppingCart"
                                     class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <span class="font-semibold">Ventas</span>
@@ -535,7 +539,7 @@ onBeforeUnmount(() => {
                                 @click.prevent="navigateAndCloseSidebar('inventario')"
                             >
                                 <FontAwesomeIcon
-                                    :icon="faClipboardList"
+                                    :icon="faWarehouse"
                                     class="w-5 h-5 mr-3 group-hover:scale-110 transition-transform duration-300"
                                 />
                                 <span class="font-semibold">Inventario</span>
@@ -725,7 +729,7 @@ onBeforeUnmount(() => {
                                         ]"
                                         @click.prevent="navigateAndCloseDropdown('productos')"
                                     >
-                                        <FontAwesomeIcon :icon="faBox" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
+                                        <FontAwesomeIcon :icon="faTags" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Productos y Stock</span>
                                     </Link>
                                     <Link
@@ -764,7 +768,7 @@ onBeforeUnmount(() => {
                                         ]"
                                         @click.prevent="navigateAndCloseDropdown('paquetesVisas')"
                                     >
-                                        <FontAwesomeIcon :icon="faIdCard" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
+                                        <FontAwesomeIcon :icon="faPassport" class="w-4 h-4 mr-2 text-white group-hover:scale-110 transition-transform duration-300" />
                                         <span class="font-medium text-sm">Paquetes de Visa</span>
                                     </Link>
                                 </div>
@@ -785,7 +789,7 @@ onBeforeUnmount(() => {
                             title="Ventas"
                         >
                             <FontAwesomeIcon
-                                :icon="faFileInvoice"
+                                :icon="faShoppingCart"
                                 class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
                             />
                             <span class="font-semibold">Ventas</span>
@@ -803,7 +807,7 @@ onBeforeUnmount(() => {
                             title="Inventario"
                         >
                             <FontAwesomeIcon
-                                :icon="faClipboardList"
+                                :icon="faWarehouse"
                                 class="mr-3 w-5 h-5 text-white group-hover:scale-110 transition-transform duration-300"
                             />
                             <span class="font-semibold">Inventario</span>

@@ -1,0 +1,1 @@
+import{_ as o}from"./PorQueElegirnosSection.vue_vue_type_script_setup_true_lang-6wd03Xvl.js";import"./index-BL4yA-eF.js";import"./ui-BrU4k96Z.js";import"./vendor-gbh1WW5n.js";export{o as default};

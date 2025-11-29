@@ -463,7 +463,7 @@ Gracias.`
                               <FontAwesomeIcon :icon="faHouseChimneyUser" class="w-4 h-4" />
                             </div>
                             <div class="flex flex-col">
-                              <span class="font-semibold">Dashboard administrativo</span>
+                              <span class="font-semibold">Panel administrativo</span>
                             </div>
                           </Link>
 
